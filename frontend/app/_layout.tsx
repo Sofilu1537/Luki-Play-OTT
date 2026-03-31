@@ -19,7 +19,8 @@ SplashScreen.preventAutoHideAsync();
  * - `index`  — auth redirect gate
  * - `(auth)` — unauthenticated flows (login)
  * - `(app)`  — authenticated main tab area
- * - `admin`  — administration panel
+ * - `admin`  — administration panel (legacy channel manager)
+ * - `cms`    — CMS panel for internal users (SUPPORT / SUPERADMIN)
  * - `player` — fullscreen video player
  */
 export default function RootLayout() {
@@ -37,6 +38,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(app)" options={{ headerShown: false }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="cms" options={{ headerShown: false }} />
         <Stack.Screen name="player" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
