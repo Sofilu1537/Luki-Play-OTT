@@ -5,5 +5,6 @@ export const ACCOUNT_REPOSITORY = Symbol('ACCOUNT_REPOSITORY');
 export interface AccountRepository {
   findById(id: string): Promise<Account | null>;
   findByContractNumber(contractNumber: string): Promise<Account | null>;
+  findAll(): Promise<Account[]>;
   save(account: Account): Promise<Account>;
 }

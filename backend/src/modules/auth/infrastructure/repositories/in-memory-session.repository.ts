@@ -11,6 +11,10 @@ export class InMemorySessionRepository implements SessionRepository {
   private readonly logger = new Logger(InMemorySessionRepository.name);
   private sessions: Map<string, Session> = new Map();
 
+  async findAll(): Promise<Session[]> {
+    return Promise.resolve([...this.sessions.values()]);
+  }
+
   async findById(id: string): Promise<Session | null> {
     return Promise.resolve(this.sessions.get(id) ?? null);
   }

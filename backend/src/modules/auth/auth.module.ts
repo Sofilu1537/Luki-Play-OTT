@@ -35,9 +35,11 @@ import { RequestOtpUseCase } from './application/use-cases/request-otp.use-case'
 import { VerifyOtpUseCase } from './application/use-cases/verify-otp.use-case';
 import { InitQrLoginUseCase } from './application/use-cases/init-qr-login.use-case';
 import { ConfirmQrLoginUseCase } from './application/use-cases/confirm-qr-login.use-case';
+import { GetCmsStatsUseCase } from './application/use-cases/get-cms-stats.use-case';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
+import { CmsController } from './presentation/controllers/cms.controller';
 
 // External modules
 import { BillingModule } from '../billing/billing.module';
@@ -62,7 +64,7 @@ import { CrmModule } from '../crm/crm.module';
     BillingModule,
     CrmModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, CmsController],
   providers: [
     // Infrastructure bindings
     { provide: USER_REPOSITORY, useClass: InMemoryUserRepository },
@@ -87,6 +89,7 @@ import { CrmModule } from '../crm/crm.module';
     VerifyOtpUseCase,
     InitQrLoginUseCase,
     ConfirmQrLoginUseCase,
+    GetCmsStatsUseCase,
   ],
   exports: [TOKEN_SERVICE, HASH_SERVICE, USER_REPOSITORY, ACCOUNT_REPOSITORY],
 })

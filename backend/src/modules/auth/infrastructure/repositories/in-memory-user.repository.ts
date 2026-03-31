@@ -104,6 +104,10 @@ export class InMemoryUserRepository implements UserRepository, OnModuleInit {
     this.logger.log(`Seeded ${seedUsers.length} users`);
   }
 
+  async findAll(): Promise<User[]> {
+    return Promise.resolve([...this.users.values()]);
+  }
+
   async findById(id: string): Promise<User | null> {
     return Promise.resolve(this.users.get(id) ?? null);
   }

@@ -80,6 +80,10 @@ export class InMemoryAccountRepository
     this.logger.log(`Seeded ${seedAccounts.length} accounts`);
   }
 
+  async findAll(): Promise<Account[]> {
+    return Promise.resolve([...this.accounts.values()]);
+  }
+
   async findById(id: string): Promise<Account | null> {
     return Promise.resolve(this.accounts.get(id) ?? null);
   }
