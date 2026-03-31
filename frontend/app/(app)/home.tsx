@@ -1,11 +1,11 @@
-import { View, ScrollView, RefreshControl, StatusBar } from 'react-native';
+import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity } from 'react-native';
 import { useEffect, useCallback, useMemo } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useContentStore, Movie } from '../../services/contentStore';
 import { useAdminStore } from '../../services/adminStore';
+import { useAuthStore } from '../../services/authStore';
 import { Hero } from '../../components/Hero';
 import { MediaRow } from '../../components/MediaRow';
-import { useRouter } from 'expo-router';
 
 // Order in which tag rows appear when present
 const TAG_ORDER = [
@@ -21,6 +21,10 @@ const TAG_ORDER = [
  * Displays a {@link Hero} banner for the featured item and dynamically
  * generated {@link MediaRow} rows grouped by tag/genre.
  *
+ * If the authenticated user's OTT access is restricted (`canAccessOtt === false`),
+ * a visible banner with the `restrictionMessage` is shown at the top. The rest of
+ * the UI is still rendered so the user understands they are logged in.
+ *
  * Behaviour:
  * - Initialises admin channels from the API on mount.
  * - Refreshes catalogue content every time the screen comes into focus.
@@ -30,10 +34,12 @@ const TAG_ORDER = [
  * State dependencies:
  * - `useContentStore` — featured item and trending list.
  * - `useAdminStore`   — admin-managed channels.
+ * - `useAuthStore`    — OTT access flags and logout action.
  */
 export default function Home() {
     const { featured: hardcodedFeatured, trending: hardcodedTrending, fetchContent, isLoading } = useContentStore();
     const adminChannels = useAdminStore((state) => state.channels);
+    const { canAccessOtt, restrictionMessage, logout } = useAuthStore();
     const router = useRouter();
 
     // Load channels from IndexedDB once on mount
@@ -112,9 +118,29 @@ export default function Home() {
         }
     };
 
+    const handleLogout = async () => {
+        await logout();
+        router.replace('/(auth)/login');
+    };
+
     return (
         <View className="flex-1 bg-luki-background">
             <StatusBar barStyle="light-content" />
+
+            {/* OTT restriction banner */}
+            {!canAccessOtt && restrictionMessage && (
+                <View style={{ backgroundColor: '#7f1d1d', padding: 12, paddingTop: 48 }}>
+                    <Text style={{ color: '#fca5a5', fontWeight: '600', textAlign: 'center', fontSize: 13 }}>
+                        ⚠️ {restrictionMessage}
+                    </Text>
+                    <TouchableOpacity onPress={handleLogout} style={{ marginTop: 8, alignItems: 'center' }}>
+                        <Text style={{ color: '#fca5a5', textDecorationLine: 'underline', fontSize: 12 }}>
+                            Cerrar sesión
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <ScrollView
                 className="flex-1"
                 refreshControl={
