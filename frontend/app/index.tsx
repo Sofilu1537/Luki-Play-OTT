@@ -1,24 +1,31 @@
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../services/authStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Application entry-point / auth-redirect gate.
  *
- * Reads the current auth state from {@link useAuthStore} and after a short
- * delay redirects to the appropriate route:
+ * On mount it calls {@link useAuthStore.restoreSession} to rehydrate any
+ * persisted session (tokens in localStorage / memory fallback). Once the
+ * restore attempt completes it redirects to the appropriate route:
  * - Authenticated user (has accessToken) → `/(app)/home`
  * - Unauthenticated user → `/(auth)/login`
  *
- * Shows an activity indicator while the redirect is being prepared.
+ * Shows an activity indicator while the session is being restored.
  */
 export default function Index() {
     const accessToken = useAuthStore((state) => state.accessToken);
+    const restoreSession = useAuthStore((state) => state.restoreSession);
     const router = useRouter();
+    const [restored, setRestored] = useState(false);
 
     useEffect(() => {
-        // Short timeout to ensure navigation is ready
+        restoreSession().finally(() => setRestored(true));
+    }, []);
+
+    useEffect(() => {
+        if (!restored) return;
         const timer = setTimeout(() => {
             if (accessToken) {
                 router.replace('/(app)/home');
@@ -27,11 +34,11 @@ export default function Index() {
             }
         }, 100);
         return () => clearTimeout(timer);
-    }, [accessToken]);
+    }, [restored, accessToken]);
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFD700' }}>
-            <ActivityIndicator size="large" color="#000000" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1A052E' }}>
+            <ActivityIndicator size="large" color="#FFC107" />
         </View>
     );
 }
