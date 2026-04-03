@@ -18,6 +18,16 @@ import { Audience } from '../../domain/entities/session.entity';
 import { LoginAppDto } from '../dto/login-app.dto';
 import { LoginChallengeResponse } from '../dto/auth-response.dto';
 
+/**
+ * Phase-1 of the two-phase app login flow.
+ *
+ * 1. Validates contract number + password.
+ * 2. Checks account status and OTT access eligibility.
+ * 3. Sends OTP to the user’s registered email.
+ * 4. Returns a short-lived loginToken for Phase-2 ({@link CompleteLoginUseCase}).
+ *
+ * @throws UnauthorizedException when credentials are invalid or account is inactive.
+ */
 @Injectable()
 export class LoginAppUseCase {
   private readonly logger = new Logger(LoginAppUseCase.name);

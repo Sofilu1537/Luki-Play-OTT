@@ -8,6 +8,12 @@ import type { BillingGateway } from '../../../billing/domain/interfaces/billing.
 import { getPermissionsForRole } from '../../../access-control/domain/permissions';
 import { UserProfileResponse } from '../dto/auth-response.dto';
 
+/**
+ * Retrieves the authenticated user’s full profile including
+ * account details, OTT access status, permissions, and entitlements.
+ *
+ * @throws NotFoundException when the user ID from the JWT no longer exists.
+ */
 @Injectable()
 export class GetCurrentUserUseCase {
   constructor(

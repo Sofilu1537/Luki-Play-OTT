@@ -8,6 +8,15 @@ import {
 import { SESSION_REPOSITORY } from '../../domain/interfaces/session.repository';
 import type { SessionRepository } from '../../domain/interfaces/session.repository';
 
+/**
+ * Revokes a single session by ID.
+ *
+ * Verifies ownership before deletion — a user can only revoke
+ * their own sessions.
+ *
+ * @throws NotFoundException when the session does not exist.
+ * @throws ForbiddenException when the session belongs to another user.
+ */
 @Injectable()
 export class RevokeSessionUseCase {
   private readonly logger = new Logger(RevokeSessionUseCase.name);

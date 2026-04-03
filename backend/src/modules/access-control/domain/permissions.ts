@@ -1,5 +1,11 @@
 import { UserRole } from '../../auth/domain/entities/user.entity';
 
+/**
+ * Static mapping from each {@link UserRole} to its granted permission strings.
+ *
+ * Permission format: `<scope>:<resource>` or `<scope>:<resource>:<action>`.
+ * The `cms:*` wildcard grants all CMS permissions.
+ */
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   [UserRole.SUPERADMIN]: [
     'cms:*',
@@ -21,6 +27,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   [UserRole.CLIENTE]: ['app:playback', 'app:profiles'],
 };
 
+/**
+ * Returns the list of permissions granted to the given role.
+ *
+ * @param role - The user role to look up.
+ * @returns Array of permission strings, empty if role is unknown.
+ */
 export function getPermissionsForRole(role: UserRole): string[] {
   return ROLE_PERMISSIONS[role] ?? [];
 }

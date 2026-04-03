@@ -5,6 +5,11 @@ import { OTP_SERVICE } from '../../domain/interfaces/otp.service';
 import type { OtpService } from '../../domain/interfaces/otp.service';
 import { RequestOtpDto } from '../dto/otp.dto';
 
+/**
+ * Sends (or resends) an OTP code to the user’s registered email.
+ *
+ * @throws NotFoundException when the contract number is not found or has no email.
+ */
 @Injectable()
 export class RequestOtpUseCase {
   private readonly logger = new Logger(RequestOtpUseCase.name);

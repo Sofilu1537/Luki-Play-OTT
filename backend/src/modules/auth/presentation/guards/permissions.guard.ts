@@ -2,6 +2,13 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 
+/**
+ * Guard that checks the authenticated user’s permissions against
+ * those required by the `@Permissions()` decorator.
+ *
+ * Supports wildcard permissions: `cms:*` matches any `cms:<resource>` permission.
+ * Passes through if no `@Permissions()` metadata is set.
+ */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

@@ -4,6 +4,12 @@ import type { SessionRepository } from '../../domain/interfaces/session.reposito
 import { HASH_SERVICE } from '../../domain/interfaces/hash.service';
 import type { HashService } from '../../domain/interfaces/hash.service';
 
+/**
+ * Logs out a user by deleting the session matching their refresh token.
+ *
+ * If no matching session is found (e.g. already revoked), the operation
+ * completes silently with a warning log.
+ */
 @Injectable()
 export class LogoutUseCase {
   private readonly logger = new Logger(LogoutUseCase.name);

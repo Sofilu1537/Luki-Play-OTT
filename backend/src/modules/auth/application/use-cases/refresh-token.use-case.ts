@@ -24,6 +24,14 @@ import type { BillingGateway } from '../../../billing/domain/interfaces/billing.
 import { AuthTokensResponse } from '../dto/auth-response.dto';
 import { randomUUID } from 'crypto';
 
+/**
+ * Rotates a refresh token and issues a new token pair.
+ *
+ * Detects token reuse attacks: if the incoming refresh token does not match
+ * any active session, all sessions for the user are revoked as a precaution.
+ *
+ * @throws UnauthorizedException on invalid/expired token or reuse detection.
+ */
 @Injectable()
 export class RefreshTokenUseCase {
   private readonly logger = new Logger(RefreshTokenUseCase.name);

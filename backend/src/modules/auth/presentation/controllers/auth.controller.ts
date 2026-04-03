@@ -46,6 +46,26 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import type { JwtPayload } from '../../domain/interfaces/token.service';
 
+/**
+ * REST controller for all authentication and session management operations.
+ *
+ * Endpoints are grouped under `/auth` and documented via Swagger.
+ *
+ * Public endpoints (no guard):
+ * - `POST /auth/app/login` — Phase-1 login
+ * - `POST /auth/app/verify-otp` — Phase-2 OTP verification
+ * - `POST /auth/cms/login` — CMS single-step login
+ * - `POST /auth/refresh` — Token rotation
+ * - `POST /auth/otp/request` — Request/resend OTP
+ * - `POST /auth/otp/verify` — Standalone OTP verification
+ *
+ * Protected endpoints (JwtAuthGuard):
+ * - `POST /auth/logout`
+ * - `GET  /auth/me`
+ * - `POST /auth/change-password`
+ * - `GET  /auth/sessions`
+ * - `DELETE /auth/sessions/:id`
+ */
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {

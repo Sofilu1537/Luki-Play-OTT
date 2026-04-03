@@ -5,6 +5,14 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { globalValidationPipe } from './common/pipes/validation.pipe';
 
+/**
+ * Bootstrap the NestJS application.
+ *
+ * Registers global pipes (validation), filters (exception handling),
+ * enables CORS, and mounts Swagger documentation at /api/docs.
+ *
+ * @remarks The application listens on the PORT environment variable (default 3000).
+ */
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);

@@ -2,6 +2,12 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
+/**
+ * Guard that checks the authenticated user’s role against
+ * the roles specified by the `@Roles()` decorator.
+ *
+ * Passes through if no `@Roles()` metadata is set.
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

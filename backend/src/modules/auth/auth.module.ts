@@ -43,6 +43,18 @@ import { AuthController } from './presentation/controllers/auth.controller';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 
+/**
+ * Authentication and session management module.
+ *
+ * Registers:
+ * - Domain ports bound to infrastructure adapters (in-memory repos, JWT, bcrypt, mock OTP)
+ * - All authentication use cases (login, OTP, refresh, logout, password change, sessions)
+ * - Passport JWT strategy and guards
+ *
+ * Exports:
+ * - TOKEN_SERVICE, HASH_SERVICE, USER_REPOSITORY, ACCOUNT_REPOSITORY
+ *   for consumption by other modules (e.g. AdminModule).
+ */
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),

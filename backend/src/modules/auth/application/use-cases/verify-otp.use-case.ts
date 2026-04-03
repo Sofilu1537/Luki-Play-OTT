@@ -11,6 +11,15 @@ import { OTP_SERVICE } from '../../domain/interfaces/otp.service';
 import type { OtpService } from '../../domain/interfaces/otp.service';
 import { VerifyOtpDto } from '../dto/otp.dto';
 
+/**
+ * Standalone OTP verification (does not issue tokens).
+ *
+ * Used for flows that require identity confirmation outside of login,
+ * such as password recovery or profile changes.
+ *
+ * @throws NotFoundException when the contract number is unknown.
+ * @throws UnauthorizedException when the OTP is invalid or expired.
+ */
 @Injectable()
 export class VerifyOtpUseCase {
   private readonly logger = new Logger(VerifyOtpUseCase.name);

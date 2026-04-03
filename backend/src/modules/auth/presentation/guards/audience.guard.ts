@@ -7,6 +7,13 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AUDIENCE_KEY } from '../decorators/audience.decorator';
 
+/**
+ * Guard that validates the JWT audience claim against the
+ * audiences required by the `@RequireAudience()` decorator.
+ *
+ * Throws {@link ForbiddenException} when the audience does not match.
+ * Passes through if no `@RequireAudience()` metadata is set.
+ */
 @Injectable()
 export class AudienceGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

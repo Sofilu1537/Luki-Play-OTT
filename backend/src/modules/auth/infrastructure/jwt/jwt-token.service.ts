@@ -9,6 +9,12 @@ import type {
 } from '../../domain/interfaces/token.service';
 import type { StringValue } from 'ms';
 
+/**
+ * JWT-based implementation of the {@link TokenService} port.
+ *
+ * Uses separate secrets for access and refresh tokens.
+ * Login challenge tokens use the access secret with a 5‑minute expiry.
+ */
 @Injectable()
 export class JwtTokenService implements TokenService {
   constructor(

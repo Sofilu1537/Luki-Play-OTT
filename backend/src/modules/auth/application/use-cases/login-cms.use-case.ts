@@ -18,6 +18,15 @@ import { LoginCmsDto } from '../dto/login-cms.dto';
 import { AuthTokensResponse } from '../dto/auth-response.dto';
 import { randomUUID } from 'crypto';
 
+/**
+ * Single-phase CMS login for admin/support staff.
+ *
+ * Validates email + password, verifies the user has a CMS role
+ * (SUPERADMIN or SOPORTE), and issues a JWT token pair.
+ * No OTP step is required for CMS access.
+ *
+ * @throws UnauthorizedException when credentials are invalid or role is CLIENTE.
+ */
 @Injectable()
 export class LoginCmsUseCase {
   private readonly logger = new Logger(LoginCmsUseCase.name);

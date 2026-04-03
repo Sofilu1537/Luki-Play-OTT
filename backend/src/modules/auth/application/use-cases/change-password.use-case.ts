@@ -12,6 +12,14 @@ import { SESSION_REPOSITORY } from '../../domain/interfaces/session.repository';
 import type { SessionRepository } from '../../domain/interfaces/session.repository';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 
+/**
+ * Changes the user’s password after validating the current one.
+ *
+ * After updating the password hash, all active sessions are revoked
+ * to force re-authentication on every device.
+ *
+ * @throws UnauthorizedException when the current password is wrong.
+ */
 @Injectable()
 export class ChangePasswordUseCase {
   private readonly logger = new Logger(ChangePasswordUseCase.name);

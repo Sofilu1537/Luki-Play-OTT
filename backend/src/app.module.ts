@@ -7,6 +7,18 @@ import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 
+/**
+ * Root application module.
+ *
+ * Imports all feature modules and configures global concerns:
+ * - {@link ConfigModule} — loads environment variables from .env
+ * - {@link ThrottlerModule} — rate limiting (20 requests per 60 s)
+ * - {@link AuthModule} — authentication and session management
+ * - {@link AccessControlModule} — role/permission guards
+ * - {@link BillingModule} — ISP billing gateway
+ * - {@link CrmModule} — customer relationship management gateway
+ * - {@link ProfilesModule} — user profiles (placeholder)
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

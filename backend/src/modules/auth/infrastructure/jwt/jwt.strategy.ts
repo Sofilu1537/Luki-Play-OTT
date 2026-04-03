@@ -4,6 +4,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../../domain/interfaces/token.service';
 
+/**
+ * Passport JWT strategy for bearer token authentication.
+ *
+ * Extracts the JWT from the Authorization header, verifies it
+ * against the configured access secret, and attaches the decoded
+ * {@link JwtPayload} to `request.user`.
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(configService: ConfigService) {
