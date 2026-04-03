@@ -70,7 +70,7 @@ export class JwtTokenService implements TokenService {
           'JWT_ACCESS_SECRET',
           'dev-access-secret',
         ),
-        expiresIn: '5m',
+        expiresIn: '10m',
       },
     );
   }

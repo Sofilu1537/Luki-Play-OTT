@@ -35,6 +35,17 @@ describe('LoginCmsUseCase', () => {
     compare: jest.fn(),
   };
 
+  const mockAttemptRepo = {
+    save: jest.fn(),
+    countRecentFailures: jest.fn().mockResolvedValue(0),
+  };
+
+  const mockAuditRepo = {
+    save: jest.fn(),
+    findAll: jest.fn(),
+    findByActorId: jest.fn(),
+  };
+
   let useCase: LoginCmsUseCase;
 
   const cmsUser = new User({
@@ -60,6 +71,8 @@ describe('LoginCmsUseCase', () => {
       mockSessionRepo as any,
       mockTokenService as any,
       mockHashService as any,
+      mockAttemptRepo as any,
+      mockAuditRepo as any,
     );
   });
 
