@@ -1,7 +1,13 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import type { UserRepository } from '../auth/domain/interfaces/user.repository';
 import { USER_REPOSITORY } from '../auth/domain/interfaces/user.repository';
+import type { SessionRepository } from '../auth/domain/interfaces/session.repository';
+import { SESSION_REPOSITORY } from '../auth/domain/interfaces/session.repository';
+import type { AuditLogRepository } from '../auth/domain/interfaces/audit-log.repository';
+import { AUDIT_LOG_REPOSITORY } from '../auth/domain/interfaces/audit-log.repository';
 import { User, UserRole, UserStatus } from '../auth/domain/entities/user.entity';
+import { AuditLog } from '../auth/domain/entities/audit-log.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -9,6 +15,8 @@ import { v4 as uuidv4 } from 'uuid';
 export class AdminService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
+    @Inject(SESSION_REPOSITORY) private readonly sessionRepository: SessionRepository,
+    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepository: AuditLogRepository,
   ) {}
 
   // ---- Users ---------------------------------------------------------------
@@ -75,12 +83,43 @@ export class AdminService {
     };
   }
 
+  async updateUserStatus(id: string, status: UserStatus, actorId: string): Promise<void> {
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+    const oldStatus = user.status;
+    user.status = status;
+    await this.userRepository.save(user);
+    if (status === UserStatus.INACTIVE || status === UserStatus.SUSPENDED) {
+      await this.sessionRepository.deleteAllByUserId(id);
+    }
+    await this.auditRepository.save(new AuditLog({
+      id: randomUUID(), actorId, action: 'user.status_changed',
+      targetId: id, targetType: 'user',
+      metadata: { oldStatus, newStatus: status },
+      createdAt: new Date(),
+    }));
+  }
+
   async deleteUser(id: string): Promise<void> {
     const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundException(`User ${id} not found`);
-    // In-memory repo: mark as inactive (no hard-delete method yet)
     user.status = UserStatus.INACTIVE;
     await this.userRepository.save(user);
+    await this.sessionRepository.deleteAllByUserId(id);
+  }
+
+  async revokeUserSessions(id: string, actorId: string): Promise<void> {
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+    await this.sessionRepository.deleteAllByUserId(id);
+    await this.auditRepository.save(new AuditLog({
+      id: randomUUID(), actorId, action: 'user.sessions_revoked',
+      targetId: id, targetType: 'user', metadata: {}, createdAt: new Date(),
+    }));
+  }
+
+  async getAuditLogs() {
+    return this.auditRepository.findAll(200);
   }
 
   // ---- Monitor -------------------------------------------------------------
@@ -158,17 +197,7 @@ export class AdminService {
   // ---- Helpers -------------------------------------------------------------
 
   private async getAllUsers(): Promise<User[]> {
-    // Known seed IDs + any dynamically created
-    const knownIds = [
-      'usr-001', 'usr-002', 'usr-003', 'usr-004', 'usr-ott-001',
-      'usr-admin-001', 'usr-soporte-001',
-    ];
-
-    const users: User[] = [];
-    for (const id of knownIds) {
-      const user = await this.userRepository.findById(id);
-      if (user && user.status !== UserStatus.INACTIVE) users.push(user);
-    }
-    return users;
+    const all = await this.userRepository.findAll();
+    return all.filter((u) => u.status !== UserStatus.INACTIVE);
   }
 }
