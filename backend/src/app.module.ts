@@ -6,6 +6,7 @@ import { AccessControlModule } from './modules/access-control/access-control.mod
 import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
     BillingModule,
     CrmModule,
     ProfilesModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

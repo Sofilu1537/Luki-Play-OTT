@@ -5,7 +5,7 @@
  * Errors are thrown as `Error` instances with a human-readable message.
  */
 
-const API_BASE_URL = 'http://localhost:3000';
+import { API_BASE_URL } from './config';
 
 /** Stable device ID used for CMS browser sessions in development. */
 const CMS_DEVICE_ID = 'luki-cms-browser-001';
