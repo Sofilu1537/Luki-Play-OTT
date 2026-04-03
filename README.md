@@ -14,7 +14,7 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 |---------------------|---------------------------------------------------------------|
 | **Nombre**          | LUKI Play OTT                                                 |
 | **Propósito**       | Plataforma OTT de streaming y contenido bajo demanda          |
-| **Estado**          | Desarrollo activo — Sprint 2 completado                       |
+| **Estado**          | v0.1.0-alpha — Sprint 2 completado                       |
 | **Autor**           | Marco Logacho — Director de Desarrollo Digital e IA, DataCom S.A. |
 | **Repositorio**     | https://github.com/Sofilu1537/Luki-Play-OTT                  |
 | **Zona horaria**    | America/Guayaquil (UTC-5)                                     |
