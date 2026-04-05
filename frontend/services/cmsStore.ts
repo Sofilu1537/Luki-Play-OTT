@@ -7,6 +7,34 @@ import {
   CmsLoginPayload,
 } from './api/cmsApi';
 
+const CMS_ACCESS_TOKEN_KEY = 'luki.cms.accessToken';
+const CMS_REFRESH_TOKEN_KEY = 'luki.cms.refreshToken';
+
+function canUseBrowserStorage() {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function readStoredToken(key: string) {
+  if (!canUseBrowserStorage()) return null;
+  return window.localStorage.getItem(key);
+}
+
+function writeStoredSession(accessToken: string, refreshToken: string | null) {
+  if (!canUseBrowserStorage()) return;
+  window.localStorage.setItem(CMS_ACCESS_TOKEN_KEY, accessToken);
+  if (refreshToken) {
+    window.localStorage.setItem(CMS_REFRESH_TOKEN_KEY, refreshToken);
+  } else {
+    window.localStorage.removeItem(CMS_REFRESH_TOKEN_KEY);
+  }
+}
+
+function clearStoredSession() {
+  if (!canUseBrowserStorage()) return;
+  window.localStorage.removeItem(CMS_ACCESS_TOKEN_KEY);
+  window.localStorage.removeItem(CMS_REFRESH_TOKEN_KEY);
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -27,8 +55,11 @@ interface CmsState {
   accessToken: string | null;
   refreshToken: string | null;
   isLoading: boolean;
+  isRestoring: boolean;
+  hasRestored: boolean;
   login: (payload: CmsLoginPayload) => Promise<void>;
   logout: () => void;
+  bootstrapSession: () => Promise<void>;
   restoreSession: (token: string) => Promise<void>;
 }
 
@@ -52,6 +83,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
   accessToken: null,
   refreshToken: null,
   isLoading: false,
+  isRestoring: false,
+  hasRestored: false,
 
   /**
    * Authenticate a CMS user with email + password.
@@ -64,11 +97,13 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     try {
       const tokens = await cmsLogin(payload);
       const profile = await cmsGetMe(tokens.accessToken);
+      writeStoredSession(tokens.accessToken, tokens.refreshToken);
       set({
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         profile,
         isLoading: false,
+        hasRestored: true,
       });
     } catch (e) {
       set({ isLoading: false });
@@ -85,7 +120,43 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     if (accessToken) {
       cmsLogout(accessToken);
     }
+    clearStoredSession();
     set({ profile: null, accessToken: null, refreshToken: null });
+  },
+
+  /**
+   * Restore the CMS session automatically from browser storage.
+   * Keeps deep-linked CMS pages accessible after a hard refresh.
+   */
+  bootstrapSession: async () => {
+    const storedAccessToken = readStoredToken(CMS_ACCESS_TOKEN_KEY);
+    const storedRefreshToken = readStoredToken(CMS_REFRESH_TOKEN_KEY);
+
+    if (!storedAccessToken) {
+      set({ hasRestored: true, isRestoring: false, profile: null, accessToken: null, refreshToken: null });
+      return;
+    }
+
+    set({ isRestoring: true });
+    try {
+      const profile = await cmsGetMe(storedAccessToken);
+      set({
+        profile,
+        accessToken: storedAccessToken,
+        refreshToken: storedRefreshToken,
+        isRestoring: false,
+        hasRestored: true,
+      });
+    } catch {
+      clearStoredSession();
+      set({
+        profile: null,
+        accessToken: null,
+        refreshToken: null,
+        isRestoring: false,
+        hasRestored: true,
+      });
+    }
   },
 
   /**
@@ -95,12 +166,14 @@ export const useCmsStore = create<CmsState>((set, get) => ({
    * @param token - Existing JWT access token.
    */
   restoreSession: async (token: string) => {
-    set({ isLoading: true });
+    set({ isLoading: true, isRestoring: true });
     try {
       const profile = await cmsGetMe(token);
-      set({ accessToken: token, profile, isLoading: false });
+      writeStoredSession(token, get().refreshToken);
+      set({ accessToken: token, profile, isLoading: false, isRestoring: false, hasRestored: true });
     } catch {
-      set({ profile: null, accessToken: null, refreshToken: null, isLoading: false });
+      clearStoredSession();
+      set({ profile: null, accessToken: null, refreshToken: null, isLoading: false, isRestoring: false, hasRestored: true });
     }
   },
 }));
