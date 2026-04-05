@@ -222,8 +222,9 @@ se deben reemplazar las implementaciones:
 | Servicio          | URL                                       |
 |-------------------|-------------------------------------------|
 | App OTT           | `http://<HOST>:8120`                      |
-| CMS Login         | `http://<HOST>:8120/cms/login`            |
-| Swagger API       | `http://<HOST>:8100/api/docs`             |
+| Login cliente OTT | `http://<HOST>:8120/login`     |
+| CMS Login         | `http://<HOST>:8120/cms/login` |
+| Swagger API       | `http://<HOST>:8120/api/docs`             |
 
 > Reemplazar `<HOST>` con la IP o dominio del servidor.
 > Las credenciales iniciales se encuentran en la raíz del README.
