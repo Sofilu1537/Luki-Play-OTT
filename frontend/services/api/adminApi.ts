@@ -869,12 +869,22 @@ export async function adminDeleteCanal(accessToken: string, id: string): Promise
 // ---------------------------------------------------------------------------
 
 const mockCategorias: AdminCategoria[] = [
-  { id: 'cat-001', nombre: 'Noticias',   descripcion: 'Canales de noticias nacionales e internacionales', icono: 'newspaper-o', activo: true },
-  { id: 'cat-002', nombre: 'Deportes',   descripcion: 'Fútbol, baseball, tenis y más',                   icono: 'futbol-o',    activo: true },
-  { id: 'cat-003', nombre: 'Cine',       descripcion: 'Películas y series de todos los géneros',          icono: 'film',        activo: true },
-  { id: 'cat-004', nombre: 'Infantil',   descripcion: 'Contenido seguro para niños',                      icono: 'child',       activo: true },
-  { id: 'cat-005', nombre: 'Música',     descripcion: 'Canales y listas de música',                       icono: 'music',       activo: true },
-  { id: 'cat-006', nombre: 'Documental', descripcion: 'Documentales y naturaleza',                        icono: 'globe',       activo: false },
+  { id: 'cat-001', nombre: 'Películas',              descripcion: 'Largometrajes, estrenos, cine clásico y especiales para el player.',               icono: 'film',           activo: true },
+  { id: 'cat-002', nombre: 'Series',                 descripcion: 'Series por temporadas, sagas y contenido episódico.',                             icono: 'list-alt',       activo: true },
+  { id: 'cat-003', nombre: 'Documentales',           descripcion: 'Historia, naturaleza, ciencia y especiales documentales.',                        icono: 'globe',          activo: true },
+  { id: 'cat-004', nombre: 'Infantil',               descripcion: 'Contenido para niños con curaduría y enfoque familiar.',                          icono: 'child',          activo: true },
+  { id: 'cat-005', nombre: 'Deportes',               descripcion: 'Eventos deportivos, resúmenes, ligas y programación especializada.',              icono: 'futbol-o',       activo: true },
+  { id: 'cat-006', nombre: 'Música y conciertos',    descripcion: 'Videoclips, conciertos, festivales y especiales musicales.',                     icono: 'music',          activo: true },
+  { id: 'cat-007', nombre: 'Noticias y actualidad',  descripcion: 'Cobertura informativa, análisis y noticias en tiempo real.',                      icono: 'newspaper-o',    activo: true },
+  { id: 'cat-008', nombre: 'Estilo de vida',         descripcion: 'Bienestar, moda, hogar, salud y entretenimiento lifestyle.',                      icono: 'heart-o',        activo: true },
+  { id: 'cat-009', nombre: 'Educación',              descripcion: 'Aprendizaje, formación, cursos y contenido didáctico.',                           icono: 'graduation-cap', active: true },
+  { id: 'cat-010', nombre: 'Religioso / espiritual', descripcion: 'Programación de fe, reflexión y contenido espiritual.',                            icono: 'sun-o',          activo: true },
+  { id: 'cat-011', nombre: 'Cocina',                 descripcion: 'Recetas, gastronomía, chefs y contenido culinario.',                              icono: 'cutlery',        activo: true },
+  { id: 'cat-012', nombre: 'Viajes',                 descripcion: 'Destinos, turismo, aventura y cultura internacional.',                            icono: 'plane',          activo: true },
+  { id: 'cat-013', nombre: 'Tecnología',             descripcion: 'Innovación, gadgets, software, ciencia aplicada y tendencias tech.',              icono: 'laptop',         activo: true },
+  { id: 'cat-014', nombre: 'Gaming / esports',       descripcion: 'Videojuegos, torneos, streamers y escena competitiva.',                           icono: 'gamepad',        activo: true },
+  { id: 'cat-015', nombre: 'Humor / comedia',        descripcion: 'Stand up, sketches, sitcoms y contenido de comedia.',                             icono: 'smile-o',        activo: true },
+  { id: 'cat-016', nombre: 'Reality shows',          descripcion: 'Reality, concursos, formatos de convivencia y entretenimiento no guionado.',      icono: 'television',     activo: true },
 ];
 
 export async function adminListCategorias(accessToken: string): Promise<AdminCategoria[]> {
