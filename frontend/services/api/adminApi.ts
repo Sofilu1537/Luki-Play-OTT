@@ -115,6 +115,10 @@ export interface AdminSlider {
   activo: boolean;
 }
 
+export type AdminSliderPayload = Omit<AdminSlider, 'id' | 'orden'> & {
+  orden?: number;
+};
+
 export interface AdminCanal {
   id: string;
   nombre: string;
@@ -713,15 +717,93 @@ export async function adminDeletePlan(accessToken: string, id: string): Promise<
 // Sliders
 // ---------------------------------------------------------------------------
 
-const mockSliders: AdminSlider[] = [
+let mockSlidersStore: AdminSlider[] = [
   { id: 'sl-001', titulo: 'Bienvenido a Luki Play', subtitulo: 'Tu entretenimiento sin límites', imagen: 'https://placehold.co/1200x400/5B5BD6/white?text=Slider+1', orden: 1, activo: true },
   { id: 'sl-002', titulo: 'Contenido 4K',          subtitulo: 'La mejor calidad de imagen',      imagen: 'https://placehold.co/1200x400/0EA5E9/white?text=Slider+2', orden: 2, activo: true },
   { id: 'sl-003', titulo: 'Deportes en Vivo',       subtitulo: 'No te pierdas ningún partido',   imagen: 'https://placehold.co/1200x400/10B981/white?text=Slider+3', orden: 3, activo: false },
 ];
 
+function normalizeSliderOrder(sliders: AdminSlider[]) {
+  return sliders.map((slider, index) => ({ ...slider, orden: index + 1 }));
+}
+
 export async function adminListSliders(accessToken: string): Promise<AdminSlider[]> {
   try { return await apiFetch<AdminSlider[]>('/admin/sliders', accessToken); }
-  catch { return [...mockSliders]; }
+  catch { return mockSlidersStore.map((slider) => ({ ...slider })).sort((a, b) => a.orden - b.orden); }
+}
+
+export async function adminCreateSlider(accessToken: string, data: AdminSliderPayload): Promise<AdminSlider> {
+  try {
+    return await apiFetch<AdminSlider>('/admin/sliders', accessToken, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const created: AdminSlider = {
+      id: `sl-${Date.now()}`,
+      titulo: data.titulo,
+      subtitulo: data.subtitulo,
+      imagen: data.imagen,
+      activo: data.activo,
+      orden: data.orden ?? mockSlidersStore.length + 1,
+    };
+    mockSlidersStore = normalizeSliderOrder([...mockSlidersStore, created]);
+    return { ...created };
+  }
+}
+
+export async function adminUpdateSlider(accessToken: string, id: string, data: Partial<AdminSliderPayload>): Promise<AdminSlider> {
+  try {
+    return await apiFetch<AdminSlider>(`/admin/sliders/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const index = mockSlidersStore.findIndex((slider) => slider.id === id);
+    if (index === -1) throw new Error('Slider no encontrado');
+    mockSlidersStore[index] = {
+      ...mockSlidersStore[index],
+      ...data,
+      orden: data.orden ?? mockSlidersStore[index].orden,
+    };
+    mockSlidersStore = normalizeSliderOrder([...mockSlidersStore].sort((a, b) => a.orden - b.orden));
+    return { ...mockSlidersStore.find((slider) => slider.id === id)! };
+  }
+}
+
+export async function adminToggleSlider(accessToken: string, id: string): Promise<AdminSlider> {
+  try {
+    return await apiFetch<AdminSlider>(`/admin/sliders/${id}/toggle`, accessToken, { method: 'POST' });
+  } catch {
+    const index = mockSlidersStore.findIndex((slider) => slider.id === id);
+    if (index === -1) throw new Error('Slider no encontrado');
+    mockSlidersStore[index] = { ...mockSlidersStore[index], activo: !mockSlidersStore[index].activo };
+    return { ...mockSlidersStore[index] };
+  }
+}
+
+export async function adminDeleteSlider(accessToken: string, id: string): Promise<void> {
+  try {
+    await apiFetch<void>(`/admin/sliders/${id}`, accessToken, { method: 'DELETE' });
+  } catch {
+    mockSlidersStore = normalizeSliderOrder(mockSlidersStore.filter((slider) => slider.id !== id));
+  }
+}
+
+export async function adminReorderSliders(accessToken: string, orderedIds: string[]): Promise<AdminSlider[]> {
+  try {
+    return await apiFetch<AdminSlider[]>('/admin/sliders/reorder', accessToken, {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    });
+  } catch {
+    const mapped = orderedIds
+      .map((id) => mockSlidersStore.find((slider) => slider.id === id))
+      .filter((slider): slider is AdminSlider => Boolean(slider));
+    const untouched = mockSlidersStore.filter((slider) => !orderedIds.includes(slider.id));
+    mockSlidersStore = normalizeSliderOrder([...mapped, ...untouched]);
+    return mockSlidersStore.map((slider) => ({ ...slider }));
+  }
 }
 
 // ---------------------------------------------------------------------------
