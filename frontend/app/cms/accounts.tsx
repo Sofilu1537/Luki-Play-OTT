@@ -34,8 +34,8 @@ const MOCK_ACCOUNTS: AccountRow[] = [
 ];
 
 const STATUS_COLORS: Record<ServiceStatus, string> = {
-  ACTIVO: '#22C55E', CORTESIA: '#10B981', PENDIENTE: '#F59E0B',
-  SUSPENDIDO: '#F87171', ANULADO: '#64748B', CORTADO: '#EF4444',
+  ACTIVO: C.green, CORTESIA: C.green, PENDIENTE: C.amber,
+  SUSPENDIDO: C.rose, ANULADO: C.muted, CORTADO: C.rose,
 };
 
 export default function CmsAccounts() {
@@ -64,15 +64,15 @@ export default function CmsAccounts() {
       <View style={{ flex: 1 }}>
         {/* Filters */}
         <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 14 }}>
-          <Text style={{ color: 'white', fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
+          <Text style={{ color: C.text, fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
             Contratos / Cuentas
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 12 }}>
             <FontAwesome name="search" size={13} color={C.muted} />
             <TextInput
-              style={{ flex: 1, color: 'white', paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, ...webInput }}
+              style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, ...webInput }}
               placeholder="Buscar por contrato o email..."
-              placeholderTextColor="#475569"
+              placeholderTextColor={C.muted}
               value={search}
               onChangeText={setSearch}
             />
@@ -84,7 +84,7 @@ export default function CmsAccounts() {
                   key={s}
                   style={{
                     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-                    backgroundColor: statusFilter === s ? C.accent : C.surface,
+                    backgroundColor: statusFilter === s ? C.accent : C.lift,
                     borderWidth: 1, borderColor: statusFilter === s ? C.accent : C.border,
                   }}
                   onPress={() => setStatusFilter(s)}
@@ -100,7 +100,7 @@ export default function CmsAccounts() {
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}>
           {/* Table header */}
-          <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#0D1B2E', borderRadius: 8, marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.lift, borderRadius: 8, marginBottom: 6 }}>
             {[['CONTRATO', 1.8], ['EMAIL', 2], ['TIPO', 1], ['ESTADO', 1.5], ['OTT', 0.6]].map(([h, flex]) => (
               <Text key={String(h)} style={{ color: C.muted, fontSize: 10, fontWeight: '700', flex: Number(flex), letterSpacing: 0.4 }}>
                 {String(h)}
@@ -121,13 +121,13 @@ export default function CmsAccounts() {
                 }}
               >
                 <View style={{ flex: 1.8 }}>
-                  <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>{acc.contractNumber}</Text>
+                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{acc.contractNumber}</Text>
                   <Text style={{ color: C.muted, fontSize: 10, marginTop: 1 }}>ID: {acc.id}</Text>
                 </View>
                 <Text style={{ color: C.textDim, fontSize: 12, flex: 2 }} numberOfLines={1}>{acc.ownerEmail}</Text>
                 <View style={{ flex: 1 }}>
-                  <View style={{ backgroundColor: acc.contractType === 'ISP' ? '#1E3A5F' : `${C.accent}33`, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
-                    <Text style={{ color: acc.contractType === 'ISP' ? '#60A5FA' : C.accentLight, fontSize: 10, fontWeight: '700' }}>{acc.contractType}</Text>
+                  <View style={{ backgroundColor: acc.contractType === 'ISP' ? C.cyanSoft : C.accentSoft, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+                    <Text style={{ color: acc.contractType === 'ISP' ? C.cyan : C.accentLight, fontSize: 10, fontWeight: '700' }}>{acc.contractType}</Text>
                   </View>
                 </View>
                 <View style={{ flex: 1.5 }}>
@@ -136,7 +136,7 @@ export default function CmsAccounts() {
                   </View>
                 </View>
                 <View style={{ flex: 0.6 }}>
-                  <FontAwesome name={acc.canAccessOtt ? 'check-circle' : 'times-circle'} size={16} color={acc.canAccessOtt ? '#22C55E' : '#F87171'} />
+                  <FontAwesome name={acc.canAccessOtt ? 'check-circle' : 'times-circle'} size={16} color={acc.canAccessOtt ? C.green : C.rose} />
                 </View>
               </View>
             );

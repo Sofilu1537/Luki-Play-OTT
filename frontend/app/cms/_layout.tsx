@@ -3,12 +3,8 @@ import { Stack } from 'expo-router';
 /**
  * Layout for the CMS route group.
  *
- * Provides a headerless Stack navigator for all CMS screens:
- * - `login`     — CMS login (email + password, no OTP)
- * - `dashboard` — summary cards + sidebar navigation
- * - `users`     — users table with role filter
- * - `accounts`  — contracts/accounts table with status badges
- * - `sessions`  — active sessions table
+ * Provides a headerless Stack navigator for all CMS screens.
+ * Navigation order and visibility are controlled from the shared CMS shell.
  */
 export default function CmsLayout() {
   return (

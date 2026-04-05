@@ -12,26 +12,99 @@ import { API_BASE_URL } from './config';
 export interface AdminUser {
   id: string;
   nombre: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
   telefono: string | null;
   plan: string;
+  planId: string | null;
   fechaInicio: string;
   fechaFin: string;
   sesiones: number;
   contrato: string | null;
-  status: string;
-  role: string;
+  status: 'active' | 'inactive' | 'suspended';
+  role: 'superadmin' | 'soporte' | 'cliente';
+  mustChangePassword: boolean;
+  mfaEnabled: boolean;
+  isLocked: boolean;
+  lockedUntil: string | null;
+  lastLoginAt: string | null;
+  maxDevices: number;
+  sessionDurationDays: number;
+  sessionLimitPolicy: 'block_new' | 'replace_oldest';
+  isCmsUser: boolean;
+  isSubscriber: boolean;
+}
+
+export interface AdminUserPayload {
+  nombre?: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  telefono?: string;
+  plan?: string;
+  planId?: string;
+  contrato?: string;
+  role?: AdminUser['role'];
+  status?: AdminUser['status'];
+  maxDevices?: number;
+  sessionDurationDays?: number;
+  sessionLimitPolicy?: AdminUser['sessionLimitPolicy'];
+}
+
+export interface AdminUserSession {
+  id: string;
+  deviceId: string;
+  audience: string;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  status: 'active' | 'expired' | 'revoked';
+}
+
+export interface AdminUserPlan {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  duracionDias: number;
+  maxDevices: number;
+  maxConcurrentStreams: number;
+  maxProfiles: number;
+  videoQuality: AdminPlan['videoQuality'];
+  allowDownloads: boolean;
+  allowCasting: boolean;
+  hasAds: boolean;
+  trialDays: number;
+  gracePeriodDays: number;
+  entitlements: AdminPlan['entitlements'];
+  allowedComponentIds: string[];
+  allowedCategoryIds: string[];
 }
 
 export interface AdminPlan {
   id: string;
   nombre: string;
+  descripcion: string;
+  grupoUsuarios: 'INDIVIDUAL' | 'FAMILIAR' | 'ISP_BUNDLE' | 'EMPRESARIAL' | 'PROMOCIONAL';
   precio: number;
   moneda: string;
   duracionDias: number;
-  descripcion: string;
   activo: boolean;
+  maxDevices: number;
+  maxConcurrentStreams: number;
+  maxProfiles: number;
+  videoQuality: 'SD' | 'HD' | 'FHD' | '4K';
+  allowDownloads: boolean;
+  allowCasting: boolean;
+  hasAds: boolean;
+  trialDays: number;
+  gracePeriodDays: number;
+  entitlements: Array<'live-tv' | 'vod-basic' | 'vod-premium' | 'series' | 'kids' | 'sports' | 'radio' | '4k' | 'downloads' | 'ppv'>;
+  allowedComponentIds: string[];
+  allowedCategoryIds: string[];
 }
+
+export type AdminPlanPayload = Omit<AdminPlan, 'id'>;
 
 export interface AdminSlider {
   id: string;
@@ -123,29 +196,13 @@ async function apiFetch<T>(
 let mockUsersStore: AdminUser[] = buildMockUsers();
 
 function buildMockUsers(): AdminUser[] {
-  const plans = ['Full', 'Basic', 'Premium', 'Full'];
-  const statuses = ['ACTIVO', 'ACTIVO', 'ACTIVO', 'SUSPENDIDO', 'CORTADO'];
   const rawUsers = [
-    { nombre: 'JOSE MORA',        email: 'josemoral1984g@gmail.com',  telefono: null,          contrato: 'CONTRACT-001' },
-    { nombre: 'NEGRETE MONICA',   email: 'negretemonika489@gmail.com', telefono: '6647673852',  contrato: 'CONTRACT-002' },
-    { nombre: 'RODRIGUEZ CARLOS', email: 'carlos.rod@hotmail.com',    telefono: '3001234567',  contrato: 'CONTRACT-003' },
-    { nombre: 'GARCIA ANA',       email: 'ana.garcia@gmail.com',      telefono: '3109876543',  contrato: 'CONTRACT-004' },
-    { nombre: 'LOPEZ PEDRO',      email: 'pedro.lopez@gmail.com',     telefono: null,          contrato: null },
-    { nombre: 'MARTINEZ LUISA',   email: 'luisa.m@outlook.com',       telefono: '3204567890',  contrato: 'CONTRACT-005' },
-    { nombre: 'HERNANDEZ JORGE',  email: 'jhernandez@gmail.com',      telefono: '3156789012',  contrato: 'CONTRACT-006' },
-    { nombre: 'TORRES CAMILA',    email: 'camila.torres@gmail.com',   telefono: null,          contrato: 'CONTRACT-007' },
-    { nombre: 'VARGAS DIANA',     email: 'dvargas2024@gmail.com',     telefono: '3012345678',  contrato: null },
-    { nombre: 'SANCHEZ MIGUEL',   email: 'msanchez@hotmail.com',      telefono: '3189012345',  contrato: 'CONTRACT-008' },
-    { nombre: 'RAMIREZ ANDREA',   email: 'andrea.ramirez@gmail.com',  telefono: '3024567890',  contrato: 'CONTRACT-009' },
-    { nombre: 'CASTRO ROBERTO',   email: 'rcastro@yahoo.com',         telefono: null,          contrato: null },
-    { nombre: 'ORTIZ NATALIA',    email: 'natalia.ortiz@gmail.com',   telefono: '3134567890',  contrato: 'CONTRACT-010' },
-    { nombre: 'MORALES FELIPE',   email: 'fmorales@gmail.com',        telefono: '3167891234',  contrato: 'CONTRACT-011' },
-    { nombre: 'PEREZ VALENTINA',  email: 'vperez@hotmail.com',        telefono: '3053456789',  contrato: 'CONTRACT-012' },
-    { nombre: 'ROJAS ALEJANDRO',  email: 'arojas@gmail.com',          telefono: null,          contrato: 'CONTRACT-013' },
-    { nombre: 'SILVA CAROLINA',   email: 'carolina.silva@gmail.com',  telefono: '3087654321',  contrato: null },
-    { nombre: 'GOMEZ SERGIO',     email: 'sgomez@outlook.com',        telefono: '3221234567',  contrato: 'CONTRACT-014' },
-    { nombre: 'DIAZ PAOLA',       email: 'paola.diaz@gmail.com',      telefono: '3145678901',  contrato: 'CONTRACT-015' },
-    { nombre: 'LEON JUAN',        email: 'jleon2023@gmail.com',       telefono: null,          contrato: 'CONTRACT-016' },
+    { nombre: 'Admin Principal', firstName: 'Admin', lastName: 'Principal', email: 'admin@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'superadmin' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const },
+    { nombre: 'Agente Soporte', firstName: 'Agente', lastName: 'Soporte', email: 'soporte@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'soporte' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const },
+    { nombre: 'JOSE MORA', firstName: 'Jose', lastName: 'Mora', email: 'josemoral1984g@gmail.com', telefono: null, contrato: 'CONTRACT-001', plan: 'Basic', planId: 'plan-basic', role: 'cliente' as const, status: 'active' as const, maxDevices: 2, sessionDurationDays: 15, sessionLimitPolicy: 'block_new' as const },
+    { nombre: 'NEGRETE MONICA', firstName: 'Monica', lastName: 'Negrete', email: 'negretemonika489@gmail.com', telefono: '6647673852', contrato: 'CONTRACT-002', plan: 'Premium', planId: 'plan-premium', role: 'cliente' as const, status: 'active' as const, maxDevices: 5, sessionDurationDays: 30, sessionLimitPolicy: 'replace_oldest' as const },
+    { nombre: 'RODRIGUEZ CARLOS', firstName: 'Carlos', lastName: 'Rodriguez', email: 'carlos.rod@hotmail.com', telefono: '3001234567', contrato: 'CONTRACT-003', plan: 'Familiar', planId: 'plan-family', role: 'cliente' as const, status: 'suspended' as const, maxDevices: 8, sessionDurationDays: 30, sessionLimitPolicy: 'replace_oldest' as const },
+    { nombre: 'PEDRO RAMIREZ', firstName: 'Pedro', lastName: 'Ramirez', email: 'pedro@example.com', telefono: '+57300999000', contrato: 'OTT-000001', plan: 'OTT Básico', planId: 'plan-ott-basic', role: 'cliente' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 20, sessionLimitPolicy: 'block_new' as const },
   ];
 
   const now = new Date();
@@ -157,31 +214,65 @@ function buildMockUsers(): AdminUser[] {
     return {
       id: `usr-${String(i + 1).padStart(3, '0')}`,
       nombre: u.nombre,
+      firstName: u.firstName,
+      lastName: u.lastName,
       email: u.email,
       telefono: u.telefono,
-      plan: plans[i % plans.length],
+      plan: u.plan,
+      planId: u.planId,
       fechaInicio: start.toISOString().slice(0, 10),
       fechaFin: end.toISOString().slice(0, 10),
-      sesiones: Math.floor(Math.random() * 5) + 1,
+      sesiones: i < 2 ? 1 : Math.min(3, u.maxDevices),
       contrato: u.contrato,
-      status: statuses[i % statuses.length],
-      role: u.contrato ? 'CLIENTE' : 'CLIENTE',
+      status: u.status,
+      role: u.role,
+      mustChangePassword: u.role !== 'cliente',
+      mfaEnabled: u.role !== 'cliente' && i === 0,
+      isLocked: i === 4,
+      lockedUntil: i === 4 ? new Date(Date.now() + 30 * 60000).toISOString() : null,
+      lastLoginAt: new Date(Date.now() - (i + 1) * 3600000).toISOString(),
+      maxDevices: u.maxDevices,
+      sessionDurationDays: u.sessionDurationDays,
+      sessionLimitPolicy: u.sessionLimitPolicy,
+      isCmsUser: u.role !== 'cliente',
+      isSubscriber: u.role === 'cliente',
     };
   });
 }
+
+let mockUserSessionsStore: Record<string, AdminUserSession[]> = {
+  'usr-001': [{ id: 'ses-001', deviceId: 'cms-admin-web', audience: 'cms', createdAt: new Date(Date.now() - 3600000).toISOString(), expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), revokedAt: null, status: 'active' }],
+  'usr-002': [{ id: 'ses-002', deviceId: 'cms-soporte-web', audience: 'cms', createdAt: new Date(Date.now() - 7200000).toISOString(), expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), revokedAt: null, status: 'active' }],
+  'usr-003': [
+    { id: 'ses-003a', deviceId: 'Televisor LG', audience: 'tv', createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), expiresAt: new Date(Date.now() + 6 * 86400000).toISOString(), revokedAt: null, status: 'active' },
+    { id: 'ses-003b', deviceId: 'Celular', audience: 'mobile', createdAt: new Date(Date.now() - 26 * 3600000).toISOString(), expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(), revokedAt: null, status: 'active' },
+    { id: 'ses-003c', deviceId: 'Computador', audience: 'web', createdAt: new Date(Date.now() - 9 * 3600000).toISOString(), expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(), revokedAt: null, status: 'active' },
+  ],
+};
 
 export async function adminListUsers(accessToken: string): Promise<AdminUser[]> {
   try {
     return await apiFetch<AdminUser[]>('/admin/users', accessToken);
   } catch {
     // Backend not yet wired → return mock data
-    return [...mockUsersStore];
+    syncAllMockUsersWithPlans();
+    return mockUsersStore.map((user) => ({ ...user }));
+  }
+}
+
+export async function adminGetUser(accessToken: string, id: string): Promise<AdminUser> {
+  try {
+    return await apiFetch<AdminUser>(`/admin/users/${id}`, accessToken);
+  } catch {
+    const user = mockUsersStore.find((item) => item.id === id);
+    if (!user) throw new Error('Usuario no encontrado');
+    return { ...syncUserPlanLink(user) };
   }
 }
 
 export async function adminCreateUser(
   accessToken: string,
-  data: { nombre: string; email: string; telefono: string; plan: string; contrato: string },
+  data: AdminUserPayload,
 ): Promise<AdminUser> {
   try {
     return await apiFetch<AdminUser>('/admin/users', accessToken, {
@@ -189,25 +280,173 @@ export async function adminCreateUser(
       body: JSON.stringify(data),
     });
   } catch {
-    // Fallback mock
     const now = new Date();
     const end = new Date(now);
     end.setDate(end.getDate() + 30);
+    const role = data.role ?? 'cliente';
+    const fullName = data.nombre?.trim() || `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim() || data.email.split('@')[0];
+    const selectedPlan = role === 'cliente' ? findCatalogPlan(data.planId, data.plan) ?? getDefaultSubscriberPlan() : null;
     const newUser: AdminUser = {
       id: `usr-${Date.now()}`,
-      nombre: data.nombre.toUpperCase(),
+      nombre: role === 'cliente' ? fullName.toUpperCase() : fullName,
+      firstName: data.firstName ?? null,
+      lastName: data.lastName ?? null,
       email: data.email,
       telefono: data.telefono || null,
-      plan: data.plan,
+      plan: role === 'cliente' ? selectedPlan?.nombre ?? 'Sin plan' : 'Usuario CMS',
+      planId: role === 'cliente' ? selectedPlan?.id ?? null : null,
       fechaInicio: now.toISOString().slice(0, 10),
       fechaFin: end.toISOString().slice(0, 10),
       sesiones: 0,
-      contrato: data.contrato || null,
-      status: 'ACTIVO',
-      role: 'CLIENTE',
+      contrato: role === 'cliente' ? data.contrato || `OTT-${Date.now()}` : null,
+      status: data.status ?? 'active',
+      role,
+      mustChangePassword: role !== 'cliente',
+      mfaEnabled: false,
+      isLocked: false,
+      lockedUntil: null,
+      lastLoginAt: null,
+      maxDevices: role === 'cliente' ? data.maxDevices ?? selectedPlan?.maxDevices ?? 3 : 3,
+      sessionDurationDays: data.sessionDurationDays ?? (role === 'cliente' ? 30 : 7),
+      sessionLimitPolicy: data.sessionLimitPolicy ?? 'block_new',
+      isCmsUser: role !== 'cliente',
+      isSubscriber: role === 'cliente',
     };
-    mockUsersStore = [newUser, ...mockUsersStore];
-    return newUser;
+    mockUsersStore = [syncUserPlanLink(newUser), ...mockUsersStore];
+    return { ...mockUsersStore[0] };
+  }
+}
+
+export async function adminUpdateUser(
+  accessToken: string,
+  id: string,
+  data: AdminUserPayload,
+): Promise<AdminUser> {
+  try {
+    return await apiFetch<AdminUser>(`/admin/users/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const index = mockUsersStore.findIndex((user) => user.id === id);
+    if (index === -1) throw new Error('Usuario no encontrado');
+    const current = mockUsersStore[index];
+    const nextRole = data.role ?? current.role;
+    const isSubscriber = nextRole === 'cliente';
+    const fullName = data.nombre?.trim() || `${data.firstName ?? current.firstName ?? ''} ${data.lastName ?? current.lastName ?? ''}`.trim() || current.nombre;
+    const selectedPlan = isSubscriber
+      ? findCatalogPlan(data.planId ?? current.planId, data.plan ?? current.plan) ?? getDefaultSubscriberPlan()
+      : null;
+    const updated: AdminUser = {
+      ...current,
+      nombre: isSubscriber ? fullName.toUpperCase() : fullName,
+      firstName: data.firstName ?? current.firstName,
+      lastName: data.lastName ?? current.lastName,
+      email: data.email ?? current.email,
+      telefono: data.telefono ?? current.telefono,
+      plan: isSubscriber ? selectedPlan?.nombre ?? current.plan : 'Usuario CMS',
+      planId: isSubscriber ? selectedPlan?.id ?? null : null,
+      contrato: isSubscriber ? data.contrato ?? current.contrato : null,
+      status: data.status ?? current.status,
+      role: nextRole,
+      maxDevices: isSubscriber ? data.maxDevices ?? current.maxDevices ?? selectedPlan?.maxDevices ?? 3 : 3,
+      sessionDurationDays: data.sessionDurationDays ?? current.sessionDurationDays,
+      sessionLimitPolicy: data.sessionLimitPolicy ?? current.sessionLimitPolicy,
+      isCmsUser: !isSubscriber,
+      isSubscriber,
+    };
+    mockUsersStore[index] = syncUserPlanLink(updated);
+    return { ...mockUsersStore[index] };
+  }
+}
+
+export async function adminUpdateUserStatus(accessToken: string, id: string, status: AdminUser['status']): Promise<AdminUser> {
+  try {
+    return await apiFetch<AdminUser>(`/admin/users/${id}/status`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  } catch {
+    const index = mockUsersStore.findIndex((user) => user.id === id);
+    if (index === -1) throw new Error('Usuario no encontrado');
+    mockUsersStore[index] = { ...mockUsersStore[index], status };
+    return { ...mockUsersStore[index] };
+  }
+}
+
+export async function adminSetUserPassword(accessToken: string, id: string, newPassword: string, revokeSessions = true): Promise<{ message: string }> {
+  try {
+    return await apiFetch<{ message: string }>(`/admin/users/${id}/password`, accessToken, {
+      method: 'POST',
+      body: JSON.stringify({ newPassword, revokeSessions }),
+    });
+  } catch {
+    if (revokeSessions) {
+      mockUserSessionsStore[id] = [];
+      const index = mockUsersStore.findIndex((user) => user.id === id);
+      if (index >= 0) {
+        mockUsersStore[index] = { ...mockUsersStore[index], sesiones: 0, mustChangePassword: true };
+      }
+    }
+    return { message: 'Contraseña actualizada y sesiones revocadas.' };
+  }
+}
+
+export async function adminListUserSessions(accessToken: string, id: string): Promise<AdminUserSession[]> {
+  try {
+    return await apiFetch<AdminUserSession[]>(`/admin/users/${id}/sessions`, accessToken);
+  } catch {
+    return [...(mockUserSessionsStore[id] ?? [])];
+  }
+}
+
+export async function adminRevokeUserSession(accessToken: string, id: string, sessionId: string): Promise<{ message: string }> {
+  try {
+    return await apiFetch<{ message: string }>(`/admin/users/${id}/sessions/${sessionId}`, accessToken, { method: 'DELETE' });
+  } catch {
+    mockUserSessionsStore[id] = (mockUserSessionsStore[id] ?? []).map((session) => session.id === sessionId ? { ...session, revokedAt: new Date().toISOString(), status: 'revoked' } : session);
+    const activeCount = (mockUserSessionsStore[id] ?? []).filter((session) => session.status === 'active').length;
+    mockUsersStore = mockUsersStore.map((user) => user.id === id ? { ...user, sesiones: activeCount } : user);
+    return { message: 'Sesión revocada.' };
+  }
+}
+
+export async function adminRevokeAllUserSessions(accessToken: string, id: string): Promise<{ message: string }> {
+  try {
+    return await apiFetch<{ message: string }>(`/admin/users/${id}/sessions`, accessToken, { method: 'DELETE' });
+  } catch {
+    mockUserSessionsStore[id] = (mockUserSessionsStore[id] ?? []).map((session) => ({ ...session, revokedAt: new Date().toISOString(), status: 'revoked' }));
+    mockUsersStore = mockUsersStore.map((user) => user.id === id ? { ...user, sesiones: 0 } : user);
+    return { message: 'Todas las sesiones fueron revocadas.' };
+  }
+}
+
+export async function adminGetUserPlan(accessToken: string, id: string): Promise<AdminUserPlan> {
+  try {
+    return await apiFetch<AdminUserPlan>(`/admin/users/${id}/plan`, accessToken);
+  } catch {
+    const user = mockUsersStore.find((item) => item.id === id);
+    const syncedUser = user ? syncUserPlanLink(user) : null;
+    const plan = findCatalogPlan(syncedUser?.planId, syncedUser?.plan) ?? getDefaultSubscriberPlan();
+    if (!plan) throw new Error('Plan no encontrado');
+    return {
+      id: plan.id,
+      nombre: plan.nombre,
+      descripcion: plan.descripcion,
+      duracionDias: plan.duracionDias,
+      maxDevices: syncedUser?.maxDevices ?? plan.maxDevices,
+      maxConcurrentStreams: plan.maxConcurrentStreams,
+      maxProfiles: plan.maxProfiles,
+      videoQuality: plan.videoQuality,
+      allowDownloads: plan.allowDownloads,
+      allowCasting: plan.allowCasting,
+      hasAds: plan.hasAds,
+      trialDays: plan.trialDays,
+      gracePeriodDays: plan.gracePeriodDays,
+      entitlements: [...plan.entitlements],
+      allowedComponentIds: [...plan.allowedComponentIds],
+      allowedCategoryIds: [...plan.allowedCategoryIds],
+    };
   }
 }
 
@@ -215,7 +454,7 @@ export async function adminDeleteUser(accessToken: string, id: string): Promise<
   try {
     await apiFetch<void>(`/admin/users/${id}`, accessToken, { method: 'DELETE' });
   } catch {
-    mockUsersStore = mockUsersStore.filter((u) => u.id !== id);
+    mockUsersStore = mockUsersStore.map((u) => (u.id === id ? { ...u, status: 'inactive' } : u));
   }
 }
 
@@ -223,16 +462,244 @@ export async function adminDeleteUser(accessToken: string, id: string): Promise<
 // Plans
 // ---------------------------------------------------------------------------
 
-const mockPlans: AdminPlan[] = [
-  { id: 'plan-001', nombre: 'Basic',   precio: 9.99,  moneda: 'USD', duracionDias: 30, descripcion: 'Acceso básico a contenido estándar',   activo: true },
-  { id: 'plan-002', nombre: 'Full',    precio: 19.99, moneda: 'USD', duracionDias: 30, descripcion: 'Acceso completo a todo el catálogo',     activo: true },
-  { id: 'plan-003', nombre: 'Premium', precio: 29.99, moneda: 'USD', duracionDias: 30, descripcion: 'Acceso Premium con 4K y descargas',      activo: true },
-  { id: 'plan-004', nombre: 'ISP Bundle', precio: 0, moneda: 'USD', duracionDias: 30, descripcion: 'Incluido con plan de internet del ISP', activo: true },
+let mockPlansStore: AdminPlan[] = [
+  {
+    id: 'plan-basic',
+    nombre: 'Basic',
+    descripcion: 'Acceso básico a TV en vivo y VOD esencial.',
+    grupoUsuarios: 'INDIVIDUAL',
+    precio: 9.99,
+    moneda: 'USD',
+    duracionDias: 30,
+    activo: true,
+    maxDevices: 2,
+    maxConcurrentStreams: 1,
+    maxProfiles: 2,
+    videoQuality: 'HD',
+    allowDownloads: false,
+    allowCasting: true,
+    hasAds: true,
+    trialDays: 0,
+    gracePeriodDays: 2,
+    entitlements: ['live-tv', 'vod-basic'],
+    allowedComponentIds: ['comp-001', 'comp-003'],
+    allowedCategoryIds: ['cat-001', 'cat-003'],
+  },
+  {
+    id: 'plan-premium',
+    nombre: 'Premium',
+    descripcion: 'Experiencia premium con 4K, descargas y catálogo ampliado.',
+    grupoUsuarios: 'FAMILIAR',
+    precio: 29.99,
+    moneda: 'USD',
+    duracionDias: 30,
+    activo: true,
+    maxDevices: 5,
+    maxConcurrentStreams: 4,
+    maxProfiles: 6,
+    videoQuality: '4K',
+    allowDownloads: true,
+    allowCasting: true,
+    hasAds: false,
+    trialDays: 7,
+    gracePeriodDays: 5,
+    entitlements: ['live-tv', 'vod-basic', 'vod-premium', 'series', 'kids', 'sports', '4k', 'downloads'],
+    allowedComponentIds: ['comp-001', 'comp-002', 'comp-003', 'comp-004', 'comp-007', 'comp-008'],
+    allowedCategoryIds: ['cat-001', 'cat-002', 'cat-003', 'cat-004'],
+  },
+  {
+    id: 'plan-family',
+    nombre: 'Familiar',
+    descripcion: 'Plan multiusuario con perfiles ampliados para el hogar.',
+    grupoUsuarios: 'FAMILIAR',
+    precio: 19.99,
+    moneda: 'USD',
+    duracionDias: 30,
+    activo: true,
+    maxDevices: 8,
+    maxConcurrentStreams: 3,
+    maxProfiles: 7,
+    videoQuality: 'FHD',
+    allowDownloads: true,
+    allowCasting: true,
+    hasAds: false,
+    trialDays: 3,
+    gracePeriodDays: 3,
+    entitlements: ['live-tv', 'vod-basic', 'vod-premium', 'series', 'kids'],
+    allowedComponentIds: ['comp-001', 'comp-003', 'comp-004', 'comp-007'],
+    allowedCategoryIds: ['cat-003', 'cat-004'],
+  },
+  {
+    id: 'plan-ott-basic',
+    nombre: 'OTT Básico',
+    descripcion: 'Acceso OTT standalone para clientes sin bundle ISP.',
+    grupoUsuarios: 'ISP_BUNDLE',
+    precio: 0,
+    moneda: 'USD',
+    duracionDias: 30,
+    activo: true,
+    maxDevices: 3,
+    maxConcurrentStreams: 1,
+    maxProfiles: 3,
+    videoQuality: 'HD',
+    allowDownloads: false,
+    allowCasting: true,
+    hasAds: false,
+    trialDays: 0,
+    gracePeriodDays: 0,
+    entitlements: ['live-tv', 'vod-basic'],
+    allowedComponentIds: ['comp-001', 'comp-003'],
+    allowedCategoryIds: ['cat-001', 'cat-003'],
+  },
 ];
+
+function getDefaultSubscriberPlan() {
+  return mockPlansStore.find((plan) => plan.activo) ?? mockPlansStore[0] ?? null;
+}
+
+function findCatalogPlan(planId?: string | null, planName?: string | null) {
+  if (planId) {
+    const byId = mockPlansStore.find((plan) => plan.id === planId);
+    if (byId) return byId;
+  }
+
+  if (planName?.trim()) {
+    const normalizedName = planName.trim().toLowerCase();
+    const byName = mockPlansStore.find((plan) => plan.nombre.trim().toLowerCase() === normalizedName);
+    if (byName) return byName;
+
+    const byDerivedId = mockPlansStore.find((plan) => plan.id === buildPlanId(planName));
+    if (byDerivedId) return byDerivedId;
+  }
+
+  return null;
+}
+
+function syncUserPlanLink(user: AdminUser): AdminUser {
+  const isSubscriber = user.role === 'cliente';
+
+  if (!isSubscriber) {
+    return {
+      ...user,
+      plan: 'Usuario CMS',
+      planId: null,
+      isCmsUser: true,
+      isSubscriber: false,
+    };
+  }
+
+  const linkedPlan = findCatalogPlan(user.planId, user.plan) ?? getDefaultSubscriberPlan();
+
+  return {
+    ...user,
+    plan: linkedPlan?.nombre ?? user.plan,
+    planId: linkedPlan?.id ?? null,
+    isCmsUser: false,
+    isSubscriber: true,
+  };
+}
+
+function syncAllMockUsersWithPlans() {
+  mockUsersStore = mockUsersStore.map((user) => syncUserPlanLink(user));
+}
+
+function clonePlan(plan: AdminPlan): AdminPlan {
+  return {
+    ...plan,
+    entitlements: [...plan.entitlements],
+    allowedComponentIds: [...plan.allowedComponentIds],
+    allowedCategoryIds: [...plan.allowedCategoryIds],
+  };
+}
+
+function buildPlanId(nombre: string) {
+  const normalized = nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized.startsWith('plan-') ? normalized : `plan-${normalized}`;
+}
+
+function ensureUniquePlanId(baseId: string) {
+  if (!mockPlansStore.some((plan) => plan.id === baseId)) return baseId;
+  let suffix = 2;
+  while (mockPlansStore.some((plan) => plan.id === `${baseId}-${suffix}`)) {
+    suffix += 1;
+  }
+  return `${baseId}-${suffix}`;
+}
 
 export async function adminListPlans(accessToken: string): Promise<AdminPlan[]> {
   try { return await apiFetch<AdminPlan[]>('/admin/planes', accessToken); }
-  catch { return [...mockPlans]; }
+  catch {
+    syncAllMockUsersWithPlans();
+    return mockPlansStore.map(clonePlan);
+  }
+}
+
+export async function adminCreatePlan(accessToken: string, data: AdminPlanPayload): Promise<AdminPlan> {
+  try {
+    return await apiFetch<AdminPlan>('/admin/planes', accessToken, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const newPlan: AdminPlan = {
+      ...data,
+      id: ensureUniquePlanId(buildPlanId(data.nombre)),
+      entitlements: [...data.entitlements],
+      allowedComponentIds: [...data.allowedComponentIds],
+      allowedCategoryIds: [...data.allowedCategoryIds],
+    };
+    mockPlansStore = [newPlan, ...mockPlansStore];
+    syncAllMockUsersWithPlans();
+    return clonePlan(newPlan);
+  }
+}
+
+export async function adminUpdatePlan(accessToken: string, id: string, data: Partial<AdminPlanPayload>): Promise<AdminPlan> {
+  try {
+    return await apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const index = mockPlansStore.findIndex((plan) => plan.id === id);
+    if (index === -1) throw new Error('Plan no encontrado');
+    const updated: AdminPlan = {
+      ...mockPlansStore[index],
+      ...data,
+      entitlements: data.entitlements ? [...data.entitlements] : [...mockPlansStore[index].entitlements],
+      allowedComponentIds: data.allowedComponentIds ? [...data.allowedComponentIds] : [...mockPlansStore[index].allowedComponentIds],
+      allowedCategoryIds: data.allowedCategoryIds ? [...data.allowedCategoryIds] : [...mockPlansStore[index].allowedCategoryIds],
+    };
+    mockPlansStore[index] = updated;
+    syncAllMockUsersWithPlans();
+    return clonePlan(updated);
+  }
+}
+
+export async function adminTogglePlan(accessToken: string, id: string): Promise<AdminPlan> {
+  try {
+    return await apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
+  } catch {
+    const index = mockPlansStore.findIndex((plan) => plan.id === id);
+    if (index === -1) throw new Error('Plan no encontrado');
+    mockPlansStore[index] = { ...mockPlansStore[index], activo: !mockPlansStore[index].activo };
+    syncAllMockUsersWithPlans();
+    return clonePlan(mockPlansStore[index]);
+  }
+}
+
+export async function adminDeletePlan(accessToken: string, id: string): Promise<void> {
+  try {
+    await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
+  } catch {
+    mockPlansStore = mockPlansStore.filter((plan) => plan.id !== id);
+    syncAllMockUsersWithPlans();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -309,7 +776,7 @@ export async function adminGetMonitorStats(accessToken: string): Promise<Monitor
   catch {
     return {
       totalUsuarios: mockUsersStore.length,
-      usuariosActivos: mockUsersStore.filter((u) => u.status === 'ACTIVO').length,
+      usuariosActivos: mockUsersStore.filter((u) => u.status === 'active').length,
       sesionesActivas: 12,
       contratosActivos: mockUsersStore.filter((u) => u.contrato).length,
       ingresosMes: 4820.50,

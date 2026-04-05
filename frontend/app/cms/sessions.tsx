@@ -86,11 +86,11 @@ export default function CmsSessions() {
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 24, paddingBottom: 16 }}>
           <View>
-            <Text style={{ color: 'white', fontSize: 20, fontWeight: '800' }}>Sesiones activas</Text>
+            <Text style={{ color: C.text, fontSize: 20, fontWeight: '800' }}>Sesiones activas</Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 2 }}>{sessions.length} sesión{sessions.length !== 1 ? 'es' : ''}</Text>
           </View>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.lift, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border }}
             onPress={fetchSessions}
             disabled={loading}
           >
@@ -106,11 +106,11 @@ export default function CmsSessions() {
               <Text style={{ color: C.muted, marginTop: 14, fontSize: 14 }}>Cargando sesiones…</Text>
             </View>
           ) : error ? (
-            <View style={{ backgroundColor: '#3F1515', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: '#7F1D1D', alignItems: 'center' }}>
-              <FontAwesome name="exclamation-circle" size={28} color="#F87171" />
-              <Text style={{ color: '#F87171', fontSize: 14, marginTop: 10, textAlign: 'center' }}>{error}</Text>
+            <View style={{ backgroundColor: C.roseSoft, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)', alignItems: 'center' }}>
+              <FontAwesome name="exclamation-circle" size={28} color={C.rose} />
+              <Text style={{ color: C.rose, fontSize: 14, marginTop: 10, textAlign: 'center' }}>{error}</Text>
               <TouchableOpacity
-                style={{ marginTop: 16, backgroundColor: C.surface, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: C.border }}
+                style={{ marginTop: 16, backgroundColor: C.lift, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: C.border }}
                 onPress={fetchSessions}
               >
                 <Text style={{ color: C.textDim, fontWeight: '600', fontSize: 13 }}>Reintentar</Text>
@@ -121,12 +121,12 @@ export default function CmsSessions() {
               <View style={{ width: 72, height: 72, backgroundColor: C.surface, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border, marginBottom: 14 }}>
                 <FontAwesome name="lock" size={28} color={C.muted} />
               </View>
-              <Text style={{ color: 'white', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>Sin sesiones activas</Text>
+              <Text style={{ color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 6 }}>Sin sesiones activas</Text>
               <Text style={{ color: C.muted, fontSize: 13 }}>No hay sesiones activas para esta cuenta.</Text>
             </View>
           ) : (
             <>
-              <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#0D1B2E', borderRadius: 8, marginBottom: 6 }}>
+              <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.lift, borderRadius: 8, marginBottom: 6 }}>
                 {[['DISPOSITIVO', 2], ['AUDIENCIA', 1.5], ['INICIO', 2], ['EXPIRA', 2], ['ACCIÓN', 0.8]].map(([h, flex]) => (
                   <Text key={String(h)} style={{ color: C.muted, fontSize: 10, fontWeight: '700', flex: Number(flex), letterSpacing: 0.4 }}>
                     {String(h)}
@@ -145,11 +145,11 @@ export default function CmsSessions() {
                   }}
                 >
                   <View style={{ flex: 2 }}>
-                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }} numberOfLines={1}>{session.deviceId}</Text>
+                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '600' }} numberOfLines={1}>{session.deviceId}</Text>
                     <Text style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>ID: {session.id.slice(0, 12)}…</Text>
                   </View>
                   <View style={{ flex: 1.5 }}>
-                    <View style={{ backgroundColor: `${C.accent}33`, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: `${C.accent}66` }}>
+                    <View style={{ backgroundColor: C.accentSoft, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: C.accentBorder }}>
                       <Text style={{ color: C.accentLight, fontSize: 10, fontWeight: '700' }}>{session.audience}</Text>
                     </View>
                   </View>
@@ -158,9 +158,9 @@ export default function CmsSessions() {
                   <View style={{ flex: 0.8 }}>
                     <TouchableOpacity
                       style={{
-                        backgroundColor: '#3F1515', borderRadius: 8, padding: 8,
+                        backgroundColor: C.roseSoft, borderRadius: 8, padding: 8,
                         alignItems: 'center', justifyContent: 'center',
-                        borderWidth: 1, borderColor: '#7F1D1D',
+                        borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)',
                         opacity: revoking === session.id ? 0.6 : 1,
                         width: 34, height: 34,
                       }}
@@ -168,8 +168,8 @@ export default function CmsSessions() {
                       disabled={revoking === session.id}
                     >
                       {revoking === session.id
-                        ? <ActivityIndicator size="small" color="#F87171" />
-                        : <FontAwesome name="ban" size={13} color="#F87171" />}
+                        ? <ActivityIndicator size="small" color={C.rose} />
+                        : <FontAwesome name="ban" size={13} color={C.rose} />}
                     </TouchableOpacity>
                   </View>
                 </View>

@@ -81,7 +81,7 @@ export default function CmsMonitor() {
               <StatCard label="Total Usuarios"   value={stats.totalUsuarios}   icon="users"      color="#5B5BD6" />
               <StatCard label="Usuarios Activos" value={stats.usuariosActivos} icon="user-circle" color="#10B981" sub={`${Math.round(stats.usuariosActivos / stats.totalUsuarios * 100)}% del total`} />
               <StatCard label="Sesiones Activas" value={stats.sesionesActivas} icon="lock"        color="#F59E0B" />
-              <StatCard label="Contratos Activos" value={stats.contratosActivos} icon="file-text" color="#0EA5E9" />
+              <StatCard label="Abonados Activos" value={stats.contratosActivos} icon="play-circle" color="#0EA5E9" />
               <StatCard label="Ingresos del Mes" value={`$${stats.ingresosMes.toLocaleString('es-CO')}`} icon="dollar" color="#4ADE80" />
             </View>
 

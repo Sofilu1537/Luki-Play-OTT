@@ -1,39 +1,146 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
 export const C = {
-  void: '#050B17', panel: '#070E1D', surface: '#0C1829', lift: '#102236',
-  border: 'rgba(255,255,255,0.06)', borderMid: 'rgba(255,255,255,0.11)',
-  accent: '#7B5EF8', accentGlow: 'rgba(123,94,248,0.22)',
-  accentLight: '#A78BFA', accentFaint: 'rgba(123,94,248,0.08)', accentBorder: 'rgba(123,94,248,0.30)',
-  cyan: '#22D3EE', green: '#10B981', amber: '#FBBF24', rose: '#F43F5E',
-  text: '#EFF6FF', textSec: '#94A3B8', muted: '#3F5475', dimmed: '#1C2E45',
+  void: '#060606',
+  panel: 'rgba(17, 17, 17, 0.94)',
+  surface: 'rgba(24, 24, 24, 0.9)',
+  lift: 'rgba(34, 34, 34, 0.94)',
+  border: 'rgba(255,255,255,0.08)',
+  borderMid: 'rgba(255,198,41,0.24)',
+  accent: '#FFC629',
+  accentGlow: 'rgba(255,198,41,0.24)',
+  accentLight: '#FFE08A',
+  accentFaint: 'rgba(255,198,41,0.12)',
+  accentBorder: 'rgba(255,198,41,0.34)',
+  stone: '#D7CBB8',
+  green: '#9BBF63',
+  amber: '#FFDA6B',
+  rose: '#FF7A59',
+  text: '#F5F1E8',
+  textSec: '#CBC2B2',
+  muted: '#827A6A',
+  dimmed: '#151515',
 };
 
-interface NavItem { label: string; icon: string; path: string; soon?: boolean; }
+interface NavItem {
+  label: string;
+  icon: string;
+  path: string;
+  soon?: boolean;
+}
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Usuarios',         icon: '👥', path: '/users' },
-  { label: 'Componentes',      icon: '⊞',  path: '/componentes',           soon: true },
-  { label: 'Planes',           icon: '💳', path: '/planes' },
-  { label: 'Canales',          icon: '📺', path: '/canales' },
-  { label: 'Categorías',       icon: '🏷', path: '/categorias' },
-  { label: 'Sliders',          icon: '🖼', path: '/sliders' },
-  { label: 'Monitor',          icon: '📊', path: '/monitor' },
-  { label: 'Notific. Admin',   icon: '🔔', path: '/notificaciones-admin',   soon: true },
-  { label: 'Analítica',        icon: '📈', path: '/analitica',              soon: true },
-  { label: 'Propaganda',       icon: '📣', path: '/propaganda',             soon: true },
-  { label: 'Notific. Abonado', icon: '💬', path: '/notificaciones-abonado', soon: true },
-  { label: 'Abonado',          icon: '👤', path: '/abonado',                soon: true },
+  { label: 'Usuarios', icon: 'users', path: '/users' },
+  { label: 'Componentes', icon: 'grid', path: '/componentes', soon: true },
+  { label: 'Planes', icon: 'wallet', path: '/planes' },
+  { label: 'Canales', icon: 'screen', path: '/canales' },
+  { label: 'Categorías', icon: 'tag', path: '/categorias' },
+  { label: 'Sliders', icon: 'image', path: '/sliders' },
+  { label: 'Monitor', icon: 'chart', path: '/monitor' },
+  { label: 'Notific. Admin', icon: 'bell', path: '/notificaciones-admin', soon: true },
+  { label: 'Analítica', icon: 'chart', path: '/analitica', soon: true },
+  { label: 'Propaganda', icon: 'megaphone', path: '/propaganda', soon: true },
+  { label: 'Notific. Abonado', icon: 'bell', path: '/notificaciones-abonado', soon: true },
+  { label: 'Abonado', icon: 'person', path: '/abonado', soon: true },
 ];
 
 function getDisplayName(email: string, first?: string | null, last?: string | null) {
   if (first && last) return `${first} ${last}`;
   if (first) return first;
-  return email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function renderIcon(icon: string, active: boolean) {
+  const color = active ? C.accent : C.textSec;
+  const common = { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none' } as const;
+
+  switch (icon) {
+    case 'users':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M16 19a4 4 0 0 0-8 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="12" cy="10" r="3.2" stroke={color} strokeWidth="1.8" />
+          <path d="M6 19a3.6 3.6 0 0 0-3-3.4M18 15.6A3.6 3.6 0 0 1 21 19" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'grid':
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="4" y="4" width="6" height="6" rx="1.4" stroke={color} strokeWidth="1.8" />
+          <rect x="14" y="4" width="6" height="6" rx="1.4" stroke={color} strokeWidth="1.8" />
+          <rect x="4" y="14" width="6" height="6" rx="1.4" stroke={color} strokeWidth="1.8" />
+          <rect x="14" y="14" width="6" height="6" rx="1.4" stroke={color} strokeWidth="1.8" />
+        </svg>
+      );
+    case 'wallet':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 15.5v-7Z" stroke={color} strokeWidth="1.8" />
+          <path d="M4 9h14.5A1.5 1.5 0 0 1 20 10.5v1A1.5 1.5 0 0 1 18.5 13H17" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="16.6" cy="11" r=".8" fill={color} />
+        </svg>
+      );
+    case 'screen':
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="3.5" y="5" width="17" height="11" rx="2" stroke={color} strokeWidth="1.8" />
+          <path d="M9 19h6M12 16v3" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'tag':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M11 4H6.8A1.8 1.8 0 0 0 5 5.8V10l6.3 6.3a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8L11 4Z" stroke={color} strokeWidth="1.8" />
+          <circle cx="8.4" cy="7.8" r="1" fill={color} />
+        </svg>
+      );
+    case 'image':
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke={color} strokeWidth="1.8" />
+          <circle cx="9" cy="9" r="1.5" fill={color} />
+          <path d="m6.5 16 3.5-3.5 2.5 2.5 2.5-3 2.5 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'chart':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M5 19V9m7 10V5m7 14v-7" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M4 19h16" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'bell':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M6.5 9.6a5.5 5.5 0 1 1 11 0c0 4.1 1.8 5 1.8 5H4.7s1.8-.9 1.8-5Z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M10 18a2 2 0 0 0 4 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'megaphone':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M4 13V9.5a1.5 1.5 0 0 1 1.5-1.5H8l8-3v14l-8-3H5.5A1.5 1.5 0 0 1 4 13Z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="m8 15 1.5 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'person':
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="8" r="3.2" stroke={color} strokeWidth="1.8" />
+          <path d="M6.5 19a5.5 5.5 0 0 1 11 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="7" stroke={color} strokeWidth="1.8" />
+        </svg>
+      );
+  }
 }
 
 export default function CmsShell({ children, title }: { children: React.ReactNode; title?: string }) {
@@ -42,14 +149,30 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
   const { user, clearSession } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Close menu on outside click
   useEffect(() => {
-    if (!menuOpen) return;
-    const handler = () => setMenuOpen(false);
+    const syncViewport = () => setIsMobile(window.innerWidth < 1100);
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    return () => window.removeEventListener('resize', syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen && !navOpen) return;
+    const handler = () => {
+      setMenuOpen(false);
+      if (isMobile) setNavOpen(false);
+    };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
-  }, [menuOpen]);
+  }, [isMobile, menuOpen, navOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+    setNavOpen(false);
+  }, [pathname]);
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -58,195 +181,437 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
   }
 
   const displayName = user ? getDisplayName(user.email, user.firstName, user.lastName) : '';
-  const initials = displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const isActive = (path: string) => pathname?.includes(path) ?? false;
+  const initials = displayName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase();
+  const isActive = (path: string) => pathname === path || pathname?.startsWith(`${path}/`) || false;
+  const sidebarWidth = 264;
+  const navItems = NAV_ITEMS.map((item) => ({
+    ...item,
+    active: isActive(item.path),
+    iconNode: renderIcon(item.icon, isActive(item.path)),
+  }));
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: C.void }}>
-      {/* SIDEBAR */}
-      <aside style={{
-        width: 220, background: C.panel, borderRight: `1px solid ${C.border}`,
-        display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 40,
-      }}>
-        {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: `1px solid ${C.border}` }}>
-          <span style={{ fontWeight: 900, fontSize: 17, letterSpacing: -0.5 }}>
-            <span style={{ color: C.text }}>LUKI </span>
-            <span style={{ color: C.accent }}>PLAY</span>
-          </span>
-          <p style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 2, marginTop: 4 }}>
-            PANEL ADMIN
-          </p>
+    <div style={{ display: 'flex', minHeight: '100vh', background: C.void, color: C.text }}>
+      {isMobile && navOpen && (
+        <button
+          aria-label="Cerrar navegación"
+          onClick={() => setNavOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 45,
+            background: 'rgba(0,0,0,0.62)',
+            border: 'none',
+            backdropFilter: 'blur(8px)',
+            cursor: 'pointer',
+          }}
+        />
+      )}
+
+      <aside
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: sidebarWidth,
+          background: `linear-gradient(180deg, ${C.panel} 0%, rgba(12,12,12,0.98) 100%)`,
+          borderRight: `1px solid ${C.border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100vh',
+          zIndex: 50,
+          padding: 18,
+          boxShadow: isMobile ? '0 24px 80px rgba(0,0,0,0.5)' : 'none',
+          transform: isMobile ? `translateX(${navOpen ? '0' : '-108%'})` : 'translateX(0)',
+          transition: 'transform 0.28s ease, box-shadow 0.28s ease',
+        }}
+      >
+        <div style={{
+          padding: '18px 16px',
+          border: `1px solid ${C.border}`,
+          borderRadius: 24,
+          background: 'linear-gradient(180deg, rgba(255,198,41,0.10), rgba(255,198,41,0.02))',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+          marginBottom: 18,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+            <div>
+              <span style={{ display: 'block', fontFamily: 'Sora, sans-serif', fontWeight: 800, fontSize: 20, letterSpacing: -0.7 }}>
+                <span style={{ color: C.text }}>LUKI</span>{' '}
+                <span style={{ color: C.accent }}>NET</span>
+              </span>
+              <p style={{ color: C.muted, fontSize: 10, fontWeight: 800, letterSpacing: 2.4, marginTop: 6 }}>
+                CONTROL CENTER
+              </p>
+            </div>
+            <div style={{
+              minWidth: 50,
+              padding: '8px 10px',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${C.border}`,
+              textAlign: 'center',
+            }}>
+              <div style={{ color: C.accent, fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 700, lineHeight: 1 }}>24</div>
+              <div style={{ color: C.muted, fontSize: 9, letterSpacing: 1.2, marginTop: 4 }}>LIVE</div>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 12px',
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.025)',
+            border: `1px solid ${C.border}`,
+          }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: C.green, boxShadow: '0 0 0 6px rgba(155,191,99,0.12)' }} />
+            <div>
+              <p style={{ color: C.text, fontSize: 12, fontWeight: 700 }}>Operación estable</p>
+              <p style={{ color: C.muted, fontSize: 11 }}>Panel activo y listo para gestión</p>
+            </div>
+          </div>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(item.path);
-            return (
+        <nav style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+          <p style={{ color: C.muted, fontSize: 11, fontWeight: 800, letterSpacing: 2.2, margin: '6px 12px 14px' }}>
+            NAVEGACIÓN
+          </p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {navItems.map((item) => (
               <Link
                 key={item.path}
                 href={item.soon ? '#' : item.path}
+                onClick={(event) => item.soon && event.preventDefault()}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '9px 20px', textDecoration: 'none',
-                  position: 'relative', cursor: item.soon ? 'default' : 'pointer',
-                  background: active ? C.accentFaint : 'transparent',
-                  borderLeft: `3px solid ${active ? C.accent : 'transparent'}`,
-                  transition: 'background 0.15s',
+                  display: 'grid',
+                  gridTemplateColumns: '20px 1fr auto',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '13px 14px',
+                  textDecoration: 'none',
+                  borderRadius: 18,
+                  border: `1px solid ${item.active ? C.accentBorder : C.border}`,
+                  background: item.active
+                    ? 'linear-gradient(135deg, rgba(255,198,41,0.18), rgba(255,198,41,0.05))'
+                    : 'rgba(255,255,255,0.02)',
+                  boxShadow: item.active ? `0 18px 40px ${C.accentGlow}` : 'none',
+                  cursor: item.soon ? 'default' : 'pointer',
+                  transition: 'transform 0.18s ease, border-color 0.18s ease, background 0.18s ease',
                 }}
-                onClick={(e) => item.soon && e.preventDefault()}
               >
-                <span style={{ fontSize: 14, opacity: item.soon ? 0.4 : 1 }}>{item.icon}</span>
-                <span style={{
-                  fontSize: 13, fontWeight: active ? 700 : 400,
-                  color: active ? C.accentLight : item.soon ? C.muted : C.textSec,
-                  flex: 1,
-                }}>{item.label}</span>
-                {item.soon && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', opacity: item.soon ? 0.42 : 1 }}>
+                  {item.iconNode}
+                </span>
+                <span style={{ color: item.active ? C.text : item.soon ? C.muted : C.textSec, fontSize: 13, fontWeight: item.active ? 800 : 700 }}>
+                  {item.label}
+                </span>
+                {item.soon ? (
                   <span style={{
-                    fontSize: 9, fontWeight: 700, color: C.muted,
-                    background: C.dimmed, borderRadius: 4, padding: '2px 5px', letterSpacing: 1,
-                  }}>PRÓ</span>
-                )}
+                    fontSize: 9,
+                    fontWeight: 800,
+                    color: C.muted,
+                    background: 'rgba(255,255,255,0.04)',
+                    borderRadius: 999,
+                    padding: '4px 8px',
+                    letterSpacing: 1.2,
+                  }}>
+                    PROX
+                  </span>
+                ) : item.active ? (
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.accent, boxShadow: `0 0 18px ${C.accentGlow}` }} />
+                ) : null}
               </Link>
-            );
-          })}
+            ))}
+          </div>
         </nav>
 
-        {/* Footer */}
-        <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: C.green }} />
-            <span style={{ color: C.muted, fontSize: 11 }}>Sistema en línea</span>
+        <div style={{
+          marginTop: 18,
+          padding: '16px 14px',
+          borderRadius: 22,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+          border: `1px solid ${C.border}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+            <span style={{ color: C.text, fontSize: 12, fontWeight: 700 }}>LUKI NET CMS</span>
+            <span style={{ color: C.accent, fontSize: 10, fontWeight: 800, letterSpacing: 1.3 }}>LOCAL</span>
           </div>
-          <p style={{ color: C.dimmed, fontSize: 10, marginTop: 6 }}>v2.0 · Luki Play</p>
+          <p style={{ color: C.muted, fontSize: 11, lineHeight: 1.45, marginBottom: 14 }}>
+            Diseño premium alineado a marca, listo para revisión local antes de despliegue.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.green }} />
+            <span style={{ color: C.textSec, fontSize: 11 }}>Sistema en línea</span>
+          </div>
         </div>
       </aside>
 
-      {/* MAIN */}
-      <div style={{ marginLeft: 220, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        {/* TOPBAR */}
+      <div style={{ marginLeft: isMobile ? 0 : sidebarWidth, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <header style={{
-          height: 60, background: C.panel,
-          borderBottom: `1px solid ${C.border}`,
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 28px', position: 'sticky', top: 0, zIndex: 30,
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
+          padding: isMobile ? '18px 18px 0' : '24px 28px 0',
+          backdropFilter: 'blur(18px)',
         }}>
-          {/* Page title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 3, height: 18, background: C.accent, borderRadius: 2 }} />
-            <span style={{ color: C.text, fontSize: 15, fontWeight: 700 }}>{title ?? 'Panel'}</span>
-          </div>
+          <div style={{
+            minHeight: 84,
+            borderRadius: 28,
+            border: `1px solid ${C.border}`,
+            background: 'linear-gradient(180deg, rgba(20,20,20,0.92), rgba(13,13,13,0.88))',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            padding: isMobile ? '16px 18px' : '18px 22px 18px 24px',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+              {isMobile && (
+                <button
+                  aria-label="Abrir navegación"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setNavOpen(true);
+                  }}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    border: `1px solid ${C.border}`,
+                    background: 'rgba(255,255,255,0.03)',
+                    color: C.text,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{ display: 'grid', gap: 4 }}>
+                    <span style={{ width: 16, height: 2, borderRadius: 99, background: C.text }} />
+                    <span style={{ width: 16, height: 2, borderRadius: 99, background: C.text }} />
+                    <span style={{ width: 16, height: 2, borderRadius: 99, background: C.text }} />
+                  </span>
+                </button>
+              )}
 
-          {/* Right side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Bell */}
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 16, padding: 4 }}>🔔</button>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <span style={{
+                    padding: '6px 10px',
+                    borderRadius: 999,
+                    background: C.accentFaint,
+                    border: `1px solid ${C.accentBorder}`,
+                    color: C.accentLight,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: 1.4,
+                  }}>
+                    LUKI NET BRAND UI
+                  </span>
+                  <span style={{ color: C.muted, fontSize: 11, letterSpacing: 1.4 }}>OPERACIÓN ADMINISTRATIVA</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                  <h1 style={{ margin: 0, color: C.text, fontFamily: 'Sora, sans-serif', fontSize: isMobile ? 24 : 28, fontWeight: 700, letterSpacing: -0.8 }}>
+                    {title ?? 'Panel'}
+                  </h1>
+                  <span style={{ color: C.textSec, fontSize: 13 }}>Monitoreo, gestión y control en una sola vista</span>
+                </div>
+              </div>
+            </div>
 
-            {/* User button */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginLeft: 'auto' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid ${C.border}`,
+              }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: C.green, boxShadow: '0 0 0 6px rgba(155,191,99,0.12)' }} />
+                <div>
+                  <p style={{ color: C.text, fontSize: 11, fontWeight: 700 }}>Backend sincronizado</p>
+                  <p style={{ color: C.muted, fontSize: 10 }}>Sesión segura activa</p>
+                </div>
+              </div>
+
               <button
-                onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+                aria-label="Notificaciones"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  background: C.surface, border: `1px solid ${C.border}`,
-                  borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
+                  width: 46,
+                  height: 46,
+                  borderRadius: 16,
+                  border: `1px solid ${C.border}`,
+                  background: 'rgba(255,255,255,0.03)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: C.accentFaint, border: `1px solid ${C.accentBorder}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 800, color: C.accentLight,
-                }}>{initials}</div>
-                <span style={{ color: C.textSec, fontSize: 12, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayName}
-                </span>
-                <span style={{ color: C.muted, fontSize: 10 }}>▾</span>
+                {renderIcon('bell', false)}
               </button>
 
-              {/* Dropdown */}
-              {menuOpen && (
-                <div style={{
-                  position: 'absolute', top: '110%', right: 0, minWidth: 180,
-                  background: C.surface, border: `1px solid ${C.borderMid}`,
-                  borderRadius: 12, overflow: 'hidden',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 50,
-                }}>
-                  <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
-                    <p style={{ color: C.text, fontSize: 13, fontWeight: 700 }}>{displayName}</p>
-                    <p style={{ color: C.muted, fontSize: 11 }}>{user?.role}</p>
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMenuOpen((value) => !value);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    minHeight: 52,
+                    padding: '7px 10px 7px 7px',
+                    borderRadius: 18,
+                    border: `1px solid ${C.border}`,
+                    background: 'rgba(255,255,255,0.03)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 14,
+                    background: 'linear-gradient(135deg, rgba(255,198,41,0.28), rgba(255,198,41,0.10))',
+                    border: `1px solid ${C.accentBorder}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: C.text,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    boxShadow: `0 14px 28px ${C.accentGlow}`,
+                  }}>
+                    {initials || 'LN'}
                   </div>
-                  {[
-                    { label: 'Mi perfil', action: () => setProfileOpen(true) },
-                    { label: 'Soporte', action: () => {} },
-                    { label: 'Cerrar sesión', action: handleLogout, rose: true },
-                  ].map((item) => (
-                    <button
-                      key={item.label}
-                      onClick={() => { setMenuOpen(false); item.action(); }}
-                      style={{
-                        width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                        padding: '10px 14px', cursor: 'pointer', fontSize: 13,
-                        color: item.rose ? C.rose : C.textSec,
-                        borderTop: item.rose ? `1px solid ${C.border}` : 'none',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = C.lift)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                    >{item.label}</button>
-                  ))}
-                </div>
-              )}
+                  <div style={{ display: 'grid', textAlign: 'left', minWidth: 0 }}>
+                    <span style={{ color: C.text, fontSize: 12, fontWeight: 700, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {displayName || 'Administrador'}
+                    </span>
+                    <span style={{ color: C.muted, fontSize: 10, letterSpacing: 1 }}>{user?.role ?? 'ADMIN'}</span>
+                  </div>
+                  <span style={{ color: C.muted, fontSize: 10 }}>▾</span>
+                </button>
+
+                {menuOpen && (
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 10px)',
+                      right: 0,
+                      minWidth: 220,
+                      background: 'linear-gradient(180deg, rgba(26,26,26,0.98), rgba(18,18,18,0.98))',
+                      border: `1px solid ${C.borderMid}`,
+                      borderRadius: 22,
+                      overflow: 'hidden',
+                      boxShadow: '0 30px 70px rgba(0,0,0,0.48)',
+                      zIndex: 60,
+                    }}
+                  >
+                    <div style={{ padding: '16px 16px 14px', borderBottom: `1px solid ${C.border}` }}>
+                      <p style={{ color: C.text, fontSize: 14, fontWeight: 800, marginBottom: 4 }}>{displayName || 'Administrador'}</p>
+                      <p style={{ color: C.muted, fontSize: 11 }}>{user?.email}</p>
+                    </div>
+                    {[
+                      { label: 'Mi perfil', action: () => setProfileOpen(true) },
+                      { label: 'Soporte', action: () => {} },
+                      { label: 'Cerrar sesión', action: handleLogout, rose: true },
+                    ].map((item, index) => (
+                      <button
+                        key={item.label}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          item.action();
+                        }}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          background: 'transparent',
+                          border: 'none',
+                          borderTop: index === 2 ? `1px solid ${C.border}` : 'none',
+                          padding: '13px 16px',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: item.rose ? C.rose : C.textSec,
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
-        <main style={{ flex: 1, padding: 28 }}>
+        <main style={{ flex: 1, padding: isMobile ? 18 : 28, paddingTop: isMobile ? 18 : 22 }}>
           {children}
         </main>
       </div>
 
-      {/* PROFILE MODAL */}
       {profileOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(5,11,23,0.85)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(8px)' }}
           onClick={() => setProfileOpen(false)}
         >
           <div
-            style={{ background: C.surface, border: `1px solid ${C.borderMid}`, borderRadius: 20, padding: 32, width: 360, maxWidth: '90vw' }}
-            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'linear-gradient(180deg, rgba(28,28,28,0.98), rgba(16,16,16,0.98))', border: `1px solid ${C.borderMid}`, borderRadius: 28, padding: 32, width: 400, maxWidth: '100%', boxShadow: '0 40px 90px rgba(0,0,0,0.55)' }}
+            onClick={(event) => event.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
               <div style={{
-                width: 52, height: 52, borderRadius: '50%',
-                background: C.accentFaint, border: `2px solid ${C.accentBorder}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 900, color: C.accentLight,
+                width: 58,
+                height: 58,
+                borderRadius: 18,
+                background: 'linear-gradient(135deg, rgba(255,198,41,0.26), rgba(255,198,41,0.08))',
+                border: `1px solid ${C.accentBorder}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                fontWeight: 900,
+                color: C.text,
                 boxShadow: `0 0 20px ${C.accentGlow}`,
-              }}>{initials}</div>
+              }}>{initials || 'LN'}</div>
               <div>
-                <p style={{ color: C.text, fontWeight: 800, fontSize: 16 }}>{displayName}</p>
-                <p style={{ color: C.accent, fontSize: 12, fontWeight: 600 }}>{user?.role}</p>
+                <p style={{ color: C.text, fontWeight: 800, fontSize: 18, marginBottom: 4 }}>{displayName || 'Administrador'}</p>
+                <p style={{ color: C.accent, fontSize: 12, fontWeight: 700, letterSpacing: 1.2 }}>{user?.role ?? 'ADMIN'}</p>
               </div>
             </div>
             {[
               { label: 'Correo', value: user?.email },
               { label: 'ID', value: user?.id },
-            ].map((f) => (
-              <div key={f.label} style={{ marginBottom: 12 }}>
-                <p style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 3 }}>{f.label.toUpperCase()}</p>
-                <p style={{ color: C.textSec, fontSize: 13 }}>{f.value ?? '—'}</p>
+            ].map((field) => (
+              <div key={field.label} style={{ marginBottom: 12, padding: '12px 14px', borderRadius: 18, background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.border}` }}>
+                <p style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 3 }}>{field.label.toUpperCase()}</p>
+                <p style={{ color: C.textSec, fontSize: 13 }}>{field.value ?? '—'}</p>
               </div>
             ))}
             <button
               onClick={() => setProfileOpen(false)}
               style={{
-                marginTop: 20, width: '100%', padding: '10px 0',
-                background: C.lift, border: `1px solid ${C.border}`,
-                borderRadius: 8, color: C.textSec, fontSize: 13, cursor: 'pointer',
+                marginTop: 20,
+                width: '100%',
+                padding: '13px 0',
+                background: 'linear-gradient(180deg, rgba(255,198,41,0.16), rgba(255,198,41,0.08))',
+                border: `1px solid ${C.accentBorder}`,
+                borderRadius: 16,
+                color: C.text,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
               }}
             >Cerrar</button>
           </div>

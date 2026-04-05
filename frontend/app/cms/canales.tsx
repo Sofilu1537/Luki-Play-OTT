@@ -42,7 +42,7 @@ export default function CmsCanales() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <View>
-            <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>Canales</Text>
+            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Canales</Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 2 }}>{canales.length} canales registrados</Text>
           </View>
           <TouchableOpacity
@@ -54,12 +54,12 @@ export default function CmsCanales() {
         </View>
 
         {/* Search */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 20 }}>
           <FontAwesome name="search" size={13} color={C.muted} />
           <TextInput
-            style={{ flex: 1, color: 'white', paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, ...webInput }}
+            style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, ...webInput }}
             placeholder="Buscar canal o categoría..."
-            placeholderTextColor="#475569"
+            placeholderTextColor={C.muted}
             value={search}
             onChangeText={setSearch}
           />
@@ -92,21 +92,21 @@ export default function CmsCanales() {
                       <FontAwesome name="tv" size={20} color={color} />
                     </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center' }}>
-                        <FontAwesome name="pencil" size={11} color="#60A5FA" />
+                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }}>
+                        <FontAwesome name="pencil" size={11} color={C.cyan} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#3F1515', alignItems: 'center', justifyContent: 'center' }}>
-                        <FontAwesome name="trash" size={11} color="#F87171" />
+                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }}>
+                        <FontAwesome name="trash" size={11} color={C.rose} />
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <Text style={{ color: 'white', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>{canal.nombre}</Text>
+                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 4 }}>{canal.nombre}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                     <View style={{ backgroundColor: `${color}22`, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
                       <Text style={{ color, fontSize: 10, fontWeight: '700' }}>{canal.categoria}</Text>
                     </View>
-                    <View style={{ backgroundColor: canal.activo ? '#14532D' : '#3F1515', borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
-                      <Text style={{ color: canal.activo ? '#4ADE80' : '#F87171', fontSize: 10, fontWeight: '700' }}>
+                    <View style={{ backgroundColor: canal.activo ? C.greenSoft : C.roseSoft, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
+                      <Text style={{ color: canal.activo ? C.green : C.rose, fontSize: 10, fontWeight: '700' }}>
                         {canal.activo ? 'ACTIVO' : 'INACTIVO'}
                       </Text>
                     </View>

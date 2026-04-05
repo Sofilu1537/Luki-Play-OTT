@@ -9,6 +9,11 @@ export enum ContractType {
   OTT_ONLY = 'OTT_ONLY',
 }
 
+export enum SessionLimitPolicy {
+  BLOCK_NEW = 'block_new',
+  REPLACE_OLDEST = 'replace_oldest',
+}
+
 /** ISP service states as defined by the billing/ISP system */
 export enum ServiceStatus {
   ACTIVO = 'ACTIVO',
@@ -34,6 +39,8 @@ export class Account {
   subscriptionStatus: SubscriptionStatus;
   serviceStatus: ServiceStatus | null;
   readonly maxDevices: number;
+  readonly sessionDurationDays: number;
+  readonly sessionLimitPolicy: SessionLimitPolicy;
 
   constructor(props: {
     id: string;
@@ -44,6 +51,8 @@ export class Account {
     subscriptionStatus: SubscriptionStatus;
     serviceStatus: ServiceStatus | null;
     maxDevices: number;
+    sessionDurationDays?: number;
+    sessionLimitPolicy?: SessionLimitPolicy;
   }) {
     this.id = props.id;
     this.contractNumber = props.contractNumber;
@@ -53,6 +62,8 @@ export class Account {
     this.subscriptionStatus = props.subscriptionStatus;
     this.serviceStatus = props.serviceStatus;
     this.maxDevices = props.maxDevices;
+    this.sessionDurationDays = props.sessionDurationDays ?? 30;
+    this.sessionLimitPolicy = props.sessionLimitPolicy ?? SessionLimitPolicy.BLOCK_NEW;
   }
 
   isSubscriptionActive(): boolean {

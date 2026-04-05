@@ -28,7 +28,7 @@ export default function CmsBlog() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <View>
-            <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>Blog</Text>
+            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Blog</Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 2 }}>{posts.length} publicaciones</Text>
           </View>
           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 }}>
@@ -57,11 +57,11 @@ export default function CmsBlog() {
                   gap: 16,
                 }}
               >
-                <View style={{ width: 48, height: 48, backgroundColor: `${C.accent}33`, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 48, height: 48, backgroundColor: C.accentSoft, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name="pencil-square-o" size={20} color={C.accentLight} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: 'white', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>{post.titulo}</Text>
+                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 4 }}>{post.titulo}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <FontAwesome name="user-o" size={11} color={C.muted} />
@@ -74,16 +74,16 @@ export default function CmsBlog() {
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ backgroundColor: post.activo ? '#14532D' : '#3F1515', borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ color: post.activo ? '#4ADE80' : '#F87171', fontSize: 11, fontWeight: '700' }}>
+                  <View style={{ backgroundColor: post.activo ? C.greenSoft : C.roseSoft, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ color: post.activo ? C.green : C.rose, fontSize: 11, fontWeight: '700' }}>
                       {post.activo ? 'PUBLICADO' : 'BORRADOR'}
                     </Text>
                   </View>
-                  <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center' }}>
-                    <FontAwesome name="pencil" size={12} color="#60A5FA" />
+                  <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }}>
+                    <FontAwesome name="pencil" size={12} color={C.cyan} />
                   </TouchableOpacity>
-                  <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: '#3F1515', alignItems: 'center', justifyContent: 'center' }}>
-                    <FontAwesome name="trash" size={12} color="#F87171" />
+                  <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }}>
+                    <FontAwesome name="trash" size={12} color={C.rose} />
                   </TouchableOpacity>
                 </View>
               </View>

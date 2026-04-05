@@ -98,7 +98,7 @@ export default function CmsComponentes() {
         >
           <View>
             <Text
-              style={{ color: 'white', fontSize: 22, fontWeight: '800' }}
+              style={{ color: C.text, fontSize: 22, fontWeight: '800' }}
             >
               Componentes
             </Text>
@@ -141,16 +141,16 @@ export default function CmsComponentes() {
                   width: 36,
                   height: 36,
                   borderRadius: 8,
-                  backgroundColor: '#14532D',
+                  backgroundColor: C.greenSoft,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <FontAwesome name="check-circle" size={18} color="#4ADE80" />
+                <FontAwesome name="check-circle" size={18} color={C.green} />
               </View>
               <Text
                 style={{
-                  color: '#4ADE80',
+                  color: C.green,
                   fontSize: 28,
                   fontWeight: '900',
                 }}
@@ -187,16 +187,16 @@ export default function CmsComponentes() {
                   width: 36,
                   height: 36,
                   borderRadius: 8,
-                  backgroundColor: '#3F1515',
+                  backgroundColor: C.roseSoft,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <FontAwesome name="times-circle" size={18} color="#F87171" />
+                <FontAwesome name="times-circle" size={18} color={C.rose} />
               </View>
               <Text
                 style={{
-                  color: '#F87171',
+                  color: C.rose,
                   fontSize: 28,
                   fontWeight: '900',
                 }}
@@ -233,16 +233,16 @@ export default function CmsComponentes() {
                   width: 36,
                   height: 36,
                   borderRadius: 8,
-                  backgroundColor: '#1E3A5F',
+                  backgroundColor: C.cyanSoft,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <FontAwesome name="th-large" size={18} color="#60A5FA" />
+                <FontAwesome name="th-large" size={18} color={C.cyan} />
               </View>
               <Text
                 style={{
-                  color: '#60A5FA',
+                  color: C.cyan,
                   fontSize: 28,
                   fontWeight: '900',
                 }}
@@ -273,7 +273,7 @@ export default function CmsComponentes() {
           <TextInput
             style={{
               flex: 1,
-              color: 'white',
+              color: C.text,
               paddingVertical: 10,
               paddingHorizontal: 10,
               fontSize: 13,
@@ -289,18 +289,18 @@ export default function CmsComponentes() {
         {/* Info banner */}
         <View
           style={{
-            backgroundColor: '#1E3A5F22',
+            backgroundColor: C.cyanSoft,
             borderRadius: 10,
             padding: 14,
             marginBottom: 20,
             borderWidth: 1,
-            borderColor: '#1E3A5F',
+            borderColor: 'rgba(34,211,238,0.24)',
             flexDirection: 'row',
             alignItems: 'center',
             gap: 10,
           }}
         >
-          <FontAwesome name="info-circle" size={16} color="#60A5FA" />
+          <FontAwesome name="info-circle" size={16} color={C.cyan} />
           <Text style={{ color: '#93C5FD', fontSize: 12, flex: 1 }}>
             Los componentes activos se muestran en la app del abonado. Desactiva
             un componente para ocultarlo sin eliminarlo del sistema.
@@ -373,7 +373,7 @@ export default function CmsComponentes() {
                         >
                           <Text
                             style={{
-                              color: 'white',
+                              color: C.text,
                               fontSize: 16,
                               fontWeight: '700',
                             }}
@@ -402,8 +402,8 @@ export default function CmsComponentes() {
                           <View
                             style={{
                               backgroundColor: comp.activo
-                                ? '#14532D'
-                                : '#3F1515',
+                                ? C.greenSoft
+                                : C.roseSoft,
                               borderRadius: 4,
                               paddingHorizontal: 7,
                               paddingVertical: 2,
@@ -411,7 +411,7 @@ export default function CmsComponentes() {
                           >
                             <Text
                               style={{
-                                color: comp.activo ? '#4ADE80' : '#F87171',
+                                color: comp.activo ? C.green : C.rose,
                                 fontSize: 9,
                                 fontWeight: '800',
                                 letterSpacing: 0.5,
@@ -456,14 +456,14 @@ export default function CmsComponentes() {
                             height: 28,
                             borderRadius: 14,
                             backgroundColor: comp.activo
-                              ? '#14532D'
-                              : '#3F1515',
+                              ? C.greenSoft
+                              : C.roseSoft,
                             justifyContent: 'center',
                             paddingHorizontal: 2,
                             borderWidth: 1,
                             borderColor: comp.activo
-                              ? '#4ADE8040'
-                              : '#F8717140',
+                              ? 'rgba(16,185,129,0.28)'
+                              : 'rgba(244,63,94,0.28)',
                           }}
                         >
                           <View
@@ -472,14 +472,14 @@ export default function CmsComponentes() {
                               height: 22,
                               borderRadius: 11,
                               backgroundColor: comp.activo
-                                ? '#4ADE80'
-                                : '#F87171',
+                                ? C.green
+                                : C.rose,
                               alignSelf: comp.activo
                                 ? 'flex-end'
                                 : 'flex-start',
                               shadowColor: comp.activo
-                                ? '#4ADE80'
-                                : '#F87171',
+                                ? C.green
+                                : C.rose,
                               shadowOffset: { width: 0, height: 0 },
                               shadowOpacity: 0.5,
                               shadowRadius: 6,
@@ -489,7 +489,7 @@ export default function CmsComponentes() {
                       )}
                       <Text
                         style={{
-                          color: comp.activo ? '#4ADE80' : '#F87171',
+                          color: comp.activo ? C.green : C.rose,
                           fontSize: 9,
                           fontWeight: '700',
                         }}
