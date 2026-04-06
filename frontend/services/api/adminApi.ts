@@ -22,7 +22,7 @@ export interface AdminUser {
   fechaFin: string;
   sesiones: number;
   contrato: string | null;
-  status: 'active' | 'inactive' | 'suspended';
+  status: 'active' | 'inactive' | 'suspended' | 'pending';
   role: 'superadmin' | 'soporte' | 'cliente';
   mustChangePassword: boolean;
   mfaEnabled: boolean;
@@ -379,7 +379,7 @@ export async function adminCreateUser(
       fechaFin: end.toISOString().slice(0, 10),
       sesiones: 0,
       contrato: role === 'cliente' ? data.contrato || `OTT-${Date.now()}` : null,
-      status: data.status ?? 'active',
+      status: data.status ?? (role === 'cliente' ? 'active' : 'pending'),
       role,
       mustChangePassword: role !== 'cliente',
       mfaEnabled: false,
@@ -494,6 +494,30 @@ export async function adminSendRecoveryCode(email: string): Promise<{ message: s
     if (!user) return { message: 'Si el correo está registrado, recibirás el código de recuperación.' };
     const code = Math.random().toString(36).slice(-8).toUpperCase();
     return { message: `Código de recuperación generado para ${email}`, code };
+  }
+}
+
+export async function adminGenerateActivationCode(userId: string, email: string): Promise<{ message: string; code?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/generate-activation-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { message?: string }).message ?? 'Error al generar código de activación');
+    }
+    return res.json();
+  } catch {
+    // Mock: generar código localmente
+    const code = Math.random().toString(36).slice(-8).toUpperCase();
+    const index = mockUsersStore.findIndex((u) => u.id === userId);
+    if (index >= 0) {
+      mockUsersStore[index] = { ...mockUsersStore[index], status: 'pending' };
+      saveMockUsers();
+    }
+    return { message: `Código de activación generado para ${email}`, code };
   }
 }
 
@@ -901,30 +925,199 @@ export async function adminReorderSliders(accessToken: string, orderedIds: strin
   }
 }
 
+// ---------------------------------------------------------------------------
+// Channels
+// ---------------------------------------------------------------------------
+
+let mockCanalesStore: AdminCanal[] = [
+  {
+    id: 'ch-001',
+    nombre: 'Noticias 24',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Canal piloto con streaming real para pruebas del videowall.',
+    categoria: 'Noticias',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T08:00:00.000Z',
+    actualizadoEn: '2026-04-01T08:00:00.000Z',
+  },
+  {
+    id: 'ch-002',
+    nombre: 'Deportes HD',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Señal deportiva enlazada al stream operativo para demo visual.',
+    categoria: 'Deportes',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T09:00:00.000Z',
+    actualizadoEn: '2026-04-01T09:00:00.000Z',
+  },
+  {
+    id: 'ch-003',
+    nombre: 'Cine Clasico',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Canal de cine enlazado al stream de prueba para poblar el monitor.',
+    categoria: 'Cine',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T10:00:00.000Z',
+    actualizadoEn: '2026-04-01T10:00:00.000Z',
+  },
+  {
+    id: 'ch-004',
+    nombre: 'Infantil TV',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Programacion infantil segura con controles parentales activos.',
+    categoria: 'Infantil',
+    tipo: 'live',
+    requiereControlParental: true,
+    activo: true,
+    creadoEn: '2026-04-01T11:00:00.000Z',
+    actualizadoEn: '2026-04-01T11:00:00.000Z',
+  },
+  {
+    id: 'ch-005',
+    nombre: 'Musica Live',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Conciertos y listas de reproduccion en vivo.',
+    categoria: 'Música',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T12:00:00.000Z',
+    actualizadoEn: '2026-04-01T12:00:00.000Z',
+  },
+  {
+    id: 'ch-006',
+    nombre: 'Luki Noticias 2',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Segunda señal de prueba para completar el wall.',
+    categoria: 'Noticias',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T13:00:00.000Z',
+    actualizadoEn: '2026-04-01T13:00:00.000Z',
+  },
+  {
+    id: 'ch-007',
+    nombre: 'Zona Deportes',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Señal espejo para pruebas operativas del monitor.',
+    categoria: 'Deportes',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T14:00:00.000Z',
+    actualizadoEn: '2026-04-01T14:00:00.000Z',
+  },
+  {
+    id: 'ch-008',
+    nombre: 'Cine Premier',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Canal de demostración para poblar la fila inferior.',
+    categoria: 'Cine',
+    tipo: 'live',
+    requiereControlParental: false,
+    activo: true,
+    creadoEn: '2026-04-01T15:00:00.000Z',
+    actualizadoEn: '2026-04-01T15:00:00.000Z',
+  },
+  {
+    id: 'ch-009',
+    nombre: 'Kids Fun',
+    logo: '',
+    streamUrl: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/d0dbe915091d400bd8ee7f27f0791303.sdp/playlist.m3u8',
+    detalle: 'Canal infantil adicional para completar el mosaico 3x3.',
+    categoria: 'Infantil',
+    tipo: 'live',
+    requiereControlParental: true,
+    activo: true,
+    creadoEn: '2026-04-01T16:00:00.000Z',
+    actualizadoEn: '2026-04-01T16:00:00.000Z',
+  },
+];
+
 export async function adminListCanales(accessToken: string): Promise<AdminCanal[]> {
-  return apiFetch<AdminCanal[]>('/admin/canales', accessToken);
+  try {
+    const canales = await apiFetch<AdminCanal[]>('/admin/canales', accessToken);
+    return canales.length ? canales : mockCanalesStore.map((canal) => ({ ...canal }));
+  }
+  catch { return mockCanalesStore.map((canal) => ({ ...canal })); }
 }
 
 export async function adminCreateCanal(accessToken: string, data: AdminCanalPayload): Promise<AdminCanal> {
-  return apiFetch<AdminCanal>('/admin/canales', accessToken, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  try {
+    return await apiFetch<AdminCanal>('/admin/canales', accessToken, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const now = new Date().toISOString();
+    const created: AdminCanal = {
+      ...data,
+      id: `ch-${Date.now()}`,
+      creadoEn: now,
+      actualizadoEn: now,
+    };
+    mockCanalesStore = [created, ...mockCanalesStore];
+    return { ...created };
+  }
 }
 
 export async function adminUpdateCanal(accessToken: string, id: string, data: Partial<AdminCanalPayload>): Promise<AdminCanal> {
-  return apiFetch<AdminCanal>(`/admin/canales/${id}`, accessToken, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  try {
+    return await apiFetch<AdminCanal>(`/admin/canales/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const index = mockCanalesStore.findIndex((canal) => canal.id === id);
+    if (index === -1) throw new Error('Canal no encontrado');
+    const updated: AdminCanal = {
+      ...mockCanalesStore[index],
+      ...data,
+      tipo: 'live',
+      actualizadoEn: new Date().toISOString(),
+    };
+    mockCanalesStore[index] = updated;
+    return { ...updated };
+  }
 }
 
 export async function adminToggleCanal(accessToken: string, id: string): Promise<AdminCanal> {
-  return apiFetch<AdminCanal>(`/admin/canales/${id}/toggle`, accessToken, { method: 'POST' });
+  try {
+    return await apiFetch<AdminCanal>(`/admin/canales/${id}/toggle`, accessToken, { method: 'POST' });
+  } catch {
+    const index = mockCanalesStore.findIndex((canal) => canal.id === id);
+    if (index === -1) throw new Error('Canal no encontrado');
+    const updated = {
+      ...mockCanalesStore[index],
+      activo: !mockCanalesStore[index].activo,
+      actualizadoEn: new Date().toISOString(),
+    };
+    mockCanalesStore[index] = updated;
+    return { ...updated };
+  }
 }
 
 export async function adminDeleteCanal(accessToken: string, id: string): Promise<void> {
-  await apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
+  try {
+    await apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
+  } catch {
+    mockCanalesStore = mockCanalesStore.filter((canal) => canal.id !== id);
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -18,8 +18,8 @@ import { AdminService } from './admin.service';
 import { CreateCanalDto } from './dto/create-canal.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreatePlanDto } from './dto/create-plan.dto';
-import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
@@ -159,28 +159,28 @@ export class AdminController {
   @Get('sliders')
   getSliders() { return this.adminService.getSliders(); }
 
+  @Get('canales')
+  getCanales() { return this.adminService.getCanales(); }
+
   @Post('canales')
-  async createCanal(@Body() dto: CreateCanalDto) {
+  createCanal(@Body() dto: CreateCanalDto) {
     return this.adminService.createCanal(dto);
   }
 
-  @Get('canales')
-  async getCanales() { return this.adminService.getCanales(); }
-
   @Patch('canales/:id')
-  async updateCanal(@Param('id') id: string, @Body() dto: UpdateCanalDto) {
+  updateCanal(@Param('id') id: string, @Body() dto: UpdateCanalDto) {
     return this.adminService.updateCanal(id, dto);
   }
 
   @Post('canales/:id/toggle')
   @HttpCode(HttpStatus.OK)
-  async toggleCanal(@Param('id') id: string) {
+  toggleCanal(@Param('id') id: string) {
     return this.adminService.toggleCanal(id);
   }
 
   @Delete('canales/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteCanal(@Param('id') id: string) {
+  deleteCanal(@Param('id') id: string) {
     return this.adminService.deleteCanal(id);
   }
 

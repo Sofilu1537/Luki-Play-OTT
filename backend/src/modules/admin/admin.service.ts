@@ -1,7 +1,7 @@
-import { Injectable, Inject, BadRequestException, ConflictException, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, resolve } from 'path';
-import { randomBytes } from 'crypto';
 import type { UserRepository } from '../auth/domain/interfaces/user.repository';
 import { USER_REPOSITORY } from '../auth/domain/interfaces/user.repository';
 import { User, UserRole, UserStatus } from '../auth/domain/entities/user.entity';
@@ -15,10 +15,10 @@ import type { SessionRepository } from '../auth/domain/interfaces/session.reposi
 import { EMAIL_SERVICE } from '../auth/domain/interfaces/email.service';
 import type { EmailService } from '../auth/domain/interfaces/email.service';
 import { CreateCmsUserUseCase } from '../auth/application/use-cases/create-cms-user.use-case';
-import { CanalTipoDto, CreateCanalDto } from './dto/create-canal.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
+import { CanalTipoDto, CreateCanalDto } from './dto/create-canal.dto';
 import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -131,79 +131,10 @@ export interface AdminCanalRecord {
   actualizadoEn: string;
 }
 
-const DEFAULT_CANALES: AdminCanalRecord[] = [
-  {
-    id: 'ch-noticias-24',
-    nombre: 'Noticias 24',
-    logo: '',
-    streamUrl: 'https://stream.example.com/noticias24',
-    detalle: 'Cobertura continua de actualidad nacional e internacional.',
-    categoria: 'Noticias',
-    tipo: CanalTipoDto.LIVE,
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T12:00:00.000Z',
-    actualizadoEn: '2026-04-01T12:00:00.000Z',
-  },
-  {
-    id: 'ch-deportes-hd',
-    nombre: 'Deportes HD',
-    logo: '',
-    streamUrl: 'https://stream.example.com/deportes',
-    detalle: 'Eventos deportivos en vivo, resúmenes y programación diaria.',
-    categoria: 'Deportes',
-    tipo: CanalTipoDto.LIVE,
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T12:00:00.000Z',
-    actualizadoEn: '2026-04-01T12:00:00.000Z',
-  },
-  {
-    id: 'ch-cine-clasico',
-    nombre: 'Cine Clásico',
-    logo: '',
-    streamUrl: 'https://stream.example.com/cine',
-    detalle: 'Selección curada de películas icónicas y ciclos temáticos.',
-    categoria: 'Cine',
-    tipo: CanalTipoDto.LIVE,
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T12:00:00.000Z',
-    actualizadoEn: '2026-04-01T12:00:00.000Z',
-  },
-  {
-    id: 'ch-infantil-tv',
-    nombre: 'Infantil TV',
-    logo: '',
-    streamUrl: 'https://stream.example.com/infantil',
-    detalle: 'Programación segura para niños con franjas familiares.',
-    categoria: 'Infantil',
-    tipo: CanalTipoDto.LIVE,
-    requiereControlParental: true,
-    activo: false,
-    creadoEn: '2026-04-01T12:00:00.000Z',
-    actualizadoEn: '2026-04-01T12:00:00.000Z',
-  },
-  {
-    id: 'ch-musica-live',
-    nombre: 'Música Live',
-    logo: '',
-    streamUrl: 'https://stream.example.com/musica',
-    detalle: 'Conciertos, videoclips y sesiones continuas en directo.',
-    categoria: 'Música',
-    tipo: CanalTipoDto.LIVE,
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T12:00:00.000Z',
-    actualizadoEn: '2026-04-01T12:00:00.000Z',
-  },
-];
-
 @Injectable()
-export class AdminService implements OnModuleInit {
-  private readonly logger = new Logger(AdminService.name);
-  private readonly canalesStoragePath = this.resolveCanalesStoragePath();
-  private canales: AdminCanalRecord[] = [];
+export class AdminService {
+  private readonly canalesStorePath = resolve(process.cwd(), 'data', 'admin-canales.json');
+  private canalesCache: AdminCanalRecord[] | null = null;
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
@@ -213,10 +144,6 @@ export class AdminService implements OnModuleInit {
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
     private readonly createCmsUserUseCase: CreateCmsUserUseCase,
   ) {}
-
-  async onModuleInit(): Promise<void> {
-    await this.loadCanalesStore();
-  }
 
   // ---- In-memory components store ------------------------------------------
 
@@ -793,97 +720,69 @@ export class AdminService implements OnModuleInit {
   }
 
   async getCanales() {
-    await this.ensureCanalesLoaded();
-    return this.canales.map((canal) => this.cloneCanal(canal));
+    return this.readCanalesStore();
   }
 
   async createCanal(dto: CreateCanalDto) {
-    await this.ensureCanalesLoaded();
-
-    const nombre = dto.nombre.trim();
-    const streamUrl = dto.streamUrl.trim();
-
-    if (this.canales.some((canal) => canal.nombre.toLowerCase() === nombre.toLowerCase())) {
-      throw new ConflictException(`Ya existe un canal con el nombre ${nombre}`);
-    }
-
-    if (this.canales.some((canal) => canal.streamUrl.toLowerCase() === streamUrl.toLowerCase())) {
-      throw new ConflictException('Ya existe un canal registrado con esa URL de streaming.');
-    }
-
+    const canales = await this.readCanalesStore();
     const now = new Date().toISOString();
-    const canal: AdminCanalRecord = {
-      id: this.ensureUniqueCanalId(this.slugifyCanalId(nombre)),
-      nombre,
-      logo: dto.logo?.trim() ?? '',
-      streamUrl,
-      detalle: dto.detalle.trim(),
-      categoria: dto.categoria.trim(),
+    const created = this.normalizeCanalRecord({
+      id: `ch-${uuidv4().slice(0, 8)}`,
+      nombre: dto.nombre,
+      logo: dto.logo ?? '',
+      streamUrl: dto.streamUrl,
+      detalle: dto.detalle,
+      categoria: dto.categoria,
       tipo: dto.tipo ?? CanalTipoDto.LIVE,
       requiereControlParental: dto.requiereControlParental ?? false,
       activo: dto.activo ?? true,
       creadoEn: now,
       actualizadoEn: now,
-    };
-
-    this.canales = [canal, ...this.canales];
-    await this.persistCanalesStore();
-    return this.cloneCanal(canal);
+    });
+    canales.unshift(created);
+    await this.writeCanalesStore(canales);
+    return this.cloneCanal(created);
   }
 
   async updateCanal(id: string, dto: UpdateCanalDto) {
-    await this.ensureCanalesLoaded();
+    const canales = await this.readCanalesStore();
+    const index = canales.findIndex((item) => item.id === id);
+    if (index === -1) throw new NotFoundException(`Canal ${id} not found`);
 
-    const canal = this.canales.find((item) => item.id === id);
-    if (!canal) throw new NotFoundException(`Canal ${id} not found`);
-
-    const nextNombre = dto.nombre?.trim() ?? canal.nombre;
-    const nextStreamUrl = dto.streamUrl?.trim() ?? canal.streamUrl;
-
-    if (this.canales.some((item) => item.id !== id && item.nombre.toLowerCase() === nextNombre.toLowerCase())) {
-      throw new ConflictException(`Ya existe un canal con el nombre ${nextNombre}`);
-    }
-
-    if (this.canales.some((item) => item.id !== id && item.streamUrl.toLowerCase() === nextStreamUrl.toLowerCase())) {
-      throw new ConflictException('Ya existe un canal registrado con esa URL de streaming.');
-    }
-
-    Object.assign(canal, {
-      nombre: nextNombre,
-      logo: dto.logo !== undefined ? dto.logo.trim() : canal.logo,
-      streamUrl: nextStreamUrl,
-      detalle: dto.detalle !== undefined ? dto.detalle.trim() : canal.detalle,
-      categoria: dto.categoria !== undefined ? dto.categoria.trim() : canal.categoria,
-      tipo: dto.tipo ?? canal.tipo,
-      requiereControlParental: dto.requiereControlParental ?? canal.requiereControlParental,
-      activo: dto.activo ?? canal.activo,
+    const updated = this.normalizeCanalRecord({
+      ...canales[index],
+      ...dto,
+      id,
+      tipo: dto.tipo ?? canales[index].tipo,
       actualizadoEn: new Date().toISOString(),
     });
 
-    await this.persistCanalesStore();
-    return this.cloneCanal(canal);
+    canales[index] = updated;
+    await this.writeCanalesStore(canales);
+    return this.cloneCanal(updated);
   }
 
   async toggleCanal(id: string) {
-    await this.ensureCanalesLoaded();
+    const canales = await this.readCanalesStore();
+    const index = canales.findIndex((item) => item.id === id);
+    if (index === -1) throw new NotFoundException(`Canal ${id} not found`);
 
-    const canal = this.canales.find((item) => item.id === id);
-    if (!canal) throw new NotFoundException(`Canal ${id} not found`);
+    const updated = this.normalizeCanalRecord({
+      ...canales[index],
+      activo: !canales[index].activo,
+      actualizadoEn: new Date().toISOString(),
+    });
 
-    canal.activo = !canal.activo;
-    canal.actualizadoEn = new Date().toISOString();
-    await this.persistCanalesStore();
-    return this.cloneCanal(canal);
+    canales[index] = updated;
+    await this.writeCanalesStore(canales);
+    return this.cloneCanal(updated);
   }
 
-  async deleteCanal(id: string): Promise<void> {
-    await this.ensureCanalesLoaded();
-
-    const exists = this.canales.some((item) => item.id === id);
-    if (!exists) throw new NotFoundException(`Canal ${id} not found`);
-
-    this.canales = this.canales.filter((item) => item.id !== id);
-    await this.persistCanalesStore();
+  async deleteCanal(id: string) {
+    const canales = await this.readCanalesStore();
+    const next = canales.filter((item) => item.id !== id);
+    if (next.length === canales.length) throw new NotFoundException(`Canal ${id} not found`);
+    await this.writeCanalesStore(next);
   }
 
   getCategorias() {
@@ -910,6 +809,53 @@ export class AdminService implements OnModuleInit {
 
   private async getAllUsers(): Promise<User[]> {
     return this.userRepository.findAll();
+  }
+
+  private cloneCanal(canal: AdminCanalRecord): AdminCanalRecord {
+    return { ...canal };
+  }
+
+  private normalizeCanalRecord(canal: Partial<AdminCanalRecord>): AdminCanalRecord {
+    const now = new Date().toISOString();
+    return {
+      id: canal.id ?? `ch-${uuidv4().slice(0, 8)}`,
+      nombre: canal.nombre?.trim() || 'Canal sin nombre',
+      logo: canal.logo?.trim() ?? '',
+      streamUrl: canal.streamUrl?.trim() || '',
+      detalle: canal.detalle?.trim() || '',
+      categoria: canal.categoria?.trim() || 'General',
+      tipo: canal.tipo ?? CanalTipoDto.LIVE,
+      requiereControlParental: canal.requiereControlParental ?? false,
+      activo: canal.activo ?? true,
+      creadoEn: canal.creadoEn ?? now,
+      actualizadoEn: canal.actualizadoEn ?? canal.creadoEn ?? now,
+    };
+  }
+
+  private async readCanalesStore(): Promise<AdminCanalRecord[]> {
+    if (this.canalesCache) {
+      return this.canalesCache.map((item) => this.cloneCanal(item));
+    }
+
+    try {
+      const raw = await readFile(this.canalesStorePath, 'utf8');
+      const parsed = JSON.parse(raw) as unknown;
+      const canales = Array.isArray(parsed)
+        ? parsed.map((item) => this.normalizeCanalRecord(item as Partial<AdminCanalRecord>))
+        : [];
+      this.canalesCache = canales;
+      return canales.map((item) => this.cloneCanal(item));
+    } catch {
+      await this.writeCanalesStore([]);
+      return [];
+    }
+  }
+
+  private async writeCanalesStore(canales: AdminCanalRecord[]) {
+    const normalized = canales.map((item) => this.normalizeCanalRecord(item));
+    await mkdir(dirname(this.canalesStorePath), { recursive: true });
+    await writeFile(this.canalesStorePath, JSON.stringify(normalized, null, 2), 'utf8');
+    this.canalesCache = normalized;
   }
 
   private async mapUserRecord(user: User): Promise<AdminUserRecord> {
@@ -959,10 +905,6 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  private cloneCanal(canal: AdminCanalRecord): AdminCanalRecord {
-    return { ...canal };
-  }
-
   private validatePlanReferences(componentIds: string[], categoryIds: string[]) {
     const validComponentIds = new Set(this.componentes.map((item) => item.id));
     const validCategoryIds = new Set(this.categorias.map((item) => item.id));
@@ -998,91 +940,6 @@ export class AdminService implements OnModuleInit {
       suffix += 1;
     }
     return `${baseId}-${suffix}`;
-  }
-
-  private slugifyCanalId(nombre: string): string {
-    const normalized = nombre
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    return normalized.startsWith('ch-') ? normalized : `ch-${normalized}`;
-  }
-
-  private ensureUniqueCanalId(baseId: string): string {
-    if (!this.canales.some((canal) => canal.id === baseId)) return baseId;
-
-    let suffix = 2;
-    while (this.canales.some((canal) => canal.id === `${baseId}-${suffix}`)) {
-      suffix += 1;
-    }
-
-    return `${baseId}-${suffix}`;
-  }
-
-  private resolveCanalesStoragePath(): string {
-    const cwd = process.cwd().replace(/\\/g, '/');
-    if (cwd.endsWith('/backend')) {
-      return resolve(process.cwd(), 'data', 'admin-canales.json');
-    }
-    return resolve(process.cwd(), 'backend', 'data', 'admin-canales.json');
-  }
-
-  private async ensureCanalesLoaded(): Promise<void> {
-    if (this.canales.length === 0) {
-      await this.loadCanalesStore();
-    }
-  }
-
-  private async loadCanalesStore(): Promise<void> {
-    try {
-      const raw = await readFile(this.canalesStoragePath, 'utf8');
-      const parsed: unknown = JSON.parse(raw);
-      this.canales = this.normalizeStoredCanales(parsed);
-    } catch {
-      this.logger.warn(`Falling back to seeded canales store at ${this.canalesStoragePath}`);
-      this.canales = DEFAULT_CANALES.map((canal) => this.cloneCanal(canal));
-      await this.persistCanalesStore();
-    }
-  }
-
-  private normalizeStoredCanales(data: unknown): AdminCanalRecord[] {
-    if (!Array.isArray(data)) {
-      throw new BadRequestException('El archivo de canales no contiene una lista válida.');
-    }
-
-    return data.map((item, index) => this.normalizeStoredCanal(item, index));
-  }
-
-  private normalizeStoredCanal(value: unknown, index: number): AdminCanalRecord {
-    const now = new Date().toISOString();
-    const fallback = DEFAULT_CANALES[index] ?? DEFAULT_CANALES[0];
-
-    if (!value || typeof value !== 'object') {
-      return { ...fallback, id: `${fallback.id}-${index + 1}` };
-    }
-
-    const canal = value as Partial<AdminCanalRecord>;
-    return {
-      id: typeof canal.id === 'string' && canal.id.trim() ? canal.id.trim() : `${fallback.id}-${index + 1}`,
-      nombre: typeof canal.nombre === 'string' && canal.nombre.trim() ? canal.nombre.trim() : fallback.nombre,
-      logo: typeof canal.logo === 'string' ? canal.logo.trim() : fallback.logo,
-      streamUrl: typeof canal.streamUrl === 'string' && canal.streamUrl.trim() ? canal.streamUrl.trim() : fallback.streamUrl,
-      detalle: typeof canal.detalle === 'string' && canal.detalle.trim() ? canal.detalle.trim() : fallback.detalle,
-      categoria: typeof canal.categoria === 'string' && canal.categoria.trim() ? canal.categoria.trim() : fallback.categoria,
-      tipo: canal.tipo === CanalTipoDto.LIVE ? CanalTipoDto.LIVE : CanalTipoDto.LIVE,
-      requiereControlParental: Boolean(canal.requiereControlParental),
-      activo: canal.activo !== false,
-      creadoEn: typeof canal.creadoEn === 'string' && canal.creadoEn.trim() ? canal.creadoEn : now,
-      actualizadoEn: typeof canal.actualizadoEn === 'string' && canal.actualizadoEn.trim() ? canal.actualizadoEn : (typeof canal.creadoEn === 'string' && canal.creadoEn.trim() ? canal.creadoEn : now),
-    };
-  }
-
-  private async persistCanalesStore(): Promise<void> {
-    await mkdir(dirname(this.canalesStoragePath), { recursive: true });
-    await writeFile(this.canalesStoragePath, `${JSON.stringify(this.canales, null, 2)}\n`, 'utf8');
   }
 
   private resolvePlan(planIdOrName?: string | null): OttPlan {
