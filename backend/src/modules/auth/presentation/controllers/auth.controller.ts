@@ -31,6 +31,7 @@ import { VerifyOtpUseCase } from '../../application/use-cases/verify-otp.use-cas
 import { ForgotPasswordUseCase } from '../../application/use-cases/forgot-password.use-case';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 import { CompleteFirstAccessUseCase } from '../../application/use-cases/complete-first-access.use-case';
+import { SendRecoveryCodeUseCase } from '../../application/use-cases/send-recovery-code.use-case';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -38,6 +39,7 @@ import { ChangePasswordDto } from '../../application/dto/change-password.dto';
 import { ForgotPasswordDto } from '../../application/dto/forgot-password.dto';
 import { ResetPasswordDto } from '../../application/dto/reset-password.dto';
 import { CompleteFirstAccessDto } from '../../application/dto/first-access.dto';
+import { SendRecoveryCodeDto } from '../../application/dto/send-recovery-code.dto';
 import {
   RequestOtpDto,
   VerifyOtpDto,
@@ -92,6 +94,7 @@ export class AuthController {
     private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     private readonly completeFirstAccessUseCase: CompleteFirstAccessUseCase,
+    private readonly sendRecoveryCodeUseCase: SendRecoveryCodeUseCase,
   ) {}
 
   @Post('app/login')
@@ -127,6 +130,15 @@ export class AuthController {
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<MessageResponse> {
     await this.forgotPasswordUseCase.execute(dto.email);
     return { message: 'Si el correo está registrado, recibirás las instrucciones en breve.' };
+  }
+
+  @Post('send-recovery-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send recovery code to user email' })
+  @ApiResponse({ status: 200, type: MessageResponse })
+  async sendRecoveryCode(@Body() dto: SendRecoveryCodeDto): Promise<{ message: string; code: string }> {
+    const code = await this.sendRecoveryCodeUseCase.execute(dto.email);
+    return { message: 'Código de recuperación enviado.', code };
   }
 
   @Post('cms/reset-password')

@@ -30,6 +30,7 @@ import { JwtStrategy } from './infrastructure/jwt/jwt.strategy';
 import { BcryptHashService } from './infrastructure/persistence/bcrypt-hash.service';
 import { MockOtpService } from './infrastructure/persistence/mock-otp.service';
 import { MockEmailService } from './infrastructure/persistence/mock-email.service';
+import { NodemailerEmailService } from './infrastructure/persistence/nodemailer-email.service';
 
 // Use Cases
 import { LoginAppUseCase } from './application/use-cases/login-app.use-case';
@@ -49,6 +50,7 @@ import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.u
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { CompleteFirstAccessUseCase } from './application/use-cases/complete-first-access.use-case';
 import { CreateCmsUserUseCase } from './application/use-cases/create-cms-user.use-case';
+import { SendRecoveryCodeUseCase } from './application/use-cases/send-recovery-code.use-case';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -98,7 +100,7 @@ import { CrmModule } from '../crm/crm.module';
     { provide: TOKEN_SERVICE,                    useClass: JwtTokenService },
     { provide: HASH_SERVICE,                     useClass: BcryptHashService },
     { provide: OTP_SERVICE,                      useClass: MockOtpService },
-    { provide: EMAIL_SERVICE,                    useClass: MockEmailService },
+    { provide: EMAIL_SERVICE,                    useClass: NodemailerEmailService },
     JwtStrategy,
 
     // Use Cases
@@ -119,6 +121,7 @@ import { CrmModule } from '../crm/crm.module';
     ResetPasswordUseCase,
     CompleteFirstAccessUseCase,
     CreateCmsUserUseCase,
+    SendRecoveryCodeUseCase,
   ],
   exports: [
     TOKEN_SERVICE,

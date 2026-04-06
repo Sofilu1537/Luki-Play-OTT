@@ -21,6 +21,7 @@ import {
   adminListUsers,
   adminRevokeAllUserSessions,
   adminRevokeUserSession,
+  adminSendRecoveryCode,
   adminSetUserPassword,
   adminUpdateUser,
   adminUpdateUserStatus,
@@ -181,6 +182,156 @@ function FilterChip({ active, label, onPress, tone = 'accent' }: { active: boole
     >
       <Text style={{ color: active ? activeColor : C.textDim, fontSize: 12, fontWeight: '700' }}>{label}</Text>
     </TouchableOpacity>
+  );
+}
+
+function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }: { user: AdminUser; accessToken: string; onClose: () => void; onFeedback: (fb: Feedback) => void; onUserUpdated: (u: AdminUser) => void }) {
+  const [sending, setSending] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [nombre, setNombre] = useState(user.nombre);
+  const [email, setEmail] = useState(user.email);
+  const [telefono, setTelefono] = useState(user.telefono ?? '');
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+  const inputStyle = { backgroundColor: C.surface, borderRadius: 8, borderWidth: 1, borderColor: C.accent, color: C.text, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, ...webInput };
+  const hasChanges = nombre !== user.nombre || email.trim() !== user.email || telefono !== (user.telefono ?? '');
+
+  const handleSavePersonalData = async () => {
+    if (!nombre.trim() || !email.trim()) { onFeedback({ type: 'error', message: 'Nombre y email son requeridos.' }); return; }
+    setSaving(true);
+    try {
+      const updated = await adminUpdateUser(accessToken, user.id, { nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim() || undefined } as AdminUserPayload);
+      onUserUpdated(updated);
+      onFeedback({ type: 'success', message: 'Datos personales actualizados.' });
+      setEditing(false);
+      setCodeSent(false);
+      setGeneratedCode(null);
+    } catch (err) {
+      onFeedback({ type: 'error', message: err instanceof Error ? err.message : 'Error al actualizar datos' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSendCode = async () => {
+    setSending(true);
+    try {
+      const result = await adminSendRecoveryCode(email.trim());
+      setCodeSent(true);
+      if (result.code) {
+        setGeneratedCode(result.code);
+        onFeedback({ type: 'success', message: `Código generado para ${email.trim()}` });
+      } else {
+        onFeedback({ type: 'success', message: `Código de recuperación enviado a ${email.trim()}` });
+      }
+    } catch (err) {
+      onFeedback({ type: 'error', message: err instanceof Error ? err.message : 'Error al enviar código' });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 24, width: 460, borderWidth: 1, borderColor: C.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+                <FontAwesome name="lock" size={16} color={C.accentLight} />
+              </View>
+              <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>Recuperación de contraseña</Text>
+            </View>
+            <TouchableOpacity onPress={onClose}><FontAwesome name="times" size={16} color={C.muted} /></TouchableOpacity>
+          </View>
+
+          <View style={{ backgroundColor: C.lift, borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: C.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>DATOS PERSONALES</Text>
+              {!editing ? (
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }} onPress={() => setEditing(true)}>
+                  <FontAwesome name="pencil" size={10} color={C.cyan} />
+                  <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>Editar</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {editing ? (
+              <View style={{ gap: 10 }}>
+                <View>
+                  <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>NOMBRE</Text>
+                  <TextInput style={inputStyle} value={nombre} onChangeText={setNombre} autoFocus />
+                </View>
+                <View>
+                  <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>EMAIL</Text>
+                  <TextInput style={inputStyle} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                </View>
+                <View>
+                  <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>TELÉFONO</Text>
+                  <TextInput style={inputStyle} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                  <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center' }} onPress={() => { setNombre(user.nombre); setEmail(user.email); setTelefono(user.telefono ?? ''); setEditing(false); }}>
+                    <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, backgroundColor: hasChanges ? C.accent : C.accentSoft, alignItems: 'center', opacity: saving ? 0.6 : 1 }} onPress={handleSavePersonalData} disabled={saving || !hasChanges}>
+                    {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: hasChanges ? '#fff' : C.accentLight, fontSize: 12, fontWeight: '700' }}>Guardar cambios</Text>}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Text style={{ color: C.textDim, fontSize: 12, width: 65 }}>Nombre</Text>
+                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600', flex: 1 }}>{user.nombre}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Text style={{ color: C.textDim, fontSize: 12, width: 65 }}>Email</Text>
+                  <Text style={{ color: C.accentLight, fontSize: 13, fontWeight: '600', flex: 1 }}>{user.email}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Text style={{ color: C.textDim, fontSize: 12, width: 65 }}>Teléfono</Text>
+                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600', flex: 1 }}>{user.telefono || '—'}</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {generatedCode ? (
+            <View style={{ backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(99,102,241,0.25)' }}>
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 6 }}>CÓDIGO DE RECUPERACIÓN</Text>
+              <Text style={{ color: C.accentLight, fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{generatedCode}</Text>
+              <Text style={{ color: C.textDim, fontSize: 11, marginTop: 6, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
+            </View>
+          ) : codeSent ? (
+            <View style={{ backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }}>
+              <Text style={{ color: '#22c55e', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
+            </View>
+          ) : null}
+
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity style={{ flex: 1, paddingVertical: 11, borderRadius: 8, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border, alignItems: 'center' }} onPress={onClose}>
+              <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>Cerrar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, paddingVertical: 11, borderRadius: 8, backgroundColor: codeSent ? C.accentSoft : C.accent, alignItems: 'center', opacity: (sending || editing) ? 0.6 : 1 }}
+              onPress={handleSendCode}
+              disabled={sending || editing}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={{ color: codeSent ? C.accentLight : '#fff', fontSize: 13, fontWeight: '700' }}>
+                  {codeSent ? 'Generar nuevo código' : 'Generar clave temporal'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -943,6 +1094,7 @@ export default function CmsUsers() {
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [recoveryUser, setRecoveryUser] = useState<AdminUser | null>(null);
 
   const canWrite = hasPermission(profile?.permissions, 'cms:users:write');
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
@@ -1280,7 +1432,7 @@ export default function CmsUsers() {
             <View style={{ minWidth: 1520 }}>
               <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
                 {[
-                  { label: 'ACCIONES', width: 120 },
+                  { label: 'ACCIONES', width: 150 },
                   { label: 'NOMBRE', width: 200 },
                   { label: 'TIPO', width: 100 },
                   { label: 'ROL', width: 110 },
@@ -1308,7 +1460,7 @@ export default function CmsUsers() {
 
                 return (
                   <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, backgroundColor: C.surface, borderRadius: 8, marginBottom: 3, borderWidth: 1, borderColor: C.border }}>
-                    <View style={{ width: 120, flexDirection: 'row', gap: 6 }}>
+                    <View style={{ width: 150, flexDirection: 'row', gap: 6 }}>
                       <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(99,102,241,0.24)' }} onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}>
                         <FontAwesome name="eye" size={12} color={C.accentLight} />
                       </TouchableOpacity>
@@ -1320,6 +1472,11 @@ export default function CmsUsers() {
                       {canWrite ? (
                         <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDeactivate(user)}>
                           <FontAwesome name="power-off" size={12} color={C.rose} />
+                        </TouchableOpacity>
+                      ) : null}
+                      {canWrite ? (
+                        <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(251,191,36,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(251,191,36,0.28)' }} onPress={() => setRecoveryUser(user)}>
+                          <FontAwesome name="lock" size={12} color="#fbbf24" />
                         </TouchableOpacity>
                       ) : null}
                     </View>
@@ -1397,6 +1554,7 @@ export default function CmsUsers() {
       />
 
       {confirmState ? <ConfirmModal state={confirmState} onClose={closeConfirm} /> : null}
+      {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
     </CmsShell>
   );
 }
