@@ -115,6 +115,15 @@ docker compose up --build -d
 
 ### Modo Producción (EC2 / PM2 + Nginx)
 
+Este repositorio soporta dos formas de despliegue en EC2:
+
+- `git clone` o `git pull` tradicional sobre una rama remota existente
+- despliegue por snapshot de la rama activa local usando `deploy-active-branch.ps1`
+
+El despliegue actualmente aplicado en EC2 se ejecutó por snapshot de la rama activa local,
+por lo que el servidor puede no conservar metadatos `.git` aunque el contenido desplegado sí
+corresponda a una rama concreta del repositorio.
+
 #### 1. Backend
 
 ```bash
@@ -131,10 +140,17 @@ El backend escucha en el puerto definido en `PORT` (8100 en producción).
 ```bash
 cd frontend
 npm install
-NODE_OPTIONS='--max-old-space-size=512' npx expo export --platform web
+npm run build:web
 ```
 
-Esto genera la carpeta `dist/` con los archivos estáticos.
+El script `build:web` usa actualmente:
+
+```bash
+expo export --platform web
+```
+
+Esto genera la carpeta `dist/` con los archivos estáticos. Si un entorno antiguo aún genera
+`web-build/`, el script `deploy-ec2.sh` contempla ambos directorios como salida válida.
 
 #### 3. Nginx
 
@@ -149,13 +165,14 @@ Configuración de Nginx (sitio `luki-play-ott.conf`):
 
 ```nginx
 server {
+  listen 80;
   listen 8120;
   server_name <IP_DEL_SERVIDOR>;
   root /var/www/luki-play-ott;
   index index.html;
 
   location /auth/ {
-    proxy_pass http://[::1]:8100/auth/;
+    proxy_pass http://127.0.0.1:8100/auth/;
     proxy_http_version 1.1;
     proxy_set_header Host localhost:8100;
     proxy_set_header X-Forwarded-Host $host;
@@ -165,7 +182,7 @@ server {
   }
 
   location /admin/ {
-    proxy_pass http://[::1]:8100/admin/;
+    proxy_pass http://127.0.0.1:8100/admin/;
     proxy_http_version 1.1;
     proxy_set_header Host localhost:8100;
     proxy_set_header X-Forwarded-Host $host;
@@ -175,7 +192,7 @@ server {
   }
 
   location /public/ {
-    proxy_pass http://[::1]:8100/public/;
+    proxy_pass http://127.0.0.1:8100/public/;
     proxy_http_version 1.1;
     proxy_set_header Host localhost:8100;
     proxy_set_header X-Forwarded-Host $host;
@@ -184,7 +201,7 @@ server {
   }
 
   location /api/ {
-    proxy_pass http://[::1]:8100/api/;
+    proxy_pass http://127.0.0.1:8100/api/;
     proxy_http_version 1.1;
     proxy_set_header Host localhost:8100;
     proxy_set_header X-Forwarded-Host $host;
@@ -209,6 +226,18 @@ Verificar y recargar:
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+#### 4. Security Group de AWS
+
+Para acceso público desde navegador no basta con que Nginx y PM2 estén activos dentro de EC2.
+El Security Group de la instancia debe permitir al menos:
+
+- `80/tcp` desde `0.0.0.0/0`
+- `8120/tcp` desde `0.0.0.0/0` si se desea mantener acceso alterno por ese puerto
+- `22/tcp` preferiblemente solo desde la IP de administración
+
+Si `curl http://127.0.0.1/cms/login` responde en la instancia pero el navegador externo da
+timeout, el problema está en reglas de red de AWS y no en la aplicación.
 
 ---
 
@@ -241,9 +270,11 @@ se deben reemplazar las implementaciones:
 
 | Servicio          | URL                                       |
 |-------------------|-------------------------------------------|
-| App OTT           | `http://<HOST>:8120`                      |
-| Login cliente OTT | `http://<HOST>:8120/login`     |
-| CMS Login         | `http://<HOST>:8120/cms/login` |
+| App OTT           | `http://<HOST>/`                          |
+| Login cliente OTT | `http://<HOST>/login`                     |
+| CMS Login         | `http://<HOST>/cms/login`                 |
+| App OTT alterna   | `http://<HOST>:8120/`                     |
+| CMS Login alterno | `http://<HOST>:8120/cms/login`            |
 | Swagger API       | `http://<HOST>:8120/api/docs`             |
 
 > Reemplazar `<HOST>` con la IP o dominio del servidor.
