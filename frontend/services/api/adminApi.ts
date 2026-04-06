@@ -219,6 +219,49 @@ export async function adminDeleteUser(accessToken: string, id: string): Promise<
   }
 }
 
+export async function adminResetUserPassword(
+  accessToken: string,
+  id: string,
+): Promise<{ message: string }> {
+  try {
+    return await apiFetch<{ message: string }>(
+      `/admin/users/${id}/reset-password`,
+      accessToken,
+      { method: 'POST' },
+    );
+  } catch {
+    // Mock fallback: simulate email being sent
+    const user = mockUsersStore.find((u) => u.id === id);
+    if (!user) throw new Error('Usuario no encontrado');
+    return { message: `Contraseña generada y enviada a ${user.email}` };
+  }
+}
+
+export async function adminUpdateUser(
+  accessToken: string,
+  id: string,
+  data: { nombre: string; email: string; telefono: string; status: string },
+): Promise<AdminUser> {
+  try {
+    return await apiFetch<AdminUser>(`/admin/users/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Mock fallback: update in local store
+    const idx = mockUsersStore.findIndex((u) => u.id === id);
+    if (idx === -1) throw new Error('Usuario no encontrado');
+    mockUsersStore[idx] = {
+      ...mockUsersStore[idx],
+      nombre: data.nombre.toUpperCase(),
+      email: data.email,
+      telefono: data.telefono || null,
+      status: data.status,
+    };
+    return { ...mockUsersStore[idx] };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Plans
 // ---------------------------------------------------------------------------

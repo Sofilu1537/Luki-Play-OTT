@@ -18,4 +18,11 @@ export class MockEmailService implements EmailService {
     this.logger.log(`[MOCK EMAIL] Activa tu cuenta: ${accessLink}`);
     this.logger.log(`[MOCK EMAIL] Válido por 24 horas. Un solo uso.`);
   }
+
+  async sendGeneratedPassword(to: string, password: string, displayName: string): Promise<void> {
+    this.logger.log(`[MOCK EMAIL] Generated password sent to ${to}`);
+    this.logger.log(`[MOCK EMAIL] Hola ${displayName}, tu nueva contraseña temporal para Luki Play es:`);
+    this.logger.log(`[MOCK EMAIL] Contraseña: ${password}`);
+    this.logger.log(`[MOCK EMAIL] Por seguridad, cámbiala después de iniciar sesión.`);
+  }
 }

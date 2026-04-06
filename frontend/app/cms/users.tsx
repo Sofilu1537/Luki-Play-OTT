@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import { adminListUsers, adminCreateUser, adminDeleteUser, AdminUser } from '../../services/api/adminApi';
+import { adminListUsers, adminCreateUser, adminDeleteUser, adminResetUserPassword, adminUpdateUser, AdminUser } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 
@@ -42,6 +42,244 @@ function avatarColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+// ---------------------------------------------------------------------------
+// Edit User Modal
+// ---------------------------------------------------------------------------
+
+interface EditUserModalProps {
+  visible: boolean;
+  user: AdminUser | null;
+  onClose: () => void;
+  onSave: (updated: AdminUser) => void;
+  accessToken: string;
+}
+
+function EditUserModal({ visible, user, onClose, onSave, accessToken }: EditUserModalProps) {
+  const [nombre, setNombre] = useState('');
+  const [email, setEmail] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [status, setStatus] = useState('ACTIVE');
+  const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+
+  // Sync state when user changes
+  useEffect(() => {
+    if (user) {
+      setNombre(user.nombre);
+      setEmail(user.email);
+      setTelefono(user.telefono ?? '');
+      setStatus(user.status);
+      setError('');
+      setSuccessMsg('');
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!nombre.trim() || !email.trim()) {
+      setError('Nombre y email son requeridos');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      const updated = await adminUpdateUser(accessToken, user!.id, { nombre, email, telefono, status });
+      onSave(updated);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al guardar cambios');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGeneratePassword = async () => {
+    setResetting(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      const result = await adminResetUserPassword(accessToken, user!.id);
+      setSuccessMsg(result.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al generar contraseña');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const fieldStyle = {
+    backgroundColor: C.bg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    color: 'white' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginBottom: 12,
+    ...webInput,
+  };
+
+  const STATUS_OPTIONS: { label: string; value: string; color: string }[] = [
+    { label: 'Activo',     value: 'ACTIVE',     color: '#22c55e' },
+    { label: 'Suspendido', value: 'SUSPENDED',  color: '#f59e0b' },
+    { label: 'Inactivo',   value: 'INACTIVE',   color: '#ef4444' },
+  ];
+
+  if (!user) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View
+          style={{
+            backgroundColor: C.surface,
+            borderRadius: 16,
+            padding: 28,
+            width: '100%',
+            maxWidth: 520,
+            borderWidth: 1,
+            borderColor: C.border,
+          }}
+        >
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <View>
+              <Text style={{ color: 'white', fontSize: 18, fontWeight: '700' }}>Editar usuario</Text>
+              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>Refactor OTT por dominios: identidad, seguridad, sesiones y negocio.</Text>
+            </View>
+            <TouchableOpacity onPress={onClose}>
+              <FontAwesome name="times" size={18} color={C.muted} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Información básica */}
+            <View style={{ backgroundColor: C.bg, borderRadius: 12, padding: 16, marginTop: 14, borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>Información básica</Text>
+              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 14 }}>Identidad principal del usuario o abonado.</Text>
+
+              {/* Tipo de usuario */}
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>TIPO DE USUARIO</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+                {['Abonado', 'Interno'].map((t) => {
+                  const isAbonado = t === 'Abonado';
+                  const isActive = isAbonado ? user.role === 'CLIENTE' || user.role === 'cliente' : user.role !== 'CLIENTE' && user.role !== 'cliente';
+                  return (
+                    <View
+                      key={t}
+                      style={{
+                        flex: 1, paddingVertical: 10, borderRadius: 8,
+                        backgroundColor: isActive ? C.accent : C.surface,
+                        borderWidth: 1, borderColor: isActive ? C.accent : C.border,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: isActive ? 'white' : C.muted, fontWeight: '700', fontSize: 13 }}>{t}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>NOMBRE COMPLETO</Text>
+              <TextInput style={fieldStyle} value={nombre} onChangeText={setNombre} placeholderTextColor="#475569" />
+
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>EMAIL</Text>
+              <TextInput style={fieldStyle} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#475569" />
+
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>TELÉFONO</Text>
+              <TextInput style={{ ...fieldStyle, marginBottom: 0 }} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" placeholderTextColor="#475569" />
+            </View>
+
+            {/* Acceso y seguridad */}
+            <View style={{ backgroundColor: C.bg, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>Acceso y seguridad</Text>
+              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 14 }}>Autorización, estado y políticas básicas de acceso.</Text>
+
+              {/* Rol info */}
+              <View style={{ backgroundColor: C.surface, borderRadius: 8, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: C.border }}>
+                <Text style={{ color: 'white', fontWeight: '700', fontSize: 13, marginBottom: 4 }}>Rol de abonado</Text>
+                <Text style={{ color: C.textDim, fontSize: 12 }}>Los abonados usan el rol de negocio Cliente y no admiten edición manual de autorización.</Text>
+              </View>
+
+              {/* Estado */}
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>ESTADO</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+                {STATUS_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={{
+                      flex: 1, paddingVertical: 10, borderRadius: 8,
+                      backgroundColor: status === opt.value ? C.accent : C.surface,
+                      borderWidth: 1, borderColor: status === opt.value ? C.accent : C.border,
+                      alignItems: 'center',
+                    }}
+                    onPress={() => setStatus(opt.value)}
+                  >
+                    <Text style={{ color: status === opt.value ? 'white' : C.muted, fontWeight: '700', fontSize: 13 }}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Generate password */}
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>CONTRASEÑA</Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  backgroundColor: '#1e3a5f', borderRadius: 8, paddingVertical: 12,
+                  borderWidth: 1, borderColor: '#2563eb', opacity: resetting ? 0.7 : 1,
+                }}
+                onPress={handleGeneratePassword}
+                disabled={resetting}
+              >
+                {resetting
+                  ? <ActivityIndicator size="small" color="#60a5fa" />
+                  : <FontAwesome name="key" size={14} color="#60a5fa" />}
+                <Text style={{ color: '#60a5fa', fontWeight: '700', fontSize: 13 }}>
+                  {resetting ? 'Generando y enviando...' : 'Generar y enviar contraseña por email'}
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ color: C.muted, fontSize: 11, marginTop: 6 }}>
+                Se generará una contraseña segura de 16 caracteres y se enviará al correo del usuario.
+              </Text>
+            </View>
+
+            {/* Feedback */}
+            {error ? <Text style={{ color: '#f87171', fontSize: 13, marginTop: 12 }}>{error}</Text> : null}
+            {successMsg ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, backgroundColor: '#14532d', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#166534' }}>
+                <FontAwesome name="check-circle" size={14} color="#4ade80" />
+                <Text style={{ color: '#4ade80', fontSize: 13, flex: 1 }}>{successMsg}</Text>
+              </View>
+            ) : null}
+
+            {/* Actions */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center' }}
+                onPress={onClose}
+              >
+                <Text style={{ color: C.textDim, fontWeight: '600' }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: C.accent, alignItems: 'center', opacity: loading ? 0.7 : 1 }}
+                onPress={handleSave}
+                disabled={loading}
+              >
+                {loading ? <ActivityIndicator color="white" size="small" /> : <Text style={{ color: 'white', fontWeight: '700' }}>Guardar cambios</Text>}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +426,7 @@ export default function CmsUsers() {
   const [filterSinContrato, setFilterSinContrato] = useState(true);
   const [pageSize, setPageSize] = useState(50);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Redirect if not authenticated
@@ -520,7 +759,7 @@ export default function CmsUsers() {
                       <View style={{ width: 80, flexDirection: 'row', gap: 6 }}>
                         <TouchableOpacity
                           style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center' }}
-                          onPress={() => {/* edit */ }}
+                          onPress={() => setEditingUser(user)}
                         >
                           <FontAwesome name="pencil" size={12} color="#60A5FA" />
                         </TouchableOpacity>
@@ -616,6 +855,14 @@ export default function CmsUsers() {
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleAddUser}
+      />
+
+      <EditUserModal
+        visible={editingUser !== null}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onSave={(updated) => setUsers((prev) => prev.map((u) => u.id === updated.id ? updated : u))}
+        accessToken={accessToken ?? ''}
       />
     </CmsShell>
   );

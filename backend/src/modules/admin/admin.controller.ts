@@ -42,6 +42,13 @@ export class AdminController {
     return this.adminService.deleteUser(id);
   }
 
+  @ApiOperation({ summary: 'Generate and send a new password to a user by email (admin)' })
+  @Post('users/:id/reset-password')
+  @HttpCode(HttpStatus.OK)
+  async generateAndSendPassword(@Param('id') id: string) {
+    return this.adminService.generateAndSendPassword(id);
+  }
+
   // ---- Monitor -------------------------------------------------------------
 
   @ApiOperation({ summary: 'Get system monitor stats' })

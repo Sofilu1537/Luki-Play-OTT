@@ -1,6 +1,11 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import type { UserRepository } from '../auth/domain/interfaces/user.repository';
 import { USER_REPOSITORY } from '../auth/domain/interfaces/user.repository';
+import type { HashService } from '../auth/domain/interfaces/hash.service';
+import { HASH_SERVICE } from '../auth/domain/interfaces/hash.service';
+import type { EmailService } from '../auth/domain/interfaces/email.service';
+import { EMAIL_SERVICE } from '../auth/domain/interfaces/email.service';
 import { User, UserRole, UserStatus } from '../auth/domain/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,6 +28,8 @@ export interface OttComponent {
 export class AdminService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
+    @Inject(HASH_SERVICE) private readonly hashService: HashService,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
   ) {}
 
   // ---- In-memory components store ------------------------------------------
@@ -128,6 +135,64 @@ export class AdminService {
     if (!user) throw new NotFoundException(`User ${id} not found`);
     user.status = UserStatus.INACTIVE;
     await this.userRepository.save(user);
+  }
+
+  async generateAndSendPassword(id: string): Promise<{ message: string }> {
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+
+    const password = this.generateSecurePassword();
+    user.passwordHash = await this.hashService.hash(password);
+    user.mustChangePassword = true;
+    await this.userRepository.save(user);
+
+    const displayName = user.displayName();
+    await this.emailService.sendGeneratedPassword(user.email, password, displayName);
+
+    return { message: `Contraseña generada y enviada a ${user.email}` };
+  }
+
+  /**
+   * Generates a cryptographically secure password following OWASP guidelines:
+   * - Minimum 16 characters
+   * - Uppercase, lowercase, digits, and special characters
+   * - Uses crypto.randomBytes for true randomness (not Math.random)
+   */
+  private generateSecurePassword(): string {
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+    const special = '!@#$%&*-_=+?';
+    const all = upper + lower + digits + special;
+
+    const pick = (charset: string): string => {
+      const idx = randomBytes(1)[0] % charset.length;
+      return charset[idx];
+    };
+
+    // Guarantee at least one char from each character class
+    const required = [
+      pick(upper),
+      pick(upper),
+      pick(lower),
+      pick(lower),
+      pick(digits),
+      pick(digits),
+      pick(special),
+      pick(special),
+    ];
+
+    // Fill remaining positions up to 16 characters
+    const remaining = Array.from({ length: 8 }, () => pick(all));
+
+    // Fisher-Yates shuffle using crypto random bytes
+    const combined = [...required, ...remaining];
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = randomBytes(1)[0] % (i + 1);
+      [combined[i], combined[j]] = [combined[j], combined[i]];
+    }
+
+    return combined.join('');
   }
 
   // ---- Monitor -------------------------------------------------------------
