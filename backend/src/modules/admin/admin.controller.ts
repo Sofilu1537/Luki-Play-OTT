@@ -15,9 +15,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/presentation/guards/permissions.guard';
 import { Permissions } from '../auth/presentation/decorators/permissions.decorator';
 import { AdminService } from './admin.service';
+import { CreateCanalDto } from './dto/create-canal.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
+import { UpdateCanalDto } from './dto/update-canal.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
@@ -157,8 +159,30 @@ export class AdminController {
   @Get('sliders')
   getSliders() { return this.adminService.getSliders(); }
 
+  @Post('canales')
+  async createCanal(@Body() dto: CreateCanalDto) {
+    return this.adminService.createCanal(dto);
+  }
+
   @Get('canales')
-  getCanales() { return this.adminService.getCanales(); }
+  async getCanales() { return this.adminService.getCanales(); }
+
+  @Patch('canales/:id')
+  async updateCanal(@Param('id') id: string, @Body() dto: UpdateCanalDto) {
+    return this.adminService.updateCanal(id, dto);
+  }
+
+  @Post('canales/:id/toggle')
+  @HttpCode(HttpStatus.OK)
+  async toggleCanal(@Param('id') id: string) {
+    return this.adminService.toggleCanal(id);
+  }
+
+  @Delete('canales/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteCanal(@Param('id') id: string) {
+    return this.adminService.deleteCanal(id);
+  }
 
   @Get('categorias')
   getCategorias() { return this.adminService.getCategorias(); }

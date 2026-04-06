@@ -901,144 +901,30 @@ export async function adminReorderSliders(accessToken: string, orderedIds: strin
   }
 }
 
-// ---------------------------------------------------------------------------
-// Channels
-// ---------------------------------------------------------------------------
-
-let mockCanalesStore: AdminCanal[] = [
-  {
-    id: 'ch-001',
-    nombre: 'Noticias 24',
-    logo: '',
-    streamUrl: 'https://stream.example.com/noticias24',
-    detalle: 'Canal de noticias nacionales e internacionales en vivo las 24 horas.',
-    categoria: 'Noticias',
-    tipo: 'live',
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T08:00:00.000Z',
-    actualizadoEn: '2026-04-01T08:00:00.000Z',
-  },
-  {
-    id: 'ch-002',
-    nombre: 'Deportes HD',
-    logo: '',
-    streamUrl: 'https://stream.example.com/deportes',
-    detalle: 'Futbol, basketball, tenis y eventos deportivos en alta definicion.',
-    categoria: 'Deportes',
-    tipo: 'live',
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T09:00:00.000Z',
-    actualizadoEn: '2026-04-01T09:00:00.000Z',
-  },
-  {
-    id: 'ch-003',
-    nombre: 'Cine Clasico',
-    logo: '',
-    streamUrl: 'https://stream.example.com/cine',
-    detalle: 'Peliculas clasicas del cine de oro, drama, comedia y accion.',
-    categoria: 'Cine',
-    tipo: 'live',
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T10:00:00.000Z',
-    actualizadoEn: '2026-04-01T10:00:00.000Z',
-  },
-  {
-    id: 'ch-004',
-    nombre: 'Infantil TV',
-    logo: '',
-    streamUrl: 'https://stream.example.com/infantil',
-    detalle: 'Programacion infantil segura con controles parentales activados.',
-    categoria: 'Infantil',
-    tipo: 'live',
-    requiereControlParental: true,
-    activo: false,
-    creadoEn: '2026-04-01T11:00:00.000Z',
-    actualizadoEn: '2026-04-01T11:00:00.000Z',
-  },
-  {
-    id: 'ch-005',
-    nombre: 'Musica Live',
-    logo: '',
-    streamUrl: 'https://stream.example.com/musica',
-    detalle: 'Conciertos y listas de reproduccion en vivo.',
-    categoria: 'Música',
-    tipo: 'live',
-    requiereControlParental: false,
-    activo: true,
-    creadoEn: '2026-04-01T12:00:00.000Z',
-    actualizadoEn: '2026-04-01T12:00:00.000Z',
-  },
-];
-
 export async function adminListCanales(accessToken: string): Promise<AdminCanal[]> {
-  try { return await apiFetch<AdminCanal[]>('/admin/canales', accessToken); }
-  catch { return mockCanalesStore.map((canal) => ({ ...canal })); }
+  return apiFetch<AdminCanal[]>('/admin/canales', accessToken);
 }
 
 export async function adminCreateCanal(accessToken: string, data: AdminCanalPayload): Promise<AdminCanal> {
-  try {
-    return await apiFetch<AdminCanal>('/admin/canales', accessToken, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const now = new Date().toISOString();
-    const created: AdminCanal = {
-      ...data,
-      id: `ch-${Date.now()}`,
-      creadoEn: now,
-      actualizadoEn: now,
-    };
-    mockCanalesStore = [created, ...mockCanalesStore];
-    return { ...created };
-  }
+  return apiFetch<AdminCanal>('/admin/canales', accessToken, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminUpdateCanal(accessToken: string, id: string, data: Partial<AdminCanalPayload>): Promise<AdminCanal> {
-  try {
-    return await apiFetch<AdminCanal>(`/admin/canales/${id}`, accessToken, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const index = mockCanalesStore.findIndex((canal) => canal.id === id);
-    if (index === -1) throw new Error('Canal no encontrado');
-    const updated: AdminCanal = {
-      ...mockCanalesStore[index],
-      ...data,
-      tipo: 'live',
-      actualizadoEn: new Date().toISOString(),
-    };
-    mockCanalesStore[index] = updated;
-    return { ...updated };
-  }
+  return apiFetch<AdminCanal>(`/admin/canales/${id}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminToggleCanal(accessToken: string, id: string): Promise<AdminCanal> {
-  try {
-    return await apiFetch<AdminCanal>(`/admin/canales/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
-    const index = mockCanalesStore.findIndex((canal) => canal.id === id);
-    if (index === -1) throw new Error('Canal no encontrado');
-    const updated = {
-      ...mockCanalesStore[index],
-      activo: !mockCanalesStore[index].activo,
-      actualizadoEn: new Date().toISOString(),
-    };
-    mockCanalesStore[index] = updated;
-    return { ...updated };
-  }
+  return apiFetch<AdminCanal>(`/admin/canales/${id}/toggle`, accessToken, { method: 'POST' });
 }
 
 export async function adminDeleteCanal(accessToken: string, id: string): Promise<void> {
-  try {
-    await apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
-    mockCanalesStore = mockCanalesStore.filter((canal) => canal.id !== id);
-  }
+  await apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
 }
 
 // ---------------------------------------------------------------------------
