@@ -81,6 +81,14 @@ export class AdminController {
     return this.adminService.setUserPassword(id, dto);
   }
 
+  @ApiOperation({ summary: 'Auto-generate a secure password and send it by email (admin)' })
+  @Permissions('cms:users:write')
+  @Post('users/:id/generate-password')
+  @HttpCode(HttpStatus.OK)
+  async generateAndSendPassword(@Param('id') id: string) {
+    return this.adminService.generateAndSendPassword(id);
+  }
+
   @ApiOperation({ summary: 'List sessions for a user by device (admin)' })
   @Permissions('cms:users:read')
   @Get('users/:id/sessions')

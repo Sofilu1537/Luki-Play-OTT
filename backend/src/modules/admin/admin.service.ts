@@ -10,6 +10,8 @@ import { HASH_SERVICE } from '../auth/domain/interfaces/hash.service';
 import type { HashService } from '../auth/domain/interfaces/hash.service';
 import { SESSION_REPOSITORY } from '../auth/domain/interfaces/session.repository';
 import type { SessionRepository } from '../auth/domain/interfaces/session.repository';
+import { EMAIL_SERVICE } from '../auth/domain/interfaces/email.service';
+import type { EmailService } from '../auth/domain/interfaces/email.service';
 import { CreateCmsUserUseCase } from '../auth/application/use-cases/create-cms-user.use-case';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -118,6 +120,7 @@ export class AdminService {
     @Inject(ACCOUNT_REPOSITORY) private readonly accountRepository: AccountRepository,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(SESSION_REPOSITORY) private readonly sessionRepository: SessionRepository,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
     private readonly createCmsUserUseCase: CreateCmsUserUseCase,
   ) {}
 
@@ -476,6 +479,62 @@ export class AdminService {
     }
 
     return { message: 'Contraseña actualizada y sesiones revocadas.' };
+  }
+
+  async generateAndSendPassword(id: string): Promise<{ message: string }> {
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+
+    const password = this.generateSecurePassword();
+    const passwordHash = await this.hashService.hash(password);
+    await this.userRepository.updatePassword(user.id, passwordHash);
+
+    const refreshedUser = await this.userRepository.findById(id);
+    if (refreshedUser) {
+      refreshedUser.mustChangePassword = true;
+      refreshedUser.failedAttempts = 0;
+      refreshedUser.lockedUntil = null;
+      await this.userRepository.save(refreshedUser);
+    }
+
+    await this.revokeAllSessionsInternal(user.id);
+    await this.emailService.sendGeneratedPassword(user.email, password, user.displayName());
+
+    return { message: `Contraseña generada y enviada a ${user.email}` };
+  }
+
+  /**
+   * Generates a cryptographically secure password following OWASP guidelines:
+   * - 16 characters minimum
+   * - Guaranteed uppercase, lowercase, digits, and special characters
+   * - Uses crypto.randomBytes for true randomness (never Math.random)
+   * - Fisher-Yates shuffle with crypto-random indices
+   */
+  private generateSecurePassword(): string {
+    const upper   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower   = 'abcdefghijklmnopqrstuvwxyz';
+    const digits  = '0123456789';
+    const special = '!@#$%&*-_=+?';
+    const all     = upper + lower + digits + special;
+
+    const pick = (charset: string): string => charset[randomBytes(1)[0] % charset.length];
+
+    const required = [
+      pick(upper), pick(upper),
+      pick(lower), pick(lower),
+      pick(digits), pick(digits),
+      pick(special), pick(special),
+    ];
+
+    const remaining = Array.from({ length: 8 }, () => pick(all));
+    const combined  = [...required, ...remaining];
+
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = randomBytes(1)[0] % (i + 1);
+      [combined[i], combined[j]] = [combined[j], combined[i]];
+    }
+
+    return combined.join('');
   }
 
   async listUserSessions(id: string): Promise<AdminUserSessionRecord[]> {
