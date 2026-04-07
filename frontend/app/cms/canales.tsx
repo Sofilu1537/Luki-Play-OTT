@@ -440,7 +440,7 @@ export default function CmsCanales() {
                       <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }} onPress={() => handleToggle(canal)} disabled={loadingAction}>
                         <FontAwesome name={canal.activo ? 'power-off' : 'play'} size={11} color={canal.activo ? C.green : C.green} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }} onPress={() => openEditModal(canal)}>
+                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(canal)}>
                         <FontAwesome name="pencil" size={11} color={C.cyan} />
                       </TouchableOpacity>
                       <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(canal)}>
@@ -475,7 +475,7 @@ export default function CmsCanales() {
       </ScrollView>
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ width: '100%', maxWidth: 760, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>

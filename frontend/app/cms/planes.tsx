@@ -89,7 +89,7 @@ function ToggleChip({
     tone === 'green'
       ? { bg: C.greenSoft, border: 'rgba(16,185,129,0.28)', text: C.green }
       : tone === 'cyan'
-        ? { bg: C.cyanSoft, border: 'rgba(34,211,238,0.24)', text: C.cyan }
+        ? { bg: C.cyanSoft, border: 'rgba(180,144,255,0.24)', text: C.cyan }
         : { bg: C.accentSoft, border: C.accentBorder, text: C.accentLight };
 
   return (
@@ -380,12 +380,12 @@ export default function CmsPlanes() {
                         {plan.activo ? 'ACTIVO' : 'INACTIVO'}
                       </Text>
                     </View>
-                    <View style={{ backgroundColor: C.cyanSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }}>
+                    <View style={{ backgroundColor: C.cyanSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }}>
                       <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>{metricLabel(plan.grupoUsuarios)}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }} onPress={() => openEditModal(plan)}>
+                    <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(plan)}>
                       <FontAwesome name="pencil" size={12} color={C.cyan} />
                     </TouchableOpacity>
                     <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(plan)}>

@@ -22,6 +22,60 @@ interface AdminUser {
 }
 
 // ---------------------------------------------------------------------------
+// Mock data (source: report-contract.xlsx — primeros 47 registros)
+// ---------------------------------------------------------------------------
+
+const MOCK_USERS: AdminUser[] = [
+  { id: '1',  contrato: '000000000', nombre: 'CASTRO DANIEL',                         email: '',                              telefono: '0987284494',              plan: 'PLAN BASICO',           status: 'ANULADO',    fechaInicio: '2020-09-14', fechaFin: '',           sesiones: 0, role: 'cliente' },
+  { id: '2',  contrato: '000000002', nombre: 'DOICELA NEGRETE JEFFERSON XAVIER',       email: 'facturacion@luki.ec',           telefono: '0939246460',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-08-27', fechaFin: '2022-12-01', sesiones: 0, role: 'cliente' },
+  { id: '3',  contrato: '000000003', nombre: 'PASTUNA CHUSIN MANUEL',                  email: 'manuelpastunachusin@gmail.com', telefono: '0939218464',              plan: 'PLAN BASICO',           status: 'ACTIVO',     fechaInicio: '2020-08-28', fechaFin: '2025-10-17', sesiones: 0, role: 'cliente' },
+  { id: '4',  contrato: '000000004', nombre: 'CATOTA YUGSI JENNY GUADALUPE',           email: 'facturacion@luki.ec',           telefono: '0988062117',              plan: 'PLAN BASICO',           status: 'ACTIVO',     fechaInicio: '2020-08-28', fechaFin: '2026-03-11', sesiones: 0, role: 'cliente' },
+  { id: '5',  contrato: '000000005', nombre: 'GUAINALLA CASILLAS TANIA SOLEDAD',       email: 'taniaguainalla03@gmail.com',    telefono: '0979361442',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-08-31', fechaFin: '2022-11-25', sesiones: 0, role: 'cliente' },
+  { id: '6',  contrato: '000000006', nombre: 'DE LA CRUZ QUIROZ VERONICA VIVIANA',     email: 'Vq346299@gmail.com',            telefono: '0983535889',              plan: 'PLAN BASICO',           status: 'CORTADO',    fechaInicio: '2020-08-31', fechaFin: '2023-03-16', sesiones: 0, role: 'cliente' },
+  { id: '7',  contrato: '000000007', nombre: 'AYALA USUNO JOSE NEPTALI',               email: 'ayala.r.alex20@gmail.com',      telefono: '0995366940',              plan: 'PLAN HOGAR SUPER',      status: 'ACTIVO',     fechaInicio: '2020-08-31', fechaFin: '2026-03-11', sesiones: 0, role: 'cliente' },
+  { id: '8',  contrato: '000000009', nombre: 'TOASA QUISHPE MARIA TERESA',             email: 'facturacion@luki.ec',           telefono: '0984921659',              plan: 'PLAN HOGAR SUPER PLUS', status: 'ACTIVO',     fechaInicio: '2020-08-31', fechaFin: '',           sesiones: 0, role: 'cliente' },
+  { id: '9',  contrato: '000000010', nombre: 'GANCINO JAILACA MARIA NARCISA',          email: 'aguaizaerika61@gmail.com',      telefono: '0984134246',              plan: 'PLAN PRO',              status: 'ACTIVO',     fechaInicio: '2020-09-01', fechaFin: '2024-04-17', sesiones: 0, role: 'cliente' },
+  { id: '10', contrato: '000000011', nombre: 'TAMAY GUARACA JOSE DOMINGO',             email: 'facturacion@luki.ec',           telefono: '0993214258',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-01', fechaFin: '2023-08-14', sesiones: 0, role: 'cliente' },
+  { id: '11', contrato: '000000012', nombre: 'SANCHEZ LLANO SILVIA ADRIANA',           email: 'mauriciosasnalema@gmail.com',   telefono: '0983881636',              plan: 'PLAN HOGAR IDEAL PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-01', fechaFin: '2024-12-17', sesiones: 0, role: 'cliente' },
+  { id: '12', contrato: '000000013', nombre: 'YUPANGUI YUPANGUI ANA LUCIA',            email: 'facturacion@luki.ec',           telefono: '0994193126',              plan: 'PLAN HOGAR SUPER',      status: 'ACTIVO',     fechaInicio: '2020-09-01', fechaFin: '2026-03-11', sesiones: 0, role: 'cliente' },
+  { id: '13', contrato: '000000014', nombre: 'VEGA TIGASI JOSE PABLO',                 email: 'jovetigaci@gmail.com',          telefono: '0968013569',              plan: 'PLAN HOGAR SUPER PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-01', fechaFin: '2026-02-11', sesiones: 0, role: 'cliente' },
+  { id: '14', contrato: '000000015', nombre: 'PALLO ALAJO SEGUNDO JUAN',               email: 'juanpallo05@gmail.com',         telefono: '0959550924',              plan: 'PLAN HOGAR IDEAL PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-02', fechaFin: '2025-12-12', sesiones: 0, role: 'cliente' },
+  { id: '15', contrato: '000000016', nombre: 'LLAMUCA IZA BLANCA BEATRIZ',             email: 'facturacion@luki.ec',           telefono: '0994531033',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-02', fechaFin: '2022-03-24', sesiones: 0, role: 'cliente' },
+  { id: '16', contrato: '000000017', nombre: 'VILLAR ALLAUCA AGUSTIN',                 email: 'facturacion@luki.ec',           telefono: '0981704691',              plan: 'PLAN PREMIUM',          status: 'CORTADO',    fechaInicio: '2020-09-02', fechaFin: '2023-01-18', sesiones: 0, role: 'cliente' },
+  { id: '17', contrato: '000000018', nombre: 'VELASCO ROSERO LIZBETH ALEJANDRA',       email: 'facturacion@luki.ec',           telefono: '0980716767',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-02', fechaFin: '2022-08-01', sesiones: 0, role: 'cliente' },
+  { id: '18', contrato: '000000019', nombre: 'PALAQUINBAY CAMPOS ANGEL NICOLAS',       email: 'angelpalaquibay69@gmail.com',   telefono: '0998482585',              plan: 'PLAN HOGAR IDEAL PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-02', fechaFin: '2026-02-11', sesiones: 0, role: 'cliente' },
+  { id: '19', contrato: '000000020', nombre: 'PERDOMO JAMI JOSE RODRIGO',              email: 'facturacion@luki.ec',           telefono: '0985084080',              plan: 'PLAN HOGAR SUPER PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-02', fechaFin: '2026-02-11', sesiones: 0, role: 'cliente' },
+  { id: '20', contrato: '000000021', nombre: 'QUISHPE ANTE OLIMPIA',                   email: 'facturacion@luki.ec',           telefono: '0995726023',              plan: 'PLAN HOGAR IDEAL PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-02', fechaFin: '2025-06-12', sesiones: 0, role: 'cliente' },
+  { id: '21', contrato: '000000022', nombre: 'GUANOQUIZA LOGRO CESARIO',               email: 'facturacion@luki.ec',           telefono: '0993069762',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-02', fechaFin: '2024-06-24', sesiones: 0, role: 'cliente' },
+  { id: '22', contrato: '000000023', nombre: 'CHONGA CACHUPUD JOSE MANUEL',            email: 'facturacion@luki.ec',           telefono: '0998310674',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-02', fechaFin: '2023-11-17', sesiones: 0, role: 'cliente' },
+  { id: '23', contrato: '000000024', nombre: 'TAMAMI QUINATOA DAYSI MARIBEL',          email: 'facturacion@luki.ec',           telefono: '0998876463',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-02', fechaFin: '2022-08-01', sesiones: 0, role: 'cliente' },
+  { id: '24', contrato: '000000025', nombre: 'RAMON CABRERA CARMEN SONIA',             email: 'mary180betty@gmail.com',        telefono: '0994922196',              plan: 'PACK BASICO',           status: 'CORTADO',    fechaInicio: '2020-09-02', fechaFin: '2023-12-26', sesiones: 0, role: 'cliente' },
+  { id: '25', contrato: '000000026', nombre: 'LOPEZ LLANGA NORMA ELIZABETH',           email: 'Soldamarcelo90@gmail.com',      telefono: '0989590010',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-02', fechaFin: '2022-12-27', sesiones: 0, role: 'cliente' },
+  { id: '26', contrato: '000000027', nombre: 'QUISHPE VILLAR MARIA DOLORES',           email: 'facturacion@luki.ec',           telefono: '0959744564',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-03', fechaFin: '2021-10-28', sesiones: 0, role: 'cliente' },
+  { id: '27', contrato: '000000028', nombre: 'SALAZAR NARANJO OSCAR ROLANDO',          email: 'facturacion@luki.ec',           telefono: '0981061497',              plan: 'PLAN BASICO',           status: 'ACTIVO',     fechaInicio: '2020-09-03', fechaFin: '2025-06-16', sesiones: 0, role: 'cliente' },
+  { id: '28', contrato: '000000029', nombre: 'ORDONEZ SINCHIRE LUISA LILY',            email: '1940@outlook.com',              telefono: '0995400720',              plan: 'PLAN HOGAR SUPER',      status: 'ACTIVO',     fechaInicio: '2020-09-03', fechaFin: '',           sesiones: 0, role: 'cliente' },
+  { id: '29', contrato: '000000031', nombre: 'BORJA BORJA JULIO RAMIRO',               email: 'facturacion@luki.ec',           telefono: '0995295389',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-03', fechaFin: '2022-01-19', sesiones: 0, role: 'cliente' },
+  { id: '30', contrato: '000000032', nombre: 'PAZOS OROSCO GABRIELA BRIGITE',          email: 'facturacion@luki.ec',           telefono: '0987229463',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-03', fechaFin: '2024-12-13', sesiones: 0, role: 'cliente' },
+  { id: '31', contrato: '000000033', nombre: 'TOTASIG CAILLAGUA NELSON JAVIER',        email: 'facturacion@luki.ec',           telefono: '0959847430',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-03', fechaFin: '2021-12-01', sesiones: 0, role: 'cliente' },
+  { id: '32', contrato: '000000034', nombre: 'CAVA QUISHPE JUAN CARLOS',               email: 'facturacion@luki.ec',           telefono: '0993815854',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-03', fechaFin: '2021-11-18', sesiones: 0, role: 'cliente' },
+  { id: '33', contrato: '000000035', nombre: 'MUNOZ GUAMAN LUIS MIGUEL',               email: 'miguicho-593@hotmail.com',      telefono: '0994206701',              plan: 'PLAN BASICO',           status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2025-09-11', sesiones: 0, role: 'cliente' },
+  { id: '34', contrato: '000000036', nombre: 'TOAQUIZA VEGA LUIS',                     email: 'luistoaquizavega2410@gmail.com',telefono: '0989800810',              plan: 'PLAN HOGAR SUPER PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2026-02-11', sesiones: 0, role: 'cliente' },
+  { id: '35', contrato: '000000038', nombre: 'LUCINA OYOS CLERIDA GRENEIMI',           email: 'robertocastillolucina@gamil.com',telefono: '0962698199',             plan: 'ESPECIAL',              status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2026-03-11', sesiones: 0, role: 'cliente' },
+  { id: '36', contrato: '000000039', nombre: 'TENELEMA GUALA ELVIA JOHANNA',           email: 'elviatenelema281@gmail.com',    telefono: '0981060962',              plan: 'PLAN HOGAR SUPER PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '',           sesiones: 0, role: 'cliente' },
+  { id: '37', contrato: '000000040', nombre: 'SHULCA JACOME CARMEN MARLENE',           email: 'facturacion@luki.ec',           telefono: '0939699558',              plan: 'PACK BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-04', fechaFin: '2023-04-12', sesiones: 0, role: 'cliente' },
+  { id: '38', contrato: '000000041', nombre: 'LEMA PAGUAY PATRICIA',                   email: 'lemluis90@gmail.com',           telefono: '0999821489',              plan: 'PLAN BASICO',           status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2024-09-18', sesiones: 0, role: 'cliente' },
+  { id: '39', contrato: '000000042', nombre: 'MONAR AVEROS EDGAR VINICIO',             email: 'edgarmonar02@gmail.com',        telefono: '0961818075',              plan: 'PLAN BASICO',           status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2026-01-13', sesiones: 0, role: 'cliente' },
+  { id: '40', contrato: '000000043', nombre: 'CRIOLLO CRIOLLO NELSON PATRICIO',        email: 'facturacion@luki.ec',           telefono: '0995437322',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-04', fechaFin: '2023-08-14', sesiones: 0, role: 'cliente' },
+  { id: '41', contrato: '000000044', nombre: 'MIRANDA ROMERO MARIA ELENA',             email: 'facturacion@luki.ec',           telefono: '0998472165',              plan: 'PLAN HOGAR IDEAL PLUS', status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2025-11-13', sesiones: 0, role: 'cliente' },
+  { id: '42', contrato: '000000045', nombre: 'LISINTUNA GAVILANES MARIA TERESA',       email: 'facturacion@luki.ec',           telefono: '0967690616',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-04', fechaFin: '2024-02-22', sesiones: 0, role: 'cliente' },
+  { id: '43', contrato: '000000046', nombre: 'TAPIA MARIA BEATRIZ',                    email: 'facturacion@luki.ec',           telefono: '0992825924',              plan: 'ESPECIAL',              status: 'ACTIVO',     fechaInicio: '2020-09-04', fechaFin: '2026-02-11', sesiones: 0, role: 'cliente' },
+  { id: '44', contrato: '000000047', nombre: 'BORJA PAZOS NELSON RODRIGO',             email: 'facturacion@luki.ec',           telefono: '0991884152',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-05', fechaFin: '2021-09-29', sesiones: 0, role: 'cliente' },
+  { id: '45', contrato: '000000048', nombre: 'FLORES SANTAMARIA LORENA MIRELLA',       email: 'jusbeck11@gmail.com',           telefono: '0985715903',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-05', fechaFin: '2022-11-25', sesiones: 0, role: 'cliente' },
+  { id: '46', contrato: '000000049', nombre: 'SANTI SATAN MARIA DEL CARMEN',           email: 'facturacion@luki.ec',           telefono: '0995217820',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-05', fechaFin: '2022-09-26', sesiones: 0, role: 'cliente' },
+  { id: '47', contrato: '000000050', nombre: 'TOCTE VELASQUE WILLAN ANIBAL',           email: 'facturacion@luki.ec',           telefono: '0999734512',              plan: 'PLAN BASICO',           status: 'SUSPENDIDO', fechaInicio: '2020-09-06', fechaFin: '2021-09-21', sesiones: 0, role: 'cliente' },
+];
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -45,6 +99,8 @@ function statusLabel(s: string) {
   const u = s.toUpperCase();
   if (u === 'ACTIVE' || u === 'ACTIVO') return { label: 'Activo', color: C.green };
   if (u === 'SUSPENDED' || u === 'SUSPENDIDO') return { label: 'Suspendido', color: C.amber };
+  if (u === 'CORTADO') return { label: 'Cortado', color: C.rose };
+  if (u === 'ANULADO') return { label: 'Anulado', color: C.muted };
   return { label: 'Inactivo', color: C.rose };
 }
 
@@ -331,18 +387,13 @@ export default function UsersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pageErr, setPageErr] = useState('');
 
-  const load = useCallback(async () => {
-    if (!accessToken) return;
+  const load = useCallback(() => {
     setLoading(true);
-    try {
-      const data = await apiFetch<AdminUser[]>('/admin/users', accessToken);
-      setUsers(data);
-    } catch (err: unknown) {
-      setPageErr(err instanceof Error ? err.message : 'Error al cargar usuarios.');
-    } finally { setLoading(false); }
-  }, [accessToken]);
+    setUsers(MOCK_USERS);
+    setLoading(false);
+  }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();

@@ -16,6 +16,8 @@ import { PermissionsGuard } from '../auth/presentation/guards/permissions.guard'
 import { Permissions } from '../auth/presentation/decorators/permissions.decorator';
 import { AdminService } from './admin.service';
 import { CreateCanalDto } from './dto/create-canal.dto';
+import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { UpdateCategoriaDto } from './dto/update-categoria.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
@@ -186,6 +188,28 @@ export class AdminController {
 
   @Get('categorias')
   getCategorias() { return this.adminService.getCategorias(); }
+
+  @Post('categorias')
+  createCategoria(@Body() dto: CreateCategoriaDto) {
+    return this.adminService.createCategoria(dto);
+  }
+
+  @Patch('categorias/:id')
+  updateCategoria(@Param('id') id: string, @Body() dto: UpdateCategoriaDto) {
+    return this.adminService.updateCategoria(id, dto);
+  }
+
+  @Post('categorias/:id/toggle')
+  @HttpCode(HttpStatus.OK)
+  toggleCategoria(@Param('id') id: string) {
+    return this.adminService.toggleCategoria(id);
+  }
+
+  @Delete('categorias/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteCategoria(@Param('id') id: string) {
+    return this.adminService.deleteCategoria(id);
+  }
 
   @Get('blog')
   getBlog() { return this.adminService.getBlog(); }

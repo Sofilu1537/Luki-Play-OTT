@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable, Modal, TextInput, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import { adminListCanales, adminListCategorias, AdminCanal, AdminCategoria } from '../../services/api/adminApi';
+import { adminListCanales, adminListCategorias, adminCreateCategoria, adminUpdateCategoria, adminToggleCategoria, adminDeleteCategoria, AdminCanal, AdminCategoria } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +26,7 @@ const CATEGORY_META: Record<string, {
   preview: string[];
 }> = {
   peliculas: { accent: '#F59E0B', glow: 'rgba(245,158,11,0.18)', icon: 'film', tag: 'Destacada', featured: true, contentCount: 42, aliases: ['cine', 'peliculas'], preview: ['Estrenos', 'Clásicos', 'Acción'] },
-  series: { accent: '#22D3EE', glow: 'rgba(34,211,238,0.18)', icon: 'list-alt', tag: 'Binge-ready', contentCount: 31, preview: ['Temporadas', 'Miniseries', 'Originales'] },
+  series: { accent: '#22D3EE', glow: 'rgba(180,144,255,0.18)', icon: 'list-alt', tag: 'Binge-ready', contentCount: 31, preview: ['Temporadas', 'Miniseries', 'Originales'] },
   documentales: { accent: '#10B981', glow: 'rgba(16,185,129,0.18)', icon: 'globe', tag: 'Curada', contentCount: 18, aliases: ['documental', 'documentales'], preview: ['Historia', 'Naturaleza', 'Ciencia'] },
   infantil: { accent: '#EC4899', glow: 'rgba(236,72,153,0.18)', icon: 'child', tag: 'Family-safe', contentCount: 26, aliases: ['infantil'], preview: ['Animación', 'Aprendizaje', 'Aventura'] },
   deportes: { accent: '#10B981', glow: 'rgba(16,185,129,0.18)', icon: 'futbol-o', tag: 'Live', featured: true, contentCount: 22, aliases: ['deportes'], preview: ['En vivo', 'Ligas', 'Highlights'] },
@@ -61,7 +61,10 @@ export default function CmsCategorias() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<AdminCategoria | null>(null);
   const [editingCategory, setEditingCategory] = useState<AdminCategoria | null>(null);
-  const [form, setForm] = useState({ nombre: '', descripcion: '' });
+  const [isCreating, setIsCreating] = useState(false);
+  const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '' });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
@@ -113,22 +116,65 @@ export default function CmsCategorias() {
 
   function openEdit(category: AdminCategoria) {
     setEditingCategory(category);
-    setForm({ nombre: category.nombre, descripcion: category.descripcion });
+    setForm({ nombre: category.nombre, descripcion: category.descripcion, icono: category.icono ?? '' });
+    setFormError('');
+  }
+
+  function openCreate() {
+    setIsCreating(true);
+    setForm({ nombre: '', descripcion: '', icono: '' });
+    setFormError('');
   }
 
   function closeEdit() {
     setEditingCategory(null);
-    setForm({ nombre: '', descripcion: '' });
+    setIsCreating(false);
+    setForm({ nombre: '', descripcion: '', icono: '' });
+    setFormError('');
   }
 
-  function saveEdit() {
-    if (!editingCategory) return;
-    setCats((current) => current.map((item) => item.id === editingCategory.id ? { ...item, nombre: form.nombre.trim() || item.nombre, descripcion: form.descripcion.trim() || item.descripcion } : item));
-    closeEdit();
+  async function saveEdit() {
+    const nombre = form.nombre.trim();
+    if (!nombre) { setFormError('El nombre es requerido.'); return; }
+
+    setSaving(true);
+    setFormError('');
+    try {
+      if (isCreating) {
+        const created = await adminCreateCategoria(accessToken!, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
+        setCats((current) => [...current, created]);
+        setSelectedId(created.id);
+      } else if (editingCategory) {
+        const updated = await adminUpdateCategoria(accessToken!, editingCategory.id, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
+        setCats((current) => current.map((item) => item.id === editingCategory.id ? updated : item));
+      }
+      closeEdit();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'No se pudo guardar la categoría.');
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function toggleCategory(categoryId: string) {
-    setCats((current) => current.map((item) => item.id === categoryId ? { ...item, activo: !item.activo } : item));
+  async function toggleCategory(categoryId: string) {
+    if (!accessToken) return;
+    try {
+      const updated = await adminToggleCategoria(accessToken, categoryId);
+      setCats((current) => current.map((item) => item.id === categoryId ? updated : item));
+    } catch {
+      // Fallback: toggle local
+      setCats((current) => current.map((item) => item.id === categoryId ? { ...item, activo: !item.activo } : item));
+    }
+  }
+
+  async function deleteCategory(categoryId: string, nombre: string) {
+    if (!window.confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
+    if (!accessToken) return;
+    try {
+      await adminDeleteCategoria(accessToken, categoryId);
+      setCats((current) => current.filter((item) => item.id !== categoryId));
+      if (selectedId === categoryId) setSelectedId(null);
+    } catch { /* silently ignore */ }
   }
 
   return (
@@ -142,6 +188,13 @@ export default function CmsCategorias() {
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+            <TouchableOpacity
+              onPress={openCreate}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, backgroundColor: C.accent }}
+            >
+              <FontAwesome name="plus" size={12} color="white" />
+              <Text style={{ color: 'white', fontSize: 13, fontWeight: '800' }}>Nueva categoría</Text>
+            </TouchableOpacity>
             <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
               <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>ACTIVAS</Text>
               <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{activeCount}</Text>
@@ -262,14 +315,17 @@ export default function CmsCategorias() {
 
                         {(isHovered || isSelected) ? (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(5,11,23,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
                               <FontAwesome name="pencil" size={12} color={C.cyan} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(5,11,23,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => void toggleCategory(cat.id)}>
                               <FontAwesome name={cat.activo ? 'pause' : 'play'} size={11} color={cat.activo ? C.amber : C.green} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(5,11,23,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
                               <FontAwesome name="eye" size={12} color={C.text} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(255,122,89,0.14)', borderWidth: 1, borderColor: 'rgba(255,122,89,0.24)', alignItems: 'center', justifyContent: 'center' }} onPress={() => void deleteCategory(cat.id, cat.nombre)}>
+                              <FontAwesome name="trash" size={11} color={C.rose} />
                             </TouchableOpacity>
                           </View>
                         ) : null}
@@ -329,7 +385,7 @@ export default function CmsCategorias() {
       </ScrollView>
 
       <Modal visible={Boolean(previewCategory)} transparent animationType="fade" onRequestClose={() => setPreviewCategory(null)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           {previewCategory ? (
             <View style={{ width: '100%', maxWidth: 720, backgroundColor: C.surface, borderRadius: 20, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
               <LinearGradient colors={[`${(CATEGORY_META[normalizeKey(previewCategory.nombre)]?.accent ?? C.accent)}28`, 'rgba(12,24,41,1)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20 }}>
@@ -367,14 +423,15 @@ export default function CmsCategorias() {
         </View>
       </Modal>
 
-      <Modal visible={Boolean(editingCategory)} transparent animationType="fade" onRequestClose={closeEdit}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          {editingCategory ? (
-            <View style={{ width: '100%', maxWidth: 620, backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+      <Modal visible={Boolean(editingCategory) || isCreating} transparent animationType="fade" onRequestClose={closeEdit}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ width: '100%', maxWidth: 620, backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
               <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
-                  <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>Editar categoría</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Ajuste visual del catálogo editorial en CMS.</Text>
+                  <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{isCreating ? 'Nueva categoría' : 'Editar categoría'}</Text>
+                  <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
+                    {isCreating ? 'Define nombre, descripción e ícono de la nueva categoría.' : 'Ajuste visual del catálogo editorial en CMS.'}
+                  </Text>
                 </View>
                 <TouchableOpacity onPress={closeEdit}>
                   <FontAwesome name="times" size={18} color={C.muted} />
@@ -382,22 +439,52 @@ export default function CmsCategorias() {
               </View>
 
               <View style={{ padding: 20, gap: 12 }}>
-                <Text style={{ color: C.textDim, fontSize: 12 }}>NOMBRE</Text>
-                <TextInput value={form.nombre} onChangeText={(value) => setForm((current) => ({ ...current, nombre: value }))} placeholder="Nombre de la categoría" placeholderTextColor={C.muted} style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }} />
-                <Text style={{ color: C.textDim, fontSize: 12 }}>DESCRIPCIÓN</Text>
-                <TextInput value={form.descripcion} onChangeText={(value) => setForm((current) => ({ ...current, descripcion: value }))} placeholder="Describe cómo se presenta esta sección en el player" placeholderTextColor={C.muted} multiline numberOfLines={4} style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, minHeight: 110, textAlignVertical: 'top', ...webInput }} />
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>NOMBRE <Text style={{ color: C.rose }}>*</Text></Text>
+                <TextInput
+                  value={form.nombre}
+                  onChangeText={(value) => setForm((current) => ({ ...current, nombre: value }))}
+                  placeholder="Ej: Contenido Adulto, Tu Cancha…"
+                  placeholderTextColor={C.muted}
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
+                />
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>DESCRIPCIÓN</Text>
+                <TextInput
+                  value={form.descripcion}
+                  onChangeText={(value) => setForm((current) => ({ ...current, descripcion: value }))}
+                  placeholder="Describe cómo se presenta esta sección en el player"
+                  placeholderTextColor={C.muted}
+                  multiline
+                  numberOfLines={4}
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, minHeight: 90, textAlignVertical: 'top', ...webInput }}
+                />
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>ÍCONO (clase FontAwesome)</Text>
+                <TextInput
+                  value={form.icono}
+                  onChangeText={(value) => setForm((current) => ({ ...current, icono: value }))}
+                  placeholder="Ej: futbol-o, film, music, child…"
+                  placeholderTextColor={C.muted}
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
+                />
+                {formError ? (
+                  <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>{formError}</Text>
+                ) : null}
               </View>
 
               <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
                 <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeEdit}>
                   <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }} onPress={saveEdit}>
-                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>Guardar cambios</Text>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: saving ? C.muted : C.accent, opacity: saving ? 0.7 : 1 }}
+                  onPress={() => void saveEdit()}
+                  disabled={saving}
+                >
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>
+                    {saving ? 'Guardando…' : isCreating ? 'Crear categoría' : 'Guardar cambios'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
-          ) : null}
         </View>
       </Modal>
     </CmsShell>

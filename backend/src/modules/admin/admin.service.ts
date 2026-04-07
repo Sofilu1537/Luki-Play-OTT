@@ -19,6 +19,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { CanalTipoDto, CreateCanalDto } from './dto/create-canal.dto';
+import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { UpdateCategoriaDto } from './dto/update-categoria.dto';
 import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -131,10 +133,23 @@ export interface AdminCanalRecord {
   actualizadoEn: string;
 }
 
+export interface AdminCategoriaRecord {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  icono: string;
+  activo: boolean;
+  creadoEn: string;
+  actualizadoEn: string;
+}
+
 @Injectable()
 export class AdminService {
   private readonly canalesStorePath = resolve(process.cwd(), 'data', 'admin-canales.json');
   private canalesCache: AdminCanalRecord[] | null = null;
+
+  private readonly categoriasStorePath = resolve(process.cwd(), 'data', 'admin-categorias.json');
+  private categoriasCache: AdminCategoriaRecord[] | null = null;
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
@@ -160,13 +175,7 @@ export class AdminService {
     { id: 'comp-010', nombre: 'Noticias',       descripcion: 'Canales de noticias nacionales e internacionales 24/7',                                      icono: 'newspaper-o', tipo: 'NOTICIAS',   activo: true,  orden: 10 },
   ];
 
-  private readonly categorias = [
-    { id: 'cat-001', nombre: 'Noticias', descripcion: 'Canales de noticias', icono: 'newspaper-o', activo: true },
-    { id: 'cat-002', nombre: 'Deportes', descripcion: 'Fútbol y más', icono: 'futbol-o', activo: true },
-    { id: 'cat-003', nombre: 'Cine', descripcion: 'Películas y series', icono: 'film', activo: true },
-    { id: 'cat-004', nombre: 'Infantil', descripcion: 'Contenido para niños', icono: 'child', activo: true },
-    { id: 'cat-005', nombre: 'Música', descripcion: 'Canales de música', icono: 'music', activo: true },
-  ];
+
 
   private planes: OttPlan[] = [
     {
@@ -785,9 +794,125 @@ export class AdminService {
     await this.writeCanalesStore(next);
   }
 
-  getCategorias() {
-    return this.categorias.map((categoria) => ({ ...categoria }));
+  // ---- Categorias CRUD (JSON persistence) ---------------------------------
+
+  async getCategorias(): Promise<AdminCategoriaRecord[]> {
+    return this.readCategoriasStore();
   }
+
+  async createCategoria(dto: CreateCategoriaDto): Promise<AdminCategoriaRecord> {
+    const categorias = await this.readCategoriasStore();
+
+    const normalizedName = dto.nombre.trim();
+    const duplicate = categorias.find(
+      (c) => c.nombre.toLowerCase() === normalizedName.toLowerCase(),
+    );
+    if (duplicate) {
+      throw new ConflictException(`La categoría "${normalizedName}" ya existe.`);
+    }
+
+    const now = new Date().toISOString();
+    const record: AdminCategoriaRecord = {
+      id: `cat-${uuidv4().slice(0, 8)}`,
+      nombre: normalizedName,
+      descripcion: dto.descripcion?.trim() ?? '',
+      icono: dto.icono?.trim() ?? '',
+      activo: dto.activo !== false,
+      creadoEn: now,
+      actualizadoEn: now,
+    };
+
+    categorias.push(record);
+    await this.writeCategoriasStore(categorias);
+    return { ...record };
+  }
+
+  async updateCategoria(id: string, dto: UpdateCategoriaDto): Promise<AdminCategoriaRecord> {
+    const categorias = await this.readCategoriasStore();
+    const index = categorias.findIndex((c) => c.id === id);
+    if (index === -1) throw new NotFoundException(`Categoría ${id} not found`);
+
+    if (dto.nombre !== undefined) {
+      const normalizedName = dto.nombre.trim();
+      const duplicate = categorias.find(
+        (c) => c.id !== id && c.nombre.toLowerCase() === normalizedName.toLowerCase(),
+      );
+      if (duplicate) {
+        throw new ConflictException(`La categoría "${normalizedName}" ya existe.`);
+      }
+    }
+
+    const updated: AdminCategoriaRecord = {
+      ...categorias[index],
+      nombre: dto.nombre?.trim() ?? categorias[index].nombre,
+      descripcion: dto.descripcion?.trim() ?? categorias[index].descripcion,
+      icono: dto.icono?.trim() ?? categorias[index].icono,
+      activo: dto.activo !== undefined ? dto.activo : categorias[index].activo,
+      actualizadoEn: new Date().toISOString(),
+    };
+
+    categorias[index] = updated;
+    await this.writeCategoriasStore(categorias);
+    return { ...updated };
+  }
+
+  async toggleCategoria(id: string): Promise<AdminCategoriaRecord> {
+    const categorias = await this.readCategoriasStore();
+    const index = categorias.findIndex((c) => c.id === id);
+    if (index === -1) throw new NotFoundException(`Categoría ${id} not found`);
+
+    categorias[index] = {
+      ...categorias[index],
+      activo: !categorias[index].activo,
+      actualizadoEn: new Date().toISOString(),
+    };
+    await this.writeCategoriasStore(categorias);
+    return { ...categorias[index] };
+  }
+
+  async deleteCategoria(id: string): Promise<void> {
+    const categorias = await this.readCategoriasStore();
+    const next = categorias.filter((c) => c.id !== id);
+    if (next.length === categorias.length) {
+      throw new NotFoundException(`Categoría ${id} not found`);
+    }
+    await this.writeCategoriasStore(next);
+  }
+
+  private async readCategoriasStore(): Promise<AdminCategoriaRecord[]> {
+    if (this.categoriasCache) {
+      return this.categoriasCache.map((item) => ({ ...item }));
+    }
+
+    try {
+      const raw = await readFile(this.categoriasStorePath, 'utf8');
+      const parsed = JSON.parse(raw) as unknown;
+      const now = new Date().toISOString();
+      const categorias: AdminCategoriaRecord[] = Array.isArray(parsed)
+        ? (parsed as Partial<AdminCategoriaRecord>[]).map((item) => ({
+            id: typeof item.id === 'string' ? item.id : `cat-${uuidv4().slice(0, 8)}`,
+            nombre: typeof item.nombre === 'string' ? item.nombre : 'Sin nombre',
+            descripcion: typeof item.descripcion === 'string' ? item.descripcion : '',
+            icono: typeof item.icono === 'string' ? item.icono : '',
+            activo: item.activo !== false,
+            creadoEn: typeof item.creadoEn === 'string' ? item.creadoEn : now,
+            actualizadoEn: typeof item.actualizadoEn === 'string' ? item.actualizadoEn : now,
+          }))
+        : [];
+      this.categoriasCache = categorias;
+      return categorias.map((item) => ({ ...item }));
+    } catch {
+      await this.writeCategoriasStore([]);
+      return [];
+    }
+  }
+
+  private async writeCategoriasStore(categorias: AdminCategoriaRecord[]): Promise<void> {
+    this.categoriasCache = categorias.map((item) => ({ ...item }));
+    await mkdir(dirname(this.categoriasStorePath), { recursive: true });
+    await writeFile(this.categoriasStorePath, JSON.stringify(categorias, null, 2), 'utf8');
+  }
+
 
   getBlog() {
     return [
@@ -907,7 +1032,8 @@ export class AdminService {
 
   private validatePlanReferences(componentIds: string[], categoryIds: string[]) {
     const validComponentIds = new Set(this.componentes.map((item) => item.id));
-    const validCategoryIds = new Set(this.categorias.map((item) => item.id));
+    // Use cached categorias (loaded on first async call); empty set if not yet loaded
+    const validCategoryIds = new Set((this.categoriasCache ?? []).map((item: AdminCategoriaRecord) => item.id));
 
     const invalidComponents = componentIds.filter((id) => !validComponentIds.has(id));
     const invalidCategories = categoryIds.filter((id) => !validCategoryIds.has(id));

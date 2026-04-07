@@ -25,8 +25,8 @@ export default function CmsLayout() {
 
   if (!rootNavigationState?.key || !hasRestored || isRestoring) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A' }}>
-        <ActivityIndicator size="large" color="#7B5EF8" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#160035' }}>
+        <ActivityIndicator size="large" color="#FFB800" />
       </View>
     );
   }
@@ -44,7 +44,7 @@ export default function CmsLayout() {
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: '#0F172A' },
+        contentStyle: { backgroundColor: '#160035' },
       }}
     />
   );

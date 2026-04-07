@@ -32,6 +32,8 @@ import { ForgotPasswordUseCase } from '../../application/use-cases/forgot-passwo
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 import { CompleteFirstAccessUseCase } from '../../application/use-cases/complete-first-access.use-case';
 import { SendRecoveryCodeUseCase } from '../../application/use-cases/send-recovery-code.use-case';
+import { GenerateActivationCodeUseCase } from '../../application/use-cases/generate-activation-code.use-case';
+import { ActivateAccountUseCase } from '../../application/use-cases/activate-account.use-case';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -40,6 +42,8 @@ import { ForgotPasswordDto } from '../../application/dto/forgot-password.dto';
 import { ResetPasswordDto } from '../../application/dto/reset-password.dto';
 import { CompleteFirstAccessDto } from '../../application/dto/first-access.dto';
 import { SendRecoveryCodeDto } from '../../application/dto/send-recovery-code.dto';
+import { GenerateActivationCodeDto } from '../../application/dto/generate-activation-code.dto';
+import { ActivateAccountDto } from '../../application/dto/activate-account.dto';
 import {
   RequestOtpDto,
   VerifyOtpDto,
@@ -95,6 +99,8 @@ export class AuthController {
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     private readonly completeFirstAccessUseCase: CompleteFirstAccessUseCase,
     private readonly sendRecoveryCodeUseCase: SendRecoveryCodeUseCase,
+    private readonly generateActivationCodeUseCase: GenerateActivationCodeUseCase,
+    private readonly activateAccountUseCase: ActivateAccountUseCase,
   ) {}
 
   @Post('app/login')
@@ -234,5 +240,27 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify OTP (standalone)' })
   async verifyOtp(@Body() dto: VerifyOtpDto): Promise<{ verified: boolean }> {
     return this.verifyOtpUseCase.execute(dto);
+  }
+
+  @Post('generate-activation-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate and send activation code for a new user' })
+  @ApiResponse({ status: 200 })
+  async generateActivationCode(
+    @Body() dto: GenerateActivationCodeDto,
+  ): Promise<{ message: string; code: string }> {
+    const result = await this.generateActivationCodeUseCase.execute(dto.userId, dto.email, 'admin');
+    return { message: 'Código de activación enviado.', code: result.code };
+  }
+
+  @Post('activate-account')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Activate account with code and set password' })
+  @ApiResponse({ status: 200, type: MessageResponse })
+  async activateAccount(@Body() dto: ActivateAccountDto): Promise<MessageResponse> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      return { message: 'Las contraseñas no coinciden.' };
+    }
+    return this.activateAccountUseCase.execute(dto.email, dto.code, dto.newPassword);
   }
 }

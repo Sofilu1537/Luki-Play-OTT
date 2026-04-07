@@ -79,7 +79,7 @@ export default function CmsBlog() {
                       {post.activo ? 'PUBLICADO' : 'BORRADOR'}
                     </Text>
                   </View>
-                  <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }}>
+                  <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }}>
                     <FontAwesome name="pencil" size={12} color={C.cyan} />
                   </TouchableOpacity>
                   <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }}>

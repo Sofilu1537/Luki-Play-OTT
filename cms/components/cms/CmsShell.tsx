@@ -5,25 +5,26 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
 export const C = {
-  void: '#060606',
-  panel: 'rgba(17, 17, 17, 0.94)',
-  surface: 'rgba(24, 24, 24, 0.9)',
-  lift: 'rgba(34, 34, 34, 0.94)',
-  border: 'rgba(255,255,255,0.08)',
-  borderMid: 'rgba(255,198,41,0.24)',
-  accent: '#FFC629',
-  accentGlow: 'rgba(255,198,41,0.24)',
-  accentLight: '#FFE08A',
-  accentFaint: 'rgba(255,198,41,0.12)',
-  accentBorder: 'rgba(255,198,41,0.34)',
-  stone: '#D7CBB8',
-  green: '#9BBF63',
-  amber: '#FFDA6B',
-  rose: '#FF7A59',
-  text: '#F5F1E8',
-  textSec: '#CBC2B2',
-  muted: '#827A6A',
-  dimmed: '#151515',
+  // ── Luki Play logo palette ─────────────────────────────
+  void:        '#160035',                   // fondo más profundo
+  panel:       'rgba(26, 6, 62, 0.96)',     // sidebar / topbar
+  surface:     'rgba(42, 14, 90, 0.88)',    // cards
+  lift:        'rgba(70, 28, 130, 0.92)',   // hover / active
+  border:      'rgba(255,255,255,0.10)',
+  borderMid:   'rgba(255,184,0,0.28)',
+  accent:      '#FFB800',                   // dorado "play" badge
+  accentGlow:  'rgba(255,184,0,0.26)',
+  accentLight: '#FFDA6B',
+  accentFaint: 'rgba(255,184,0,0.14)',
+  accentBorder:'rgba(255,184,0,0.36)',
+  stone:       '#D7CBB8',
+  green:       '#10B981',
+  amber:       '#FFB800',
+  rose:        '#F43F5E',
+  text:        '#FFFFFF',                   // blanco puro como el logo
+  textSec:     '#D0C4E8',                   // lavanda suave
+  muted:       '#8B72B2',                   // violeta apagado
+  dimmed:      '#0D0020',
 };
 
 interface NavItem {
@@ -191,7 +192,13 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
   }));
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: C.void, color: C.text }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: `linear-gradient(160deg, #1a0040 0%, #2e0a6e 40%, #4a18a0 70%, #2e0a6e 100%)`, color: C.text }}>
+      {/* ── Decorative bokeh orbs (like the logo) ── */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(123,47,190,0.25) 0%, transparent 70%)', top: '-120px', right: '-80px' }} />
+        <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(90,30,158,0.20) 0%, transparent 70%)', bottom: '10%', left: '-100px' }} />
+        <div style={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,184,0,0.06) 0%, transparent 70%)', top: '30%', right: '20%' }} />
+      </div>
       {isMobile && navOpen && (
         <button
           aria-label="Cerrar navegación"
@@ -212,7 +219,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
         onClick={(event) => event.stopPropagation()}
         style={{
           width: sidebarWidth,
-          background: `linear-gradient(180deg, ${C.panel} 0%, rgba(12,12,12,0.98) 100%)`,
+          background: `linear-gradient(180deg, rgba(26,6,62,0.97) 0%, rgba(16,2,42,0.99) 100%)`,
           borderRight: `1px solid ${C.border}`,
           display: 'flex',
           flexDirection: 'column',
@@ -231,15 +238,15 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
           padding: '18px 16px',
           border: `1px solid ${C.border}`,
           borderRadius: 24,
-          background: 'linear-gradient(180deg, rgba(255,198,41,0.10), rgba(255,198,41,0.02))',
+          background: 'linear-gradient(180deg, rgba(255,184,0,0.12), rgba(123,47,190,0.08))',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
           marginBottom: 18,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
             <div>
               <span style={{ display: 'block', fontFamily: 'Sora, sans-serif', fontWeight: 800, fontSize: 20, letterSpacing: -0.7 }}>
-                <span style={{ color: C.text }}>LUKI</span>{' '}
-                <span style={{ color: C.accent }}>NET</span>
+                <span style={{ color: C.text }}>luki</span>{' '}
+                <span style={{ color: C.accent, background: C.accent, padding: '2px 8px', borderRadius: 8, color: '#fff', fontWeight: 800 }}>play</span>
               </span>
               <p style={{ color: C.muted, fontSize: 10, fontWeight: 800, letterSpacing: 2.4, marginTop: 6 }}>
                 CONTROL CENTER
@@ -295,7 +302,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
                   borderRadius: 18,
                   border: `1px solid ${item.active ? C.accentBorder : C.border}`,
                   background: item.active
-                    ? 'linear-gradient(135deg, rgba(255,198,41,0.18), rgba(255,198,41,0.05))'
+                    ? 'linear-gradient(135deg, rgba(255,184,0,0.20), rgba(123,47,190,0.12))'
                     : 'rgba(255,255,255,0.02)',
                   boxShadow: item.active ? `0 18px 40px ${C.accentGlow}` : 'none',
                   cursor: item.soon ? 'default' : 'pointer',
@@ -332,11 +339,11 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
           marginTop: 18,
           padding: '16px 14px',
           borderRadius: 22,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(123,47,190,0.06))',
           border: `1px solid ${C.border}`,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-            <span style={{ color: C.text, fontSize: 12, fontWeight: 700 }}>LUKI NET CMS</span>
+            <span style={{ color: C.text, fontSize: 12, fontWeight: 700 }}>LUKI PLAY CMS</span>
             <span style={{ color: C.accent, fontSize: 10, fontWeight: 800, letterSpacing: 1.3 }}>LOCAL</span>
           </div>
           <p style={{ color: C.muted, fontSize: 11, lineHeight: 1.45, marginBottom: 14 }}>
@@ -361,7 +368,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
             minHeight: 84,
             borderRadius: 28,
             border: `1px solid ${C.border}`,
-            background: 'linear-gradient(180deg, rgba(20,20,20,0.92), rgba(13,13,13,0.88))',
+            background: 'linear-gradient(180deg, rgba(30,8,70,0.92), rgba(20,4,50,0.88))',
             boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
             display: 'flex',
             alignItems: 'center',
@@ -412,7 +419,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
                     fontWeight: 800,
                     letterSpacing: 1.4,
                   }}>
-                    LUKI NET BRAND UI
+                    LUKI PLAY BRAND UI
                   </span>
                   <span style={{ color: C.muted, fontSize: 11, letterSpacing: 1.4 }}>OPERACIÓN ADMINISTRATIVA</span>
                 </div>
@@ -481,7 +488,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
                     width: 38,
                     height: 38,
                     borderRadius: 14,
-                    background: 'linear-gradient(135deg, rgba(255,198,41,0.28), rgba(255,198,41,0.10))',
+                    background: 'linear-gradient(135deg, rgba(255,184,0,0.30), rgba(123,47,190,0.20))',
                     border: `1px solid ${C.accentBorder}`,
                     display: 'flex',
                     alignItems: 'center',
@@ -510,7 +517,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
                       top: 'calc(100% + 10px)',
                       right: 0,
                       minWidth: 220,
-                      background: 'linear-gradient(180deg, rgba(26,26,26,0.98), rgba(18,18,18,0.98))',
+                      background: 'linear-gradient(180deg, rgba(36,10,80,0.98), rgba(22,4,55,0.98))',
                       border: `1px solid ${C.borderMid}`,
                       borderRadius: 22,
                       overflow: 'hidden',
@@ -567,7 +574,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
           onClick={() => setProfileOpen(false)}
         >
           <div
-            style={{ background: 'linear-gradient(180deg, rgba(28,28,28,0.98), rgba(16,16,16,0.98))', border: `1px solid ${C.borderMid}`, borderRadius: 28, padding: 32, width: 400, maxWidth: '100%', boxShadow: '0 40px 90px rgba(0,0,0,0.55)' }}
+            style={{ background: 'linear-gradient(180deg, rgba(36,10,80,0.98), rgba(20,4,50,0.98))', border: `1px solid ${C.borderMid}`, borderRadius: 28, padding: 32, width: 400, maxWidth: '100%', boxShadow: '0 40px 90px rgba(10,0,40,0.65)' }}
             onClick={(event) => event.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -575,7 +582,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
                 width: 58,
                 height: 58,
                 borderRadius: 18,
-                background: 'linear-gradient(135deg, rgba(255,198,41,0.26), rgba(255,198,41,0.08))',
+                background: 'linear-gradient(135deg, rgba(255,184,0,0.28), rgba(123,47,190,0.18))',
                 border: `1px solid ${C.accentBorder}`,
                 display: 'flex',
                 alignItems: 'center',
@@ -605,7 +612,7 @@ export default function CmsShell({ children, title }: { children: React.ReactNod
                 marginTop: 20,
                 width: '100%',
                 padding: '13px 0',
-                background: 'linear-gradient(180deg, rgba(255,198,41,0.16), rgba(255,198,41,0.08))',
+                background: 'linear-gradient(180deg, rgba(255,184,0,0.18), rgba(123,47,190,0.10))',
                 border: `1px solid ${C.accentBorder}`,
                 borderRadius: 16,
                 color: C.text,

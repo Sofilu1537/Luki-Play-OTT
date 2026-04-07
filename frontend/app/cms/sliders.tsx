@@ -367,7 +367,7 @@ export default function CmsSliders() {
                     elevation: 12,
                   }}
                 >
-                  <View style={{ position: 'relative', aspectRatio: 16 / 9, backgroundColor: '#0F172A' }}>
+                  <View style={{ position: 'relative', aspectRatio: 16 / 9, backgroundColor: '#160035' }}>
                     <Image source={{ uri: slider.imagen }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(3,7,18,0.20)' }} />
                     <View style={{ position: 'absolute', left: 16, right: 16, top: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -377,13 +377,13 @@ export default function CmsSliders() {
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {renderActionButton(slider.activo ? 'eye-slash' : 'eye', slider.activo ? C.amber : C.green, 'rgba(15,23,42,0.72)', () => handleToggle(slider))}
-                        {renderActionButton('pencil', C.cyan, 'rgba(15,23,42,0.72)', () => openEditModal(slider))}
-                        {renderActionButton('trash', C.rose, 'rgba(15,23,42,0.72)', () => handleDelete(slider))}
+                        {renderActionButton(slider.activo ? 'eye-slash' : 'eye', slider.activo ? C.amber : C.green, 'rgba(22,0,53,0.72)', () => handleToggle(slider))}
+                        {renderActionButton('pencil', C.cyan, 'rgba(22,0,53,0.72)', () => openEditModal(slider))}
+                        {renderActionButton('trash', C.rose, 'rgba(22,0,53,0.72)', () => handleDelete(slider))}
                       </View>
                     </View>
                     <View style={{ position: 'absolute', left: 16, right: 16, bottom: 16 }}>
-                      <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(5,11,23,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(13,0,32,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
                         <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{slider.orden}</Text>
                       </View>
                       <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', lineHeight: 26, marginBottom: 6 }} numberOfLines={2}>
@@ -413,7 +413,7 @@ export default function CmsSliders() {
       </ScrollView>
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ width: '100%', maxWidth: 720, backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>
@@ -444,7 +444,7 @@ export default function CmsSliders() {
 
               {form.imagen?.trim() ? (
                 <View style={{ marginTop: 6, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
-                  <View style={{ aspectRatio: 16 / 7, backgroundColor: '#0F172A' }}>
+                  <View style={{ aspectRatio: 16 / 7, backgroundColor: '#160035' }}>
                     <Image source={{ uri: form.imagen.trim() }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
                       <Text style={{ color: 'white', fontSize: 20, fontWeight: '900' }} numberOfLines={2}>{form.titulo || 'Titulo del slider'}</Text>

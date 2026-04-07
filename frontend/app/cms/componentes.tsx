@@ -294,7 +294,7 @@ export default function CmsComponentes() {
             padding: 14,
             marginBottom: 20,
             borderWidth: 1,
-            borderColor: 'rgba(34,211,238,0.24)',
+            borderColor: 'rgba(180,144,255,0.24)',
             flexDirection: 'row',
             alignItems: 'center',
             gap: 10,

@@ -16,6 +16,7 @@ import { PASSWORD_RESET_TOKEN_REPOSITORY } from './domain/interfaces/password-re
 import { FIRST_ACCESS_TOKEN_REPOSITORY } from './domain/interfaces/first-access-token.repository';
 import { LOGIN_ATTEMPT_REPOSITORY } from './domain/interfaces/login-attempt.repository';
 import { AUDIT_LOG_REPOSITORY } from './domain/interfaces/audit-log.repository';
+import { TEMPORARY_CODE_REPOSITORY } from './domain/interfaces/temporary-code.repository';
 
 // Infrastructure
 import { InMemoryUserRepository } from './infrastructure/repositories/in-memory-user.repository';
@@ -25,6 +26,7 @@ import { InMemoryPasswordResetTokenRepository } from './infrastructure/repositor
 import { InMemoryFirstAccessTokenRepository } from './infrastructure/repositories/in-memory-first-access-token.repository';
 import { InMemoryLoginAttemptRepository } from './infrastructure/repositories/in-memory-login-attempt.repository';
 import { InMemoryAuditLogRepository } from './infrastructure/repositories/in-memory-audit-log.repository';
+import { InMemoryTemporaryCodeRepository } from './infrastructure/repositories/in-memory-temporary-code.repository';
 import { JwtTokenService } from './infrastructure/jwt/jwt-token.service';
 import { JwtStrategy } from './infrastructure/jwt/jwt.strategy';
 import { BcryptHashService } from './infrastructure/persistence/bcrypt-hash.service';
@@ -51,6 +53,9 @@ import { ResetPasswordUseCase } from './application/use-cases/reset-password.use
 import { CompleteFirstAccessUseCase } from './application/use-cases/complete-first-access.use-case';
 import { CreateCmsUserUseCase } from './application/use-cases/create-cms-user.use-case';
 import { SendRecoveryCodeUseCase } from './application/use-cases/send-recovery-code.use-case';
+import { GenerateActivationCodeUseCase } from './application/use-cases/generate-activation-code.use-case';
+import { ValidateCodeUseCase } from './application/use-cases/validate-code.use-case';
+import { ActivateAccountUseCase } from './application/use-cases/activate-account.use-case';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -97,6 +102,7 @@ import { CrmModule } from '../crm/crm.module';
     { provide: FIRST_ACCESS_TOKEN_REPOSITORY,    useClass: InMemoryFirstAccessTokenRepository },
     { provide: LOGIN_ATTEMPT_REPOSITORY,         useClass: InMemoryLoginAttemptRepository },
     { provide: AUDIT_LOG_REPOSITORY,             useClass: InMemoryAuditLogRepository },
+    { provide: TEMPORARY_CODE_REPOSITORY,        useClass: InMemoryTemporaryCodeRepository },
     { provide: TOKEN_SERVICE,                    useClass: JwtTokenService },
     { provide: HASH_SERVICE,                     useClass: BcryptHashService },
     { provide: OTP_SERVICE,                      useClass: MockOtpService },
@@ -122,6 +128,9 @@ import { CrmModule } from '../crm/crm.module';
     CompleteFirstAccessUseCase,
     CreateCmsUserUseCase,
     SendRecoveryCodeUseCase,
+    GenerateActivationCodeUseCase,
+    ValidateCodeUseCase,
+    ActivateAccountUseCase,
   ],
   exports: [
     TOKEN_SERVICE,

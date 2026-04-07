@@ -30,4 +30,10 @@ export class MockEmailService implements EmailService {
     this.logger.log(`[MOCK EMAIL] Recovery code sent to ${to}`);
     this.logger.log(`[MOCK EMAIL] Tu código de recuperación es: ${code}`);
   }
+
+  async sendActivationCode(to: string, code: string): Promise<void> {
+    this.logger.log(`[MOCK EMAIL] Activation code sent to ${to}`);
+    this.logger.log(`[MOCK EMAIL] Tu código de activación es: ${code}`);
+    this.logger.log(`[MOCK EMAIL] Válido por 24 horas. Un solo uso.`);
+  }
 }

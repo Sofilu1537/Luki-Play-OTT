@@ -5,4 +5,5 @@ export interface EmailService {
   sendFirstAccess(to: string, accessLink: string, displayName: string): Promise<void>;
   sendGeneratedPassword(to: string, password: string, displayName: string): Promise<void>;
   sendRecoveryCode(to: string, code: string): Promise<void>;
+  sendActivationCode(to: string, code: string): Promise<void>;
 }

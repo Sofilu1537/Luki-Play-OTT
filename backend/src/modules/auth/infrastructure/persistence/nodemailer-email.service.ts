@@ -61,6 +61,19 @@ export class NodemailerEmailService implements EmailService {
     `);
   }
 
+  async sendActivationCode(to: string, code: string): Promise<void> {
+    await this.send(to, 'Activa tu cuenta — Luki Play', `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+        <h2 style="color:#6366f1;">Bienvenido a Luki Play</h2>
+        <p>Se ha creado una cuenta para ti en el CMS de Luki Play.</p>
+        <p>Tu código de activación es:</p>
+        <p style="font-size:28px;font-weight:bold;background:#1e1b4b;color:#a5b4fc;padding:20px;border-radius:8px;text-align:center;letter-spacing:4px;">${code}</p>
+        <p style="color:#666;font-size:13px;">Este código es válido por 24 horas y solo puede usarse una vez.</p>
+        <p style="color:#666;font-size:13px;">Al activar tu cuenta deberás establecer tu contraseña personal.</p>
+      </div>
+    `);
+  }
+
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
       const info = await this.transporter.sendMail({ from: this.from, to, subject, html });

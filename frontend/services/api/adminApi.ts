@@ -1148,6 +1148,71 @@ export async function adminListCategorias(accessToken: string): Promise<AdminCat
   catch { return [...mockCategorias]; }
 }
 
+export async function adminCreateCategoria(
+  accessToken: string,
+  payload: { nombre: string; descripcion?: string; icono?: string },
+): Promise<AdminCategoria> {
+  try {
+    return await apiFetch<AdminCategoria>('/admin/categorias', accessToken, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Local fallback
+    const record: AdminCategoria = {
+      id: `cat-local-${Math.random().toString(36).slice(2, 9)}`,
+      nombre: payload.nombre.trim(),
+      descripcion: payload.descripcion?.trim() ?? '',
+      icono: payload.icono?.trim() ?? 'tag',
+      activo: true,
+    };
+    mockCategorias.push(record);
+    return { ...record };
+  }
+}
+
+export async function adminUpdateCategoria(
+  accessToken: string,
+  id: string,
+  patch: Partial<Omit<AdminCategoria, 'id'>>,
+): Promise<AdminCategoria> {
+  try {
+    return await apiFetch<AdminCategoria>(`/admin/categorias/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+  } catch {
+    const index = mockCategorias.findIndex((c) => c.id === id);
+    if (index !== -1) {
+      mockCategorias[index] = { ...mockCategorias[index], ...patch };
+      return { ...mockCategorias[index] };
+    }
+    throw new Error(`Categoría ${id} no encontrada`);
+  }
+}
+
+export async function adminToggleCategoria(accessToken: string, id: string): Promise<AdminCategoria> {
+  try {
+    return await apiFetch<AdminCategoria>(`/admin/categorias/${id}/toggle`, accessToken, { method: 'POST' });
+  } catch {
+    const index = mockCategorias.findIndex((c) => c.id === id);
+    if (index !== -1) {
+      mockCategorias[index] = { ...mockCategorias[index], activo: !mockCategorias[index].activo };
+      return { ...mockCategorias[index] };
+    }
+    throw new Error(`Categoría ${id} no encontrada`);
+  }
+}
+
+export async function adminDeleteCategoria(accessToken: string, id: string): Promise<void> {
+  try {
+    await apiFetch<void>(`/admin/categorias/${id}`, accessToken, { method: 'DELETE' });
+  } catch {
+    const index = mockCategorias.findIndex((c) => c.id === id);
+    if (index !== -1) mockCategorias.splice(index, 1);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Blog
 // ---------------------------------------------------------------------------

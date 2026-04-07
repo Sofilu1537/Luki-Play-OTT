@@ -124,9 +124,9 @@ export default function CmsDashboard() {
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Dashboard' }]}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 24 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 28 }}>
         <LinearGradient
-          colors={['rgba(123,94,248,0.18)', 'rgba(34,211,238,0.08)', 'rgba(255,255,255,0.02)']}
+          colors={['rgba(255,184,0,0.18)', 'rgba(123,47,190,0.14)', 'rgba(255,255,255,0.02)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
@@ -141,7 +141,7 @@ export default function CmsDashboard() {
                 Bienvenido al centro de control
               </Text>
               <Text style={{ color: C.textDim, fontSize: 14, lineHeight: 22, marginBottom: 16 }}>
-                El dashboard adopta Nebula Dark con violetas profundos, azules fríos y superficies nocturnas para un look más limpio y consistente.
+                Panel central de Luki Play. Monitoreo, contenido y operaciones en una sola vista.
               </Text>
               <Text style={{ color: C.muted, fontSize: 13 }}>
                 {profile.email} · {roleLabel}

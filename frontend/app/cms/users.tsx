@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 import {
   adminCreateUser,
+  adminGenerateActivationCode,
   adminGetUser,
   adminGetUserPlan,
   adminListPlans,
@@ -90,7 +91,7 @@ function initials(name: string) {
 }
 
 function avatarColor(name: string) {
-  const palette = ['#7B5EF8', '#22D3EE', '#10B981', '#FBBF24', '#F43F5E', '#A78BFA', '#38BDF8', '#6366F1'];
+  const palette = ['#FFB800', '#B490FF', '#10B981', '#FFDA6B', '#F43F5E', '#8B72B2', '#D0C4E8', '#7B2FBE'];
   let hash = 0;
   for (let index = 0; index < name.length; index += 1) hash = name.charCodeAt(index) + ((hash << 5) - hash);
   return palette[Math.abs(hash) % palette.length];
@@ -120,6 +121,7 @@ function getRoleMeta(role: AdminUser['role']) {
 function getStatusMeta(status: AdminUser['status']) {
   if (status === 'active') return { label: 'Activo', color: C.green, bg: C.greenSoft };
   if (status === 'suspended') return { label: 'Suspendido', color: C.rose, bg: C.roseSoft };
+  if (status === 'pending') return { label: 'Pendiente', color: '#f59e0b', bg: 'rgba(245,158,11,0.16)' };
   return { label: 'Inactivo', color: C.amber, bg: 'rgba(245,158,11,0.16)' };
 }
 
@@ -182,6 +184,84 @@ function FilterChip({ active, label, onPress, tone = 'accent' }: { active: boole
     >
       <Text style={{ color: active ? activeColor : C.textDim, fontSize: 12, fontWeight: '700' }}>{label}</Text>
     </TouchableOpacity>
+  );
+}
+
+function DropdownFilter({ label, value, options, onSelect }: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onSelect: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedLabel = options.find((o) => o.value === value)?.label ?? label;
+  const isFiltered = value !== 'all';
+
+  return (
+    <View style={{ position: 'relative', zIndex: open ? 100 : 1, elevation: open ? 100 : 1 }}>
+      <TouchableOpacity
+        onPress={() => setOpen(!open)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingHorizontal: 12,
+          paddingVertical: 9,
+          borderRadius: 10,
+          backgroundColor: isFiltered ? C.accentSoft : C.lift,
+          borderWidth: 1,
+          borderColor: isFiltered ? C.accentBorder : C.border,
+        }}
+      >
+        <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700' }}>{label}:</Text>
+        <Text style={{ color: isFiltered ? C.accent : C.text, fontSize: 12, fontWeight: '700' }}>{selectedLabel}</Text>
+        <FontAwesome name={open ? 'chevron-up' : 'chevron-down'} size={9} color={C.muted} />
+      </TouchableOpacity>
+
+      {open ? (
+        <>
+          {/* Invisible overlay to close on outside tap */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setOpen(false)}
+            style={{ position: 'fixed' as never, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
+          />
+          <View style={{
+            position: 'absolute',
+            top: 42,
+            left: 0,
+            minWidth: 160,
+            backgroundColor: C.surface,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: C.border,
+            overflow: 'hidden',
+            shadowColor: '#0D0020',
+            shadowOpacity: 0.5,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 10 },
+            zIndex: 110,
+            elevation: 110,
+          }}>
+            {options.map((option, i) => (
+              <TouchableOpacity
+                key={option.value}
+                onPress={() => { onSelect(option.value); setOpen(false); }}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  backgroundColor: value === option.value ? C.lift : 'transparent',
+                  borderBottomWidth: i < options.length - 1 ? 1 : 0,
+                  borderBottomColor: C.border,
+                }}
+              >
+                <Text style={{ color: value === option.value ? C.accent : C.textDim, fontSize: 12, fontWeight: value === option.value ? '800' : '600' }}>{option.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      ) : null}
+    </View>
   );
 }
 
@@ -251,7 +331,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>DATOS PERSONALES</Text>
               {!editing ? (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }} onPress={() => setEditing(true)}>
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => setEditing(true)}>
                   <FontAwesome name="pencil" size={10} color={C.cyan} />
                   <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>Editar</Text>
                 </TouchableOpacity>
@@ -300,7 +380,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
           </View>
 
           {generatedCode ? (
-            <View style={{ backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(99,102,241,0.25)' }}>
+            <View style={{ backgroundColor: 'rgba(180,144,255,0.08)', borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(180,144,255,0.25)' }}>
               <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 6 }}>CÓDIGO DE RECUPERACIÓN</Text>
               <Text style={{ color: C.accentLight, fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{generatedCode}</Text>
               <Text style={{ color: C.textDim, fontSize: 11, marginTop: 6, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
@@ -350,7 +430,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
 
   return (
     <Modal visible={state.visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         <View style={{ width: '100%', maxWidth: 420, backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 22 }}>
           <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{state.title}</Text>
           <Text style={{ color: C.textDim, fontSize: 13, marginTop: 8, lineHeight: 20 }}>{state.message}</Text>
@@ -496,7 +576,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         <View style={{ width: '100%', maxWidth: 860, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
           <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
@@ -881,7 +961,7 @@ function UserDetailModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(7,10,20,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         <View style={{ width: '100%', maxWidth: 980, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
           <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
@@ -1098,6 +1178,15 @@ export default function CmsUsers() {
 
   const canWrite = hasPermission(profile?.permissions, 'cms:users:write');
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [actionMenuUserId, setActionMenuUserId] = useState<string | null>(null);
+
+  // Auto-dismiss feedback toast after 4s
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 4000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
   const loadData = async () => {
     if (!accessToken) return;
@@ -1328,14 +1417,27 @@ export default function CmsUsers() {
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Total', value: stats.total, icon: 'users', tone: C.accentLight, bg: C.accentSoft },
-            { label: 'Internos', value: stats.internal, icon: 'shield', tone: C.green, bg: C.greenSoft },
-            { label: 'Abonados', value: stats.subscribers, icon: 'play-circle', tone: C.cyan, bg: C.cyanSoft },
-            { label: 'Suspendidos', value: stats.suspended, icon: 'lock', tone: C.rose, bg: C.roseSoft },
+            { label: 'Total', value: stats.total, icon: 'users', tone: C.accentLight, bg: C.accentSoft, warn: false },
+            { label: 'Internos', value: stats.internal, icon: 'shield', tone: C.green, bg: C.greenSoft, warn: false },
+            { label: 'Abonados', value: stats.subscribers, icon: 'play-circle', tone: C.cyan, bg: C.cyanSoft, warn: false },
+            { label: 'Suspendidos', value: stats.suspended, icon: 'exclamation-triangle', tone: C.rose, bg: C.roseSoft, warn: stats.suspended > stats.total * 0.3 },
           ].map((card) => (
-            <View key={card.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border }}>
-              <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                <FontAwesome name={card.icon as never} size={16} color={card.tone} />
+            <View key={card.label} style={{
+              flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16,
+              borderWidth: card.warn ? 2 : 1,
+              borderColor: card.warn ? 'rgba(244,63,94,0.5)' : C.border,
+              ...(card.warn ? { shadowColor: '#F43F5E', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } } : {}),
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={card.icon as never} size={16} color={card.tone} />
+                </View>
+                {card.warn ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.roseSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <FontAwesome name="warning" size={10} color={C.rose} />
+                    <Text style={{ color: C.rose, fontSize: 10, fontWeight: '700' }}>Alto</Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={{ color: C.text, fontSize: 24, fontWeight: '900' }}>{card.value}</Text>
               <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{card.label}</Text>
@@ -1343,76 +1445,74 @@ export default function CmsUsers() {
           ))}
         </View>
 
-        <SectionCard title="Diagnóstico y operaciones" subtitle="El módulo queda alineado a dominios OTT: User, Account/Subscription, Session/Device y Role/Permission.">
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[
-              'Listar usuarios',
-              'Buscar y filtrar',
-              'Ver detalle con tabs',
-              'Crear y editar por secciones',
-              'Activar / suspender / desactivar',
-              'Reset seguro de contraseña',
-              'Cambiar límite de sesiones',
-              'Visualizar dispositivos conectados',
-              'Cerrar sesiones individuales o todas',
-              'Ver plan, contrato, tipo y rol',
-            ].map((item) => (
-              <View key={item} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>{item}</Text>
-              </View>
-            ))}
-          </View>
-        </SectionCard>
+        <View style={{ backgroundColor: C.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: C.border, marginBottom: 16, zIndex: 50, elevation: 50 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {/* Search — prominent, left */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, flex: 1, minWidth: 240 }}>
+              <FontAwesome name="search" size={13} color={C.muted} />
+              <TextInput style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, ...webInput }} placeholder="Buscar nombre, email, rol, plan..." placeholderTextColor={C.muted} value={search} onChangeText={setSearch} />
+              {search ? (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <FontAwesome name="times-circle" size={14} color={C.muted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
 
-        <View style={{ backgroundColor: C.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: C.border, marginBottom: 16, gap: 12 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { value: 'all' as const, label: 'Todos' },
-                { value: 'subscriber' as const, label: 'Abonados' },
-                { value: 'system' as const, label: 'Internos' },
-              ].map((item) => (
-                <FilterChip key={item.value} active={userTypeFilter === item.value} label={item.label} onPress={() => setUserTypeFilter(item.value)} />
+            {/* Dropdown-style compact filters */}
+            <DropdownFilter
+              label="Tipo"
+              value={userTypeFilter}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'subscriber', label: 'Abonados' },
+                { value: 'system', label: 'Internos' },
+              ]}
+              onSelect={(v) => setUserTypeFilter(v as UserTypeFilter)}
+            />
+
+            <DropdownFilter
+              label="Rol"
+              value={roleFilter}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'superadmin', label: 'Superadmin' },
+                { value: 'soporte', label: 'Soporte' },
+                { value: 'cliente', label: 'Cliente' },
+              ]}
+              onSelect={(v) => setRoleFilter(v as RoleFilter)}
+            />
+
+            <DropdownFilter
+              label="Estado"
+              value={statusFilter}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'suspended', label: 'Suspendidos' },
+                { value: 'inactive', label: 'Inactivos' },
+              ]}
+              onSelect={(v) => setStatusFilter(v as StatusFilter)}
+            />
+
+            {/* Page size compact */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              {[25, 50, 100].map((size) => (
+                <TouchableOpacity key={size} style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: pageSize === size ? C.accent : C.lift, borderWidth: 1, borderColor: pageSize === size ? C.accent : C.border }} onPress={() => setPageSize(size)}>
+                  <Text style={{ color: pageSize === size ? '#160035' : C.textDim, fontSize: 11, fontWeight: '700' }}>{size}</Text>
+                </TouchableOpacity>
               ))}
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 10, minWidth: 260 }}>
-              <FontAwesome name="search" size={12} color={C.muted} />
-              <TextInput style={{ flex: 1, color: C.text, paddingVertical: 8, paddingHorizontal: 8, fontSize: 13, ...webInput }} placeholder="Buscar por nombre, email, rol, plan o contrato" placeholderTextColor={C.muted} value={search} onChangeText={setSearch} />
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { value: 'all' as const, label: 'Todos los roles' },
-                { value: 'superadmin' as const, label: 'Superadmin' },
-                { value: 'soporte' as const, label: 'Soporte' },
-                { value: 'cliente' as const, label: 'Cliente' },
-              ].map((item) => (
-                <FilterChip key={item.value} active={roleFilter === item.value} label={item.label} onPress={() => setRoleFilter(item.value)} tone="cyan" />
-              ))}
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { value: 'all' as const, label: 'Todos los estados' },
-                { value: 'active' as const, label: 'Activos' },
-                { value: 'suspended' as const, label: 'Suspendidos' },
-                { value: 'inactive' as const, label: 'Inactivos' },
-              ].map((item) => (
-                <FilterChip key={item.value} active={statusFilter === item.value} label={item.label} onPress={() => setStatusFilter(item.value)} tone="neutral" />
-              ))}
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Text style={{ color: C.muted, fontSize: 12 }}>Ver</Text>
-            {[25, 50, 100].map((size) => (
-              <TouchableOpacity key={size} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: pageSize === size ? C.accent : C.lift, borderWidth: 1, borderColor: pageSize === size ? C.accent : C.border }} onPress={() => setPageSize(size)}>
-                <Text style={{ color: pageSize === size ? '#fff' : C.textDim, fontSize: 12 }}>{size}</Text>
+            {/* Active filter count + clear */}
+            {(userTypeFilter !== 'all' || roleFilter !== 'all' || statusFilter !== 'all' || search) ? (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }}
+                onPress={() => { setSearch(''); setUserTypeFilter('all'); setRoleFilter('all'); setStatusFilter('all'); }}
+              >
+                <FontAwesome name="times" size={10} color={C.rose} />
+                <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700' }}>Limpiar</Text>
               </TouchableOpacity>
-            ))}
+            ) : null}
           </View>
         </View>
 
@@ -1428,101 +1528,204 @@ export default function CmsUsers() {
             <Text style={{ color: C.textDim, fontSize: 12, marginTop: 6 }}>Ajusta filtros o crea un nuevo usuario si tienes permisos.</Text>
           </View>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ minWidth: 1520 }}>
-              <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
-                {[
-                  { label: 'ACCIONES', width: 150 },
-                  { label: 'NOMBRE', width: 200 },
-                  { label: 'TIPO', width: 100 },
-                  { label: 'ROL', width: 110 },
-                  { label: 'ESTADO', width: 110 },
-                  { label: 'PLAN', width: 130 },
-                  { label: 'SESIONES', width: 100 },
-                  { label: 'DISPOSITIVOS', width: 160 },
-                  { label: 'EMAIL', width: 220 },
-                  { label: 'TELÉFONO', width: 130 },
-                  { label: 'CONTRATO / CÓDIGO', width: 140 },
-                  { label: 'ÚLTIMO ACCESO', width: 120 },
-                ].map((column) => (
-                  <View key={column.label} style={{ width: column.width }}>
-                    <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 }}>{column.label}</Text>
-                  </View>
-                ))}
+          <>
+            {/* Bulk action bar */}
+            {selectedIds.size > 0 && canWrite ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12, backgroundColor: C.accentSoft, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.accentBorder }}>
+                <Text style={{ color: C.accent, fontSize: 13, fontWeight: '800' }}>{selectedIds.size} seleccionados</Text>
+                <View style={{ flex: 1 }} />
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.greenSoft, borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }}
+                  onPress={() => {
+                    if (!accessToken) return;
+                    openConfirm({
+                      title: 'Activar usuarios',
+                      message: `Se activarán ${selectedIds.size} usuarios seleccionados.`,
+                      confirmLabel: 'Activar',
+                      tone: 'primary',
+                      onConfirm: async () => {
+                        for (const id of selectedIds) {
+                          const updated = await adminUpdateUserStatus(accessToken, id, 'active');
+                          updateUserInList(updated);
+                        }
+                        setSelectedIds(new Set());
+                        setFeedback({ type: 'success', message: `${selectedIds.size} usuarios activados.` });
+                      },
+                    });
+                  }}
+                >
+                  <FontAwesome name="check" size={11} color={C.green} />
+                  <Text style={{ color: C.green, fontSize: 12, fontWeight: '700' }}>Activar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }}
+                  onPress={() => {
+                    if (!accessToken) return;
+                    openConfirm({
+                      title: 'Suspender usuarios',
+                      message: `Se suspenderán ${selectedIds.size} usuarios seleccionados.`,
+                      confirmLabel: 'Suspender',
+                      tone: 'danger',
+                      onConfirm: async () => {
+                        for (const id of selectedIds) {
+                          const updated = await adminUpdateUserStatus(accessToken, id, 'suspended');
+                          updateUserInList(updated);
+                        }
+                        setSelectedIds(new Set());
+                        setFeedback({ type: 'success', message: `${selectedIds.size} usuarios suspendidos.` });
+                      },
+                    });
+                  }}
+                >
+                  <FontAwesome name="ban" size={11} color={C.rose} />
+                  <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Suspender</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}
+                  onPress={() => setSelectedIds(new Set())}
+                >
+                  <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+                </TouchableOpacity>
               </View>
+            ) : null}
 
-              {visibleUsers.map((user) => {
-                const userTypeMeta = getUserTypeMeta(user);
-                const roleMeta = getRoleMeta(user.role);
-                const statusMeta = getStatusMeta(user.status);
-                const sessions = sessionsByUser[user.id] ?? [];
-                const devices = getDeviceSummary(sessions);
-
-                return (
-                  <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, backgroundColor: C.surface, borderRadius: 8, marginBottom: 3, borderWidth: 1, borderColor: C.border }}>
-                    <View style={{ width: 150, flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(99,102,241,0.24)' }} onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}>
-                        <FontAwesome name="eye" size={12} color={C.accentLight} />
-                      </TouchableOpacity>
-                      {canWrite ? (
-                        <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(34,211,238,0.24)' }} onPress={() => { setEditingUser(user); setShowFormModal(true); }}>
-                          <FontAwesome name="pencil" size={12} color={C.cyan} />
-                        </TouchableOpacity>
-                      ) : null}
-                      {canWrite ? (
-                        <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDeactivate(user)}>
-                          <FontAwesome name="power-off" size={12} color={C.rose} />
-                        </TouchableOpacity>
-                      ) : null}
-                      {canWrite ? (
-                        <TouchableOpacity style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(251,191,36,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(251,191,36,0.28)' }} onPress={() => setRecoveryUser(user)}>
-                          <FontAwesome name="lock" size={12} color="#fbbf24" />
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-
-                    <View style={{ width: 200, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: avatarColor(user.nombre), alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{initials(user.nombre)}</Text>
-                      </View>
-                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '600', flex: 1 }} numberOfLines={1}>{user.nombre}</Text>
-                    </View>
-
-                    <View style={{ width: 100 }}>
-                      <View style={{ backgroundColor: userTypeMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                        <Text style={{ color: userTypeMeta.color, fontSize: 11, fontWeight: '700' }}>{userTypeMeta.label}</Text>
-                      </View>
-                    </View>
-
-                    <View style={{ width: 110 }}>
-                      <View style={{ backgroundColor: roleMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                        <Text style={{ color: roleMeta.color, fontSize: 11, fontWeight: '700' }}>{roleMeta.label}</Text>
-                      </View>
-                    </View>
-
-                    <View style={{ width: 110 }}>
-                      <View style={{ backgroundColor: statusMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                        <Text style={{ color: statusMeta.color, fontSize: 11, fontWeight: '700' }}>{statusMeta.label}</Text>
-                      </View>
-                    </View>
-
-                    <View style={{ width: 130 }}>
-                      <View style={{ backgroundColor: C.cyanSoft, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
-                        <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>{user.plan}</Text>
-                      </View>
-                    </View>
-
-                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', width: 100 }}>{user.sesiones}/{user.maxDevices}</Text>
-                    <Text style={{ color: C.textDim, fontSize: 12, width: 160 }} numberOfLines={1}>{devices}</Text>
-                    <Text style={{ color: C.textDim, fontSize: 11, width: 220 }} numberOfLines={1}>{user.email}</Text>
-                    <Text style={{ color: C.textDim, fontSize: 12, width: 130 }}>{user.telefono ?? '—'}</Text>
-                    <Text style={{ color: C.textDim, fontSize: 12, width: 140 }}>{user.contrato ?? '—'}</Text>
-                    <Text style={{ color: C.textDim, fontSize: 12, width: 120 }}>{fmtDate(user.lastLoginAt)}</Text>
+            {/* Table header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
+              {canWrite ? (
+                <TouchableOpacity
+                  style={{ width: 32, alignItems: 'center' }}
+                  onPress={() => {
+                    if (selectedIds.size === visibleUsers.length) {
+                      setSelectedIds(new Set());
+                    } else {
+                      setSelectedIds(new Set(visibleUsers.map((u) => u.id)));
+                    }
+                  }}
+                >
+                  <View style={{
+                    width: 18, height: 18, borderRadius: 4, borderWidth: 2,
+                    borderColor: selectedIds.size > 0 ? C.accent : C.muted,
+                    backgroundColor: selectedIds.size === visibleUsers.length ? C.accent : 'transparent',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {selectedIds.size === visibleUsers.length ? <FontAwesome name="check" size={10} color="#fff" /> : null}
                   </View>
-                );
-              })}
+                </TouchableOpacity>
+              ) : null}
+              {[
+                { label: 'CONTRATO', flex: 1.2 },
+                { label: 'NOMBRE', flex: 2 },
+                { label: 'ROL', flex: 1 },
+                { label: 'ESTADO', flex: 1 },
+                { label: 'PLAN', flex: 1 },
+                { label: 'SESIONES', flex: 0.7 },
+                { label: 'EMAIL', flex: 1.6 },
+                { label: '', flex: 0.4 },
+              ].map((col) => (
+                <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
+                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 }}>{col.label}</Text>
+                </View>
+              ))}
             </View>
-          </ScrollView>
+
+            {/* Table rows */}
+            {visibleUsers.map((user) => {
+              const roleMeta = getRoleMeta(user.role);
+              const statusMeta = getStatusMeta(user.status);
+              const isSelected = selectedIds.has(user.id);
+              const isMenuOpen = actionMenuUserId === user.id;
+
+              return (
+                <View key={user.id} style={{
+                  flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
+                  backgroundColor: isSelected ? C.accentSoft : C.surface,
+                  borderRadius: 8, marginBottom: 3, borderWidth: 1,
+                  borderColor: isSelected ? C.accentBorder : C.border,
+                }}>
+                  {/* Checkbox */}
+                  {canWrite ? (
+                    <TouchableOpacity
+                      style={{ width: 32, alignItems: 'center' }}
+                      onPress={() => {
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(user.id)) next.delete(user.id);
+                          else next.add(user.id);
+                          return next;
+                        });
+                      }}
+                    >
+                      <View style={{
+                        width: 18, height: 18, borderRadius: 4, borderWidth: 2,
+                        borderColor: isSelected ? C.accent : C.muted,
+                        backgroundColor: isSelected ? C.accent : 'transparent',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {isSelected ? <FontAwesome name="check" size={10} color="#fff" /> : null}
+                      </View>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  {/* CONTRATO */}
+                  <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
+                    <Text style={{ color: user.contrato ? C.text : C.muted, fontSize: 12, fontWeight: user.contrato ? '600' : '400' }} numberOfLines={1}>{user.contrato || '—'}</Text>
+                  </View>
+
+                  {/* NOMBRE (avatar + name + type badge) */}
+                  <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: avatarColor(user.nombre), alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{initials(user.nombre)}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{user.nombre}</Text>
+                      <Text style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>{getUserTypeMeta(user).label}</Text>
+                    </View>
+                  </View>
+
+                  {/* ROL */}
+                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                    <View style={{ backgroundColor: roleMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: roleMeta.color, fontSize: 11, fontWeight: '700' }}>{roleMeta.label}</Text>
+                    </View>
+                  </View>
+
+                  {/* ESTADO */}
+                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                    <View style={{ backgroundColor: statusMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: statusMeta.color, fontSize: 11, fontWeight: '700' }}>{statusMeta.label}</Text>
+                    </View>
+                  </View>
+
+                  {/* PLAN */}
+                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                    <View style={{ backgroundColor: C.cyanSoft, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>{user.plan}</Text>
+                    </View>
+                  </View>
+
+                  {/* SESIONES */}
+                  <View style={{ flex: 0.7, paddingHorizontal: 4 }}>
+                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>{user.sesiones}/{user.maxDevices}</Text>
+                  </View>
+
+                  {/* EMAIL */}
+                  <View style={{ flex: 1.6, paddingHorizontal: 4 }}>
+                    <Text style={{ color: C.textDim, fontSize: 11 }} numberOfLines={1}>{user.email}</Text>
+                  </View>
+
+                  {/* Action menu "..." */}
+                  <View style={{ flex: 0.4, alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: isMenuOpen ? C.lift : 'transparent', alignItems: 'center', justifyContent: 'center' }}
+                      onPress={() => setActionMenuUserId(isMenuOpen ? null : user.id)}
+                    >
+                      <FontAwesome name="ellipsis-h" size={14} color={C.muted} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </>
         )}
 
         {!loading && filteredUsers.length > 0 ? (
@@ -1555,6 +1758,48 @@ export default function CmsUsers() {
 
       {confirmState ? <ConfirmModal state={confirmState} onClose={closeConfirm} /> : null}
       {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
+
+      {/* Action menu modal */}
+      {actionMenuUserId ? (() => {
+        const menuUser = users.find((u) => u.id === actionMenuUserId);
+        if (!menuUser) return null;
+        const actions = [
+          { icon: 'eye', label: 'Ver detalle', color: C.accentLight, action: () => { setDetailUserId(menuUser.id); setShowDetailModal(true); } },
+          ...(canWrite ? [
+            { icon: 'pencil', label: 'Editar', color: C.cyan, action: () => { setEditingUser(menuUser); setShowFormModal(true); } },
+            { icon: 'lock', label: 'Recuperar contraseña', color: '#fbbf24', action: () => setRecoveryUser(menuUser) },
+            { icon: 'power-off', label: 'Desactivar', color: C.rose, action: () => handleDeactivate(menuUser) },
+          ] : []),
+        ];
+        return (
+          <Modal visible transparent animationType="none" onRequestClose={() => setActionMenuUserId(null)}>
+            <TouchableOpacity activeOpacity={1} onPress={() => setActionMenuUserId(null)} style={{ flex: 1 }}>
+              <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 260, justifyContent: 'center', paddingRight: 24 }}>
+                <View style={{ backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden', shadowColor: '#0D0020', shadowOpacity: 0.6, shadowRadius: 30, shadowOffset: { width: -4, height: 8 } }}>
+                  <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.lift }}>
+                    <Text style={{ color: C.text, fontSize: 13, fontWeight: '800' }} numberOfLines={1}>{menuUser.nombre}</Text>
+                    <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>{menuUser.email}</Text>
+                  </View>
+                  {actions.map((item, i) => (
+                    <TouchableOpacity
+                      key={item.label}
+                      onPress={() => { setActionMenuUserId(null); item.action(); }}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 12,
+                        paddingHorizontal: 16, paddingVertical: 13,
+                        borderBottomWidth: i < actions.length - 1 ? 1 : 0, borderBottomColor: C.border,
+                      }}
+                    >
+                      <FontAwesome name={item.icon as never} size={13} color={item.color} />
+                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        );
+      })() : null}
     </CmsShell>
   );
 }

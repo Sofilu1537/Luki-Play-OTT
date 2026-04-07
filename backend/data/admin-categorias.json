@@ -1,0 +1,56 @@
+[
+  {
+    "id": "cat-001",
+    "nombre": "Noticias",
+    "descripcion": "Canales de noticias",
+    "icono": "newspaper-o",
+    "activo": true,
+    "creadoEn": "2026-01-01T00:00:00.000Z",
+    "actualizadoEn": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cat-002",
+    "nombre": "Deportes",
+    "descripcion": "Fútbol y más",
+    "icono": "futbol-o",
+    "activo": true,
+    "creadoEn": "2026-01-01T00:00:00.000Z",
+    "actualizadoEn": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cat-003",
+    "nombre": "Cine",
+    "descripcion": "Películas y series",
+    "icono": "film",
+    "activo": true,
+    "creadoEn": "2026-01-01T00:00:00.000Z",
+    "actualizadoEn": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cat-004",
+    "nombre": "Infantil",
+    "descripcion": "Contenido para niños",
+    "icono": "child",
+    "activo": true,
+    "creadoEn": "2026-01-01T00:00:00.000Z",
+    "actualizadoEn": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cat-005",
+    "nombre": "Música",
+    "descripcion": "Canales de música",
+    "icono": "music",
+    "activo": true,
+    "creadoEn": "2026-01-01T00:00:00.000Z",
+    "actualizadoEn": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cat-006",
+    "nombre": "General",
+    "descripcion": "Contenido general sin categoría específica",
+    "icono": "th-large",
+    "activo": true,
+    "creadoEn": "2026-01-01T00:00:00.000Z",
+    "actualizadoEn": "2026-01-01T00:00:00.000Z"
+  }
+]

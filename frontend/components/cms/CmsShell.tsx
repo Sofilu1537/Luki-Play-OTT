@@ -7,42 +7,61 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, usePathname } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../LukiPlayLogo';
 
 // ---------------------------------------------------------------------------
-// Theme
+// Theme — Luki Play Brand (purple + gold)
 // ---------------------------------------------------------------------------
 
 export const C = {
-  bg: '#050B17',
-  panel: '#070E1D',
-  sidebar: '#070E1D',
-  surface: '#0C1829',
-  surfaceAlt: '#102236',
+  // Background hierarchy (deep purple)
+  bg:          '#160035',
+  panel:       'rgba(26, 6, 62, 0.96)',
+  sidebar:     'rgba(26, 6, 62, 0.97)',
+  surface:     'rgba(42, 14, 90, 0.88)',
+  surfaceAlt:  'rgba(55, 20, 110, 0.85)',
   surfaceSoft: 'transparent',
-  lift: '#102236',
-  tableHead: '#102236',
-  border: 'rgba(255,255,255,0.11)',
-  accent: '#7B5EF8',
-  accentLight: '#A78BFA',
-  accentSoft: 'rgba(123,94,248,0.16)',
-  accentBorder: 'rgba(123,94,248,0.28)',
-  cyan: '#22D3EE',
-  cyanSoft: 'rgba(34,211,238,0.16)',
-  green: '#10B981',
-  greenSoft: 'rgba(16,185,129,0.16)',
-  amber: '#FBBF24',
-  rose: '#F43F5E',
-  roseSoft: 'rgba(244,63,94,0.16)',
-  success: '#10B981',
-  danger: '#F43F5E',
-  muted: '#3F5475',
-  text: '#EFF6FF',
-  textSec: '#94A3B8',
-  textDim: '#94A3B8',
+  lift:        'rgba(70, 28, 130, 0.92)',
+  tableHead:   'rgba(70, 28, 130, 0.92)',
+
+  // Borders
+  border:       'rgba(255,255,255,0.10)',
+  borderMid:    'rgba(255,184,0,0.28)',
+
+  // Primary accent: GOLD
+  accent:       '#FFB800',
+  accentLight:  '#FFDA6B',
+  accentSoft:   'rgba(255,184,0,0.14)',
+  accentBorder: 'rgba(255,184,0,0.36)',
+  accentGlow:   'rgba(255,184,0,0.26)',
+  accentFaint:  'rgba(255,184,0,0.14)',
+
+  // Secondary: light violet
+  cyan:        '#B490FF',
+  cyanSoft:    'rgba(180,144,255,0.16)',
+
+  // Semantic
+  green:       '#10B981',
+  greenSoft:   'rgba(16,185,129,0.16)',
+  amber:       '#FFB800',
+  rose:        '#F43F5E',
+  roseSoft:    'rgba(244,63,94,0.16)',
+  success:     '#10B981',
+  danger:      '#F43F5E',
+
+  // Typography
+  muted:       '#8B72B2',
+  text:        '#FFFFFF',
+  textSec:     '#D0C4E8',
+  textDim:     '#D0C4E8',
+
+  // Extra
+  void:        '#160035',
+  dimmed:      '#0D0020',
 };
 
 // ---------------------------------------------------------------------------
@@ -79,10 +98,12 @@ function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <View
+    <LinearGradient
+      colors={['rgba(26,6,62,0.97)', 'rgba(16,2,42,0.99)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
       style={{
         width: 260,
-        backgroundColor: C.sidebar,
         borderRightWidth: 1,
         borderRightColor: C.border,
         paddingTop: 18,
@@ -111,10 +132,10 @@ function Sidebar() {
           </View>
           <View
             style={{
-              backgroundColor: 'rgba(255,255,255,0.04)',
+              backgroundColor: C.accentFaint,
               borderRadius: 14,
               borderWidth: 1,
-              borderColor: C.border,
+              borderColor: C.accentBorder,
               paddingHorizontal: 10,
               paddingVertical: 8,
               alignItems: 'center',
@@ -144,6 +165,10 @@ function Sidebar() {
               borderRadius: 999,
               backgroundColor: C.success,
               marginRight: 10,
+              shadowColor: C.success,
+              shadowOpacity: 0.5,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 0 },
             }}
           />
           <View>
@@ -170,12 +195,18 @@ function Sidebar() {
                 paddingVertical: 15,
                 marginHorizontal: 4,
                 borderRadius: 18,
-                backgroundColor: active ? C.lift : hovered ? C.lift : 'transparent',
+                backgroundColor: active ? C.lift : hovered ? 'rgba(70,28,130,0.5)' : 'transparent',
                 borderWidth: 1,
                 borderColor: active ? C.accentBorder : 'transparent',
                 borderLeftWidth: active ? 3 : 1,
                 borderLeftColor: active ? C.accent : 'transparent',
                 marginBottom: 8,
+                ...(active ? {
+                  shadowColor: '#FFB800',
+                  shadowOpacity: 0.15,
+                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 4 },
+                } : {}),
               })}
               onPress={() => router.push(item.path as never)}
             >
@@ -200,7 +231,7 @@ function Sidebar() {
           );
         })}
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -242,10 +273,22 @@ function TopBar({
         elevation: 50,
       }}
     >
-      <View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 }}>
           {currentTitle}
         </Text>
+        <View style={{
+          backgroundColor: C.accentFaint,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: C.accentBorder,
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+        }}>
+          <Text style={{ color: C.accent, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 }}>
+            LUKI PLAY CMS
+          </Text>
+        </View>
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -320,9 +363,9 @@ function TopBar({
                 overflow: 'hidden',
                 zIndex: 60,
                 elevation: 60,
-                shadowColor: '#000',
-                shadowOpacity: 0.3,
-                shadowRadius: 18,
+                shadowColor: '#0D0020',
+                shadowOpacity: 0.5,
+                shadowRadius: 24,
                 shadowOffset: { width: 0, height: 10 },
               }}
             >
@@ -382,15 +425,40 @@ export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
   if (!profile) return null;
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
+    <LinearGradient
+      colors={['#1a0040', '#2e0a6e', '#4a18a0', '#2e0a6e']}
+      locations={[0, 0.4, 0.7, 1]}
+      start={{ x: 0.2, y: 0 }}
+      end={{ x: 0.8, y: 1 }}
+      style={{ flex: 1, flexDirection: 'row', overflow: 'hidden' }}
+    >
+      {/* Bokeh orb 1 — purple, top-right */}
+      <View style={{
+        position: 'absolute', top: -120, right: -80,
+        width: 500, height: 500, borderRadius: 250,
+        backgroundColor: 'rgba(123,47,190,0.25)',
+      }} />
+      {/* Bokeh orb 2 — purple, bottom-left */}
+      <View style={{
+        position: 'absolute', bottom: -60, left: -100,
+        width: 400, height: 400, borderRadius: 200,
+        backgroundColor: 'rgba(90,30,158,0.20)',
+      }} />
+      {/* Bokeh orb 3 — faint gold, center-right */}
+      <View style={{
+        position: 'absolute', top: '30%', right: '20%',
+        width: 300, height: 300, borderRadius: 150,
+        backgroundColor: 'rgba(255,184,0,0.06)',
+      }} />
+
       {showSidebar && <Sidebar />}
 
-      <View style={{ flex: 1, overflow: 'hidden', backgroundColor: C.bg }}>
+      <View style={{ flex: 1, overflow: 'hidden', zIndex: 1 }}>
         <TopBar breadcrumbs={breadcrumbs} onLogout={handleLogout} />
         <View style={{ flex: 1, zIndex: 1 }}>
           {children}
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
