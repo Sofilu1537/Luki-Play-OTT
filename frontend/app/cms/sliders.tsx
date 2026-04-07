@@ -68,7 +68,8 @@ export default function CmsSliders() {
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
-  }, [profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   useEffect(() => {
     if (!accessToken) return;

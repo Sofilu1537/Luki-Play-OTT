@@ -149,6 +149,16 @@ export class AuthController {
     return { message: 'Si el correo está registrado, recibirás un código de recuperación.' };
   }
 
+  @Post('cms/send-recovery-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send recovery code — CMS internal users only (SUPERADMIN/SOPORTE)' })
+  @ApiResponse({ status: 200, type: MessageResponse })
+  @ApiResponse({ status: 403, description: 'El correo no pertenece a un usuario interno' })
+  async cmsSendRecoveryCode(@Body() dto: SendRecoveryCodeDto): Promise<{ message: string }> {
+    await this.sendRecoveryCodeUseCase.execute(dto.email, true);
+    return { message: 'Código de recuperación enviado a tu correo.' };
+  }
+
   @Post('cms/reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password using recovery token' })

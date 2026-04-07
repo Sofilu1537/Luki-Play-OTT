@@ -159,3 +159,61 @@ export async function cmsLogout(accessToken: string): Promise<void> {
     // Ignore network errors — always clear local state
   });
 }
+
+// ---------------------------------------------------------------------------
+// Password Recovery
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /auth/cms/send-recovery-code
+ * Sends a recovery code to a CMS internal user's email.
+ * Only works for SUPERADMIN/SOPORTE roles — rejects external users.
+ */
+export async function cmsSendRecoveryCode(email: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/cms/send-recovery-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'No se pudo enviar el código de recuperación';
+    throw new Error(msg);
+  }
+
+  return data as { message: string };
+}
+
+/**
+ * POST /auth/app/reset-with-code
+ * Validates the recovery code and sets a new password.
+ */
+export async function cmsResetWithCode(
+  email: string,
+  code: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/app/reset-with-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, newPassword, confirmPassword }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'No se pudo restablecer la contraseña';
+    throw new Error(msg);
+  }
+
+  return data as { message: string };
+}

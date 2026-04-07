@@ -46,7 +46,8 @@ export default function CmsAccounts() {
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
-  }, [profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   if (!profile) return null;
 

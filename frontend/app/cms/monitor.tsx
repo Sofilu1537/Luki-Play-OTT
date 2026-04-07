@@ -303,7 +303,8 @@ export default function CmsMonitor() {
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
-  }, [profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const syncCanales = (items: AdminCanal[], resetPage: boolean) => {
     setCanales(items);

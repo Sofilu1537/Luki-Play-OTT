@@ -68,7 +68,8 @@ export default function CmsCategorias() {
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
-  }, [profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -80,8 +81,6 @@ export default function CmsCategorias() {
       })
       .finally(() => setLoading(false));
   }, [accessToken]);
-
-  if (!profile) return null;
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
@@ -107,6 +106,8 @@ export default function CmsCategorias() {
       };
     });
   }, [cats, canales]);
+
+  if (!profile) return null;
 
   const activeCount = enrichedCategories.filter((item) => item.activo).length;
   const featuredCount = enrichedCategories.filter((item) => item.highlight).length;

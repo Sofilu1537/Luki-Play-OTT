@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { randomBytes, randomUUID, createHash } from 'crypto';
 import { USER_REPOSITORY } from '../../domain/interfaces/user.repository';
 import type { UserRepository } from '../../domain/interfaces/user.repository';
@@ -18,11 +18,25 @@ export class SendRecoveryCodeUseCase {
     @Inject(TEMPORARY_CODE_REPOSITORY) private readonly codeRepo: TemporaryCodeRepository,
   ) {}
 
-  async execute(email: string): Promise<string> {
+  /**
+   * @param email       Target email
+   * @param requireCms  If true, only SUPERADMIN/SOPORTE users are allowed
+   */
+  async execute(email: string, requireCms = false): Promise<string> {
     const rawCode = randomBytes(4).toString('hex').toUpperCase();
     const normalizedEmail = email.trim().toLowerCase();
 
     const user = await this.userRepo.findByEmail(normalizedEmail);
+
+    // CMS recovery: reject non-internal users with a clear message
+    if (requireCms) {
+      if (!user) {
+        throw new ForbiddenException('No se encontró un usuario interno con este correo.');
+      }
+      if (!user.isCmsUser()) {
+        throw new ForbiddenException('Este correo no pertenece a un usuario interno autorizado.');
+      }
+    }
 
     // Invalidate previous recovery codes for this email
     await this.codeRepo.invalidateByEmailAndType(normalizedEmail, TemporaryCodeType.RESET_PASSWORD);

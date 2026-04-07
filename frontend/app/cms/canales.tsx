@@ -80,7 +80,8 @@ export default function CmsCanales() {
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
-  }, [profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -94,8 +95,6 @@ export default function CmsCanales() {
       })
       .finally(() => setLoading(false));
   }, [accessToken]);
-
-  if (!profile) return null;
 
   const categoryOptions = useMemo(() => {
     const defaults = ['Noticias', 'Deportes', 'Cine', 'Infantil', 'Música', 'General'];
@@ -132,6 +131,8 @@ export default function CmsCanales() {
     const parentales = canales.filter((item) => item.requiereControlParental).length;
     return { total, activos, parentales };
   }, [canales]);
+
+  if (!profile) return null;
 
   const categoryChips = ['all', ...categoryOptions];
 
