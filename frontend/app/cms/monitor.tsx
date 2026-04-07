@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
+import { useChannelStore } from '../../services/channelStore';
 import { ResizeMode, Video } from 'expo-av';
-import { adminListCanales, AdminCanal } from '../../services/api/adminApi';
+import type { AdminCanal } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 
@@ -11,7 +12,6 @@ type PlaybackState = 'idle' | 'playing' | 'error';
 
 const CHANNELS_PER_PAGE = 16;
 const AUTO_ROTATE_MS = 8000;
-const AUTO_REFRESH_MS = 5000;
 
 function isValidStreamUrl(url: string) {
   try {
@@ -293,11 +293,15 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
 }
 
 export default function CmsMonitor() {
-  const { profile, accessToken } = useCmsStore();
+  const { profile } = useCmsStore();
   const router = useRouter();
-  const [canales, setCanales] = useState<AdminCanal[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+
+  // ---------------------------------------------------------------------------
+  // Subscribe to channelStore — no polling needed, fully reactive
+  // ---------------------------------------------------------------------------
+  const allChannels = useChannelStore((s) => s.channels);
+  const canales = useMemo(() => allChannels.filter((c) => c.activo), [allChannels]);
+
   const [playback, setPlayback] = useState<Record<string, PlaybackState>>({});
   const [page, setPage] = useState(0);
 
@@ -306,51 +310,16 @@ export default function CmsMonitor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
-  const syncCanales = (items: AdminCanal[], resetPage: boolean) => {
-    setCanales(items);
+  // Reset playback map when canales list changes
+  useEffect(() => {
     setPlayback((current) => Object.fromEntries(
-      items.map((item) => {
-        const nextState: PlaybackState = !item.activo || !isValidStreamUrl(item.streamUrl)
-          ? 'idle'
-          : (current[item.id] ?? 'idle');
-        return [item.id, nextState];
+      canales.map((item) => {
+        const next: PlaybackState = !isValidStreamUrl(item.streamUrl) ? 'idle' : (current[item.id] ?? 'idle');
+        return [item.id, next];
       }),
     ));
-    if (resetPage) setPage(0);
-  };
-
-  const loadCanales = () => {
-    if (!accessToken) return;
-    setLoading(true);
-    setError('');
-    adminListCanales(accessToken)
-      .then((items) => {
-        syncCanales(items, true);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'No se pudieron cargar los canales.');
-        setCanales([]);
-        setPlayback({});
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { loadCanales(); }, [accessToken]);
-
-  useEffect(() => {
-    if (!accessToken) return;
-
-    const timer = setInterval(() => {
-      adminListCanales(accessToken)
-        .then((items) => {
-          setError('');
-          syncCanales(items, false);
-        })
-        .catch(() => {});
-    }, AUTO_REFRESH_MS);
-
-    return () => clearInterval(timer);
-  }, [accessToken]);
+    setPage(0);
+  }, [canales]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(canales.length / CHANNELS_PER_PAGE)), [canales.length]);
   const visibles = useMemo(() => canales.slice(page * CHANNELS_PER_PAGE, page * CHANNELS_PER_PAGE + CHANNELS_PER_PAGE), [canales, page]);
@@ -378,80 +347,70 @@ export default function CmsMonitor() {
             <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>Videowall de canales</Text>
             <Text style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>Monitor 4x4 con validación operativa: URL inválida o señal fallida se marca como de baja.</Text>
           </View>
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border }}
-            onPress={loadCanales}
-          >
-            <FontAwesome name="refresh" size={13} color={C.textDim} />
-            <Text style={{ color: C.textDim, fontSize: 13 }}>Actualizar</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 22 }}>
-          <SummaryCard label="Canales cargados" value={canales.length} icon="television" color="#5B5BD6" />
+          <SummaryCard label="Canales activos" value={canales.length} icon="television" color="#5B5BD6" />
           <SummaryCard label="Operativos" value={activos} icon="play-circle" color="#10B981" />
           <SummaryCard label="Slots por vista" value={CHANNELS_PER_PAGE} icon="th" color="#F59E0B" />
           <SummaryCard label="Con preview" value={conPreview} icon="video-camera" color="#0EA5E9" />
         </View>
 
-        {error ? (
-          <View style={{ marginBottom: 20, borderRadius: 14, padding: 14, backgroundColor: 'rgba(251,113,133,0.08)', borderWidth: 1, borderColor: 'rgba(251,113,133,0.22)' }}>
-            <Text style={{ color: '#FB7185', fontSize: 13, fontWeight: '700' }}>{error}</Text>
-          </View>
-        ) : null}
-
-        {loading ? (
-          <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
-            <Text style={{ color: C.muted, marginTop: 14, fontSize: 14 }}>Cargando canales…</Text>
+        {canales.length === 0 ? (
+          <View style={{ backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 48, alignItems: 'center', gap: 14 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: 'rgba(91,91,214,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="television" size={28} color="#5B5BD6" />
+            </View>
+            <Text style={{ color: 'white', fontSize: 16, fontWeight: '800' }}>Sin canales activos</Text>
+            <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
+              Crea o activa canales desde la sección Canales para verlos aparecer aquí en tiempo real.
+            </Text>
           </View>
         ) : (
-          <>
-            <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: C.border }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-                <View>
-                  <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>Mosaico 4x4</Text>
-                  <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Se muestran 16 canales por pantalla. Si la URL es inválida o la señal falla, el canal queda marcado como inactivo o de baja.</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12 }}>Actualizado: {new Date().toLocaleTimeString('es-CO')}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => setPage((current) => Math.max(0, current - 1))}
-                      disabled={page === 0}
-                      style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page === 0 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page === 0 ? 0.5 : 1 }}
-                    >
-                      <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Anterior</Text>
-                    </TouchableOpacity>
-                    <Text style={{ color: C.textDim, fontSize: 12 }}>Pantalla {page + 1} de {totalPages}</Text>
-                    <TouchableOpacity
-                      onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
-                      disabled={page >= totalPages - 1}
-                      style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page >= totalPages - 1 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page >= totalPages - 1 ? 0.5 : 1 }}
-                    >
-                      <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Siguiente</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={{ color: C.muted, fontSize: 11 }}>Rotación automática cada 8 s</Text>
-                </View>
+          <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: C.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+              <View>
+                <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>Mosaico 4x4</Text>
+                <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Se muestran 16 canales por pantalla. Si la URL es inválida o la señal falla, el canal queda marcado como de baja.</Text>
               </View>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
-                {visibles.map((canal) => (
-                  <ChannelMonitorTile
-                    key={canal.id}
-                    canal={canal}
-                    playback={playback[canal.id] ?? 'idle'}
-                    onPlaybackOk={() => setPlayback((current) => current[canal.id] === 'playing' ? current : { ...current, [canal.id]: 'playing' })}
-                    onPlaybackError={() => setPlayback((current) => current[canal.id] === 'error' ? current : { ...current, [canal.id]: 'error' })}
-                  />
-                ))}
-                {Array.from({ length: vacios }).map((_, index) => (
-                  <EmptyMonitorTile key={`empty-${index}`} index={visibles.length + index} />
-                ))}
+              <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                <Text style={{ color: C.textDim, fontSize: 12 }}>Actualizado: {new Date().toLocaleTimeString('es-CO')}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => setPage((current) => Math.max(0, current - 1))}
+                    disabled={page === 0}
+                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page === 0 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page === 0 ? 0.5 : 1 }}
+                  >
+                    <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Anterior</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: C.textDim, fontSize: 12 }}>Pantalla {page + 1} de {totalPages}</Text>
+                  <TouchableOpacity
+                    onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+                    disabled={page >= totalPages - 1}
+                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page >= totalPages - 1 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page >= totalPages - 1 ? 0.5 : 1 }}
+                  >
+                    <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Siguiente</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ color: C.muted, fontSize: 11 }}>Rotación automática cada 8 s</Text>
               </View>
             </View>
-          </>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+              {visibles.map((canal) => (
+                <ChannelMonitorTile
+                  key={canal.id}
+                  canal={canal}
+                  playback={playback[canal.id] ?? 'idle'}
+                  onPlaybackOk={() => setPlayback((current) => current[canal.id] === 'playing' ? current : { ...current, [canal.id]: 'playing' })}
+                  onPlaybackError={() => setPlayback((current) => current[canal.id] === 'error' ? current : { ...current, [canal.id]: 'error' })}
+                />
+              ))}
+              {Array.from({ length: vacios }).map((_, index) => (
+                <EmptyMonitorTile key={`empty-${index}`} index={visibles.length + index} />
+              ))}
+            </View>
+          </View>
         )}
       </ScrollView>
     </CmsShell>

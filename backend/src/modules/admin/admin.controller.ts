@@ -161,50 +161,70 @@ export class AdminController {
   @Get('sliders')
   getSliders() { return this.adminService.getSliders(); }
 
+  @ApiOperation({ summary: 'List all channels' })
+  @Permissions('cms:content:read')
   @Get('canales')
   getCanales() { return this.adminService.getCanales(); }
 
+  @ApiOperation({ summary: 'Create a channel' })
+  @Permissions('cms:content:write')
   @Post('canales')
   createCanal(@Body() dto: CreateCanalDto) {
     return this.adminService.createCanal(dto);
   }
 
+  @ApiOperation({ summary: 'Update a channel' })
+  @Permissions('cms:content:write')
   @Patch('canales/:id')
   updateCanal(@Param('id') id: string, @Body() dto: UpdateCanalDto) {
     return this.adminService.updateCanal(id, dto);
   }
 
+  @ApiOperation({ summary: 'Toggle channel active state' })
+  @Permissions('cms:content:write')
   @Post('canales/:id/toggle')
   @HttpCode(HttpStatus.OK)
   toggleCanal(@Param('id') id: string) {
     return this.adminService.toggleCanal(id);
   }
 
+  @ApiOperation({ summary: 'Delete a channel' })
+  @Permissions('cms:content:write')
   @Delete('canales/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteCanal(@Param('id') id: string) {
     return this.adminService.deleteCanal(id);
   }
 
+  @ApiOperation({ summary: 'List all categories' })
+  @Permissions('cms:content:read')
   @Get('categorias')
   getCategorias() { return this.adminService.getCategorias(); }
 
+  @ApiOperation({ summary: 'Create a category' })
+  @Permissions('cms:content:write')
   @Post('categorias')
   createCategoria(@Body() dto: CreateCategoriaDto) {
     return this.adminService.createCategoria(dto);
   }
 
+  @ApiOperation({ summary: 'Update a category' })
+  @Permissions('cms:content:write')
   @Patch('categorias/:id')
   updateCategoria(@Param('id') id: string, @Body() dto: UpdateCategoriaDto) {
     return this.adminService.updateCategoria(id, dto);
   }
 
+  @ApiOperation({ summary: 'Toggle category active state' })
+  @Permissions('cms:content:write')
   @Post('categorias/:id/toggle')
   @HttpCode(HttpStatus.OK)
   toggleCategoria(@Param('id') id: string) {
     return this.adminService.toggleCategoria(id);
   }
 
+  @ApiOperation({ summary: 'Delete a category' })
+  @Permissions('cms:content:write')
   @Delete('categorias/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteCategoria(@Param('id') id: string) {

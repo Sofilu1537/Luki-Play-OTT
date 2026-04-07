@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable, Modal, TextInput, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Pressable, Modal, TextInput, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import { adminListCanales, adminListCategorias, adminCreateCategoria, adminUpdateCategoria, adminToggleCategoria, adminDeleteCategoria, AdminCanal, AdminCategoria } from '../../services/api/adminApi';
+import type { AdminCanal, AdminCategoria } from '../../services/api/adminApi';
+import { useCategoriasStore } from '../../services/categoriasStore';
+import { useChannelStore } from '../../services/channelStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -52,35 +54,20 @@ function matchesCategory(categoryName: string, canal: AdminCanal) {
 }
 
 export default function CmsCategorias() {
-  const { profile, accessToken } = useCmsStore();
+  const { profile } = useCmsStore();
   const router = useRouter();
-  const [cats, setCats] = useState<AdminCategoria[]>([]);
-  const [canales, setCanales] = useState<AdminCanal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cats = useCategoriasStore((s) => s.categorias);
+  const { add: storeAdd, update: storeUpdate, toggle: storeToggle, remove: storeRemove } = useCategoriasStore();
+  const canales = useChannelStore((s) => s.channels);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<AdminCategoria | null>(null);
   const [editingCategory, setEditingCategory] = useState<AdminCategoria | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '' });
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    if (!profile) router.replace('/cms/login' as never);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
-
-  useEffect(() => {
-    if (!accessToken) return;
-    Promise.all([adminListCategorias(accessToken), adminListCanales(accessToken)])
-      .then(([categoriasData, canalesData]) => {
-        setCats(categoriasData);
-        setCanales(canalesData);
-        setSelectedId(categoriasData[0]?.id ?? null);
-      })
-      .finally(() => setLoading(false));
-  }, [accessToken]);
+  if (!profile) { router.replace('/cms/login' as never); }
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
@@ -95,7 +82,9 @@ export default function CmsCategorias() {
         contentCount: 8,
         preview: ['Colecciones', 'Destacados', 'Player'],
       };
-      const relatedChannels = canales.filter((canal) => matchesCategory(cat.nombre, canal));
+      const relatedChannels = (canales as AdminCanal[]).filter(
+        (canal) => canal.categoryId === cat.id || matchesCategory(cat.nombre, canal),
+      );
       return {
         ...cat,
         meta,
@@ -134,48 +123,31 @@ export default function CmsCategorias() {
     setFormError('');
   }
 
-  async function saveEdit() {
+  function saveEdit() {
     const nombre = form.nombre.trim();
     if (!nombre) { setFormError('El nombre es requerido.'); return; }
-
-    setSaving(true);
     setFormError('');
     try {
       if (isCreating) {
-        const created = await adminCreateCategoria(accessToken!, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
-        setCats((current) => [...current, created]);
+        const created = storeAdd({ nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
         setSelectedId(created.id);
       } else if (editingCategory) {
-        const updated = await adminUpdateCategoria(accessToken!, editingCategory.id, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
-        setCats((current) => current.map((item) => item.id === editingCategory.id ? updated : item));
+        storeUpdate(editingCategory.id, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
       }
       closeEdit();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'No se pudo guardar la categoría.');
-    } finally {
-      setSaving(false);
     }
   }
 
-  async function toggleCategory(categoryId: string) {
-    if (!accessToken) return;
-    try {
-      const updated = await adminToggleCategoria(accessToken, categoryId);
-      setCats((current) => current.map((item) => item.id === categoryId ? updated : item));
-    } catch {
-      // Fallback: toggle local
-      setCats((current) => current.map((item) => item.id === categoryId ? { ...item, activo: !item.activo } : item));
-    }
+  function toggleCategory(categoryId: string) {
+    storeToggle(categoryId);
   }
 
-  async function deleteCategory(categoryId: string, nombre: string) {
+  function deleteCategory(categoryId: string, nombre: string) {
     if (!window.confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
-    if (!accessToken) return;
-    try {
-      await adminDeleteCategoria(accessToken, categoryId);
-      setCats((current) => current.filter((item) => item.id !== categoryId));
-      if (selectedId === categoryId) setSelectedId(null);
-    } catch { /* silently ignore */ }
+    storeRemove(categoryId);
+    if (selectedId === categoryId) setSelectedId(null);
   }
 
   return (
@@ -225,11 +197,7 @@ export default function CmsCategorias() {
           </View>
         </View>
 
-        {loading ? (
-          <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
-          </View>
-        ) : (
+        {cats.length === 0 ? null : (
           <>
             {selectedCategory ? (
               <LinearGradient
@@ -319,13 +287,13 @@ export default function CmsCategorias() {
                             <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
                               <FontAwesome name="pencil" size={12} color={C.cyan} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => void toggleCategory(cat.id)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
                               <FontAwesome name={cat.activo ? 'pause' : 'play'} size={11} color={cat.activo ? C.amber : C.green} />
                             </TouchableOpacity>
                             <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
                               <FontAwesome name="eye" size={12} color={C.text} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(255,122,89,0.14)', borderWidth: 1, borderColor: 'rgba(255,122,89,0.24)', alignItems: 'center', justifyContent: 'center' }} onPress={() => void deleteCategory(cat.id, cat.nombre)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(255,122,89,0.14)', borderWidth: 1, borderColor: 'rgba(255,122,89,0.24)', alignItems: 'center', justifyContent: 'center' }} onPress={() => deleteCategory(cat.id, cat.nombre)}>
                               <FontAwesome name="trash" size={11} color={C.rose} />
                             </TouchableOpacity>
                           </View>
@@ -476,12 +444,11 @@ export default function CmsCategorias() {
                   <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: saving ? C.muted : C.accent, opacity: saving ? 0.7 : 1 }}
-                  onPress={() => void saveEdit()}
-                  disabled={saving}
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}
+                  onPress={saveEdit}
                 >
                   <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>
-                    {saving ? 'Guardando…' : isCreating ? 'Crear categoría' : 'Guardar cambios'}
+                    {isCreating ? 'Crear categoría' : 'Guardar cambios'}
                   </Text>
                 </TouchableOpacity>
               </View>

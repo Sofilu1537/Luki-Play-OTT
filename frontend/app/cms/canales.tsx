@@ -1,16 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Platform, Modal } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Platform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import {
-  adminCreateCanal,
-  adminDeleteCanal,
-  adminListCanales,
-  adminToggleCanal,
-  adminUpdateCanal,
-  AdminCanal,
-  AdminCanalPayload,
-} from '../../services/api/adminApi';
+import { useChannelStore } from '../../services/channelStore';
+import { useCategoriasStore } from '../../services/categoriasStore';
+import type { AdminCanal, AdminCanalPayload } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 
@@ -19,6 +13,9 @@ const CAT_COLORS: Record<string, string> = {
   Infantil: '#EC4899', Música: '#8B5CF6', General: '#64748B',
 };
 
+function catColor(nombre: string) {
+  return CAT_COLORS[nombre] ?? '#64748B';
+}
 
 function emptyForm(): AdminCanalPayload {
   return {
@@ -26,7 +23,8 @@ function emptyForm(): AdminCanalPayload {
     logo: '',
     streamUrl: '',
     detalle: '',
-    categoria: 'General',
+    categoryId: '',
+    categoria: '',
     tipo: 'live',
     requiereControlParental: false,
     activo: true,
@@ -42,106 +40,70 @@ function isValidUrl(value: string) {
   }
 }
 
-function asText(value: unknown, fallback = '') {
-  return typeof value === 'string' ? value : fallback;
-}
-
-function normalizeCanal(canal: Partial<AdminCanal>): AdminCanal {
-  const now = new Date().toISOString();
-  return {
-    id: asText(canal.id, `canal-${Date.now()}`),
-    nombre: asText(canal.nombre, 'Canal sin nombre'),
-    logo: asText(canal.logo),
-    streamUrl: asText(canal.streamUrl),
-    detalle: asText(canal.detalle),
-    categoria: asText(canal.categoria, 'General'),
-    tipo: 'live',
-    requiereControlParental: Boolean(canal.requiereControlParental),
-    activo: canal.activo !== false,
-    creadoEn: asText(canal.creadoEn, now),
-    actualizadoEn: asText(canal.actualizadoEn, asText(canal.creadoEn, now)),
-  };
-}
-
 export default function CmsCanales() {
-  const { profile, accessToken } = useCmsStore();
+  const { profile } = useCmsStore();
   const router = useRouter();
-  const [canales, setCanales] = useState<AdminCanal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingAction, setLoadingAction] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // Store subscriptions
+  // ---------------------------------------------------------------------------
+  const { channels, createChannel, updateChannel, toggleChannelStatus, deleteChannel } = useChannelStore();
+  const categorias = useCategoriasStore((s) => s.categorias);
+  const activeCategories = useMemo(() => categorias.filter((c) => c.activo), [categorias]);
+
+  // ---------------------------------------------------------------------------
+  // Local UI state
+  // ---------------------------------------------------------------------------
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCanal, setEditingCanal] = useState<AdminCanal | null>(null);
   const [form, setForm] = useState<AdminCanalPayload>(emptyForm());
   const [formError, setFormError] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
-  useEffect(() => {
-    if (!accessToken) return;
-    adminListCanales(accessToken)
-      .then((items) => setCanales(items.map((item) => normalizeCanal(item))))
-      .catch((error: unknown) => {
-        setFeedback({
-          type: 'error',
-          message: error instanceof Error ? error.message : 'No se pudo cargar el módulo de canales.',
-        });
-      })
-      .finally(() => setLoading(false));
-  }, [accessToken]);
-
-  const categoryOptions = useMemo(() => {
-    const defaults = ['Noticias', 'Deportes', 'Cine', 'Infantil', 'Música', 'General'];
-    const dynamic = canales.map((canal) => asText(canal.categoria, 'General'));
-    return Array.from(new Set([...defaults, ...dynamic]));
-  }, [canales]);
-
+  // ---------------------------------------------------------------------------
+  // Derived data
+  // ---------------------------------------------------------------------------
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
+    return channels
+      .filter((c) => {
+        if (categoryFilter !== 'all' && c.categoria !== categoryFilter) return false;
+        if (!query) return true;
+        return (
+          c.nombre.toLowerCase().includes(query)
+          || c.categoria.toLowerCase().includes(query)
+          || c.detalle.toLowerCase().includes(query)
+          || c.streamUrl.toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => new Date(b.actualizadoEn ?? b.creadoEn).getTime() - new Date(a.actualizadoEn ?? a.creadoEn).getTime());
+  }, [channels, search, categoryFilter]);
 
-    const list = canales.filter((canal) => {
-      if (categoryFilter !== 'all' && canal.categoria !== categoryFilter) return false;
+  const stats = useMemo(() => ({
+    total: channels.length,
+    activos: channels.filter((c) => c.activo).length,
+    parentales: channels.filter((c) => c.requiereControlParental).length,
+  }), [channels]);
 
-      if (!query) return true;
-      const nombre = asText(canal.nombre).toLowerCase();
-      const categoria = asText(canal.categoria, 'General').toLowerCase();
-      const detalle = asText(canal.detalle).toLowerCase();
-      const streamUrl = asText(canal.streamUrl).toLowerCase();
-
-      return (
-        nombre.includes(query)
-        || categoria.includes(query)
-        || detalle.includes(query)
-        || streamUrl.includes(query)
-      );
-    });
-
-    return [...list].sort((a, b) => new Date(asText(b.actualizadoEn, b.creadoEn)).getTime() - new Date(asText(a.actualizadoEn, a.creadoEn)).getTime());
-  }, [canales, search, categoryFilter]);
-
-  const stats = useMemo(() => {
-    const total = canales.length;
-    const activos = canales.filter((item) => item.activo).length;
-    const parentales = canales.filter((item) => item.requiereControlParental).length;
-    return { total, activos, parentales };
-  }, [canales]);
+  // Filter chips: "Todos" + one per active category that has at least one channel
+  const categoryChips = useMemo(() => {
+    const usedNames = new Set(channels.map((c) => c.categoria));
+    const chips = activeCategories.filter((c) => usedNames.has(c.nombre)).map((c) => c.nombre);
+    return ['all', ...chips];
+  }, [channels, activeCategories]);
 
   if (!profile) return null;
 
-  const categoryChips = ['all', ...categoryOptions];
-
-  async function refreshCanales() {
-    if (!accessToken) return;
-    const data = await adminListCanales(accessToken);
-    setCanales(data);
-  }
-
+  // ---------------------------------------------------------------------------
+  // Handlers (synchronous — store manages persistence)
+  // ---------------------------------------------------------------------------
   function openCreateModal() {
     setEditingCanal(null);
     setForm(emptyForm());
@@ -156,6 +118,7 @@ export default function CmsCanales() {
       logo: canal.logo,
       streamUrl: canal.streamUrl,
       detalle: canal.detalle,
+      categoryId: canal.categoryId ?? '',
       categoria: canal.categoria,
       tipo: 'live',
       requiereControlParental: canal.requiereControlParental,
@@ -166,7 +129,6 @@ export default function CmsCanales() {
   }
 
   function closeModal() {
-    if (loadingAction) return;
     setModalVisible(false);
     setEditingCanal(null);
     setForm(emptyForm());
@@ -174,19 +136,21 @@ export default function CmsCanales() {
   }
 
   function updateField<K extends keyof AdminCanalPayload>(field: K, value: AdminCanalPayload[K]) {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  function selectCategory(cat: { id: string; nombre: string }) {
+    setForm((f) => ({ ...f, categoryId: cat.id, categoria: cat.nombre }));
   }
 
   async function pickLogoFromFile() {
     if (Platform.OS !== 'web' || typeof document === 'undefined') {
-      setFormError('La carga desde archivo solo está disponible en web en esta versión.');
+      setFormError('La carga desde archivo solo está disponible en web.');
       return;
     }
-
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/png,image/jpeg,image/webp';
-
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) return;
@@ -197,98 +161,57 @@ export default function CmsCanales() {
       };
       reader.readAsDataURL(file);
     };
-
     input.click();
   }
 
-  async function handleSave() {
-    if (!accessToken) return;
+  function handleSave() {
+    if (!form.nombre.trim()) { setFormError('El nombre del canal es requerido.'); return; }
+    if (!form.streamUrl.trim() || !isValidUrl(form.streamUrl.trim())) { setFormError('La URL del canal debe ser válida (http/https).'); return; }
+    if (!form.detalle.trim()) { setFormError('El detalle del canal es requerido.'); return; }
+    if (!form.categoryId) { setFormError('Debes seleccionar una categoría para el canal.'); return; }
 
-    if (!form.nombre.trim()) {
-      setFormError('El nombre del canal es requerido.');
-      return;
-    }
-
-    if (!form.streamUrl.trim() || !isValidUrl(form.streamUrl.trim())) {
-      setFormError('La URL del canal debe ser válida (http/https).');
-      return;
-    }
-
-    if (!form.detalle.trim()) {
-      setFormError('El detalle del canal es requerido.');
-      return;
-    }
-
-    if (!form.categoria.trim()) {
-      setFormError('La categoría del canal es requerida.');
-      return;
-    }
-
-    setLoadingAction(true);
     setFormError('');
     setFeedback(null);
     try {
       if (editingCanal) {
-        await adminUpdateCanal(accessToken, editingCanal.id, {
+        updateChannel(editingCanal.id, {
           ...form,
           nombre: form.nombre.trim(),
           streamUrl: form.streamUrl.trim(),
           detalle: form.detalle.trim(),
-          categoria: form.categoria.trim(),
         });
         setFeedback({ type: 'success', message: 'Canal actualizado correctamente.' });
       } else {
-        await adminCreateCanal(accessToken, {
+        createChannel({
           ...form,
           nombre: form.nombre.trim(),
           streamUrl: form.streamUrl.trim(),
           detalle: form.detalle.trim(),
-          categoria: form.categoria.trim(),
         });
         setFeedback({ type: 'success', message: 'Canal registrado correctamente.' });
       }
-
-      await refreshCanales();
       closeModal();
-    } catch (error: unknown) {
-      setFormError(error instanceof Error ? error.message : 'No se pudo guardar el canal.');
-    } finally {
-      setLoadingAction(false);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'No se pudo guardar el canal.');
     }
   }
 
-  async function handleToggle(canal: AdminCanal) {
-    if (!accessToken) return;
-    setLoadingAction(true);
+  function handleToggle(canal: AdminCanal) {
     try {
-      await adminToggleCanal(accessToken, canal.id);
-      await refreshCanales();
+      toggleChannelStatus(canal.id);
       setFeedback({ type: 'success', message: `Canal ${canal.activo ? 'dado de baja' : 'activado'} correctamente.` });
-    } catch (error: unknown) {
-      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo cambiar el estado del canal.' });
-    } finally {
-      setLoadingAction(false);
+    } catch (err: unknown) {
+      setFeedback({ type: 'error', message: err instanceof Error ? err.message : 'No se pudo cambiar el estado del canal.' });
     }
   }
 
-  async function handleDelete(canal: AdminCanal) {
-    if (!accessToken) return;
+  function handleDelete(canal: AdminCanal) {
     const confirmed = Platform.OS !== 'web' || typeof window === 'undefined'
       ? true
-      : window.confirm(`¿Eliminar el canal ${canal.nombre}?`);
-
+      : window.confirm(`¿Eliminar el canal "${canal.nombre}"?`);
     if (!confirmed) return;
-
-    setLoadingAction(true);
-    try {
-      await adminDeleteCanal(accessToken, canal.id);
-      await refreshCanales();
-      setFeedback({ type: 'success', message: 'Canal eliminado correctamente.' });
-    } catch (error: unknown) {
-      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo eliminar el canal.' });
-    } finally {
-      setLoadingAction(false);
-    }
+    deleteChannel(canal.id);
+    setFeedback({ type: 'success', message: 'Canal eliminado correctamente.' });
   }
 
   function resetFilters() {
@@ -314,6 +237,8 @@ export default function CmsCanales() {
   return (
     <CmsShell breadcrumbs={[{ label: 'Canales' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+
+        {/* Header */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
           <View>
             <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Canales</Text>
@@ -328,12 +253,14 @@ export default function CmsCanales() {
           </TouchableOpacity>
         </View>
 
+        {/* Feedback */}
         {feedback ? (
           <View style={{ marginBottom: 14, borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)', backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 }}>
             <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 12, fontWeight: '700' }}>{feedback.message}</Text>
           </View>
         ) : null}
 
+        {/* Stats */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minWidth: 120 }}>
             <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>TOTALES</Text>
@@ -349,19 +276,18 @@ export default function CmsCanales() {
           </View>
         </View>
 
+        {/* Search + filter */}
         <View style={{ marginBottom: 18 }}>
           <View style={{ marginBottom: 10 }}>
-            <View>
-              <Text style={{ color: C.text, fontSize: 14, fontWeight: '800' }}>Catalogo de canales</Text>
-              <Text style={{ color: C.muted, fontSize: 11, marginTop: 3 }}>Busqueda rapida y filtros compactos con foco operativo.</Text>
-            </View>
+            <Text style={{ color: C.text, fontSize: 14, fontWeight: '800' }}>Catálogo de canales</Text>
+            <Text style={{ color: C.muted, fontSize: 11, marginTop: 3 }}>Búsqueda rápida y filtros por categoría.</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 10 }}>
             <FontAwesome name="search" size={13} color={C.muted} />
             <TextInput
               style={{ flex: 1, color: C.text, paddingVertical: 12, paddingHorizontal: 10, fontSize: 13, ...webInput }}
-              placeholder="Buscar canal, categoría o etiqueta..."
+              placeholder="Buscar canal, categoría o URL..."
               placeholderTextColor={C.muted}
               value={search}
               onChangeText={setSearch}
@@ -373,64 +299,63 @@ export default function CmsCanales() {
             ) : null}
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 12 }}>
-            {categoryChips.map((category) => {
-              const selected = categoryFilter === category;
-              const label = category === 'all' ? 'Todos' : category;
-              return (
-                <TouchableOpacity
-                  key={category}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 9,
-                    borderRadius: 12,
-                    backgroundColor: selected ? C.accentSoft : C.surface,
-                    borderWidth: 1,
-                    borderColor: selected ? C.accentBorder : C.border,
-                  }}
-                  onPress={() => setCategoryFilter(category)}
-                >
-                  <Text style={{ color: selected ? C.accentLight : C.textDim, fontSize: 12, fontWeight: '800' }}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {categoryChips.length > 1 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 12 }}>
+              {categoryChips.map((cat) => {
+                const selected = categoryFilter === cat;
+                const label = cat === 'all' ? 'Todos' : cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={{ paddingHorizontal: 16, paddingVertical: 9, borderRadius: 12, backgroundColor: selected ? C.accentSoft : C.surface, borderWidth: 1, borderColor: selected ? C.accentBorder : C.border }}
+                    onPress={() => setCategoryFilter(cat)}
+                  >
+                    <Text style={{ color: selected ? C.accentLight : C.textDim, fontSize: 12, fontWeight: '800' }}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : null}
         </View>
 
-        {loading ? (
-          <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
+        {/* Empty state */}
+        {channels.length === 0 ? (
+          <View style={{ backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 40, alignItems: 'center', gap: 14 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="television" size={26} color={C.accentLight} />
+            </View>
+            <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>Aún no hay canales registrados</Text>
+            <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
+              Crea tu primer canal con nombre, URL de stream, categoría y configuración parental. Aparecerá automáticamente en el Monitor.
+            </Text>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 11, marginTop: 4 }}
+              onPress={openCreateModal}
+            >
+              <FontAwesome name="plus" size={13} color="white" />
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Crear primer canal</Text>
+            </TouchableOpacity>
           </View>
         ) : filtered.length === 0 ? (
           <View style={{ backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 20, alignItems: 'center' }}>
             <FontAwesome name="tv" size={22} color={C.muted} />
             <Text style={{ color: C.text, fontSize: 14, fontWeight: '700', marginTop: 10 }}>Sin canales para mostrar</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginTop: 6, textAlign: 'center' }}>Ajusta filtros o crea un nuevo canal con URL, logo y configuración parental.</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginTop: 6, textAlign: 'center' }}>Ajusta los filtros o crea un nuevo canal.</Text>
           </View>
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
             {filtered.map((canal) => {
-              const color = CAT_COLORS[canal.categoria] ?? '#64748B';
+              const color = catColor(canal.categoria);
               return (
                 <View
                   key={canal.id}
-                  style={{
-                    backgroundColor: C.surface,
-                    borderRadius: 12,
-                    padding: 18,
-                    borderWidth: 1,
-                    borderColor: C.border,
-                    minWidth: isCompactResults ? 260 : 200,
-                    flexGrow: 0,
-                    flexShrink: 0,
-                    flexBasis: isCompactResults ? 260 : 220,
-                    maxWidth: isCompactResults ? 340 : 280,
-                  }}
+                  style={{ backgroundColor: C.surface, borderRadius: 12, padding: 18, borderWidth: 1, borderColor: C.border, minWidth: isCompactResults ? 260 : 200, flexGrow: 0, flexShrink: 0, flexBasis: isCompactResults ? 260 : 220, maxWidth: isCompactResults ? 340 : 280 }}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <View style={{ width: 44, height: 44, backgroundColor: `${color}22`, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                       {canal.logo ? (
                         <View style={{ width: '100%', height: '100%' }}>
+                          {/* @ts-ignore */}
                           <img src={canal.logo} alt={canal.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </View>
                       ) : (
@@ -438,8 +363,8 @@ export default function CmsCanales() {
                       )}
                     </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }} onPress={() => handleToggle(canal)} disabled={loadingAction}>
-                        <FontAwesome name={canal.activo ? 'power-off' : 'play'} size={11} color={canal.activo ? C.green : C.green} />
+                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }} onPress={() => handleToggle(canal)}>
+                        <FontAwesome name={canal.activo ? 'power-off' : 'play'} size={11} color={C.green} />
                       </TouchableOpacity>
                       <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(canal)}>
                         <FontAwesome name="pencil" size={11} color={C.cyan} />
@@ -451,9 +376,9 @@ export default function CmsCanales() {
                   </View>
                   <Text style={{ color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 4 }}>{canal.nombre}</Text>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 8 }} numberOfLines={2}>{canal.detalle}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                     <View style={{ backgroundColor: `${color}22`, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
-                      <Text style={{ color, fontSize: 10, fontWeight: '700' }}>{canal.categoria}</Text>
+                      <Text style={{ color, fontSize: 10, fontWeight: '700' }}>{canal.categoria || 'Sin categoría'}</Text>
                     </View>
                     <View style={{ backgroundColor: canal.activo ? C.greenSoft : C.roseSoft, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
                       <Text style={{ color: canal.activo ? C.green : C.rose, fontSize: 10, fontWeight: '700' }}>
@@ -475,9 +400,12 @@ export default function CmsCanales() {
         )}
       </ScrollView>
 
+      {/* Create / Edit Modal */}
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ width: '100%', maxWidth: 760, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+
+            {/* Modal header */}
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>
                 <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{editingCanal ? 'Editar canal' : 'Registrar canal'}</Text>
@@ -490,37 +418,55 @@ export default function CmsCanales() {
 
             <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
               <Text style={{ color: C.textDim, fontSize: 12 }}>NOMBRE DEL CANAL</Text>
-              <TextInput style={formInputStyle} value={form.nombre} onChangeText={(value) => updateField('nombre', value)} placeholder="Ej: Noticias 24" placeholderTextColor={C.muted} />
+              <TextInput style={formInputStyle} value={form.nombre} onChangeText={(v) => updateField('nombre', v)} placeholder="Ej: Noticias 24" placeholderTextColor={C.muted} />
 
               <Text style={{ color: C.textDim, fontSize: 12 }}>URL DEL CANAL (STREAM)</Text>
-              <TextInput style={formInputStyle} value={form.streamUrl} onChangeText={(value) => updateField('streamUrl', value)} placeholder="https://stream.example.com/canal" placeholderTextColor={C.muted} autoCapitalize="none" />
+              <TextInput style={formInputStyle} value={form.streamUrl} onChangeText={(v) => updateField('streamUrl', v)} placeholder="https://stream.example.com/canal" placeholderTextColor={C.muted} autoCapitalize="none" />
 
               <Text style={{ color: C.textDim, fontSize: 12 }}>LOGO DEL CANAL (URL o ARCHIVO)</Text>
               <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextInput style={{ ...formInputStyle, flex: 1 }} value={form.logo} onChangeText={(value) => updateField('logo', value)} placeholder="https://.../logo.png" placeholderTextColor={C.muted} autoCapitalize="none" />
+                <TextInput style={{ ...formInputStyle, flex: 1 }} value={form.logo} onChangeText={(v) => updateField('logo', v)} placeholder="https://.../logo.png" placeholderTextColor={C.muted} autoCapitalize="none" />
                 <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }} onPress={pickLogoFromFile}>
                   <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cargar imagen</Text>
                 </TouchableOpacity>
               </View>
 
               <Text style={{ color: C.textDim, fontSize: 12 }}>DETALLE</Text>
-              <TextInput style={{ ...formInputStyle, minHeight: 88, textAlignVertical: 'top' }} value={form.detalle} onChangeText={(value) => updateField('detalle', value)} placeholder="Describe programación, enfoque y audiencia." placeholderTextColor={C.muted} multiline numberOfLines={3} />
+              <TextInput style={{ ...formInputStyle, minHeight: 88, textAlignVertical: 'top' }} value={form.detalle} onChangeText={(v) => updateField('detalle', v)} placeholder="Describe programación, enfoque y audiencia." placeholderTextColor={C.muted} multiline numberOfLines={3} />
 
-              <Text style={{ color: C.textDim, fontSize: 12 }}>CATEGORÍA</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {categoryOptions.map((category) => (
-                  <TouchableOpacity key={category} style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: form.categoria === category ? C.accentSoft : C.lift, borderWidth: 1, borderColor: form.categoria === category ? C.accentBorder : C.border }} onPress={() => updateField('categoria', category)}>
-                    <Text style={{ color: form.categoria === category ? C.accentLight : C.textDim, fontSize: 12, fontWeight: '700' }}>{category}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {/* Category selector — populated from categoriasStore */}
+              <Text style={{ color: C.textDim, fontSize: 12 }}>CATEGORÍA <Text style={{ color: C.rose }}>*</Text></Text>
+              {activeCategories.length === 0 ? (
+                <View style={{ backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, padding: 14 }}>
+                  <Text style={{ color: C.muted, fontSize: 12 }}>No hay categorías activas. Ve a la sección Categorías para crear una.</Text>
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {activeCategories.map((cat) => {
+                    const selected = form.categoryId === cat.id;
+                    const color = catColor(cat.nombre);
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: selected ? `${color}22` : C.lift, borderWidth: 1, borderColor: selected ? color : C.border }}
+                        onPress={() => selectCategory(cat)}
+                      >
+                        <Text style={{ color: selected ? color : C.textDim, fontSize: 12, fontWeight: '700' }}>{cat.nombre}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+              {form.categoryId === '' && (
+                <Text style={{ color: C.muted, fontSize: 11, marginTop: -4 }}>Selecciona una categoría para continuar.</Text>
+              )}
 
+              {/* Toggles */}
               <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: form.activo ? C.greenSoft : C.lift, borderWidth: 1, borderColor: form.activo ? 'rgba(16,185,129,0.28)' : C.border }} onPress={() => updateField('activo', !form.activo)}>
                   <FontAwesome name={form.activo ? 'toggle-on' : 'toggle-off'} size={16} color={form.activo ? C.green : C.textDim} />
                   <Text style={{ color: form.activo ? C.green : C.textDim, fontSize: 12, fontWeight: '700' }}>{form.activo ? 'Activo' : 'De baja'}</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: form.requiereControlParental ? C.roseSoft : C.lift, borderWidth: 1, borderColor: form.requiereControlParental ? 'rgba(244,63,94,0.28)' : C.border }} onPress={() => updateField('requiereControlParental', !form.requiereControlParental)}>
                   <FontAwesome name={form.requiereControlParental ? 'lock' : 'unlock'} size={14} color={form.requiereControlParental ? C.rose : C.textDim} />
                   <Text style={{ color: form.requiereControlParental ? C.rose : C.textDim, fontSize: 12, fontWeight: '700' }}>Control parental</Text>
@@ -530,18 +476,18 @@ export default function CmsCanales() {
               {formError ? <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>{formError}</Text> : null}
             </ScrollView>
 
+            {/* Modal footer */}
             <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
               <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeModal}>
                 <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent, opacity: loadingAction ? 0.7 : 1 }} onPress={handleSave} disabled={loadingAction}>
-                {loadingAction ? <ActivityIndicator color="white" size="small" /> : <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>{editingCanal ? 'Guardar cambios' : 'Registrar canal'}</Text>}
+              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent }} onPress={handleSave}>
+                <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>{editingCanal ? 'Guardar cambios' : 'Registrar canal'}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
     </CmsShell>
   );
 }
