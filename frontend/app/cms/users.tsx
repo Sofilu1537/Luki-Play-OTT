@@ -1176,10 +1176,13 @@ export default function CmsUsers() {
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [recoveryUser, setRecoveryUser] = useState<AdminUser | null>(null);
 
-  const canWrite = hasPermission(profile?.permissions, 'cms:users:write');
+  const isCmsStaff = profile?.role === 'superadmin' || profile?.role === 'soporte';
+  const canWrite = isCmsStaff || hasPermission(profile?.permissions, 'cms:users:write');
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [actionMenuUserId, setActionMenuUserId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const menuButtonRefs = React.useRef<Record<string, View | null>>({});
 
   // Auto-dismiss feedback toast after 4s
   useEffect(() => {
@@ -1717,8 +1720,20 @@ export default function CmsUsers() {
                   {/* Action menu "..." */}
                   <View style={{ flex: 0.4, alignItems: 'center' }}>
                     <TouchableOpacity
+                      ref={(ref) => { menuButtonRefs.current[user.id] = ref as unknown as View; }}
                       style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: isMenuOpen ? C.lift : 'transparent', alignItems: 'center', justifyContent: 'center' }}
-                      onPress={() => setActionMenuUserId(isMenuOpen ? null : user.id)}
+                      onPress={() => {
+                        if (isMenuOpen) { setActionMenuUserId(null); return; }
+                        const ref = menuButtonRefs.current[user.id];
+                        if (ref) {
+                          (ref as unknown as View).measureInWindow((x: number, y: number, w: number, h: number) => {
+                            setMenuPosition({ top: y + h + 4, right: Math.max(16, (typeof window !== 'undefined' ? window.innerWidth : 1400) - x - w) });
+                            setActionMenuUserId(user.id);
+                          });
+                        } else {
+                          setActionMenuUserId(user.id);
+                        }
+                      }}
                     >
                       <FontAwesome name="ellipsis-h" size={14} color={C.muted} />
                     </TouchableOpacity>
@@ -1760,42 +1775,73 @@ export default function CmsUsers() {
       {confirmState ? <ConfirmModal state={confirmState} onClose={closeConfirm} /> : null}
       {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
 
-      {/* Action menu modal */}
+      {/* Action menu popover */}
       {actionMenuUserId ? (() => {
         const menuUser = users.find((u) => u.id === actionMenuUserId);
         if (!menuUser) return null;
+        const statusMeta = getStatusMeta(menuUser.status);
+        const isActive = menuUser.status === 'active';
         const actions = [
           { icon: 'eye', label: 'Ver detalle', color: C.accentLight, action: () => { setDetailUserId(menuUser.id); setShowDetailModal(true); } },
           ...(canWrite ? [
             { icon: 'pencil', label: 'Editar', color: C.cyan, action: () => { setEditingUser(menuUser); setShowFormModal(true); } },
             { icon: 'lock', label: 'Recuperar contraseña', color: '#fbbf24', action: () => setRecoveryUser(menuUser) },
-            { icon: 'power-off', label: 'Desactivar', color: C.rose, action: () => handleDeactivate(menuUser) },
+            { icon: isActive ? 'ban' : 'check-circle', label: isActive ? 'Suspender' : 'Activar', color: isActive ? C.rose : C.emerald, action: () => handleDeactivate(menuUser) },
           ] : []),
         ];
         return (
-          <Modal visible transparent animationType="none" onRequestClose={() => setActionMenuUserId(null)}>
-            <TouchableOpacity activeOpacity={1} onPress={() => setActionMenuUserId(null)} style={{ flex: 1 }}>
-              <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 260, justifyContent: 'center', paddingRight: 24 }}>
-                <View style={{ backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden', shadowColor: '#0D0020', shadowOpacity: 0.6, shadowRadius: 30, shadowOffset: { width: -4, height: 8 } }}>
-                  <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.lift }}>
-                    <Text style={{ color: C.text, fontSize: 13, fontWeight: '800' }} numberOfLines={1}>{menuUser.nombre}</Text>
-                    <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>{menuUser.email}</Text>
+          <Modal visible transparent animationType="fade" onRequestClose={() => setActionMenuUserId(null)}>
+            <TouchableOpacity activeOpacity={1} onPress={() => setActionMenuUserId(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }}>
+              <View style={{
+                position: 'absolute',
+                top: menuPosition.top,
+                right: menuPosition.right,
+                width: 240,
+                backgroundColor: C.surface,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: C.border,
+                overflow: 'hidden',
+                shadowColor: '#0D0020',
+                shadowOpacity: 0.5,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 12,
+              }}>
+                {/* User header */}
+                <View style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.lift }}>
+                  <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }} numberOfLines={1}>{menuUser.nombre}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                    <Text style={{ color: C.muted, fontSize: 10 }} numberOfLines={1}>{menuUser.email}</Text>
+                    <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.muted, opacity: 0.4 }} />
+                    <View style={{
+                      backgroundColor: statusMeta.bg,
+                      paddingHorizontal: 6,
+                      paddingVertical: 1,
+                      borderRadius: 4,
+                    }}>
+                      <Text style={{ color: statusMeta.color, fontSize: 9, fontWeight: '700' }}>{menuUser.status.toUpperCase()}</Text>
+                    </View>
                   </View>
-                  {actions.map((item, i) => (
-                    <TouchableOpacity
-                      key={item.label}
-                      onPress={() => { setActionMenuUserId(null); item.action(); }}
-                      style={{
-                        flexDirection: 'row', alignItems: 'center', gap: 12,
-                        paddingHorizontal: 16, paddingVertical: 13,
-                        borderBottomWidth: i < actions.length - 1 ? 1 : 0, borderBottomColor: C.border,
-                      }}
-                    >
-                      <FontAwesome name={item.icon as never} size={13} color={item.color} />
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
-                    </TouchableOpacity>
-                  ))}
                 </View>
+                {/* Actions */}
+                {actions.map((item, i) => (
+                  <TouchableOpacity
+                    key={item.label}
+                    onPress={() => { setActionMenuUserId(null); item.action(); }}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 10,
+                      paddingHorizontal: 14, paddingVertical: 11,
+                      borderBottomWidth: i < actions.length - 1 ? 1 : 0,
+                      borderBottomColor: C.border,
+                    }}
+                  >
+                    <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: item.color + '18', alignItems: 'center', justifyContent: 'center' }}>
+                      <FontAwesome name={item.icon as never} size={11} color={item.color} />
+                    </View>
+                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '600' }}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </TouchableOpacity>
           </Modal>

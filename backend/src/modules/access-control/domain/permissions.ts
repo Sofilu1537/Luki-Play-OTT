@@ -21,6 +21,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   ],
   [UserRole.SOPORTE]: [
     'cms:users:read',
+    'cms:users:write',
     'cms:content:read',
     'cms:analytics:read',
   ],
