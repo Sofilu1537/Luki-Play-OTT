@@ -6,6 +6,7 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import LukiPlayLogo from '../../components/LukiPlayLogo';
 
 /**
  * Login screen for end users.
@@ -58,16 +59,8 @@ export default function Login() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 justify-center">
 
             <View className="items-center mb-12">
-                <View className="flex-row items-center">
-                    {/* Logo Placeholder Simulation */}
-                    <View className="mr-2">
-                        <View className="w-4 h-4 rounded-full bg-luki-accent mb-1 ml-4" />
-                        <View className="w-4 h-4 rounded-full bg-luki-accent mb-1 text-right" />
-                        <View className="w-4 h-4 rounded-full bg-luki-accent" />
-                    </View>
-                    <Text className="text-6xl font-extrabold text-white tracking-tighter">luki</Text>
-                </View>
-                <Text className="text-gray-300 text-lg tracking-widest uppercase mt-2">tu hogar digital</Text>
+                <LukiPlayLogo variant="full" size={140} />
+                <Text className="text-gray-300 text-lg tracking-widest uppercase mt-4">tu hogar digital</Text>
             </View>
 
             <View className="bg-black/20 p-6 rounded-2xl backdrop-blur-lg">

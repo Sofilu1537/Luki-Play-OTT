@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import LukiPlayLogo from '../../components/LukiPlayLogo';
 
 /**
  * CMS Login screen — for internal users (SUPPORT and SUPERADMIN).
@@ -73,24 +74,8 @@ export default function CmsLogin() {
       >
         {/* Logo */}
         <View style={{ alignItems: 'center', marginBottom: 48 }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              backgroundColor: '#6D28D9',
-              borderRadius: 18,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 16,
-              shadowColor: '#6D28D9',
-              shadowOpacity: 0.5,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 6 },
-            }}
-          >
-            <FontAwesome name="play" size={28} color="white" />
-          </View>
-          <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', letterSpacing: -0.5 }}>
+          <LukiPlayLogo variant="full" size={100} />
+          <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginTop: 16 }}>
             Luki Play CMS
           </Text>
           <Text style={{ color: '#64748B', fontSize: 13, marginTop: 6 }}>

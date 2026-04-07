@@ -10,6 +10,7 @@ import {
 import { useRouter, usePathname } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import LukiPlayLogo from '../LukiPlayLogo';
 
 // ---------------------------------------------------------------------------
 // Theme
@@ -102,21 +103,9 @@ function Sidebar() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                backgroundColor: C.accent,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-              }}
-            >
-              <Text style={{ color: C.text, fontWeight: '900', fontSize: 15 }}>LN</Text>
-            </View>
-            <View>
-              <Text style={{ color: C.text, fontWeight: '900', fontSize: 17 }}>LUKI NET</Text>
+            <LukiPlayLogo variant="icon" size={42} />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={{ color: C.text, fontWeight: '900', fontSize: 17 }}>LUKI PLAY</Text>
               <Text style={{ color: C.muted, fontSize: 10, letterSpacing: 1.5 }}>CONTROL CENTER</Text>
             </View>
           </View>
