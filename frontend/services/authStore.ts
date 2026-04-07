@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 const API_BASE_URL =
   typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:8100`
+    ? `${window.location.protocol}//${window.location.hostname}:3000`
     : 'http://localhost:3000';
 
 // Stable device ID for development
@@ -45,7 +45,9 @@ interface AuthState {
     accessToken: string | null;
     refreshToken: string | null;
     otpRequired: boolean;
-    login: (contractNumber: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    register: (nombre: string, email: string, password: string) => Promise<void>;
+    forgotPassword: (email: string) => Promise<void>;
     verifyOtp: (code: string) => Promise<void>;
     logout: () => void;
 }
@@ -73,13 +75,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
      * @param password       - User's plaintext password.
      * @throws {Error} When credentials are rejected by the backend.
      */
-    login: async (contractNumber: string, password: string) => {
+    login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
             const response = await fetch(`${API_BASE_URL}/auth/app/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contractNumber, password, deviceId: DEV_DEVICE_ID }),
+                body: JSON.stringify({ email, password, deviceId: DEV_DEVICE_ID }),
             });
 
             const data = await response.json();
@@ -138,6 +140,60 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     plan: 'premium',
                 },
             });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
+    /**
+     * Register a new subscriber account by email.
+     */
+    register: async (nombre: string, email: string, password: string) => {
+        set({ isLoading: true });
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/app/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, email, password, deviceId: DEV_DEVICE_ID }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'No se pudo crear la cuenta');
+            }
+
+            set({
+                isLoading: false,
+                loginToken: data.loginToken ?? null,
+                otpRequired: data.otpRequired ?? false,
+            });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
+    /**
+     * Request a password recovery code sent to the user's email.
+     */
+    forgotPassword: async (email: string) => {
+        set({ isLoading: true });
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/send-recovery-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'No se pudo enviar el código de recuperación');
+            }
+
+            set({ isLoading: false });
         } catch (e) {
             set({ isLoading: false });
             throw e;

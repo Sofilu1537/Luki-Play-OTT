@@ -34,6 +34,7 @@ import { CompleteFirstAccessUseCase } from '../../application/use-cases/complete
 import { SendRecoveryCodeUseCase } from '../../application/use-cases/send-recovery-code.use-case';
 import { GenerateActivationCodeUseCase } from '../../application/use-cases/generate-activation-code.use-case';
 import { ActivateAccountUseCase } from '../../application/use-cases/activate-account.use-case';
+import { ResetPasswordWithCodeUseCase } from '../../application/use-cases/reset-password-with-code.use-case';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -101,6 +102,7 @@ export class AuthController {
     private readonly sendRecoveryCodeUseCase: SendRecoveryCodeUseCase,
     private readonly generateActivationCodeUseCase: GenerateActivationCodeUseCase,
     private readonly activateAccountUseCase: ActivateAccountUseCase,
+    private readonly resetPasswordWithCodeUseCase: ResetPasswordWithCodeUseCase,
   ) {}
 
   @Post('app/login')
@@ -142,9 +144,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send recovery code to user email' })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async sendRecoveryCode(@Body() dto: SendRecoveryCodeDto): Promise<{ message: string; code: string }> {
-    const code = await this.sendRecoveryCodeUseCase.execute(dto.email);
-    return { message: 'Código de recuperación enviado.', code };
+  async sendRecoveryCode(@Body() dto: SendRecoveryCodeDto): Promise<{ message: string }> {
+    await this.sendRecoveryCodeUseCase.execute(dto.email);
+    return { message: 'Si el correo está registrado, recibirás un código de recuperación.' };
   }
 
   @Post('cms/reset-password')
@@ -262,5 +264,19 @@ export class AuthController {
       return { message: 'Las contraseñas no coinciden.' };
     }
     return this.activateAccountUseCase.execute(dto.email, dto.code, dto.newPassword);
+  }
+
+  @Post('app/reset-with-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password using recovery code sent to email' })
+  @ApiResponse({ status: 200, type: MessageResponse })
+  async resetWithCode(
+    @Body() dto: { email: string; code: string; newPassword: string; confirmPassword: string },
+  ): Promise<MessageResponse> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      return { message: 'Las contraseñas no coinciden.' };
+    }
+    await this.resetPasswordWithCodeUseCase.execute(dto.email, dto.code, dto.newPassword);
+    return { message: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
   }
 }

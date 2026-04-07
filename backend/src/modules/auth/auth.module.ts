@@ -56,6 +56,7 @@ import { SendRecoveryCodeUseCase } from './application/use-cases/send-recovery-c
 import { GenerateActivationCodeUseCase } from './application/use-cases/generate-activation-code.use-case';
 import { ValidateCodeUseCase } from './application/use-cases/validate-code.use-case';
 import { ActivateAccountUseCase } from './application/use-cases/activate-account.use-case';
+import { ResetPasswordWithCodeUseCase } from './application/use-cases/reset-password-with-code.use-case';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -131,6 +132,7 @@ import { CrmModule } from '../crm/crm.module';
     GenerateActivationCodeUseCase,
     ValidateCodeUseCase,
     ActivateAccountUseCase,
+    ResetPasswordWithCodeUseCase,
   ],
   exports: [
     TOKEN_SERVICE,
