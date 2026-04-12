@@ -155,7 +155,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const response = await fetch(`${API_BASE_URL}/auth/app/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, email, password, deviceId: DEV_DEVICE_ID }),
+                body: JSON.stringify({ nombre, email, password }),
             });
 
             const data = await response.json();

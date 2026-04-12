@@ -35,6 +35,8 @@ import { SendRecoveryCodeUseCase } from '../../application/use-cases/send-recove
 import { GenerateActivationCodeUseCase } from '../../application/use-cases/generate-activation-code.use-case';
 import { ActivateAccountUseCase } from '../../application/use-cases/activate-account.use-case';
 import { ResetPasswordWithCodeUseCase } from '../../application/use-cases/reset-password-with-code.use-case';
+import { RegisterAppUseCase } from '../../application/use-cases/register-app.use-case';
+import { RegisterAppDto } from '../../application/dto/register-app.dto';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -103,7 +105,17 @@ export class AuthController {
     private readonly generateActivationCodeUseCase: GenerateActivationCodeUseCase,
     private readonly activateAccountUseCase: ActivateAccountUseCase,
     private readonly resetPasswordWithCodeUseCase: ResetPasswordWithCodeUseCase,
+    private readonly registerAppUseCase: RegisterAppUseCase,
   ) {}
+
+  @Post('app/register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new subscriber account' })
+  @ApiResponse({ status: 201, type: LoginChallengeResponse })
+  @ApiResponse({ status: 409, description: 'El correo ya está registrado' })
+  async registerApp(@Body() dto: RegisterAppDto): Promise<{ message: string; loginToken: string; otpRequired: boolean }> {
+    return this.registerAppUseCase.execute(dto);
+  }
 
   @Post('app/login')
   @HttpCode(HttpStatus.OK)

@@ -57,6 +57,7 @@ import { GenerateActivationCodeUseCase } from './application/use-cases/generate-
 import { ValidateCodeUseCase } from './application/use-cases/validate-code.use-case';
 import { ActivateAccountUseCase } from './application/use-cases/activate-account.use-case';
 import { ResetPasswordWithCodeUseCase } from './application/use-cases/reset-password-with-code.use-case';
+import { RegisterAppUseCase } from './application/use-cases/register-app.use-case';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -133,6 +134,7 @@ import { CrmModule } from '../crm/crm.module';
     ValidateCodeUseCase,
     ActivateAccountUseCase,
     ResetPasswordWithCodeUseCase,
+    RegisterAppUseCase,
   ],
   exports: [
     TOKEN_SERVICE,
