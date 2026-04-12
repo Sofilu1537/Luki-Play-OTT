@@ -3,12 +3,12 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginAppDto {
   @ApiProperty({
-    example: 'CONTRACT-001',
-    description: 'Contract number or equivalent identifier',
+    example: 'juan@example.com',
+    description: 'Email address of the user',
   })
   @IsString()
   @IsNotEmpty()
-  contractNumber: string;
+  email: string;
 
   @ApiProperty({ example: 'password123', description: 'User password' })
   @IsString()
