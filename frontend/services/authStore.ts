@@ -50,6 +50,7 @@ interface AuthState {
     forgotPassword: (email: string) => Promise<void>;
     verifyOtp: (code: string) => Promise<void>;
     logout: () => void;
+    restoreSession: () => Promise<void>;
 }
 
 /**
@@ -66,6 +67,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     accessToken: null,
     refreshToken: null,
     otpRequired: false,
+
+    restoreSession: async () => {
+        // No persistent session in this version — nothing to restore
+    },
 
     /**
      * Phase-1 login: sends contractNumber + password to the backend.

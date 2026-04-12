@@ -41,11 +41,11 @@ export class LoginAppUseCase {
   ) {}
 
   async execute(dto: LoginAppDto): Promise<LoginChallengeResponse> {
-    const user = await this.userRepo.findByContractNumber(dto.contractNumber);
+    const user = dto.email
+      ? await this.userRepo.findByEmail(dto.email)
+      : await this.userRepo.findByContractNumber(dto.contractNumber!);
     if (!user) {
-      this.logger.warn(
-        `Login failed: contract not found ${dto.contractNumber}`,
-      );
+      this.logger.warn(`Login failed: user not found ${dto.email ?? dto.contractNumber}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
