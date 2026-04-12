@@ -129,6 +129,11 @@ export const useCmsStore = create<CmsState>((set, get) => ({
    * Keeps deep-linked CMS pages accessible after a hard refresh.
    */
   bootstrapSession: async () => {
+    const { hasRestored, isRestoring } = get();
+    if (hasRestored || isRestoring) return;
+
+    set({ isRestoring: true });
+
     const storedAccessToken = readStoredToken(CMS_ACCESS_TOKEN_KEY);
     const storedRefreshToken = readStoredToken(CMS_REFRESH_TOKEN_KEY);
 
@@ -136,8 +141,6 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       set({ hasRestored: true, isRestoring: false, profile: null, accessToken: null, refreshToken: null });
       return;
     }
-
-    set({ isRestoring: true });
     try {
       const profile = await cmsGetMe(storedAccessToken);
       set({

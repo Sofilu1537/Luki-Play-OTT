@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -247,19 +247,10 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const redirected = React.useRef(false);
-
-  const { login, isLoading, profile } = useCmsStore();
+  const { login, isLoading } = useCmsStore();
   const router = useRouter();
 
-  // If already logged in (e.g. page refresh), redirect once
-  useEffect(() => {
-    if (profile && !redirected.current) {
-      redirected.current = true;
-      router.replace('/cms/dashboard' as never);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  // Redirect handled by _layout.tsx
 
   const handleLogin = async () => {
     setError('');
@@ -273,8 +264,6 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     }
     try {
       await login({ email: email.trim().toLowerCase(), password });
-      redirected.current = true;
-      router.replace('/cms/dashboard' as never);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Credenciales inválidas');
     }
