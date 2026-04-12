@@ -81,12 +81,12 @@ docker compose up --build
 
 ### App de Suscriptores
 
-| Contrato       | Contraseña     | Tipo        | Estado              |
-|----------------|----------------|-------------|---------------------|
-| CONTRACT-001   | password123    | ISP         | Activo              |
-| CONTRACT-002   | password123    | ISP         | Activo              |
-| CONTRACT-003   | password123    | ISP         | Suspendido          |
-| OTT-000001     | password123    | OTT-only    | Activo              |
+| Email                    | Contrato       | Contraseña     | Tipo        | Estado              |
+|--------------------------|----------------|----------------|-------------|---------------------|
+| juan@example.com         | CONTRACT-001   | password123    | ISP         | Activo              |
+| maria@example.com        | CONTRACT-002   | password123    | ISP         | Activo              |
+| carlos@example.com       | CONTRACT-003   | password123    | ISP         | Suspendido          |
+| pedro@example.com        | OTT-000001     | password123    | OTT-only    | Activo              |
 
 OTP en desarrollo: `123456` (ver logs del backend).
 

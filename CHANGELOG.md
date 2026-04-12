@@ -36,7 +36,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Repositorios in-memory con datos de prueba (seed)
 
 #### Frontend
-- **auth**: Pantalla de login (número de contrato + contraseña)
+- **auth**: Pantalla de login (correo electrónico + contraseña, abandonando el número de contrato)
 - **auth**: Pantalla de verificación OTP (6 dígitos)
 - **app**: Pantalla principal con Hero banner y filas de contenido por género
 - **app**: Pantalla de búsqueda (placeholder)
