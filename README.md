@@ -75,27 +75,6 @@ docker compose up --build
 
 > Para instrucciones detalladas de despliegue, ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-### Produccion EC2 Actual
-
-- Backend en PM2 sobre el puerto `8100`
-- Nginx publica la app en `80` y `8120`
-- Frontend web exportado con `expo export --platform web`
-- Despliegue remoto soportado desde la rama activa local mediante `deploy-active-branch.ps1`
-
-URLs esperadas en EC2:
-
-- App OTT: `http://<HOST>/`
-- CMS Login: `http://<HOST>/cms/login`
-- App OTT alterna: `http://<HOST>:8120/`
-- CMS Login alterno: `http://<HOST>:8120/cms/login`
-- Swagger API: `http://<HOST>:8120/api/docs`
-
-En AWS se deben abrir al menos estas reglas de entrada en el Security Group:
-
-- `80/tcp` desde `0.0.0.0/0`
-- `8120/tcp` desde `0.0.0.0/0` si se mantiene el puerto alterno
-- `22/tcp` idealmente solo desde tu IP
-
 ---
 
 ## Credenciales de Prueba

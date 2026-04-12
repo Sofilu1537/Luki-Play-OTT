@@ -5,46 +5,21 @@ import { useCmsStore } from '../../services/cmsStore';
 import {
   adminCreatePlan,
   adminDeletePlan,
-  adminListCategorias,
-  adminListComponentes,
   adminListPlans,
   adminTogglePlan,
   adminUpdatePlan,
-  AdminCategoria,
-  AdminComponente,
   AdminPlan,
   AdminPlanPayload,
 } from '../../services/api/adminApi';
+import { useCategoriasStore } from '../../services/categoriasStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 
 const GROUP_OPTIONS: Array<{ value: AdminPlan['grupoUsuarios']; label: string }> = [
   { value: 'INDIVIDUAL', label: 'Individual' },
   { value: 'FAMILIAR', label: 'Familiar' },
-  { value: 'ISP_BUNDLE', label: 'ISP Bundle' },
-  { value: 'EMPRESARIAL', label: 'Empresarial' },
-  { value: 'PROMOCIONAL', label: 'Promocional' },
 ];
 
-const QUALITY_OPTIONS: Array<{ value: AdminPlan['videoQuality']; label: string }> = [
-  { value: 'SD', label: 'SD' },
-  { value: 'HD', label: 'HD' },
-  { value: 'FHD', label: 'Full HD' },
-  { value: '4K', label: '4K' },
-];
-
-const ENTITLEMENT_OPTIONS: Array<{ value: AdminPlan['entitlements'][number]; label: string }> = [
-  { value: 'live-tv', label: 'TV en vivo' },
-  { value: 'vod-basic', label: 'VOD básico' },
-  { value: 'vod-premium', label: 'VOD premium' },
-  { value: 'series', label: 'Series' },
-  { value: 'kids', label: 'Kids' },
-  { value: 'sports', label: 'Deportes' },
-  { value: 'radio', label: 'Radio' },
-  { value: '4k', label: '4K UHD' },
-  { value: 'downloads', label: 'Descargas' },
-  { value: 'ppv', label: 'PPV' },
-];
 
 function buildEmptyPlan(): AdminPlanPayload {
   return {
@@ -169,8 +144,8 @@ export default function CmsPlanes() {
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const [plans, setPlans] = useState<AdminPlan[]>([]);
-  const [componentes, setComponentes] = useState<AdminComponente[]>([]);
-  const [categorias, setCategorias] = useState<AdminCategoria[]>([]);
+  const allCategorias = useCategoriasStore((s) => s.categorias);
+  const categorias = allCategorias.filter((c) => c.activo);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -188,15 +163,9 @@ export default function CmsPlanes() {
   useEffect(() => {
     if (!accessToken) return;
     setLoading(true);
-    Promise.all([
-      adminListPlans(accessToken),
-      adminListComponentes(accessToken),
-      adminListCategorias(accessToken),
-    ])
-      .then(([plansData, componentesData, categoriasData]) => {
+    adminListPlans(accessToken)
+      .then((plansData) => {
         setPlans(plansData);
-        setComponentes(componentesData.filter((item) => item.activo));
-        setCategorias(categoriasData.filter((item) => item.activo));
       })
       .finally(() => setLoading(false));
   }, [accessToken]);
@@ -284,14 +253,6 @@ export default function CmsPlanes() {
     }
     if (form.maxDevices < 1 || form.maxConcurrentStreams < 1 || form.maxProfiles < 1) {
       setFormError('Dispositivos, streams y perfiles deben ser mayores a cero.');
-      return;
-    }
-    if (form.allowedComponentIds.length === 0) {
-      setFormError('Selecciona al menos un componente habilitado para el plan.');
-      return;
-    }
-    if (form.entitlements.length === 0) {
-      setFormError('Selecciona al menos un entitlement OTT.');
       return;
     }
 
@@ -403,54 +364,15 @@ export default function CmsPlanes() {
                   <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '600' }}>{plan.moneda} / {plan.duracionDias} días</Text>
                 </View>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
                   {[
-                    { icon: 'mobile', text: `${plan.maxDevices} dispositivos` },
-                    { icon: 'play-circle', text: `${plan.maxConcurrentStreams} streams` },
-                    { icon: 'users', text: `${plan.maxProfiles} perfiles` },
-                    { icon: 'television', text: plan.videoQuality },
+                    { icon: 'mobile' as const,      text: `${plan.maxDevices} disp.` },
+                    { icon: 'play-circle' as const,  text: `${plan.maxConcurrentStreams} streams` },
+                    { icon: 'users' as const,         text: `${plan.maxProfiles} perfiles` },
                   ].map((item) => (
-                    <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.lift, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
-                      <FontAwesome name={item.icon as React.ComponentProps<typeof FontAwesome>['name']} size={11} color={C.textDim} />
-                      <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '600' }}>{item.text}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>Entitlements</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {plan.entitlements.map((entitlement) => (
-                      <View key={entitlement} style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)' }}>
-                        <Text style={{ color: C.green, fontSize: 11, fontWeight: '700' }}>
-                          {ENTITLEMENT_OPTIONS.find((option) => option.value === entitlement)?.label ?? entitlement}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                  <View style={{ flex: 1, backgroundColor: C.lift, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.border }}>
-                    <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 6 }}>COMPONENTES</Text>
-                    <Text style={{ color: C.text, fontSize: 17, fontWeight: '800' }}>{plan.allowedComponentIds.length}</Text>
-                  </View>
-                  <View style={{ flex: 1, backgroundColor: C.lift, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.border }}>
-                    <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 6 }}>CATEGORÍAS</Text>
-                    <Text style={{ color: C.text, fontSize: 17, fontWeight: '800' }}>{plan.allowedCategoryIds.length}</Text>
-                  </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-                  {[
-                    plan.allowDownloads ? 'Descargas' : null,
-                    plan.allowCasting ? 'Casting' : null,
-                    plan.hasAds ? 'Con anuncios' : 'Sin anuncios',
-                    plan.trialDays > 0 ? `${plan.trialDays} días trial` : null,
-                    plan.gracePeriodDays > 0 ? `${plan.gracePeriodDays} días gracia` : null,
-                  ].filter(Boolean).map((item) => (
-                    <View key={String(item)} style={{ backgroundColor: C.surfaceAlt, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: C.border }}>
-                      <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>{item}</Text>
+                    <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.lift, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: C.border }}>
+                      <FontAwesome name={item.icon} size={11} color={C.accentLight} />
+                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>{item.text}</Text>
                     </View>
                   ))}
                 </View>
@@ -498,17 +420,6 @@ export default function CmsPlanes() {
                     onChangeText={(value) => updateField('nombre', value)}
                     placeholder="Ej: Premium Hogar"
                     placeholderTextColor={C.muted}
-                    style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
-                  />
-                </View>
-                <View style={{ width: 150 }}>
-                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Moneda</Text>
-                  <TextInput
-                    value={form.moneda}
-                    onChangeText={(value) => updateField('moneda', value.toUpperCase())}
-                    placeholder="USD"
-                    placeholderTextColor={C.muted}
-                    autoCapitalize="characters"
                     style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
                   />
                 </View>
@@ -568,52 +479,6 @@ export default function CmsPlanes() {
                     />
                   </View>
                 ))}
-              </View>
-
-              <View style={{ marginBottom: 22 }}>
-                <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 10 }}>Calidad máxima</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {QUALITY_OPTIONS.map((option) => (
-                    <ToggleChip key={option.value} active={form.videoQuality === option.value} label={option.label} onPress={() => updateField('videoQuality', option.value)} tone="cyan" />
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ gap: 12, marginBottom: 22 }}>
-                <Text style={{ color: C.text, fontSize: 14, fontWeight: '800' }}>Políticas OTT recomendadas</Text>
-                <BooleanRow label="Descargas offline" helper="Permite guardar contenido para reproducción sin conexión." value={form.allowDownloads} onToggle={() => updateField('allowDownloads', !form.allowDownloads)} />
-                <BooleanRow label="Casting / TV" helper="Habilita envío a Smart TV, Chromecast y pantallas externas." value={form.allowCasting} onToggle={() => updateField('allowCasting', !form.allowCasting)} />
-                <BooleanRow label="Plan con anuncios" helper="Útil para modelos freemium o bundles promocionales." value={form.hasAds} onToggle={() => updateField('hasAds', !form.hasAds)} />
-                <BooleanRow label="Plan activo" helper="Controla si el plan puede ofrecerse desde el CMS." value={form.activo} onToggle={() => updateField('activo', !form.activo)} />
-              </View>
-
-              <View style={{ marginBottom: 22 }}>
-                <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 10 }}>Entitlements OTT</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {ENTITLEMENT_OPTIONS.map((option) => (
-                    <ToggleChip
-                      key={option.value}
-                      active={form.entitlements.includes(option.value)}
-                      label={option.label}
-                      onPress={() => toggleFromArray('entitlements', option.value)}
-                      tone="green"
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ marginBottom: 22 }}>
-                <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 10 }}>Componentes habilitados</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {componentes.map((item) => (
-                    <ToggleChip
-                      key={item.id}
-                      active={form.allowedComponentIds.includes(item.id)}
-                      label={item.nombre}
-                      onPress={() => toggleFromArray('allowedComponentIds', item.id)}
-                    />
-                  ))}
-                </View>
               </View>
 
               <View style={{ marginBottom: 10 }}>

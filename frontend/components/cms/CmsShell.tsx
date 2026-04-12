@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Pressable,
+  Modal,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -247,9 +248,11 @@ interface BreadcrumbItem {
 function TopBar({
   breadcrumbs,
   onLogout,
+  onShowProfile,
 }: {
   breadcrumbs: BreadcrumbItem[];
   onLogout: () => void;
+  onShowProfile: () => void;
 }) {
   const router = useRouter();
   const { profile } = useCmsStore();
@@ -370,7 +373,10 @@ function TopBar({
               }}
             >
               <TouchableOpacity
-                onPress={() => setMenuOpen(false)}
+                onPress={() => {
+                  setMenuOpen(false);
+                  onShowProfile();
+                }}
                 style={{
                   paddingHorizontal: 14,
                   paddingVertical: 12,
@@ -403,6 +409,204 @@ function TopBar({
 }
 
 // ---------------------------------------------------------------------------
+// ProfileModal
+// ---------------------------------------------------------------------------
+
+function ProfileModal({
+  visible,
+  onClose,
+  onLogout,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  const { profile } = useCmsStore();
+  if (!profile) return null;
+
+  const displayName = profile.email?.split('@')[0].toUpperCase() ?? 'USUARIO';
+  const initials = displayName.slice(0, 2);
+
+  const roleMeta: Record<string, { label: string; color: string; bg: string }> = {
+    superadmin: { label: 'SUPERADMIN', color: C.accent, bg: C.accentSoft },
+    soporte:    { label: 'SOPORTE', color: C.cyan, bg: C.cyanSoft },
+    cliente:    { label: 'CLIENTE', color: C.textSec, bg: 'rgba(255,255,255,0.06)' },
+  };
+  const role = roleMeta[profile.role] ?? roleMeta.cliente;
+
+  const statusMeta: Record<string, { label: string; color: string; bg: string }> = {
+    active:    { label: 'Activo', color: C.green, bg: C.greenSoft },
+    inactive:  { label: 'Inactivo', color: C.rose, bg: C.roseSoft },
+    suspended: { label: 'Suspendido', color: C.amber, bg: C.accentSoft },
+  };
+  const status = statusMeta[profile.status] ?? statusMeta.active;
+
+  const infoRows: { label: string; value: string; icon: React.ComponentProps<typeof FontAwesome>['name'] }[] = [
+    { label: 'Correo electrónico', value: profile.email, icon: 'envelope' },
+    { label: 'ID de usuario', value: profile.id, icon: 'id-badge' },
+    { label: 'Rol', value: role.label, icon: 'shield' },
+    { label: 'Estado', value: status.label, icon: 'circle' },
+    { label: 'Contrato', value: profile.contractNumber ?? 'N/A — Usuario interno', icon: 'file-text-o' },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}
+        onPress={onClose}
+      >
+        <Pressable
+          style={{
+            width: '100%',
+            maxWidth: 440,
+            backgroundColor: C.panel,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: C.border,
+            overflow: 'hidden',
+            shadowColor: '#0D0020',
+            shadowOpacity: 0.6,
+            shadowRadius: 40,
+            shadowOffset: { width: 0, height: 20 },
+          }}
+          onPress={() => {}}
+        >
+          {/* Header */}
+          <LinearGradient
+            colors={['rgba(70,28,130,0.6)', 'rgba(42,14,90,0.9)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 24, alignItems: 'center' }}
+          >
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 20,
+                backgroundColor: C.accentSoft,
+                borderWidth: 2,
+                borderColor: C.accentBorder,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ color: C.accent, fontSize: 22, fontWeight: '900' }}>{initials}</Text>
+            </View>
+            <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>
+              {displayName}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ backgroundColor: role.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: role.color + '33' }}>
+                <Text style={{ color: role.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 }}>{role.label}</Text>
+              </View>
+              <View style={{ backgroundColor: status.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: status.color + '33' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: status.color }} />
+                  <Text style={{ color: status.color, fontSize: 10, fontWeight: '700' }}>{status.label}</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+
+          {/* Info rows */}
+          <View style={{ padding: 20 }}>
+            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 }}>
+              INFORMACIÓN DE LA CUENTA
+            </Text>
+            {infoRows.map((row, i) => (
+              <View
+                key={row.label}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 10,
+                  borderBottomWidth: i < infoRows.length - 1 ? 1 : 0,
+                  borderBottomColor: C.border,
+                }}
+              >
+                <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: C.lift, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <FontAwesome name={row.icon} size={12} color={C.muted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', marginBottom: 2 }}>{row.label}</Text>
+                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{row.value}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Permissions */}
+          {profile.permissions && profile.permissions.length > 0 ? (
+            <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
+              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 10 }}>
+                PERMISOS ASIGNADOS
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {profile.permissions.map((p) => (
+                  <View
+                    key={p}
+                    style={{
+                      backgroundColor: C.lift,
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderWidth: 1,
+                      borderColor: C.border,
+                    }}
+                  >
+                    <Text style={{ color: C.textSec, fontSize: 10, fontWeight: '600' }}>{p}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Actions */}
+          <View style={{ padding: 20, paddingTop: 4, gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => { onClose(); onLogout(); }}
+              style={{
+                backgroundColor: C.roseSoft,
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(244,63,94,0.2)',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <FontAwesome name="sign-out" size={14} color={C.rose} />
+                <Text style={{ color: C.rose, fontWeight: '700', fontSize: 13 }}>Cerrar sesión</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onClose}
+              style={{
+                backgroundColor: C.lift,
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: C.border,
+              }}
+            >
+              <Text style={{ color: C.textSec, fontWeight: '600', fontSize: 13 }}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // CmsShell — main layout wrapper
 // ---------------------------------------------------------------------------
 
@@ -416,6 +620,7 @@ export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const showSidebar = width >= 768;
+  const [showProfile, setShowProfile] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -454,11 +659,13 @@ export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
       {showSidebar && <Sidebar />}
 
       <View style={{ flex: 1, overflow: 'hidden', zIndex: 1 }}>
-        <TopBar breadcrumbs={breadcrumbs} onLogout={handleLogout} />
+        <TopBar breadcrumbs={breadcrumbs} onLogout={handleLogout} onShowProfile={() => setShowProfile(true)} />
         <View style={{ flex: 1, zIndex: 1 }}>
           {children}
         </View>
       </View>
+
+      <ProfileModal visible={showProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} />
     </LinearGradient>
   );
 }
