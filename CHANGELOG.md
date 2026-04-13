@@ -7,6 +7,39 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [0.2.0-alpha] — 2026-04-13
+
+### Añadido
+
+#### Backend
+- **persistence**: Nuevo repositorio `SqliteUserRepository` — los usuarios se almacenan en `backend/data/lukiplay.db` (SQLite WAL) y persisten ante cualquier reinicio del proceso o del servidor.
+- **admin/users**: Campo `password` opcional en `CreateUserDto` — permite asignar contraseña al momento de crear un usuario desde el CMS; si se omite se genera una aleatoria.
+- **admin/users**: Nuevo endpoint `POST /admin/users/:id/generate-password` que genera y envía contraseña temporal por correo.
+
+#### CMS (Next.js — localhost:3001)
+- **users/page.tsx**: Página completa de gestión de usuarios con tarjetas de estadísticas, filtros por tipo y estado, tabla con acciones, y modal de creación/edición.
+- **users/page.tsx**: Sección **🔑 Contraseña de acceso** disponible tanto al crear como al editar un usuario: generación automática segura, campo manual con toggle de visibilidad, botón de copiar y envío por email.
+- **users/page.tsx**: Botón **+ Crear usuario** que permite registrar nuevos abonados con correo electrónico y contraseña asignada desde el panel administrativo.
+
+#### Infraestructura
+- **cms/next.config.ts**: Corregido proxy hacia el backend — apuntaba al puerto incorrecto `3000` en lugar de `8100`, causando que todas las operaciones del CMS cayeran silenciosamente al mock local.
+- **.gitignore**: Archivos de base de datos SQLite (`*.db`, `*.db-shm`, `*.db-wal`) excluidos del repositorio.
+
+### Corregido
+- **cms/next.config.ts**: El proxy `BACKEND_URL` estaba configurado en `localhost:3000` en desarrollo en lugar de `localhost:8100`, lo que impedía que cualquier operación del CMS (crear, editar, listar usuarios) llegara al backend real.
+- **CMS → mock fallback silencioso**: Al corregir el puerto, se eliminó el comportamiento donde los datos aparecían en pantalla pero desaparecían al recargar (datos vivían solo en React state).
+
+### Flujo habilitado — Creación de abonados desde el CMS
+```
+Admin CMS → "+ Crear usuario" → llena email + genera contraseña          
+         → POST /admin/users (backend NestJS port 8100)                  
+         → Usuario guardado en SQLite (data/lukiplay.db) ✅              
+         → Abonado abre Luki Play → ingresa email + contraseña           
+         → POST /auth/app/login → acceso concedido ✅                    
+```
+
+---
+
 ## [0.1.0-alpha] — 2025-07
 
 ### Añadido

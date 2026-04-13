@@ -20,6 +20,7 @@ import { TEMPORARY_CODE_REPOSITORY } from './domain/interfaces/temporary-code.re
 
 // Infrastructure
 import { InMemoryUserRepository } from './infrastructure/repositories/in-memory-user.repository';
+import { SqliteUserRepository } from './infrastructure/repositories/sqlite-user.repository';
 import { InMemorySessionRepository } from './infrastructure/repositories/in-memory-session.repository';
 import { InMemoryAccountRepository } from './infrastructure/repositories/in-memory-account.repository';
 import { InMemoryPasswordResetTokenRepository } from './infrastructure/repositories/in-memory-password-reset-token.repository';
@@ -97,7 +98,7 @@ import { CrmModule } from '../crm/crm.module';
   controllers: [AuthController],
   providers: [
     // Infrastructure bindings
-    { provide: USER_REPOSITORY,                  useClass: InMemoryUserRepository },
+    { provide: USER_REPOSITORY,                  useClass: SqliteUserRepository },
     { provide: SESSION_REPOSITORY,               useClass: InMemorySessionRepository },
     { provide: ACCOUNT_REPOSITORY,               useClass: InMemoryAccountRepository },
     { provide: PASSWORD_RESET_TOKEN_REPOSITORY,  useClass: InMemoryPasswordResetTokenRepository },

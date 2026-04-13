@@ -394,7 +394,7 @@ export class AdminService {
       contractNumber,
       email: normalizedEmail,
       phone: dto.telefono?.trim() || null,
-      passwordHash: await this.hashService.hash(randomBytes(16).toString('hex')),
+      passwordHash: await this.hashService.hash(dto.password?.trim() || randomBytes(16).toString('hex')),
       role: UserRole.CLIENTE,
       status,
       accountId: account.id,
