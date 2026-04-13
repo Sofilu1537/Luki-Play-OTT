@@ -204,31 +204,15 @@ function UserModal({
 
       let saved: AdminUser;
       if (isCreate) {
-        try {
-          saved = await apiFetch<AdminUser>('/admin/users', token, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-          });
-        } catch {
-          // Backend unavailable: create a mock user for local demo
-          saved = {
-            id: `mock-${Date.now()}`,
-            ...payload,
-            plan: userType === 'system' ? 'Usuario CMS' : 'PLAN BASICO',
-            fechaInicio: new Date().toISOString().slice(0, 10),
-            fechaFin: '',
-            sesiones: 0,
-          } as AdminUser;
-        }
+        saved = await apiFetch<AdminUser>('/admin/users', token, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
       } else {
-        try {
-          saved = await apiFetch<AdminUser>(`/admin/users/${user!.id}`, token, {
-            method: 'PATCH',
-            body: JSON.stringify(payload),
-          });
-        } catch {
-          saved = { ...user!, ...payload } as AdminUser;
-        }
+        saved = await apiFetch<AdminUser>(`/admin/users/${user!.id}`, token, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
       }
       onSaved(saved, isCreate);
       setSuccess(isCreate ? 'Usuario creado correctamente.' : 'Usuario actualizado correctamente.');
@@ -547,6 +531,8 @@ function UserModal({
 export default function UsersPage() {
   const { accessToken } = useAuthStore();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  // Wait up to 3s for the layout refresh to populate the token before loading
+  const [tokenReady, setTokenReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -558,19 +544,34 @@ export default function UsersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    if (accessToken) {
-      try {
-        const data = await apiFetch<AdminUser[]>('/admin/users', accessToken);
-        setUsers(data);
-        setLoading(false);
-        return;
-      } catch { /* fall through to mock */ }
+    setPageErr('');
+    if (!accessToken) {
+      setUsers(MOCK_USERS);
+      setPageErr('Sin sesión activa — mostrando datos de demostración.');
+      setLoading(false);
+      return;
     }
-    setUsers(MOCK_USERS);
-    setLoading(false);
+    try {
+      const data = await apiFetch<AdminUser[]>('/admin/users', accessToken);
+      setUsers(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al conectar con el backend.';
+      setPageErr('Error de backend: ' + msg);
+      setUsers(MOCK_USERS);
+    } finally {
+      setLoading(false);
+    }
   }, [accessToken]);
 
-  useEffect(() => { load(); }, [load]);
+  // Give the layout's refresh effect time to populate the token from the cookie
+  useEffect(() => {
+    const t = setTimeout(() => setTokenReady(true), 100);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (tokenReady) void load();
+  }, [load, tokenReady]);
 
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();

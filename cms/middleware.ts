@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/first-access', '/api/auth'];
+// Paths that do not require the refresh cookie to be present
+const PUBLIC_PATHS = [
+  '/login',
+  '/forgot-password',
+  '/reset-password',
+  '/first-access',
+  '/activate-account',
+  '/api/auth',
+  '/api/backend', // ← proxy routes: NestJS validates JWT on its own
+];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

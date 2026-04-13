@@ -148,7 +148,8 @@ function isValidUrl(value: string) {
 
 export default function CanalesPage() {
   const accessToken = useAuthStore((state) => state.accessToken);
-  const categoriasActivas = useCategoriasStore((state) => state.getActive());
+  const categoriasAll = useCategoriasStore((state) => state.categorias);
+  const categoriasActivas = useMemo(() => categoriasAll.filter((c) => c.activo), [categoriasAll]);
   const [canales, setCanales] = useState<AdminCanal[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
