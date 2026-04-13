@@ -7,6 +7,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { PublicModule } from './modules/public/public.module';
 
 /**
  * Root application module.
@@ -38,6 +39,7 @@ import { AdminModule } from './modules/admin/admin.module';
     CrmModule,
     ProfilesModule,
     AdminModule,
+    PublicModule,
   ],
 })
 export class AppModule {}

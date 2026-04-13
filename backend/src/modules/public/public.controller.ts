@@ -15,4 +15,22 @@ export class PublicController {
       .filter((c) => c.activo)
       .map(({ id, nombre, tipo, icono, orden }) => ({ id, nombre, tipo, icono, orden }));
   }
+
+  @ApiOperation({ summary: 'Get active channels for the player (public, no auth)' })
+  @Get('canales')
+  async getActiveCanales() {
+    const all = await this.adminService.getCanales();
+    return all
+      .filter((c) => c.activo)
+      .map(({ id, nombre, logo, streamUrl, categoria, tipo, detalle }, index) => ({
+        id,
+        number: index + 1,
+        nombre,
+        logo: logo || '📺',
+        streamUrl,
+        categoria: categoria || 'General',
+        tipo,
+        detalle,
+      }));
+  }
 }
