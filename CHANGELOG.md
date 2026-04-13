@@ -7,6 +7,60 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [0.3.0-alpha] — 2026-04-13
+
+### Añadido
+
+#### Luki Play Player (React Native / Expo)
+
+##### 🎬 LivePlayerScreen — Player completo de TV en vivo (inspirado en Zapping)
+- **Video HLS fullscreen** con `expo-video` — reproducción de streams M3U8 en tiempo real.
+- **Controls auto-hide**: controles desaparecen tras 4 segundos de inactividad; reaparecen con un tap.
+- **Top bar**: menú lateral, Chromecast, AirPlay, candado de pantalla (lock/unlock), grid de canales, configuración.
+- **Bottom info bar**: botón favorito ♥, logo + nombre del canal, nombre del programa en curso, indicador LIVE rojo, botón PiP.
+- **Progress bar roja (LIVE)**: muestra hora de inicio, posición actual (punto rojo animado) y hora de fin del programa en curso.
+- **Botón retroceso 10s** y acceso rápido a lista de canales.
+
+##### 📺 Channel List Overlay (estilo carril lateral Zapping)
+- Carril vertical izquierdo con lista scrolleable: número de canal, logo emoji, nombre.
+- Canal activo resaltado con borde dorado.
+- Panel central: thumbnail del programa con badge **AHORA** y botón ▶.
+- Panel derecho: título, horario y descripción del programa activo.
+- Cierre por botón ✕ o tap en área oscura.
+
+##### 🔢 Channel Dial — Teclado numérico
+- Grid 3×4 (1-9, ✕, 0, →) semitransparente sobre el lado derecho del video.
+- Toast con el número tecleado visible sobre el centro del video.
+- Navegación directa: digitar número + → para saltar al canal correspondiente.
+
+##### ℹ️ Now Playing Panel
+- Tarjeta flotante **"ESTÁS VIENDO"** (etiqueta dorada) con título del programa, horario y thumbnail del canal.
+- Toggle de visibilidad desde botón FAB.
+
+##### ♥ Favoritos
+- Toggle de favorito por canal, persistente en sesión.
+- Fila de favoritos visible en la HomeScreen.
+
+##### 📊 Data layer — `src/data/channels.ts`
+- 10 canales predefinidos del ecosistema ecuatoriano (Gamavisión, TC, TVC, Ecuador TV, Teleamazonas, etc.)
+- EPG simulado con programación horaria por canal.
+- `getCurrentProgram()` — detecta automáticamente el programa en curso según la hora del dispositivo.
+- `getProgressPercent()` — calcula el porcentaje de avance de la transmisión para la barra LIVE.
+
+##### 🏠 HomeScreen — Rediseño premium
+- Hero banner **TV en Vivo** con badge pulsante EN VIVO (rojo), subtítulo y CTAs.
+- Grid horizontal de canales con thumbnails, badge LIVE rojo y programa actual.
+- Fila **Mis Favoritos** con logo + nombre + programa en curso.
+- Fila **Tendencias** (placeholder listo para contenido VOD).
+- Header con logo **LUKI PLAY** y accesos rápidos (búsqueda, notificaciones).
+- Integración directa con `LivePlayerScreen`: tap en canal → abre el player.
+
+### Repositorio
+- **Luki-Play-Player** (rama `main`): commits `5b67c57` y `fb5e7ea`
+- **Luki-Play-OTT** (rama `Luki-Play-Reproductor`): documentación actualizada en CHANGELOG.
+
+---
+
 ## [0.2.0-alpha] — 2026-04-13
 
 ### Añadido
