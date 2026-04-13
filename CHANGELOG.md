@@ -41,25 +41,18 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Toggle de favorito por canal, persistente en sesión.
 - Fila de favoritos visible en la HomeScreen.
 
-##### 📊 Data layer — `src/data/channels.ts`
-- 10 canales predefinidos del ecosistema ecuatoriano (Gamavisión, TC, TVC, Ecuador TV, Teleamazonas, etc.)
-- EPG simulado con programación horaria por canal.
-- `getCurrentProgram()` — detecta automáticamente el programa en curso según la hora del dispositivo.
-- `getProgressPercent()` — calcula el porcentaje de avance de la transmisión para la barra LIVE.
+### Reproductor (Luki-Play-Player - React Native / Web)
+- **HlsVideoPlayer**: Nuevo componente dual para reproducir el formato HLS.
+  - Para plataformas Web (Firefox/Chrome/Edge), se utiliza internamente `hls.js` con el fin de resolver la falta de soporte HLS en el tag `<video>` nativo.
+  - Para mobile iOS/Android, delega a `expo-video` nativo (AVPlayer / ExoPlayer).
+- **Integración Backend**: Player configurado para consumir los canales activos a través del endpoint `GET /public/canales` del CMS, descartando canales mock/estáticos.
+- **Singleton Store**: refactor en `useChannels` para ejecutar el fetch una única vez al iniciar el app, compartiendo el cache entre el Home y el reproductor. Previene dobles peticiones y *crashes* en web que se mostraban como pantallas blancas al dar "Ver ahora" debido a que `activeChannel.streamUrl` llegaba en `undefined`.
+- **UI UX Controls**: Reemplazado componente para envolver el player por un `Pressable` que reactiva los controles al tocarlos. Además, los FAB list (ℹ ≡ #) no desaparecen con los controles, permitiendo utilizarlos sin importar el auto-hide de 6 segundos.
 
-##### 🏠 HomeScreen — Rediseño premium
-- Hero banner **TV en Vivo** con badge pulsante EN VIVO (rojo), subtítulo y CTAs.
-- Grid horizontal de canales con thumbnails, badge LIVE rojo y programa actual.
-- Fila **Mis Favoritos** con logo + nombre + programa en curso.
-- Fila **Tendencias** (placeholder listo para contenido VOD).
-- Header con logo **LUKI PLAY** y accesos rápidos (búsqueda, notificaciones).
-- Integración directa con `LivePlayerScreen`: tap en canal → abre el player.
-
-### Repositorio
-- **Luki-Play-Player** (rama `main`): commits `5b67c57` y `fb5e7ea`
-- **Luki-Play-OTT** (rama `Luki-Play-Reproductor`): documentación actualizada en CHANGELOG.
-
----
+### Backend Integración y Admin CMS (NestJS)
+- **admin**: Modificado el `PublicController` para incorporar el endpoint `GET /public/canales` que no pide token ni permisos. Devuelve solo los canales que tienen el toggle como activo.
+- **Data flow**: Flujo CMS → Player testeado y habilitado en desarrollo. Modificar URLs o datos visuales (nombres) en el panel de administrador los reflejará de inmediato en el reproductor web al inicio de sesión.
+- Solución agregando `PublicModule` a los `imports` principales en el archivo *root* `app.module.ts`.
 
 ## [0.2.0-alpha] — 2026-04-13
 
