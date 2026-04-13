@@ -189,6 +189,8 @@ function UserModal({
     if (isCreate && !password.trim()) { setError('Debes generar o ingresar una contraseña para crear el usuario.'); return; }
     setSaving(true); setError(''); setSuccess('');
     try {
+      // Only send fields accepted by CreateUserDto / UpdateUserDto
+      // isCmsUser & isSubscriber are RESPONSE-only fields — never send them to the backend
       const payload: Record<string, unknown> = {
         nombre: nombre.trim(),
         email: email.trim().toLowerCase(),
@@ -197,8 +199,6 @@ function UserModal({
         role,
         maxDevices: Number(maxDevices) || 2,
         contrato: userType === 'subscriber' ? (contrato.trim() || null) : null,
-        isCmsUser: userType === 'system',
-        isSubscriber: userType === 'subscriber',
       };
       if (password.trim()) payload.password = password.trim();
 
