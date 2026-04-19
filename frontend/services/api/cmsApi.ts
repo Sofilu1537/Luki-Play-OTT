@@ -161,6 +161,122 @@ export async function cmsLogout(accessToken: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Token Refresh
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /auth/refresh
+ * Exchanges a valid refresh token for a new access + refresh token pair.
+ * Ported from the standalone cms/ app (Next.js HTTP-only cookie flow).
+ */
+export async function cmsRefreshToken(refreshToken: string): Promise<CmsAuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'No se pudo renovar la sesión';
+    throw new Error(msg);
+  }
+
+  return data as CmsAuthResponse;
+}
+
+// ---------------------------------------------------------------------------
+// First Access & Account Activation (ported from standalone cms/)
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /auth/cms/first-access
+ * Sets the initial password for a newly created admin account.
+ * Called when an admin clicks the first-access link from their email.
+ */
+export async function cmsFirstAccess(payload: {
+  token: string;
+  password: string;
+}): Promise<CmsAuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/cms/first-access`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, deviceId: CMS_DEVICE_ID }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'No se pudo completar el primer acceso';
+    throw new Error(msg);
+  }
+
+  return data as CmsAuthResponse;
+}
+
+/**
+ * POST /auth/validate-activation-code
+ * Validates the activation code before allowing the user to set their password.
+ */
+export async function cmsValidateActivationCode(payload: {
+  email: string;
+  code: string;
+}): Promise<{ valid: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/auth/validate-activation-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'Código de activación inválido';
+    throw new Error(msg);
+  }
+
+  return data as { valid: boolean };
+}
+
+/**
+ * POST /auth/activate-account
+ * Completes account activation: sets password after code validation.
+ */
+export async function cmsActivateAccount(payload: {
+  email: string;
+  code: string;
+  password: string;
+}): Promise<CmsAuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/activate-account`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, deviceId: CMS_DEVICE_ID }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'No se pudo activar la cuenta';
+    throw new Error(msg);
+  }
+
+  return data as CmsAuthResponse;
+}
+
+// ---------------------------------------------------------------------------
 // Password Recovery
 // ---------------------------------------------------------------------------
 

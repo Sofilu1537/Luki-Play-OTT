@@ -3,37 +3,16 @@ import {
   cmsLogin,
   cmsGetMe,
   cmsLogout,
+  cmsRefreshToken,
   CmsUserProfile,
   CmsLoginPayload,
 } from './api/cmsApi';
-
-const CMS_ACCESS_TOKEN_KEY = 'luki.cms.accessToken';
-const CMS_REFRESH_TOKEN_KEY = 'luki.cms.refreshToken';
-
-function canUseBrowserStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
-
-function readStoredToken(key: string) {
-  if (!canUseBrowserStorage()) return null;
-  return window.localStorage.getItem(key);
-}
-
-function writeStoredSession(accessToken: string, refreshToken: string | null) {
-  if (!canUseBrowserStorage()) return;
-  window.localStorage.setItem(CMS_ACCESS_TOKEN_KEY, accessToken);
-  if (refreshToken) {
-    window.localStorage.setItem(CMS_REFRESH_TOKEN_KEY, refreshToken);
-  } else {
-    window.localStorage.removeItem(CMS_REFRESH_TOKEN_KEY);
-  }
-}
-
-function clearStoredSession() {
-  if (!canUseBrowserStorage()) return;
-  window.localStorage.removeItem(CMS_ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(CMS_REFRESH_TOKEN_KEY);
-}
+import {
+  saveTokens,
+  getAccessToken,
+  getRefreshToken,
+  clearTokens,
+} from './tokenStorage';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,8 +22,7 @@ function clearStoredSession() {
  * Shape of the CMS Zustand store.
  *
  * @property profile      - Authenticated CMS user profile, or null.
- * @property accessToken  - JWT access token, or null.
- * @property refreshToken - JWT refresh token, or null.
+ * @property accessToken  - JWT access token (memory-only on web), or null.
  * @property isLoading    - Whether an auth request is in progress.
  * @property login        - Authenticate with email + password (no OTP).
  * @property logout       - Clear state and call the logout endpoint.
@@ -53,7 +31,6 @@ function clearStoredSession() {
 interface CmsState {
   profile: CmsUserProfile | null;
   accessToken: string | null;
-  refreshToken: string | null;
   isLoading: boolean;
   isRestoring: boolean;
   hasRestored: boolean;
@@ -81,14 +58,13 @@ interface CmsState {
 export const useCmsStore = create<CmsState>((set, get) => ({
   profile: null,
   accessToken: null,
-  refreshToken: null,
   isLoading: false,
   isRestoring: false,
   hasRestored: false,
 
   /**
    * Authenticate a CMS user with email + password.
-   * On success, fetches the full user profile and stores all tokens.
+   * On success, fetches the full user profile and persists tokens securely.
    *
    * @throws {Error} When credentials are invalid or the backend is unreachable.
    */
@@ -97,10 +73,9 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     try {
       const tokens = await cmsLogin(payload);
       const profile = await cmsGetMe(tokens.accessToken);
-      writeStoredSession(tokens.accessToken, tokens.refreshToken);
+      await saveTokens(tokens.accessToken, tokens.refreshToken);
       set({
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
         profile,
         isLoading: false,
         hasRestored: true,
@@ -113,20 +88,21 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
   /**
    * Log out the current CMS user.
-   * Calls the logout endpoint (best-effort) and clears all local state.
+   * Calls the logout endpoint (best-effort) and clears all stored tokens.
    */
   logout: () => {
     const { accessToken } = get();
     if (accessToken) {
       cmsLogout(accessToken);
     }
-    clearStoredSession();
-    set({ profile: null, accessToken: null, refreshToken: null });
+    clearTokens();
+    set({ profile: null, accessToken: null });
   },
 
   /**
-   * Restore the CMS session automatically from browser storage.
-   * Keeps deep-linked CMS pages accessible after a hard refresh.
+   * Restore the CMS session automatically from secure storage.
+   * On native reads from encrypted keychain; on web tries refresh token
+   * from sessionStorage to obtain a fresh access token.
    */
   bootstrapSession: async () => {
     const { hasRestored, isRestoring } = get();
@@ -134,37 +110,53 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
     set({ isRestoring: true });
 
-    const storedAccessToken = readStoredToken(CMS_ACCESS_TOKEN_KEY);
-    const storedRefreshToken = readStoredToken(CMS_REFRESH_TOKEN_KEY);
-
-    if (!storedAccessToken) {
-      set({ hasRestored: true, isRestoring: false, profile: null, accessToken: null, refreshToken: null });
-      return;
-    }
     try {
-      const profile = await cmsGetMe(storedAccessToken);
-      set({
-        profile,
-        accessToken: storedAccessToken,
-        refreshToken: storedRefreshToken,
-        isRestoring: false,
-        hasRestored: true,
-      });
+      // Native: try stored access token first
+      const storedAccessToken = await getAccessToken();
+      if (storedAccessToken) {
+        try {
+          const profile = await cmsGetMe(storedAccessToken);
+          set({
+            profile,
+            accessToken: storedAccessToken,
+            isRestoring: false,
+            hasRestored: true,
+          });
+          return;
+        } catch {
+          // Access token expired — fall through to refresh
+        }
+      }
+
+      // Try refresh token (sessionStorage on web, SecureStore on native)
+      const storedRefreshToken = await getRefreshToken();
+      if (storedRefreshToken) {
+        try {
+          const tokens = await cmsRefreshToken(storedRefreshToken);
+          const profile = await cmsGetMe(tokens.accessToken);
+          await saveTokens(tokens.accessToken, tokens.refreshToken);
+          set({
+            profile,
+            accessToken: tokens.accessToken,
+            isRestoring: false,
+            hasRestored: true,
+          });
+          return;
+        } catch {
+          // Refresh also failed — clear everything
+        }
+      }
+
+      await clearTokens();
+      set({ profile: null, accessToken: null, isRestoring: false, hasRestored: true });
     } catch {
-      clearStoredSession();
-      set({
-        profile: null,
-        accessToken: null,
-        refreshToken: null,
-        isRestoring: false,
-        hasRestored: true,
-      });
+      await clearTokens();
+      set({ profile: null, accessToken: null, isRestoring: false, hasRestored: true });
     }
   },
 
   /**
-   * Re-hydrate the CMS store from a previously stored access token.
-   * Useful after a page reload when the token is persisted externally.
+   * Re-hydrate the CMS store from a previously obtained access token.
    *
    * @param token - Existing JWT access token.
    */
@@ -172,11 +164,12 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     set({ isLoading: true, isRestoring: true });
     try {
       const profile = await cmsGetMe(token);
-      writeStoredSession(token, get().refreshToken);
+      const refreshToken = await getRefreshToken();
+      await saveTokens(token, refreshToken);
       set({ accessToken: token, profile, isLoading: false, isRestoring: false, hasRestored: true });
     } catch {
-      clearStoredSession();
-      set({ profile: null, accessToken: null, refreshToken: null, isLoading: false, isRestoring: false, hasRestored: true });
+      await clearTokens();
+      set({ profile: null, accessToken: null, isLoading: false, isRestoring: false, hasRestored: true });
     }
   },
 }));

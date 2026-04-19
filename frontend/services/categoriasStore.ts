@@ -87,10 +87,9 @@ export const useCategoriasStore = create<CategoriasState>((set, get) => ({
     // Cascade: propagate new name to all channels that reference this category
     if (patch.nombre !== undefined) {
       const newName = patch.nombre.trim();
-      // Lazy import to avoid circular-reference at module init time
-      import('./channelStore').then(({ useChannelStore }) => {
-        useChannelStore.getState().updateCategoryName(id, newName);
-      });
+      // Lazy require to avoid circular-reference at module init time
+      const { useChannelStore } = require('./channelStore');
+      useChannelStore.getState().updateCategoryName(id, newName);
     }
   },
 
@@ -102,9 +101,8 @@ export const useCategoriasStore = create<CategoriasState>((set, get) => ({
     set({ categorias: save(get().categorias.filter((c) => c.id !== id)) });
 
     // Cascade: de-assign this category from any channels that reference it
-    import('./channelStore').then(({ useChannelStore }) => {
-      useChannelStore.getState().deassignCategory(id);
-    });
+    const { useChannelStore } = require('./channelStore');
+    useChannelStore.getState().deassignCategory(id);
   },
 
   getActive() {

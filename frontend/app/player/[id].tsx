@@ -35,7 +35,7 @@ function WebHLSPlayer({ url, onBack }: { url: string; onBack: () => void }) {
                 return;
             }
             // Use hls.js for Chrome/Firefox/Edge
-            const Hls = (await import('hls.js')).default;
+            const Hls = require('hls.js').default;
             if (Hls.isSupported()) {
                 hls = new Hls({ enableWorker: true });
                 hls.loadSource(url);
