@@ -88,6 +88,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Analítica',    icon: 'line-chart',  path: '/cms/analitica' },
   { label: 'Propaganda',   icon: 'bullhorn',    path: '/cms/propaganda' },
   { label: 'Notificaciones al abonado', icon: 'commenting', path: '/cms/notificaciones-abonado' },
+  { label: 'Roles',                    icon: 'shield',     path: '/cms/roles' },
 ];
 
 // ---------------------------------------------------------------------------
