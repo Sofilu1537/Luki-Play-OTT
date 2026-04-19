@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { PrismaModule } from './modules/prisma/prisma.module.js';
 import { AuthModule } from './modules/auth/auth.module';
 import { AccessControlModule } from './modules/access-control/access-control.module';
 import { BillingModule } from './modules/billing/billing.module';
@@ -32,6 +33,7 @@ import { AdminModule } from './modules/admin/admin.module';
         limit: 20,
       },
     ]),
+    PrismaModule,
     AuthModule,
     AccessControlModule,
     BillingModule,

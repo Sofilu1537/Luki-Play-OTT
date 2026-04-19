@@ -5,50 +5,47 @@ const API_BASE_URL =
     ? `${window.location.protocol}//${window.location.hostname}:3000`
     : 'http://localhost:3000';
 
-// Stable device ID for development
 const DEV_DEVICE_ID = 'luki-web-dev-device-001';
 
 /**
  * Represents an authenticated user.
- *
- * @property id      - Unique user identifier.
- * @property name    - Display name.
- * @property email   - User email address.
- * @property avatar  - Optional avatar image URL.
- * @property plan    - Subscription tier: 'free' or 'premium'.
  */
 export interface User {
     id: string;
     name: string;
     email: string;
     avatar?: string;
-    plan: 'free' | 'premium';
+    plan: string;
+}
+
+/**
+ * Pending activation state after first-access verification.
+ */
+interface PendingActivation {
+    customerId: string;
+    contractNumber: string;
+    nombre: string;
 }
 
 /**
  * Shape of the authentication Zustand store.
  *
- * @property user           - Currently authenticated user, or null if not logged in.
- * @property isLoading      - Whether an auth request is in progress.
- * @property loginToken     - Temporary token returned after phase-1 login (used for OTP verification).
- * @property accessToken    - JWT access token obtained after successful OTP verification.
- * @property refreshToken   - JWT refresh token obtained after successful OTP verification.
- * @property otpRequired    - Whether OTP verification is required after login.
- * @property login          - Phase-1 login with contractNumber + password.
- * @property verifyOtp      - Phase-2 OTP verification using the stored loginToken.
- * @property logout         - Clears all auth state and calls the logout endpoint.
+ * Contract-based auth flow (no OTP):
+ *   1. firstAccess(contractNumber, idNumber) → pendingActivation
+ *   2. activate(password, email?) → user + tokens
+ *   -- OR --
+ *   1. login(contractNumber, password) → user + tokens
  */
 interface AuthState {
     user: User | null;
     isLoading: boolean;
-    loginToken: string | null;
     accessToken: string | null;
     refreshToken: string | null;
-    otpRequired: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (nombre: string, email: string, password: string) => Promise<void>;
-    forgotPassword: (email: string) => Promise<void>;
-    verifyOtp: (code: string) => Promise<void>;
+    pendingActivation: PendingActivation | null;
+    login: (contractNumber: string, password: string) => Promise<void>;
+    firstAccess: (contractNumber: string, idNumber: string) => Promise<void>;
+    activate: (password: string, email?: string) => Promise<void>;
+    resetPassword: (contractNumber: string, idNumber: string, newPassword: string) => Promise<void>;
     logout: () => void;
     restoreSession: () => Promise<void>;
 }
@@ -56,37 +53,34 @@ interface AuthState {
 /**
  * Global authentication store (Zustand).
  *
- * Implements a two-phase authentication flow:
- *   Phase 1 — POST /auth/app/login   → receives loginToken + otpRequired flag
- *   Phase 2 — POST /auth/app/verify-otp → receives accessToken + refreshToken
+ * Implements contract-based authentication:
+ *   Login   — POST /auth/app/contract-login → JWT tokens directly
+ *   First   — POST /auth/app/first-access   → verify identity
+ *   Activate— POST /auth/app/activate        → set password + JWT
+ *   Reset   — POST /auth/app/reset-password  → new password via cédula
  */
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     isLoading: false,
-    loginToken: null,
     accessToken: null,
     refreshToken: null,
-    otpRequired: false,
+    pendingActivation: null,
 
     restoreSession: async () => {
         // No persistent session in this version — nothing to restore
     },
 
     /**
-     * Phase-1 login: sends contractNumber + password to the backend.
-     * On success sets loginToken and otpRequired flag.
-     *
-     * @param contractNumber - Customer contract number.
-     * @param password       - User's plaintext password.
-     * @throws {Error} When credentials are rejected by the backend.
+     * Login with contract number + password.
+     * Returns JWT tokens directly (no OTP step).
      */
-    login: async (email: string, password: string) => {
+    login: async (contractNumber: string, password: string) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/login`, {
+            const response = await fetch(`${API_BASE_URL}/auth/app/contract-login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, deviceId: DEV_DEVICE_ID }),
+                body: JSON.stringify({ contractNumber, password, deviceId: DEV_DEVICE_ID }),
             });
 
             const data = await response.json();
@@ -97,8 +91,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             set({
                 isLoading: false,
-                loginToken: data.loginToken ?? null,
-                otpRequired: data.otpRequired ?? false,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+                user: {
+                    id: data.user?.id ?? 'unknown',
+                    name: data.user?.name ?? 'Luki User',
+                    email: data.user?.email ?? '',
+                    plan: data.user?.plan ?? 'lukiplay',
+                },
+                pendingActivation: null,
             });
         } catch (e) {
             set({ isLoading: false });
@@ -107,42 +108,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     /**
-     * Phase-2 OTP verification: sends the 6-digit code + stored loginToken.
-     * On success sets accessToken, refreshToken, and user.
-     *
-     * @param code - 6-digit OTP code entered by the user.
-     * @throws {Error} When the code is invalid or the token has expired.
+     * First-access: verify contract + cédula.
+     * Sets pendingActivation if identity is confirmed.
      */
-    verifyOtp: async (code: string) => {
-        const { loginToken } = get();
-        if (!loginToken) {
-            throw new Error('No hay sesión de login activa. Vuelve a iniciar sesión.');
-        }
-
+    firstAccess: async (contractNumber: string, idNumber: string) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/verify-otp`, {
+            const response = await fetch(`${API_BASE_URL}/auth/app/first-access`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ loginToken, code }),
+                body: JSON.stringify({ contractNumber, idNumber }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Código OTP inválido o expirado');
+                throw new Error(data.message || 'No se pudo verificar el contrato');
             }
 
             set({
                 isLoading: false,
-                accessToken: data.accessToken ?? null,
-                refreshToken: data.refreshToken ?? null,
-                loginToken: null,
-                user: {
-                    id: data.userId ?? 'unknown',
-                    name: data.name ?? 'Luki User',
-                    email: data.email ?? '',
-                    plan: 'premium',
+                pendingActivation: {
+                    customerId: data.customerId,
+                    contractNumber: data.contractNumber,
+                    nombre: data.nombre,
                 },
             });
         } catch (e) {
@@ -152,27 +141,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     /**
-     * Register a new subscriber account by email.
+     * Activate account: set password after first-access verification.
+     * Optionally set email for marketing/notifications.
      */
-    register: async (nombre: string, email: string, password: string) => {
+    activate: async (password: string, email?: string) => {
+        const { pendingActivation } = get();
+        if (!pendingActivation) {
+            throw new Error('No hay activación pendiente. Verifica tu contrato primero.');
+        }
+
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/register`, {
+            const response = await fetch(`${API_BASE_URL}/auth/app/activate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, email, password }),
+                body: JSON.stringify({
+                    customerId: pendingActivation.customerId,
+                    password,
+                    ...(email ? { email } : {}),
+                }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'No se pudo crear la cuenta');
+                throw new Error(data.message || 'No se pudo activar la cuenta');
             }
 
             set({
                 isLoading: false,
-                loginToken: data.loginToken ?? null,
-                otpRequired: data.otpRequired ?? false,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+                user: {
+                    id: data.user?.id ?? 'unknown',
+                    name: data.user?.name ?? pendingActivation.nombre,
+                    email: data.user?.email ?? email ?? '',
+                    plan: data.user?.plan ?? 'lukiplay',
+                },
+                pendingActivation: null,
             });
         } catch (e) {
             set({ isLoading: false });
@@ -181,21 +187,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     /**
-     * Request a password recovery code sent to the user's email.
+     * Reset password using contract number + cédula verification.
      */
-    forgotPassword: async (email: string) => {
+    resetPassword: async (contractNumber: string, idNumber: string, newPassword: string) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/send-recovery-code`, {
+            const response = await fetch(`${API_BASE_URL}/auth/app/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ contractNumber, idNumber, newPassword }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'No se pudo enviar el código de recuperación');
+                throw new Error(data.message || 'No se pudo restablecer la contraseña');
             }
 
             set({ isLoading: false });
@@ -214,10 +220,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             fetch(`${API_BASE_URL}/auth/logout`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${accessToken}` },
-            }).catch(() => {
-                // Ignore logout endpoint errors — always clear local state
-            });
+            }).catch(() => {});
         }
-        set({ user: null, accessToken: null, refreshToken: null, loginToken: null, otpRequired: false });
+        set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            pendingActivation: null,
+        });
     },
 }));

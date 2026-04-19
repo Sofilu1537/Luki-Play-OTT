@@ -1,36 +1,62 @@
 /**
  * authApi — HTTP client for the Luki Play authentication service.
  *
- * Separates all network calls from store/UI logic.
- * Every function throws an {@link Error} with a user-readable message on failure.
+ * Contract-based auth flow (no OTP):
+ *   1. first-access: verify contract + cédula → needsPasswordSetup
+ *   2. activate: set password → JWT tokens
+ *   3. contract-login: contract + password → JWT tokens
+ *   4. reset-password: contract + cédula + new password
  */
 
 const API_BASE_URL = 'http://localhost:3000';
 
-export interface AppLoginRequest {
+// ─── Request types ───────────────────────────────────────
+
+export interface ContractLoginRequest {
   contractNumber: string;
   password: string;
   deviceId: string;
 }
 
-export interface AppLoginResponse {
-  otpRequired: boolean;
-  loginToken: string;
-  message: string;
-  canAccessOtt: boolean;
-  restrictionMessage: string | null;
+export interface FirstAccessRequest {
+  contractNumber: string;
+  idNumber: string;
 }
 
-export interface VerifyOtpRequest {
-  loginToken: string;
-  code: string;
+export interface ActivateRequest {
+  customerId: string;
+  password: string;
+  email?: string;
 }
 
-export interface VerifyOtpResponse {
+export interface SwitchContractRequest {
+  contractId: string;
+}
+
+export interface ContractResetPasswordRequest {
+  contractNumber: string;
+  idNumber: string;
+  newPassword: string;
+}
+
+// ─── Response types ──────────────────────────────────────
+
+export interface AuthTokensResponse {
   accessToken: string;
   refreshToken: string;
-  canAccessOtt: boolean;
-  restrictionMessage: string | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    plan: string;
+  };
+}
+
+export interface FirstAccessResponse {
+  needsPasswordSetup: boolean;
+  customerId: string;
+  contractNumber: string;
+  nombre: string;
 }
 
 export interface RefreshTokenResponse {
@@ -55,9 +81,11 @@ export interface UserProfileResponse {
   entitlements: string[];
 }
 
-/** Phase 1 of app login: validates contractNumber + password, sends OTP. */
-export async function appLogin(req: AppLoginRequest): Promise<AppLoginResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/app/login`, {
+// ─── API functions ───────────────────────────────────────
+
+/** Login with contract number + password → JWT tokens (no OTP). */
+export async function contractLogin(req: ContractLoginRequest): Promise<AuthTokensResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/contract-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
@@ -66,21 +94,66 @@ export async function appLogin(req: AppLoginRequest): Promise<AppLoginResponse> 
   if (!res.ok) {
     throw new Error(data.message || 'Credenciales inválidas');
   }
-  return data as AppLoginResponse;
+  return data as AuthTokensResponse;
 }
 
-/** Phase 2 of app login: verifies OTP and issues JWT tokens. */
-export async function verifyOtp(req: VerifyOtpRequest): Promise<VerifyOtpResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/app/verify-otp`, {
+/** First access: verify contract + cédula identity. */
+export async function firstAccess(req: FirstAccessRequest): Promise<FirstAccessResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/first-access`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Código OTP inválido o expirado');
+    throw new Error(data.message || 'No se pudo verificar el contrato');
   }
-  return data as VerifyOtpResponse;
+  return data as FirstAccessResponse;
+}
+
+/** Activate account: set password (and optional email) → JWT tokens. */
+export async function activate(req: ActivateRequest): Promise<AuthTokensResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/activate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'No se pudo activar la cuenta');
+  }
+  return data as AuthTokensResponse;
+}
+
+/** Switch to a different contract (requires auth). */
+export async function switchContract(accessToken: string, req: SwitchContractRequest): Promise<AuthTokensResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/switch-contract`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(req),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'No se pudo cambiar el contrato');
+  }
+  return data as AuthTokensResponse;
+}
+
+/** Reset password via contract + cédula verification. */
+export async function resetPassword(req: ContractResetPasswordRequest): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'No se pudo restablecer la contraseña');
+  }
+  return data as { message: string };
 }
 
 /** Rotates the refresh token and returns a new token pair. */
@@ -107,7 +180,6 @@ export async function logout(accessToken: string, refreshToken: string): Promise
     },
     body: JSON.stringify({ refreshToken }),
   });
-  // Ignore backend errors — always clear local state regardless of outcome
 }
 
 /** Returns the current user's profile, account, and OTT access flags. */

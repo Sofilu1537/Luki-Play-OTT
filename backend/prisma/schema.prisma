@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+  TRIAL
+}
+
+enum UserRole {
+  SUPERADMIN
+  SOPORTE
+  CLIENTE
+}
+
+enum SessionLimitPolicy {
+  BLOCK_NEW
+  REPLACE_OLDEST
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model Customer {
+  id                 String     @id @default(uuid())
+  nombre             String
+  firstName          String?
+  lastName           String?
+  email              String?    @unique
+  ispEmail           String?
+  telefono           String?
+  idNumber           String?    @unique
+  passwordHash       String?
+  role               UserRole   @default(CLIENTE)
+  status             UserStatus @default(PENDING)
+  mustChangePassword Boolean    @default(false)
+  mfaEnabled         Boolean    @default(false)
+  isLocked           Boolean    @default(false)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  isCmsUser          Boolean    @default(false)
+  isSubscriber       Boolean    @default(true)
+  isAccountActivated Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  deletedAt          DateTime?
+
+  contracts Contract[]
+
+  @@map("customers")
+}
+
+model Contract {
+  id                  String             @id @default(uuid())
+  customerId          String
+  contractNumber      String             @unique @db.VarChar(20)
+  planName            String             @default("LUKI PLAY")
+  ispPlanName         String?
+  maxDevices          Int                @default(2)
+  maxConcurrentStreams Int               @default(1)
+  sessionDurationDays Int                @default(30)
+  sessionLimitPolicy  SessionLimitPolicy @default(BLOCK_NEW)
+  fechaInicio         DateTime?
+  fechaFin            DateTime?
+  lastSyncedAt        DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  deletedAt           DateTime?
+
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  sessions        Session[]
+  viewingProfiles ViewingProfile[]
+  devices         Device[]
+
+  @@index([customerId])
+  @@map("contracts")
+}
+
+model ViewingProfile {
+  id                     String   @id @default(uuid())
+  contractId             String
+  displayName            String
+  avatarUrl              String?
+  preferredLang          String   @default("es")
+  parentalControlEnabled Boolean  @default(false)
+  parentalControlPin     String?
+  contentPreferences     Json     @default("{}")
+  isDefault              Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id])
+
+  @@index([contractId])
+  @@map("viewing_profiles")
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  contractId   String
+  deviceId     String
+  audience     String    @default("app")
+  refreshToken String?   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id])
+
+  @@index([contractId])
+  @@map("sessions")
+}
+
+model Device {
+  id                String    @id @default(uuid())
+  contractId        String
+  deviceName        String?
+  deviceType        String?
+  deviceFingerprint String    @unique
+  isActive          Boolean   @default(true)
+  lastUsedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id])
+
+  @@index([contractId])
+  @@map("devices")
+}
+
+model Plan {
+  id                  String   @id @default(uuid())
+  nombre              String   @default("LUKI PLAY")
+  descripcion         String   @default("Streaming incluido con tu servicio de internet Luki")
+  activo              Boolean  @default(true)
+  maxDevices          Int      @default(2)
+  maxConcurrentStreams Int     @default(1)
+  maxProfiles         Int      @default(3)
+  videoQuality        String   @default("HD")
+  allowDownloads      Boolean  @default(false)
+  allowCasting        Boolean  @default(true)
+  hasAds              Boolean  @default(true)
+  entitlements        Json     @default("[\"live-tv\", \"vod-basic\", \"sports\"]")
+  allowedComponentIds Json     @default("[]")
+  allowedCategoryIds  Json     @default("[]")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("plans")
+}
+
+model SyncLog {
+  id                 String    @id @default(uuid())
+  syncType           String
+  startedAt          DateTime
+  completedAt        DateTime?
+  customersCreated   Int       @default(0)
+  contractsCreated   Int       @default(0)
+  contractsUpdated   Int       @default(0)
+  contractsSuspended Int       @default(0)
+  errors             Int       @default(0)
+  errorDetails       Json?
+  createdAt          DateTime  @default(now())
+
+  @@map("sync_log")
+}

@@ -1,13 +1,13 @@
 import { View, Text, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../../services/authStore';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import LukiPlayLogo from '../../components/LukiPlayLogo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-type Screen = 'login' | 'register' | 'forgot';
+type Screen = 'login' | 'first-access' | 'activate' | 'forgot';
 
 const P = {
     bg: ['#240046', '#0D001A'] as const,
@@ -92,7 +92,7 @@ function PrimaryButton({ title, onPress, isLoading, disabled }: {
 }
 
 function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [email, setEmail] = useState('');
+    const [contractNumber, setContractNumber] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login, isLoading } = useAuthStore();
@@ -100,11 +100,11 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 
     const handleLogin = async () => {
         setError('');
-        if (!email.trim()) { setError('El correo electrónico es requerido'); return; }
+        if (!contractNumber.trim()) { setError('El número de contrato es requerido'); return; }
         if (!password) { setError('La contraseña es requerida'); return; }
         try {
-            await login(email.trim(), password);
-            router.replace('/(auth)/verify-otp');
+            await login(contractNumber.trim(), password);
+            router.replace('/');
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'Credenciales inválidas');
         }
@@ -113,7 +113,7 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     return (
         <>
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Bienvenido de nuevo</Text>
-            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Inicia sesión con tu correo electrónico</Text>
+            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Inicia sesión con tu número de contrato</Text>
 
             {error ? (
                 <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)' }}>
@@ -121,7 +121,7 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                 </View>
             ) : null}
 
-            <AuthInput label="Correo electrónico" placeholder="tu@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <AuthInput label="Número de contrato" placeholder="Ej: 000000003" value={contractNumber} onChangeText={setContractNumber} />
             <AuthInput label="Contraseña" placeholder="••••••••" value={password} onChangeText={setPassword} secure />
 
             <PrimaryButton title="Iniciar sesión" onPress={handleLogin} isLoading={isLoading} />
@@ -131,46 +131,44 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             </TouchableOpacity>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 6 }}>
-                <Text style={{ color: P.muted, fontSize: 13 }}>¿No tienes cuenta?</Text>
-                <TouchableOpacity onPress={() => onSwitch('register')}>
-                    <Text style={{ color: P.accent, fontSize: 13, fontWeight: '700' }}>Regístrate</Text>
+                <Text style={{ color: P.muted, fontSize: 13 }}>¿Primera vez?</Text>
+                <TouchableOpacity onPress={() => onSwitch('first-access')}>
+                    <Text style={{ color: P.accent, fontSize: 13, fontWeight: '700' }}>Activa tu cuenta</Text>
                 </TouchableOpacity>
             </View>
         </>
     );
 }
 
-function RegisterForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [nombre, setNombre] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+function FirstAccessForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+    const [contractNumber, setContractNumber] = useState('');
+    const [idNumber, setIdNumber] = useState('');
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const { register, isLoading } = useAuthStore();
-    const router = useRouter();
+    const { firstAccess, isLoading } = useAuthStore();
 
-    const handleRegister = async () => {
+    const handleFirstAccess = async () => {
         setError('');
-        setSuccess('');
-        if (!nombre.trim()) { setError('El nombre es requerido'); return; }
-        if (!email.trim()) { setError('El correo electrónico es requerido'); return; }
-        if (!password) { setError('La contraseña es requerida'); return; }
-        if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
-        if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
+        if (!contractNumber.trim()) { setError('El número de contrato es requerido'); return; }
+        if (!idNumber.trim()) { setError('La cédula es requerida'); return; }
         try {
-            await register(nombre.trim(), email.trim(), password);
-            setSuccess('Cuenta creada. Verifica tu correo electrónico.');
-            setTimeout(() => router.replace('/(auth)/verify-otp'), 1500);
+            await firstAccess(contractNumber.trim(), idNumber.trim());
+            onSwitch('activate');
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'No se pudo crear la cuenta');
+            setError(e instanceof Error ? e.message : 'No se pudo verificar el contrato');
         }
     };
 
     return (
         <>
-            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Crear cuenta</Text>
-            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Regístrate para acceder a tu contenido</Text>
+            <TouchableOpacity onPress={() => onSwitch('login')} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                <FontAwesome name="arrow-left" size={14} color={P.accent} />
+                <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>Volver al inicio de sesión</Text>
+            </TouchableOpacity>
+
+            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Primera vez</Text>
+            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                Ingresa tu número de contrato y cédula para verificar tu identidad
+            </Text>
 
             {error ? (
                 <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)' }}>
@@ -178,21 +176,13 @@ function RegisterForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                 </View>
             ) : null}
 
-            {success ? (
-                <View style={{ backgroundColor: P.successBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
-                    <Text style={{ color: P.success, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>{success}</Text>
-                </View>
-            ) : null}
+            <AuthInput label="Número de contrato" placeholder="Ej: 000000003" value={contractNumber} onChangeText={setContractNumber} />
+            <AuthInput label="Cédula de identidad" placeholder="Ej: 1720345678" value={idNumber} onChangeText={setIdNumber} />
 
-            <AuthInput label="Nombre completo" placeholder="Ej: María García" value={nombre} onChangeText={setNombre} autoCapitalize="words" />
-            <AuthInput label="Correo electrónico" placeholder="tu@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
-            <AuthInput label="Contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secure />
-            <AuthInput label="Confirmar contraseña" placeholder="Repite tu contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
-
-            <PrimaryButton title="Crear cuenta" onPress={handleRegister} isLoading={isLoading} />
+            <PrimaryButton title="Verificar identidad" onPress={handleFirstAccess} isLoading={isLoading} />
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 6 }}>
-                <Text style={{ color: P.muted, fontSize: 13 }}>¿Ya tienes cuenta?</Text>
+                <Text style={{ color: P.muted, fontSize: 13 }}>¿Ya tienes contraseña?</Text>
                 <TouchableOpacity onPress={() => onSwitch('login')}>
                     <Text style={{ color: P.accent, fontSize: 13, fontWeight: '700' }}>Inicia sesión</Text>
                 </TouchableOpacity>
@@ -201,95 +191,51 @@ function RegisterForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     );
 }
 
-function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [step, setStep] = useState<'email' | 'code' | 'newpass' | 'done'>('email');
-    const [email, setEmail] = useState('');
-    const [code, setCode] = useState('');
-    const [newPassword, setNewPassword] = useState('');
+function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+    const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [email, setEmail] = useState('');
     const [error, setError] = useState('');
-    const { forgotPassword, isLoading } = useAuthStore();
-    const API_BASE = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3000` : 'http://localhost:3000';
+    const { activate, pendingActivation, isLoading } = useAuthStore();
+    const router = useRouter();
 
-    const handleSendCode = async () => {
+    if (!pendingActivation) {
+        return (
+            <>
+                <Text style={{ color: P.text, fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 12 }}>Sesión expirada</Text>
+                <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Verifica tu contrato nuevamente</Text>
+                <PrimaryButton title="Verificar contrato" onPress={() => onSwitch('first-access')} />
+            </>
+        );
+    }
+
+    const handleActivate = async () => {
         setError('');
-        if (!email.trim()) { setError('El correo electrónico es requerido'); return; }
+        if (!password) { setError('La contraseña es requerida'); return; }
+        if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+        if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
         try {
-            await forgotPassword(email.trim());
-            setStep('code');
+            await activate(password, email.trim() || undefined);
+            router.replace('/');
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'No se pudo enviar el código');
+            setError(e instanceof Error ? e.message : 'No se pudo activar la cuenta');
         }
-    };
-
-    const handleVerifyAndReset = async () => {
-        setError('');
-        if (!code.trim()) { setError('Ingresa el código que recibiste por correo'); return; }
-        if (code.trim().length < 6) { setError('El código debe tener al menos 6 caracteres'); return; }
-        if (!newPassword) { setError('La nueva contraseña es requerida'); return; }
-        if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
-        if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
-        try {
-            const response = await fetch(`${API_BASE}/auth/app/reset-with-code`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.trim(), code: code.trim(), newPassword, confirmPassword }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Código inválido o expirado');
-            setStep('done');
-        } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
-        }
-    };
-
-    const stepDescriptions = {
-        email: 'Ingresa tu correo electrónico y te enviaremos un código de verificación.',
-        code: `Ingresá el código que enviamos a ${email} y elegí tu nueva contraseña.`,
-        newpass: '',
-        done: '',
     };
 
     return (
         <>
-            <TouchableOpacity onPress={() => step === 'email' ? onSwitch('login') : setStep('email')} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+            <TouchableOpacity onPress={() => onSwitch('first-access')} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
                 <FontAwesome name="arrow-left" size={14} color={P.accent} />
-                <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>{step === 'email' ? 'Volver al inicio de sesión' : 'Cambiar correo'}</Text>
+                <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>Volver</Text>
             </TouchableOpacity>
 
-            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Recuperar contraseña</Text>
-
-            {/* Step indicator */}
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 12, marginBottom: 20 }}>
-                {[1, 2, 3].map((s) => {
-                    const stepIndex = step === 'email' ? 1 : step === 'code' ? 2 : 3;
-                    const isActive = s === stepIndex;
-                    const isDone = s < stepIndex || step === 'done';
-                    return (
-                        <View key={s} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <View style={{
-                                width: 26, height: 26, borderRadius: 13,
-                                backgroundColor: isDone ? P.success : isActive ? P.accent : 'rgba(255,255,255,0.08)',
-                                alignItems: 'center', justifyContent: 'center',
-                                borderWidth: isActive ? 0 : 1, borderColor: 'rgba(255,255,255,0.1)',
-                            }}>
-                                {isDone ? (
-                                    <FontAwesome name="check" size={11} color="#fff" />
-                                ) : (
-                                    <Text style={{ color: isActive ? '#240046' : P.muted, fontSize: 11, fontWeight: '800' }}>{s}</Text>
-                                )}
-                            </View>
-                            {s < 3 ? <View style={{ width: 24, height: 2, backgroundColor: isDone ? P.success : 'rgba(255,255,255,0.08)', borderRadius: 1 }} /> : null}
-                        </View>
-                    );
-                })}
-            </View>
-
-            {step !== 'done' && stepDescriptions[step] ? (
-                <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
-                    {stepDescriptions[step]}
-                </Text>
-            ) : null}
+            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Configura tu contraseña</Text>
+            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 8 }}>
+                Hola, <Text style={{ color: P.accent, fontWeight: '700' }}>{pendingActivation.nombre}</Text>
+            </Text>
+            <Text style={{ color: P.muted, fontSize: 12, textAlign: 'center', marginBottom: 24 }}>
+                Contrato: {pendingActivation.contractNumber}
+            </Text>
 
             {error ? (
                 <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)' }}>
@@ -297,39 +243,69 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                 </View>
             ) : null}
 
-            {/* Step 1: Email */}
-            {step === 'email' ? (
-                <>
-                    <AuthInput label="Correo electrónico" placeholder="tu@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
-                    <PrimaryButton title="Enviar código" onPress={handleSendCode} isLoading={isLoading} />
-                </>
+            <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secure />
+            <AuthInput label="Confirmar contraseña" placeholder="Repite tu contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
+            <AuthInput label="Correo electrónico (opcional)" placeholder="Para notificaciones y marketing" value={email} onChangeText={setEmail} keyboardType="email-address" />
+
+            <PrimaryButton title="Activar cuenta" onPress={handleActivate} isLoading={isLoading} />
+        </>
+    );
+}
+
+function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+    const [step, setStep] = useState<'identity' | 'newpass' | 'done'>('identity');
+    const [contractNumber, setContractNumber] = useState('');
+    const [idNumber, setIdNumber] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
+    const { resetPassword, isLoading } = useAuthStore();
+
+    const handleReset = async () => {
+        setError('');
+        if (!contractNumber.trim()) { setError('El número de contrato es requerido'); return; }
+        if (!idNumber.trim()) { setError('La cédula es requerida'); return; }
+        if (!newPassword) { setError('La nueva contraseña es requerida'); return; }
+        if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+        if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
+        try {
+            await resetPassword(contractNumber.trim(), idNumber.trim(), newPassword);
+            setStep('done');
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
+        }
+    };
+
+    return (
+        <>
+            <TouchableOpacity onPress={() => onSwitch('login')} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                <FontAwesome name="arrow-left" size={14} color={P.accent} />
+                <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>Volver al inicio de sesión</Text>
+            </TouchableOpacity>
+
+            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Recuperar contraseña</Text>
+
+            {error ? (
+                <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)' }}>
+                    <Text style={{ color: P.error, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>{error}</Text>
+                </View>
             ) : null}
 
-            {/* Step 2: Code + new password */}
-            {step === 'code' ? (
+            {step === 'identity' ? (
                 <>
-                    <View style={{ backgroundColor: P.accentSoft, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <FontAwesome name="envelope" size={14} color={P.accent} />
-                            <Text style={{ color: P.textSec, fontSize: 12, flex: 1 }}>
-                                Código enviado a <Text style={{ color: P.text, fontWeight: '700' }}>{email}</Text>
-                            </Text>
-                        </View>
-                    </View>
+                    <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                        Ingresa tu contrato, cédula y nueva contraseña
+                    </Text>
 
-                    <AuthInput label="Código de verificación" placeholder="Ej: A1B2C3D4" value={code} onChangeText={(t) => setCode(t.toUpperCase())} />
+                    <AuthInput label="Número de contrato" placeholder="Ej: 000000003" value={contractNumber} onChangeText={setContractNumber} />
+                    <AuthInput label="Cédula de identidad" placeholder="Ej: 1720345678" value={idNumber} onChangeText={setIdNumber} />
                     <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={newPassword} onChangeText={setNewPassword} secure />
                     <AuthInput label="Confirmar contraseña" placeholder="Repite tu nueva contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
 
-                    <PrimaryButton title="Restablecer contraseña" onPress={handleVerifyAndReset} isLoading={isLoading} />
-
-                    <TouchableOpacity onPress={handleSendCode} style={{ marginTop: 14, alignItems: 'center' }}>
-                        <Text style={{ color: P.muted, fontSize: 12 }}>¿No recibiste el código? <Text style={{ color: P.accent, fontWeight: '600' }}>Reenviar</Text></Text>
-                    </TouchableOpacity>
+                    <PrimaryButton title="Restablecer contraseña" onPress={handleReset} isLoading={isLoading} />
                 </>
             ) : null}
 
-            {/* Step 3: Success */}
             {step === 'done' ? (
                 <>
                     <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
@@ -369,7 +345,8 @@ export default function Login() {
                     shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 12 },
                 }}>
                     {screen === 'login' ? <LoginForm onSwitch={setScreen} /> : null}
-                    {screen === 'register' ? <RegisterForm onSwitch={setScreen} /> : null}
+                    {screen === 'first-access' ? <FirstAccessForm onSwitch={setScreen} /> : null}
+                    {screen === 'activate' ? <ActivateForm onSwitch={setScreen} /> : null}
                     {screen === 'forgot' ? <ForgotForm onSwitch={setScreen} /> : null}
                 </View>
 

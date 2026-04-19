@@ -18,10 +18,10 @@ import { LOGIN_ATTEMPT_REPOSITORY } from './domain/interfaces/login-attempt.repo
 import { AUDIT_LOG_REPOSITORY } from './domain/interfaces/audit-log.repository';
 import { TEMPORARY_CODE_REPOSITORY } from './domain/interfaces/temporary-code.repository';
 
-// Infrastructure
-import { InMemoryUserRepository } from './infrastructure/repositories/in-memory-user.repository';
-import { InMemorySessionRepository } from './infrastructure/repositories/in-memory-session.repository';
-import { InMemoryAccountRepository } from './infrastructure/repositories/in-memory-account.repository';
+// Infrastructure – Prisma repositories
+import { PrismaUserRepository } from '../prisma/repositories/prisma-user.repository.js';
+import { PrismaSessionRepository } from '../prisma/repositories/prisma-session.repository.js';
+import { PrismaAccountRepository } from '../prisma/repositories/prisma-account.repository.js';
 import { InMemoryPasswordResetTokenRepository } from './infrastructure/repositories/in-memory-password-reset-token.repository';
 import { InMemoryFirstAccessTokenRepository } from './infrastructure/repositories/in-memory-first-access-token.repository';
 import { InMemoryLoginAttemptRepository } from './infrastructure/repositories/in-memory-login-attempt.repository';
@@ -58,6 +58,11 @@ import { ValidateCodeUseCase } from './application/use-cases/validate-code.use-c
 import { ActivateAccountUseCase } from './application/use-cases/activate-account.use-case';
 import { ResetPasswordWithCodeUseCase } from './application/use-cases/reset-password-with-code.use-case';
 import { RegisterAppUseCase } from './application/use-cases/register-app.use-case';
+import { ContractLoginUseCase } from './application/use-cases/contract-login.use-case.js';
+import { FirstAccessAppUseCase } from './application/use-cases/first-access-app.use-case.js';
+import { ActivateAppUseCase2 } from './application/use-cases/activate-app.use-case.js';
+import { SwitchContractUseCase } from './application/use-cases/switch-contract.use-case.js';
+import { ContractResetPasswordUseCase } from './application/use-cases/contract-reset-password.use-case.js';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -97,9 +102,9 @@ import { CrmModule } from '../crm/crm.module';
   controllers: [AuthController],
   providers: [
     // Infrastructure bindings
-    { provide: USER_REPOSITORY,                  useClass: InMemoryUserRepository },
-    { provide: SESSION_REPOSITORY,               useClass: InMemorySessionRepository },
-    { provide: ACCOUNT_REPOSITORY,               useClass: InMemoryAccountRepository },
+    { provide: USER_REPOSITORY,                  useClass: PrismaUserRepository },
+    { provide: SESSION_REPOSITORY,               useClass: PrismaSessionRepository },
+    { provide: ACCOUNT_REPOSITORY,               useClass: PrismaAccountRepository },
     { provide: PASSWORD_RESET_TOKEN_REPOSITORY,  useClass: InMemoryPasswordResetTokenRepository },
     { provide: FIRST_ACCESS_TOKEN_REPOSITORY,    useClass: InMemoryFirstAccessTokenRepository },
     { provide: LOGIN_ATTEMPT_REPOSITORY,         useClass: InMemoryLoginAttemptRepository },
@@ -135,6 +140,11 @@ import { CrmModule } from '../crm/crm.module';
     ActivateAccountUseCase,
     ResetPasswordWithCodeUseCase,
     RegisterAppUseCase,
+    ContractLoginUseCase,
+    FirstAccessAppUseCase,
+    ActivateAppUseCase2,
+    SwitchContractUseCase,
+    ContractResetPasswordUseCase,
   ],
   exports: [
     TOKEN_SERVICE,

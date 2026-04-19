@@ -190,7 +190,7 @@ async function apiFetch<T>(
     },
   });
 
-  // If backend returns 401/404 or any non-ok, fall through to mock
+  // Throw on non-ok responses
   if (!res.ok) {
     const data: unknown = await res.json().catch(() => null);
     const msg =
@@ -207,632 +207,116 @@ async function apiFetch<T>(
 // Users
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Persistencia local (localStorage) — mock sin base de datos
-// ---------------------------------------------------------------------------
-
-const STORAGE_KEY = 'lukiplay_mock_users';
-
-function loadMockUsers(): AdminUser[] {
-  if (typeof window === 'undefined') return buildMockUsers();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as AdminUser[];
-  } catch { /* corrupted cache — rebuild */ }
-  const fresh = buildMockUsers();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-  return fresh;
-}
-
-function saveMockUsers(): void {
-  if (typeof window === 'undefined') return;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUsersStore)); } catch { /* quota exceeded — ignore */ }
-}
-
-let mockUsersStore: AdminUser[] = loadMockUsers();
-
-function buildMockUsers(): AdminUser[] {
-  function mapStatus(s: string): AdminUser['status'] {
-    const u = s.toUpperCase();
-    if (u === 'ACTIVO') return 'active';
-    if (u === 'SUSPENDIDO') return 'suspended';
-    return 'inactive'; // CORTADO, ANULADO, etc.
-  }
-
-  const rawUsers = [
-    // ── Usuarios internos ──────────────────────────────────────────────────
-    { nombre: 'Admin Principal', firstName: 'Admin', lastName: 'Principal', email: 'admin@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'superadmin' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, fechaInicio: '', fechaFin: '', isCmsUser: true },
-    { nombre: 'Agente Soporte', firstName: 'Agente', lastName: 'Soporte', email: 'soporte@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'soporte' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, fechaInicio: '', fechaFin: '', isCmsUser: true },
-    // ── Abonados desde Excel (report-contract.xlsx) ────────────────────────
-    { nombre: 'CASTRO DANIEL',                         firstName: 'CASTRO',      lastName: 'DANIEL',      email: '',                               telefono: '0987284494',        contrato: '000000000', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ANULADO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-14', fechaFin: '',           isCmsUser: false },
-    { nombre: 'DOICELA NEGRETE JEFFERSON XAVIER',       firstName: 'DOICELA',     lastName: 'NEGRETE',     email: 'facturacion@luki.ec',            telefono: '0939246460',        contrato: '000000002', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-27', fechaFin: '2022-12-01', isCmsUser: false },
-    { nombre: 'PASTUNA CHUSIN MANUEL',                  firstName: 'PASTUNA',     lastName: 'CHUSIN',      email: 'manuelpastunachusin@gmail.com',  telefono: '0939218464',        contrato: '000000003', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-28', fechaFin: '2025-10-17', isCmsUser: false },
-    { nombre: 'CATOTA YUGSI JENNY GUADALUPE',           firstName: 'CATOTA',      lastName: 'YUGSI',       email: 'facturacion@luki.ec',            telefono: '0988062117',        contrato: '000000004', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-28', fechaFin: '2026-03-11', isCmsUser: false },
-    { nombre: 'GUAINALLA CASILLAS TANIA SOLEDAD',       firstName: 'GUAINALLA',   lastName: 'CASILLAS',    email: 'taniaguainalla03@gmail.com',     telefono: '0979361442',        contrato: '000000005', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-31', fechaFin: '2022-11-25', isCmsUser: false },
-    { nombre: 'DE LA CRUZ QUIROZ VERONICA VIVIANA',     firstName: 'DE LA CRUZ',  lastName: 'QUIROZ',      email: 'Vq346299@gmail.com',             telefono: '0983535889',        contrato: '000000006', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('CORTADO'),   maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-31', fechaFin: '2023-03-16', isCmsUser: false },
-    { nombre: 'AYALA USUNO JOSE NEPTALI',               firstName: 'AYALA',       lastName: 'USUNO',       email: 'ayala.r.alex20@gmail.com',       telefono: '0995366940',        contrato: '000000007', plan: 'PLAN HOGAR SUPER',      planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-31', fechaFin: '2026-03-11', isCmsUser: false },
-    { nombre: 'TOASA QUISHPE MARIA TERESA',             firstName: 'TOASA',       lastName: 'QUISHPE',     email: 'facturacion@luki.ec',            telefono: '0984921659',        contrato: '000000009', plan: 'PLAN HOGAR SUPER PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 5, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-31', fechaFin: '',           isCmsUser: false },
-    { nombre: 'GANCINO JAILACA MARIA NARCISA',          firstName: 'GANCINO',     lastName: 'JAILACA',     email: 'aguaizaerika61@gmail.com',       telefono: '0984134246',        contrato: '000000010', plan: 'PLAN PRO',              planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 3, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-01', fechaFin: '2024-04-17', isCmsUser: false },
-    { nombre: 'TAMAY GUARACA JOSE DOMINGO',             firstName: 'TAMAY',       lastName: 'GUARACA',     email: 'facturacion@luki.ec',            telefono: '0993214258',        contrato: '000000011', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-01', fechaFin: '2023-08-14', isCmsUser: false },
-    { nombre: 'SANCHEZ LLANO SILVIA ADRIANA',           firstName: 'SANCHEZ',     lastName: 'LLANO',       email: 'mauriciosasnalema@gmail.com',    telefono: '0983881636',        contrato: '000000012', plan: 'PLAN HOGAR IDEAL PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-01', fechaFin: '2024-12-17', isCmsUser: false },
-    { nombre: 'YUPANGUI YUPANGUI ANA LUCIA',            firstName: 'YUPANGUI',    lastName: 'YUPANGUI',    email: 'facturacion@luki.ec',            telefono: '0994193126',        contrato: '000000013', plan: 'PLAN HOGAR SUPER',      planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-01', fechaFin: '2026-03-11', isCmsUser: false },
-    { nombre: 'VEGA TIGASI JOSE PABLO',                 firstName: 'VEGA',        lastName: 'TIGASI',      email: 'jovetigaci@gmail.com',           telefono: '0968013569',        contrato: '000000014', plan: 'PLAN HOGAR SUPER PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 5, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-01', fechaFin: '2026-02-11', isCmsUser: false },
-    { nombre: 'PALLO ALAJO SEGUNDO JUAN',               firstName: 'PALLO',       lastName: 'ALAJO',       email: 'juanpallo05@gmail.com',          telefono: '0959550924',        contrato: '000000015', plan: 'PLAN HOGAR IDEAL PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2025-12-12', isCmsUser: false },
-    { nombre: 'LLAMUCA IZA BLANCA BEATRIZ',             firstName: 'LLAMUCA',     lastName: 'IZA',         email: 'facturacion@luki.ec',            telefono: '0994531033',        contrato: '000000016', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2022-03-24', isCmsUser: false },
-    { nombre: 'VILLAR ALLAUCA AGUSTIN',                 firstName: 'VILLAR',      lastName: 'ALLAUCA',     email: 'facturacion@luki.ec',            telefono: '0981704691',        contrato: '000000017', plan: 'PLAN PREMIUM',          planId: null, role: 'cliente' as const, status: mapStatus('CORTADO'),   maxDevices: 3, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2023-01-18', isCmsUser: false },
-    { nombre: 'VELASCO ROSERO LIZBETH ALEJANDRA',       firstName: 'VELASCO',     lastName: 'ROSERO',      email: 'facturacion@luki.ec',            telefono: '0980716767',        contrato: '000000018', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2022-08-01', isCmsUser: false },
-    { nombre: 'PALAQUINBAY CAMPOS ANGEL NICOLAS',       firstName: 'PALAQUINBAY', lastName: 'CAMPOS',      email: 'angelpalaquibay69@gmail.com',    telefono: '0998482585',        contrato: '000000019', plan: 'PLAN HOGAR IDEAL PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2026-02-11', isCmsUser: false },
-    { nombre: 'PERDOMO JAMI JOSE RODRIGO',              firstName: 'PERDOMO',     lastName: 'JAMI',        email: 'facturacion@luki.ec',            telefono: '0985084080',        contrato: '000000020', plan: 'PLAN HOGAR SUPER PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 5, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2026-02-11', isCmsUser: false },
-    { nombre: 'QUISHPE ANTE OLIMPIA',                   firstName: 'QUISHPE',     lastName: 'ANTE',        email: 'facturacion@luki.ec',            telefono: '0995726023',        contrato: '000000021', plan: 'PLAN HOGAR IDEAL PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2025-06-12', isCmsUser: false },
-    { nombre: 'GUANOQUIZA LOGRO CESARIO',               firstName: 'GUANOQUIZA',  lastName: 'LOGRO',       email: 'facturacion@luki.ec',            telefono: '0993069762',        contrato: '000000022', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2024-06-24', isCmsUser: false },
-    { nombre: 'CHONGA CACHUPUD JOSE MANUEL',            firstName: 'CHONGA',      lastName: 'CACHUPUD',    email: 'facturacion@luki.ec',            telefono: '0998310674',        contrato: '000000023', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2023-11-17', isCmsUser: false },
-    { nombre: 'TAMAMI QUINATOA DAYSI MARIBEL',          firstName: 'TAMAMI',      lastName: 'QUINATOA',    email: 'facturacion@luki.ec',            telefono: '0998876463',        contrato: '000000024', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2022-08-01', isCmsUser: false },
-    { nombre: 'RAMON CABRERA CARMEN SONIA',             firstName: 'RAMON',       lastName: 'CABRERA',     email: 'mary180betty@gmail.com',         telefono: '0994922196',        contrato: '000000025', plan: 'PACK BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('CORTADO'),   maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2023-12-26', isCmsUser: false },
-    { nombre: 'LOPEZ LLANGA NORMA ELIZABETH',           firstName: 'LOPEZ',       lastName: 'LLANGA',      email: 'Soldamarcelo90@gmail.com',       telefono: '0989590010',        contrato: '000000026', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-02', fechaFin: '2022-12-27', isCmsUser: false },
-    { nombre: 'QUISHPE VILLAR MARIA DOLORES',           firstName: 'QUISHPE',     lastName: 'VILLAR',      email: 'facturacion@luki.ec',            telefono: '0959744564',        contrato: '000000027', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '2021-10-28', isCmsUser: false },
-    { nombre: 'SALAZAR NARANJO OSCAR ROLANDO',          firstName: 'SALAZAR',     lastName: 'NARANJO',     email: 'facturacion@luki.ec',            telefono: '0981061497',        contrato: '000000028', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '2025-06-16', isCmsUser: false },
-    { nombre: 'ORDONEZ SINCHIRE LUISA LILY',            firstName: 'ORDONEZ',     lastName: 'SINCHIRE',    email: '1940@outlook.com',               telefono: '0995400720',        contrato: '000000029', plan: 'PLAN HOGAR SUPER',      planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '',           isCmsUser: false },
-    { nombre: 'BORJA BORJA JULIO RAMIRO',               firstName: 'BORJA',       lastName: 'BORJA',       email: 'facturacion@luki.ec',            telefono: '0995295389',        contrato: '000000031', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '2022-01-19', isCmsUser: false },
-    { nombre: 'PAZOS OROSCO GABRIELA BRIGITE',          firstName: 'PAZOS',       lastName: 'OROSCO',      email: 'facturacion@luki.ec',            telefono: '0987229463',        contrato: '000000032', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '2024-12-13', isCmsUser: false },
-    { nombre: 'TOTASIG CAILLAGUA NELSON JAVIER',        firstName: 'TOTASIG',     lastName: 'CAILLAGUA',   email: 'facturacion@luki.ec',            telefono: '0959847430',        contrato: '000000033', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '2021-12-01', isCmsUser: false },
-    { nombre: 'CAVA QUISHPE JUAN CARLOS',               firstName: 'CAVA',        lastName: 'QUISHPE',     email: 'facturacion@luki.ec',            telefono: '0993815854',        contrato: '000000034', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-03', fechaFin: '2021-11-18', isCmsUser: false },
-    { nombre: 'MUNOZ GUAMAN LUIS MIGUEL',               firstName: 'MUNOZ',       lastName: 'GUAMAN',      email: 'miguicho-593@hotmail.com',       telefono: '0994206701',        contrato: '000000035', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2025-09-11', isCmsUser: false },
-    { nombre: 'TOAQUIZA VEGA LUIS',                     firstName: 'TOAQUIZA',    lastName: 'VEGA',        email: 'luistoaquizavega2410@gmail.com', telefono: '0989800810',        contrato: '000000036', plan: 'PLAN HOGAR SUPER PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 5, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2026-02-11', isCmsUser: false },
-    { nombre: 'LUCINA OYOS CLERIDA GRENEIMI',           firstName: 'LUCINA',      lastName: 'OYOS',        email: 'robertocastillolucina@gamil.com',telefono: '0962698199',        contrato: '000000038', plan: 'ESPECIAL',              planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2026-03-11', isCmsUser: false },
-    { nombre: 'TENELEMA GUALA ELVIA JOHANNA',           firstName: 'TENELEMA',    lastName: 'GUALA',       email: 'elviatenelema281@gmail.com',     telefono: '0981060962',        contrato: '000000039', plan: 'PLAN HOGAR SUPER PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 5, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '',           isCmsUser: false },
-    { nombre: 'SHULCA JACOME CARMEN MARLENE',           firstName: 'SHULCA',      lastName: 'JACOME',      email: 'facturacion@luki.ec',            telefono: '0939699558',        contrato: '000000040', plan: 'PACK BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2023-04-12', isCmsUser: false },
-    { nombre: 'LEMA PAGUAY PATRICIA',                   firstName: 'LEMA',        lastName: 'PAGUAY',      email: 'lemluis90@gmail.com',            telefono: '0999821489',        contrato: '000000041', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2024-09-18', isCmsUser: false },
-    { nombre: 'MONAR AVEROS EDGAR VINICIO',             firstName: 'MONAR',       lastName: 'AVEROS',      email: 'edgarmonar02@gmail.com',         telefono: '0961818075',        contrato: '000000042', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2026-01-13', isCmsUser: false },
-    { nombre: 'CRIOLLO CRIOLLO NELSON PATRICIO',        firstName: 'CRIOLLO',     lastName: 'CRIOLLO',     email: 'facturacion@luki.ec',            telefono: '0995437322',        contrato: '000000043', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2023-08-14', isCmsUser: false },
-    { nombre: 'MIRANDA ROMERO MARIA ELENA',             firstName: 'MIRANDA',     lastName: 'ROMERO',      email: 'facturacion@luki.ec',            telefono: '0998472165',        contrato: '000000044', plan: 'PLAN HOGAR IDEAL PLUS', planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2025-11-13', isCmsUser: false },
-    { nombre: 'LISINTUNA GAVILANES MARIA TERESA',       firstName: 'LISINTUNA',   lastName: 'GAVILANES',   email: 'facturacion@luki.ec',            telefono: '0967690616',        contrato: '000000045', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2024-02-22', isCmsUser: false },
-    { nombre: 'TAPIA MARIA BEATRIZ',                    firstName: 'TAPIA',       lastName: 'MARIA',       email: 'facturacion@luki.ec',            telefono: '0992825924',        contrato: '000000046', plan: 'ESPECIAL',              planId: null, role: 'cliente' as const, status: mapStatus('ACTIVO'),    maxDevices: 4, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-04', fechaFin: '2026-02-11', isCmsUser: false },
-    { nombre: 'BORJA PAZOS NELSON RODRIGO',             firstName: 'BORJA',       lastName: 'PAZOS',       email: 'facturacion@luki.ec',            telefono: '0991884152',        contrato: '000000047', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-05', fechaFin: '2021-09-29', isCmsUser: false },
-    { nombre: 'FLORES SANTAMARIA LORENA MIRELLA',       firstName: 'FLORES',      lastName: 'SANTAMARIA',  email: 'jusbeck11@gmail.com',            telefono: '0985715903',        contrato: '000000048', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-05', fechaFin: '2022-11-25', isCmsUser: false },
-    { nombre: 'SANTI SATAN MARIA DEL CARMEN',           firstName: 'SANTI',       lastName: 'SATAN',       email: 'facturacion@luki.ec',            telefono: '0995217820',        contrato: '000000049', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-05', fechaFin: '2022-09-26', isCmsUser: false },
-    { nombre: 'TOCTE VELASQUE WILLAN ANIBAL',           firstName: 'TOCTE',       lastName: 'VELASQUE',    email: 'facturacion@luki.ec',            telefono: '0999734512',        contrato: '000000050', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-06', fechaFin: '2021-09-21', isCmsUser: false },
-  ];
-
-  return rawUsers.map((u, i) => ({
-      id: `usr-${String(i + 1).padStart(3, '0')}`,
-      nombre: u.nombre,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      email: u.email,
-      telefono: u.telefono,
-      plan: u.plan,
-      planId: u.planId,
-      fechaInicio: u.fechaInicio || new Date(Date.now() - (15 + i) * 86400000).toISOString().slice(0, 10),
-      fechaFin: u.fechaFin || '',
-      sesiones: i < 2 ? 1 : 0,
-      contrato: u.contrato,
-      status: u.status,
-      role: u.role,
-      mustChangePassword: u.role !== 'cliente',
-      mfaEnabled: u.role !== 'cliente' && i === 0,
-      isLocked: false,
-      lockedUntil: null,
-      lastLoginAt: i < 2 ? new Date(Date.now() - (i + 1) * 3600000).toISOString() : null,
-      maxDevices: u.maxDevices,
-      sessionDurationDays: u.sessionDurationDays,
-      sessionLimitPolicy: u.sessionLimitPolicy,
-      isCmsUser: u.isCmsUser,
-      isSubscriber: !u.isCmsUser,
-    }));
-}
-
-let mockUserSessionsStore: Record<string, AdminUserSession[]> = {
-  'usr-001': [{ id: 'ses-001', deviceId: 'cms-admin-web', audience: 'cms', createdAt: new Date(Date.now() - 3600000).toISOString(), expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), revokedAt: null, status: 'active' }],
-  'usr-002': [{ id: 'ses-002', deviceId: 'cms-soporte-web', audience: 'cms', createdAt: new Date(Date.now() - 7200000).toISOString(), expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), revokedAt: null, status: 'active' }],
-  'usr-003': [
-    { id: 'ses-003a', deviceId: 'Televisor LG', audience: 'tv', createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), expiresAt: new Date(Date.now() + 6 * 86400000).toISOString(), revokedAt: null, status: 'active' },
-    { id: 'ses-003b', deviceId: 'Celular', audience: 'mobile', createdAt: new Date(Date.now() - 26 * 3600000).toISOString(), expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(), revokedAt: null, status: 'active' },
-    { id: 'ses-003c', deviceId: 'Computador', audience: 'web', createdAt: new Date(Date.now() - 9 * 3600000).toISOString(), expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(), revokedAt: null, status: 'active' },
-  ],
-};
-
-export async function adminListUsers(_accessToken: string): Promise<AdminUser[]> {
-  // TODO: descomentar cuando la API esté lista
-  // try {
-  //   return await apiFetch<AdminUser[]>('/admin/users', accessToken);
-  // } catch {
-  //   syncAllMockUsersWithPlans();
-  //   return mockUsersStore.map((user) => ({ ...user }));
-  // }
-  syncAllMockUsersWithPlans();
-  return mockUsersStore.map((user) => ({ ...user }));
+export async function adminListUsers(accessToken: string): Promise<AdminUser[]> {
+  return apiFetch<AdminUser[]>('/admin/users', accessToken);
 }
 
 export async function adminGetUser(accessToken: string, id: string): Promise<AdminUser> {
-  try {
-    return await apiFetch<AdminUser>(`/admin/users/${id}`, accessToken);
-  } catch {
-    const user = mockUsersStore.find((item) => item.id === id);
-    if (!user) throw new Error('Usuario no encontrado');
-    return { ...syncUserPlanLink(user) };
-  }
+  return apiFetch<AdminUser>(`/admin/users/${id}`, accessToken);
 }
 
-export async function adminCreateUser(
-  accessToken: string,
-  data: AdminUserPayload,
-): Promise<AdminUser> {
-  try {
-    return await apiFetch<AdminUser>('/admin/users', accessToken, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const now = new Date();
-    const end = new Date(now);
-    end.setDate(end.getDate() + 30);
-    const role = data.role ?? 'cliente';
-    const fullName = data.nombre?.trim() || `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim() || data.email.split('@')[0];
-    const selectedPlan = role === 'cliente' ? findCatalogPlan(data.planId, data.plan) ?? getDefaultSubscriberPlan() : null;
-    const newUser: AdminUser = {
-      id: `usr-${Date.now()}`,
-      nombre: role === 'cliente' ? fullName.toUpperCase() : fullName,
-      firstName: data.firstName ?? null,
-      lastName: data.lastName ?? null,
-      email: data.email,
-      telefono: data.telefono || null,
-      plan: role === 'cliente' ? selectedPlan?.nombre ?? 'Sin plan' : 'Usuario CMS',
-      planId: role === 'cliente' ? selectedPlan?.id ?? null : null,
-      fechaInicio: now.toISOString().slice(0, 10),
-      fechaFin: end.toISOString().slice(0, 10),
-      sesiones: 0,
-      contrato: role === 'cliente' ? data.contrato || `OTT-${Date.now()}` : null,
-      status: data.status ?? (role === 'cliente' ? 'active' : 'pending'),
-      role,
-      mustChangePassword: role !== 'cliente',
-      mfaEnabled: false,
-      isLocked: false,
-      lockedUntil: null,
-      lastLoginAt: null,
-      maxDevices: role === 'cliente' ? data.maxDevices ?? selectedPlan?.maxDevices ?? 3 : 3,
-      sessionDurationDays: data.sessionDurationDays ?? (role === 'cliente' ? 30 : 7),
-      sessionLimitPolicy: data.sessionLimitPolicy ?? 'block_new',
-      isCmsUser: role !== 'cliente',
-      isSubscriber: role === 'cliente',
-    };
-    mockUsersStore = [syncUserPlanLink(newUser), ...mockUsersStore];
-    saveMockUsers();
-    return { ...mockUsersStore[0] };
-  }
+export async function adminCreateUser(accessToken: string, data: AdminUserPayload): Promise<AdminUser> {
+  return apiFetch<AdminUser>('/admin/users', accessToken, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
-export async function adminUpdateUser(
-  accessToken: string,
-  id: string,
-  data: AdminUserPayload,
-): Promise<AdminUser> {
-  try {
-    return await apiFetch<AdminUser>(`/admin/users/${id}`, accessToken, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const index = mockUsersStore.findIndex((user) => user.id === id);
-    if (index === -1) throw new Error('Usuario no encontrado');
-    const current = mockUsersStore[index];
-    const nextRole = data.role ?? current.role;
-    const isSubscriber = nextRole === 'cliente';
-    const fullName = data.nombre?.trim() || `${data.firstName ?? current.firstName ?? ''} ${data.lastName ?? current.lastName ?? ''}`.trim() || current.nombre;
-    const selectedPlan = isSubscriber
-      ? findCatalogPlan(data.planId ?? current.planId, data.plan ?? current.plan) ?? getDefaultSubscriberPlan()
-      : null;
-    const updated: AdminUser = {
-      ...current,
-      nombre: isSubscriber ? fullName.toUpperCase() : fullName,
-      firstName: data.firstName ?? current.firstName,
-      lastName: data.lastName ?? current.lastName,
-      email: data.email ?? current.email,
-      telefono: data.telefono ?? current.telefono,
-      plan: isSubscriber ? selectedPlan?.nombre ?? current.plan : 'Usuario CMS',
-      planId: isSubscriber ? selectedPlan?.id ?? null : null,
-      contrato: isSubscriber ? data.contrato ?? current.contrato : null,
-      status: data.status ?? current.status,
-      role: nextRole,
-      maxDevices: isSubscriber ? data.maxDevices ?? current.maxDevices ?? selectedPlan?.maxDevices ?? 3 : 3,
-      sessionDurationDays: data.sessionDurationDays ?? current.sessionDurationDays,
-      sessionLimitPolicy: data.sessionLimitPolicy ?? current.sessionLimitPolicy,
-      isCmsUser: !isSubscriber,
-      isSubscriber,
-    };
-    mockUsersStore[index] = syncUserPlanLink(updated);
-    saveMockUsers();
-    return { ...mockUsersStore[index] };
-  }
+export async function adminUpdateUser(accessToken: string, id: string, data: AdminUserPayload): Promise<AdminUser> {
+  return apiFetch<AdminUser>(`/admin/users/${id}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminUpdateUserStatus(accessToken: string, id: string, status: AdminUser['status']): Promise<AdminUser> {
-  try {
-    return await apiFetch<AdminUser>(`/admin/users/${id}/status`, accessToken, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
-  } catch {
-    const index = mockUsersStore.findIndex((user) => user.id === id);
-    if (index === -1) throw new Error('Usuario no encontrado');
-    mockUsersStore[index] = { ...mockUsersStore[index], status };
-    saveMockUsers();
-    return { ...mockUsersStore[index] };
-  }
+  return apiFetch<AdminUser>(`/admin/users/${id}/status`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function adminSetUserPassword(accessToken: string, id: string, newPassword: string, revokeSessions = true): Promise<{ message: string }> {
-  try {
-    return await apiFetch<{ message: string }>(`/admin/users/${id}/password`, accessToken, {
-      method: 'POST',
-      body: JSON.stringify({ newPassword, revokeSessions }),
-    });
-  } catch {
-    if (revokeSessions) {
-      mockUserSessionsStore[id] = [];
-      const index = mockUsersStore.findIndex((user) => user.id === id);
-      if (index >= 0) {
-        mockUsersStore[index] = { ...mockUsersStore[index], sesiones: 0, mustChangePassword: true };
-        saveMockUsers();
-      }
-    }
-    return { message: 'Contraseña actualizada y sesiones revocadas.' };
-  }
+  return apiFetch<{ message: string }>(`/admin/users/${id}/password`, accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ newPassword, revokeSessions }),
+  });
 }
 
 export async function adminSendRecoveryCode(email: string): Promise<{ message: string; code?: string }> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/send-recovery-code`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err as { message?: string }).message ?? 'Error al enviar código de recuperación');
-    }
-    return res.json();
-  } catch {
-    // Mock: generar código localmente si backend no disponible
-    const user = mockUsersStore.find((u) => u.email === email);
-    if (!user) return { message: 'Si el correo está registrado, recibirás el código de recuperación.' };
-    const code = Math.random().toString(36).slice(-8).toUpperCase();
-    return { message: `Código de recuperación generado para ${email}`, code };
+  const res = await fetch(`${API_BASE_URL}/auth/send-recovery-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Error al enviar código de recuperación');
   }
+  return res.json();
 }
 
 export async function adminGenerateActivationCode(userId: string, email: string): Promise<{ message: string; code?: string }> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/generate-activation-code`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, email }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err as { message?: string }).message ?? 'Error al generar código de activación');
-    }
-    return res.json();
-  } catch {
-    // Mock: generar código localmente
-    const code = Math.random().toString(36).slice(-8).toUpperCase();
-    const index = mockUsersStore.findIndex((u) => u.id === userId);
-    if (index >= 0) {
-      mockUsersStore[index] = { ...mockUsersStore[index], status: 'pending' };
-      saveMockUsers();
-    }
-    return { message: `Código de activación generado para ${email}`, code };
+  const res = await fetch(`${API_BASE_URL}/auth/generate-activation-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Error al generar código de activación');
   }
+  return res.json();
 }
 
 export async function adminListUserSessions(accessToken: string, id: string): Promise<AdminUserSession[]> {
-  try {
-    return await apiFetch<AdminUserSession[]>(`/admin/users/${id}/sessions`, accessToken);
-  } catch {
-    return [...(mockUserSessionsStore[id] ?? [])];
-  }
+  return apiFetch<AdminUserSession[]>(`/admin/users/${id}/sessions`, accessToken);
 }
 
 export async function adminRevokeUserSession(accessToken: string, id: string, sessionId: string): Promise<{ message: string }> {
-  try {
-    return await apiFetch<{ message: string }>(`/admin/users/${id}/sessions/${sessionId}`, accessToken, { method: 'DELETE' });
-  } catch {
-    mockUserSessionsStore[id] = (mockUserSessionsStore[id] ?? []).map((session) => session.id === sessionId ? { ...session, revokedAt: new Date().toISOString(), status: 'revoked' } : session);
-    const activeCount = (mockUserSessionsStore[id] ?? []).filter((session) => session.status === 'active').length;
-    mockUsersStore = mockUsersStore.map((user) => user.id === id ? { ...user, sesiones: activeCount } : user);
-    return { message: 'Sesión revocada.' };
-  }
+  return apiFetch<{ message: string }>(`/admin/users/${id}/sessions/${sessionId}`, accessToken, { method: 'DELETE' });
 }
 
 export async function adminRevokeAllUserSessions(accessToken: string, id: string): Promise<{ message: string }> {
-  try {
-    return await apiFetch<{ message: string }>(`/admin/users/${id}/sessions`, accessToken, { method: 'DELETE' });
-  } catch {
-    mockUserSessionsStore[id] = (mockUserSessionsStore[id] ?? []).map((session) => ({ ...session, revokedAt: new Date().toISOString(), status: 'revoked' }));
-    mockUsersStore = mockUsersStore.map((user) => user.id === id ? { ...user, sesiones: 0 } : user);
-    return { message: 'Todas las sesiones fueron revocadas.' };
-  }
+  return apiFetch<{ message: string }>(`/admin/users/${id}/sessions`, accessToken, { method: 'DELETE' });
 }
 
 export async function adminGetUserPlan(accessToken: string, id: string): Promise<AdminUserPlan> {
-  try {
-    return await apiFetch<AdminUserPlan>(`/admin/users/${id}/plan`, accessToken);
-  } catch {
-    const user = mockUsersStore.find((item) => item.id === id);
-    const syncedUser = user ? syncUserPlanLink(user) : null;
-    const plan = findCatalogPlan(syncedUser?.planId, syncedUser?.plan) ?? getDefaultSubscriberPlan();
-    if (!plan) throw new Error('Plan no encontrado');
-    return {
-      id: plan.id,
-      nombre: plan.nombre,
-      descripcion: plan.descripcion,
-      duracionDias: plan.duracionDias,
-      maxDevices: syncedUser?.maxDevices ?? plan.maxDevices,
-      maxConcurrentStreams: plan.maxConcurrentStreams,
-      maxProfiles: plan.maxProfiles,
-      videoQuality: plan.videoQuality,
-      allowDownloads: plan.allowDownloads,
-      allowCasting: plan.allowCasting,
-      hasAds: plan.hasAds,
-      trialDays: plan.trialDays,
-      gracePeriodDays: plan.gracePeriodDays,
-      entitlements: [...plan.entitlements],
-      allowedComponentIds: [...plan.allowedComponentIds],
-      allowedCategoryIds: [...plan.allowedCategoryIds],
-    };
-  }
+  return apiFetch<AdminUserPlan>(`/admin/users/${id}/plan`, accessToken);
 }
 
 export async function adminDeleteUser(accessToken: string, id: string): Promise<void> {
-  try {
-    await apiFetch<void>(`/admin/users/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
-    mockUsersStore = mockUsersStore.map((u) => (u.id === id ? { ...u, status: 'inactive' } : u));
-    saveMockUsers();
-  }
+  await apiFetch<void>(`/admin/users/${id}`, accessToken, { method: 'DELETE' });
 }
 
 // ---------------------------------------------------------------------------
 // Plans
 // ---------------------------------------------------------------------------
 
-let mockPlansStore: AdminPlan[] = [
-  {
-    id: 'plan-basic',
-    nombre: 'Basic',
-    descripcion: 'Acceso básico a TV en vivo y VOD esencial.',
-    grupoUsuarios: 'INDIVIDUAL',
-    precio: 9.99,
-    moneda: 'USD',
-    duracionDias: 30,
-    activo: true,
-    maxDevices: 2,
-    maxConcurrentStreams: 1,
-    maxProfiles: 2,
-    videoQuality: 'HD',
-    allowDownloads: false,
-    allowCasting: true,
-    hasAds: true,
-    trialDays: 0,
-    gracePeriodDays: 2,
-    entitlements: ['live-tv', 'vod-basic'],
-    allowedComponentIds: ['comp-001', 'comp-003'],
-    allowedCategoryIds: ['cat-001', 'cat-003'],
-  },
-  {
-    id: 'plan-premium',
-    nombre: 'Premium',
-    descripcion: 'Experiencia premium con 4K, descargas y catálogo ampliado.',
-    grupoUsuarios: 'FAMILIAR',
-    precio: 29.99,
-    moneda: 'USD',
-    duracionDias: 30,
-    activo: true,
-    maxDevices: 5,
-    maxConcurrentStreams: 4,
-    maxProfiles: 6,
-    videoQuality: '4K',
-    allowDownloads: true,
-    allowCasting: true,
-    hasAds: false,
-    trialDays: 7,
-    gracePeriodDays: 5,
-    entitlements: ['live-tv', 'vod-basic', 'vod-premium', 'series', 'kids', 'sports', '4k', 'downloads'],
-    allowedComponentIds: ['comp-001', 'comp-002', 'comp-003', 'comp-004', 'comp-007', 'comp-008'],
-    allowedCategoryIds: ['cat-001', 'cat-002', 'cat-003', 'cat-004'],
-  },
-  {
-    id: 'plan-family',
-    nombre: 'Familiar',
-    descripcion: 'Plan multiusuario con perfiles ampliados para el hogar.',
-    grupoUsuarios: 'FAMILIAR',
-    precio: 19.99,
-    moneda: 'USD',
-    duracionDias: 30,
-    activo: true,
-    maxDevices: 8,
-    maxConcurrentStreams: 3,
-    maxProfiles: 7,
-    videoQuality: 'FHD',
-    allowDownloads: true,
-    allowCasting: true,
-    hasAds: false,
-    trialDays: 3,
-    gracePeriodDays: 3,
-    entitlements: ['live-tv', 'vod-basic', 'vod-premium', 'series', 'kids'],
-    allowedComponentIds: ['comp-001', 'comp-003', 'comp-004', 'comp-007'],
-    allowedCategoryIds: ['cat-003', 'cat-004'],
-  },
-  {
-    id: 'plan-ott-basic',
-    nombre: 'OTT Básico',
-    descripcion: 'Acceso OTT standalone para clientes sin bundle ISP.',
-    grupoUsuarios: 'ISP_BUNDLE',
-    precio: 0,
-    moneda: 'USD',
-    duracionDias: 30,
-    activo: true,
-    maxDevices: 3,
-    maxConcurrentStreams: 1,
-    maxProfiles: 3,
-    videoQuality: 'HD',
-    allowDownloads: false,
-    allowCasting: true,
-    hasAds: false,
-    trialDays: 0,
-    gracePeriodDays: 0,
-    entitlements: ['live-tv', 'vod-basic'],
-    allowedComponentIds: ['comp-001', 'comp-003'],
-    allowedCategoryIds: ['cat-001', 'cat-003'],
-  },
-];
-
-function getDefaultSubscriberPlan() {
-  return mockPlansStore.find((plan) => plan.activo) ?? mockPlansStore[0] ?? null;
-}
-
-function findCatalogPlan(planId?: string | null, planName?: string | null) {
-  if (planId) {
-    const byId = mockPlansStore.find((plan) => plan.id === planId);
-    if (byId) return byId;
-  }
-
-  if (planName?.trim()) {
-    const normalizedName = planName.trim().toLowerCase();
-    const byName = mockPlansStore.find((plan) => plan.nombre.trim().toLowerCase() === normalizedName);
-    if (byName) return byName;
-
-    const byDerivedId = mockPlansStore.find((plan) => plan.id === buildPlanId(planName));
-    if (byDerivedId) return byDerivedId;
-  }
-
-  return null;
-}
-
-function syncUserPlanLink(user: AdminUser): AdminUser {
-  const isSubscriber = user.role === 'cliente';
-
-  if (!isSubscriber) {
-    return {
-      ...user,
-      plan: 'Usuario CMS',
-      planId: null,
-      isCmsUser: true,
-      isSubscriber: false,
-    };
-  }
-
-  const linkedPlan = findCatalogPlan(user.planId, user.plan) ?? getDefaultSubscriberPlan();
-
-  return {
-    ...user,
-    plan: linkedPlan?.nombre ?? user.plan,
-    planId: linkedPlan?.id ?? null,
-    isCmsUser: false,
-    isSubscriber: true,
-  };
-}
-
-function syncAllMockUsersWithPlans() {
-  mockUsersStore = mockUsersStore.map((user) => syncUserPlanLink(user));
-}
-
-function clonePlan(plan: AdminPlan): AdminPlan {
-  return {
-    ...plan,
-    entitlements: [...plan.entitlements],
-    allowedComponentIds: [...plan.allowedComponentIds],
-    allowedCategoryIds: [...plan.allowedCategoryIds],
-  };
-}
-
-function buildPlanId(nombre: string) {
-  const normalized = nombre
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return normalized.startsWith('plan-') ? normalized : `plan-${normalized}`;
-}
-
-function ensureUniquePlanId(baseId: string) {
-  if (!mockPlansStore.some((plan) => plan.id === baseId)) return baseId;
-  let suffix = 2;
-  while (mockPlansStore.some((plan) => plan.id === `${baseId}-${suffix}`)) {
-    suffix += 1;
-  }
-  return `${baseId}-${suffix}`;
-}
-
 export async function adminListPlans(accessToken: string): Promise<AdminPlan[]> {
-  try { return await apiFetch<AdminPlan[]>('/admin/planes', accessToken); }
-  catch {
-    syncAllMockUsersWithPlans();
-    return mockPlansStore.map(clonePlan);
-  }
+  return apiFetch<AdminPlan[]>('/admin/planes', accessToken);
 }
 
 export async function adminCreatePlan(accessToken: string, data: AdminPlanPayload): Promise<AdminPlan> {
-  try {
-    return await apiFetch<AdminPlan>('/admin/planes', accessToken, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const newPlan: AdminPlan = {
-      ...data,
-      id: ensureUniquePlanId(buildPlanId(data.nombre)),
-      entitlements: [...data.entitlements],
-      allowedComponentIds: [...data.allowedComponentIds],
-      allowedCategoryIds: [...data.allowedCategoryIds],
-    };
-    mockPlansStore = [newPlan, ...mockPlansStore];
-    syncAllMockUsersWithPlans();
-    return clonePlan(newPlan);
-  }
+  return apiFetch<AdminPlan>('/admin/planes', accessToken, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminUpdatePlan(accessToken: string, id: string, data: Partial<AdminPlanPayload>): Promise<AdminPlan> {
-  try {
-    return await apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const index = mockPlansStore.findIndex((plan) => plan.id === id);
-    if (index === -1) throw new Error('Plan no encontrado');
-    const updated: AdminPlan = {
-      ...mockPlansStore[index],
-      ...data,
-      entitlements: data.entitlements ? [...data.entitlements] : [...mockPlansStore[index].entitlements],
-      allowedComponentIds: data.allowedComponentIds ? [...data.allowedComponentIds] : [...mockPlansStore[index].allowedComponentIds],
-      allowedCategoryIds: data.allowedCategoryIds ? [...data.allowedCategoryIds] : [...mockPlansStore[index].allowedCategoryIds],
-    };
-    mockPlansStore[index] = updated;
-    syncAllMockUsersWithPlans();
-    return clonePlan(updated);
-  }
+  return apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminTogglePlan(accessToken: string, id: string): Promise<AdminPlan> {
-  try {
-    return await apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
-    const index = mockPlansStore.findIndex((plan) => plan.id === id);
-    if (index === -1) throw new Error('Plan no encontrado');
-    mockPlansStore[index] = { ...mockPlansStore[index], activo: !mockPlansStore[index].activo };
-    syncAllMockUsersWithPlans();
-    return clonePlan(mockPlansStore[index]);
-  }
+  return apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
 }
 
 export async function adminDeletePlan(accessToken: string, id: string): Promise<void> {
-  try {
-    await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
-    mockPlansStore = mockPlansStore.filter((plan) => plan.id !== id);
-    syncAllMockUsersWithPlans();
-  }
+  await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
 }
 
 // ---------------------------------------------------------------------------
@@ -1072,17 +556,7 @@ export async function adminListBlog(accessToken: string): Promise<AdminBlogPost[
 // ---------------------------------------------------------------------------
 
 export async function adminGetMonitorStats(accessToken: string): Promise<MonitorStats> {
-  try { return await apiFetch<MonitorStats>('/admin/monitor', accessToken); }
-  catch {
-    return {
-      totalUsuarios: mockUsersStore.length,
-      usuariosActivos: mockUsersStore.filter((u) => u.status === 'active').length,
-      sesionesActivas: 12,
-      contratosActivos: mockUsersStore.filter((u) => u.contrato).length,
-      ingresosMes: 4820.50,
-      cargaServidor: 34,
-    };
-  }
+  return apiFetch<MonitorStats>('/admin/monitor', accessToken);
 }
 
 // ---------------------------------------------------------------------------

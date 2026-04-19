@@ -10,31 +10,34 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=development
-      - JWT_ACCESS_SECRET=change-me-in-production
-      - JWT_REFRESH_SECRET=change-me-in-production-refresh
-      - JWT_ACCESS_EXPIRY=15m
-      - JWT_REFRESH_EXPIRY=7d
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USERNAME=lukiplay
-      - DB_PASSWORD=lukiplay_secret
-      - DB_NAME=lukiplay_auth
+      - DATABASE_URL=postgresql://lukiplay_admin:dev_password_2026@postgres:5432/lukiplay_dev
+      - REDIS_URL=redis://redis:6379
+      - SUBSCRIBER_JWT_SECRET=dev-subscriber-jwt-secret-2026
+      - ADMIN_JWT_SECRET=dev-admin-jwt-secret-2026
+      - JWT_EXPIRATION=15m
+      - REFRESH_TOKEN_EXPIRATION=7d
+      - BCRYPT_SALT_ROUNDS=12
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     environment:
-      POSTGRES_DB: lukiplay_auth
-      POSTGRES_USER: lukiplay
-      POSTGRES_PASSWORD: lukiplay_secret
+      POSTGRES_DB: lukiplay_dev
+      POSTGRES_USER: lukiplay_admin
+      POSTGRES_PASSWORD: dev_password_2026
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lukiplay_admin -d lukiplay_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine

@@ -36,7 +36,17 @@ import { GenerateActivationCodeUseCase } from '../../application/use-cases/gener
 import { ActivateAccountUseCase } from '../../application/use-cases/activate-account.use-case';
 import { ResetPasswordWithCodeUseCase } from '../../application/use-cases/reset-password-with-code.use-case';
 import { RegisterAppUseCase } from '../../application/use-cases/register-app.use-case';
+import { ContractLoginUseCase } from '../../application/use-cases/contract-login.use-case.js';
+import { FirstAccessAppUseCase } from '../../application/use-cases/first-access-app.use-case.js';
+import { ActivateAppUseCase2 } from '../../application/use-cases/activate-app.use-case.js';
+import { SwitchContractUseCase } from '../../application/use-cases/switch-contract.use-case.js';
+import { ContractResetPasswordUseCase } from '../../application/use-cases/contract-reset-password.use-case.js';
 import { RegisterAppDto } from '../../application/dto/register-app.dto';
+import { ContractLoginDto } from '../../application/dto/contract-login.dto.js';
+import { FirstAccessAppDto } from '../../application/dto/first-access-app.dto.js';
+import { ActivateAppDto } from '../../application/dto/activate-app.dto.js';
+import { SwitchContractDto } from '../../application/dto/switch-contract.dto.js';
+import { ContractResetPasswordDto } from '../../application/dto/contract-reset-password.dto.js';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -106,6 +116,11 @@ export class AuthController {
     private readonly activateAccountUseCase: ActivateAccountUseCase,
     private readonly resetPasswordWithCodeUseCase: ResetPasswordWithCodeUseCase,
     private readonly registerAppUseCase: RegisterAppUseCase,
+    private readonly contractLoginUseCase: ContractLoginUseCase,
+    private readonly firstAccessAppUseCase: FirstAccessAppUseCase,
+    private readonly activateAppUseCase: ActivateAppUseCase2,
+    private readonly switchContractUseCase: SwitchContractUseCase,
+    private readonly contractResetPasswordUseCase: ContractResetPasswordUseCase,
   ) {}
 
   @Post('app/register')
@@ -300,5 +315,44 @@ export class AuthController {
     }
     await this.resetPasswordWithCodeUseCase.execute(dto.email, dto.code, dto.newPassword);
     return { message: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
+  }
+
+  // ─── Contract-based auth (subscribers) ───────────────────
+
+  @Post('app/contract-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login con número de contrato + contraseña (sin OTP)' })
+  async contractLogin(@Body() dto: ContractLoginDto) {
+    return this.contractLoginUseCase.execute(dto);
+  }
+
+  @Post('app/first-access')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Primera vez: verificar contrato + cédula' })
+  async firstAccess(@Body() dto: FirstAccessAppDto) {
+    return this.firstAccessAppUseCase.execute(dto);
+  }
+
+  @Post('app/activate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Activar cuenta: establecer contraseña' })
+  async activateApp(@Body() dto: ActivateAppDto) {
+    return this.activateAppUseCase.execute(dto);
+  }
+
+  @Post('app/switch-contract')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cambiar al contrato seleccionado' })
+  async switchContract(@CurrentUser() user: JwtPayload, @Body() dto: SwitchContractDto) {
+    return this.switchContractUseCase.execute(user.sub, dto.contractId);
+  }
+
+  @Post('app/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password via contrato + cédula' })
+  async contractResetPassword(@Body() dto: ContractResetPasswordDto) {
+    return this.contractResetPasswordUseCase.execute(dto);
   }
 }

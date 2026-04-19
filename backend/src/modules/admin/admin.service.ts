@@ -1,29 +1,32 @@
 import { Injectable, Inject, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, resolve } from 'path';
-import type { UserRepository } from '../auth/domain/interfaces/user.repository';
-import { USER_REPOSITORY } from '../auth/domain/interfaces/user.repository';
-import { User, UserRole, UserStatus } from '../auth/domain/entities/user.entity';
-import { Account, ContractType, ServiceStatus, SessionLimitPolicy, SubscriptionStatus } from '../auth/domain/entities/account.entity';
-import { ACCOUNT_REPOSITORY } from '../auth/domain/interfaces/account.repository';
-import type { AccountRepository } from '../auth/domain/interfaces/account.repository';
-import { HASH_SERVICE } from '../auth/domain/interfaces/hash.service';
-import type { HashService } from '../auth/domain/interfaces/hash.service';
-import { SESSION_REPOSITORY } from '../auth/domain/interfaces/session.repository';
-import type { SessionRepository } from '../auth/domain/interfaces/session.repository';
-import { EMAIL_SERVICE } from '../auth/domain/interfaces/email.service';
-import type { EmailService } from '../auth/domain/interfaces/email.service';
-import { CreateCmsUserUseCase } from '../auth/application/use-cases/create-cms-user.use-case';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { SetUserPasswordDto } from './dto/set-user-password.dto';
-import { CanalTipoDto, CreateCanalDto } from './dto/create-canal.dto';
-import { CreateCategoriaDto } from './dto/create-categoria.dto';
-import { UpdateCategoriaDto } from './dto/update-categoria.dto';
-import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto';
-import { UpdateCanalDto } from './dto/update-canal.dto';
-import { UpdatePlanDto } from './dto/update-plan.dto';
+import { PrismaService } from '../prisma/prisma.service.js';
+import {
+  UserStatus as PrismaUserStatus,
+  UserRole as PrismaUserRole,
+  SessionLimitPolicy as PrismaSessionLimitPolicy,
+} from '../../../generated/prisma/client.js';
+import { UserRole, UserStatus } from '../auth/domain/entities/user.entity.js';
+import { SessionLimitPolicy } from '../auth/domain/entities/account.entity.js';
+import { HASH_SERVICE } from '../auth/domain/interfaces/hash.service.js';
+import type { HashService } from '../auth/domain/interfaces/hash.service.js';
+import { EMAIL_SERVICE } from '../auth/domain/interfaces/email.service.js';
+import type { EmailService } from '../auth/domain/interfaces/email.service.js';
+import { CreateCmsUserUseCase } from '../auth/application/use-cases/create-cms-user.use-case.js';
+import { toAdminUser } from './utils/to-admin-user.js';
+import type { AdminUser } from './utils/to-admin-user.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { UpdateUserDto } from './dto/update-user.dto.js';
+import { SetUserPasswordDto } from './dto/set-user-password.dto.js';
+import { CanalTipoDto, CreateCanalDto } from './dto/create-canal.dto.js';
+import { CreateCategoriaDto } from './dto/create-categoria.dto.js';
+import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
+import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto.js';
+import { UpdateCanalDto } from './dto/update-canal.dto.js';
+import { UpdatePlanDto } from './dto/update-plan.dto.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // ---------------------------------------------------------------------------
@@ -164,10 +167,8 @@ export class AdminService {
   ];
 
   constructor(
-    @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
-    @Inject(ACCOUNT_REPOSITORY) private readonly accountRepository: AccountRepository,
+    private readonly prisma: PrismaService,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
-    @Inject(SESSION_REPOSITORY) private readonly sessionRepository: SessionRepository,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
     private readonly createCmsUserUseCase: CreateCmsUserUseCase,
   ) {}
@@ -185,114 +186,6 @@ export class AdminService {
     { id: 'comp-008', nombre: 'Deportes',       descripcion: 'Canales y eventos deportivos en vivo y bajo demanda',                                        icono: 'futbol-o',    tipo: 'DEPORTES',   activo: true,  orden: 8 },
     { id: 'comp-009', nombre: 'Música',         descripcion: 'Canales de música, videoclips y conciertos en streaming',                                    icono: 'music',       tipo: 'MUSICA',     activo: false, orden: 9 },
     { id: 'comp-010', nombre: 'Noticias',       descripcion: 'Canales de noticias nacionales e internacionales 24/7',                                      icono: 'newspaper-o', tipo: 'NOTICIAS',   activo: true,  orden: 10 },
-  ];
-
-
-
-  private planes: OttPlan[] = [
-    {
-      id: 'plan-basic',
-      nombre: 'Basic',
-      descripcion: 'Acceso básico a TV en vivo y VOD esencial.',
-      grupoUsuarios: PlanUserGroupDto.INDIVIDUAL,
-      precio: 9.99,
-      moneda: 'USD',
-      duracionDias: 30,
-      activo: true,
-      maxDevices: 2,
-      maxConcurrentStreams: 1,
-      maxProfiles: 2,
-      videoQuality: PlanVideoQualityDto.HD,
-      allowDownloads: false,
-      allowCasting: true,
-      hasAds: true,
-      trialDays: 0,
-      gracePeriodDays: 2,
-      entitlements: [PlanEntitlementDto.LIVE_TV, PlanEntitlementDto.VOD_BASIC],
-      allowedComponentIds: ['comp-001', 'comp-003'],
-      allowedCategoryIds: ['cat-001', 'cat-003'],
-    },
-    {
-      id: 'plan-premium',
-      nombre: 'Premium',
-      descripcion: 'Experiencia premium con 4K, descargas y catálogo ampliado.',
-      grupoUsuarios: PlanUserGroupDto.FAMILIAR,
-      precio: 29.99,
-      moneda: 'USD',
-      duracionDias: 30,
-      activo: true,
-      maxDevices: 5,
-      maxConcurrentStreams: 4,
-      maxProfiles: 6,
-      videoQuality: PlanVideoQualityDto.UHD_4K,
-      allowDownloads: true,
-      allowCasting: true,
-      hasAds: false,
-      trialDays: 7,
-      gracePeriodDays: 5,
-      entitlements: [
-        PlanEntitlementDto.LIVE_TV,
-        PlanEntitlementDto.VOD_BASIC,
-        PlanEntitlementDto.VOD_PREMIUM,
-        PlanEntitlementDto.SERIES,
-        PlanEntitlementDto.KIDS,
-        PlanEntitlementDto.SPORTS,
-        PlanEntitlementDto.ULTRA_HD,
-        PlanEntitlementDto.DOWNLOADS,
-      ],
-      allowedComponentIds: ['comp-001', 'comp-002', 'comp-003', 'comp-004', 'comp-007', 'comp-008'],
-      allowedCategoryIds: ['cat-001', 'cat-002', 'cat-003', 'cat-004'],
-    },
-    {
-      id: 'plan-family',
-      nombre: 'Familiar',
-      descripcion: 'Plan multiusuario con perfiles ampliados para el hogar.',
-      grupoUsuarios: PlanUserGroupDto.FAMILIAR,
-      precio: 19.99,
-      moneda: 'USD',
-      duracionDias: 30,
-      activo: true,
-      maxDevices: 8,
-      maxConcurrentStreams: 3,
-      maxProfiles: 7,
-      videoQuality: PlanVideoQualityDto.FHD,
-      allowDownloads: true,
-      allowCasting: true,
-      hasAds: false,
-      trialDays: 3,
-      gracePeriodDays: 3,
-      entitlements: [
-        PlanEntitlementDto.LIVE_TV,
-        PlanEntitlementDto.VOD_BASIC,
-        PlanEntitlementDto.VOD_PREMIUM,
-        PlanEntitlementDto.SERIES,
-        PlanEntitlementDto.KIDS,
-      ],
-      allowedComponentIds: ['comp-001', 'comp-003', 'comp-004', 'comp-007'],
-      allowedCategoryIds: ['cat-003', 'cat-004'],
-    },
-    {
-      id: 'plan-ott-basic',
-      nombre: 'OTT Básico',
-      descripcion: 'Acceso OTT standalone para clientes sin bundle ISP.',
-      grupoUsuarios: PlanUserGroupDto.ISP_BUNDLE,
-      precio: 0,
-      moneda: 'USD',
-      duracionDias: 30,
-      activo: true,
-      maxDevices: 3,
-      maxConcurrentStreams: 1,
-      maxProfiles: 3,
-      videoQuality: PlanVideoQualityDto.HD,
-      allowDownloads: false,
-      allowCasting: true,
-      hasAds: false,
-      trialDays: 0,
-      gracePeriodDays: 0,
-      entitlements: [PlanEntitlementDto.LIVE_TV, PlanEntitlementDto.VOD_BASIC],
-      allowedComponentIds: ['comp-001', 'comp-003'],
-      allowedCategoryIds: ['cat-001', 'cat-003'],
-    },
   ];
 
   // ---- Componentes ---------------------------------------------------------
@@ -318,27 +211,48 @@ export class AdminService {
 
   // ---- Users ---------------------------------------------------------------
 
-  async listUsers(): Promise<AdminUserRecord[]> {
-    const allUsers = await this.getAllUsers();
-    return Promise.all(allUsers.map((user) => this.mapUserRecord(user)));
+  async listUsers(): Promise<AdminUser[]> {
+    const customers = await this.prisma.customer.findMany({
+      where: { deletedAt: null },
+      include: { contracts: { where: { deletedAt: null } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const sessionCounts = await this.prisma.session.groupBy({
+      by: ['contractId'],
+      where: { revokedAt: null, expiresAt: { gt: new Date() } },
+      _count: true,
+    });
+    const sessionMap = new Map(sessionCounts.map(s => [s.contractId, s._count]));
+
+    return customers.map(c => {
+      const contractIds = c.contracts.map(ct => ct.id);
+      const activeSessions = contractIds.reduce((sum, cid) => sum + (sessionMap.get(cid) ?? 0), 0);
+      return toAdminUser(c, activeSessions);
+    });
   }
 
-  async getUser(id: string): Promise<AdminUserRecord> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    return this.mapUserRecord(user);
+  async getUser(id: string): Promise<AdminUser> {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+      include: { contracts: { where: { deletedAt: null } } },
+    });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
+    const activeSessions = await this.countActiveSessions(id);
+    return toAdminUser(customer, activeSessions);
   }
 
-  async createUser(dto: CreateUserDto): Promise<AdminUserRecord> {
+  async createUser(dto: CreateUserDto): Promise<AdminUser> {
     const normalizedEmail = dto.email.trim().toLowerCase();
-    const existingUser = await this.userRepository.findByEmail(normalizedEmail);
-    if (existingUser) {
+    const existing = await this.prisma.customer.findUnique({ where: { email: normalizedEmail } });
+    if (existing && !existing.deletedAt) {
       throw new ConflictException('Ya existe un usuario con ese correo.');
     }
 
     const role = dto.role ?? UserRole.CLIENTE;
     const status = dto.status ?? UserStatus.ACTIVE;
 
+    // CMS user path
     if (role === UserRole.SUPERADMIN || role === UserRole.SOPORTE) {
       const firstName = dto.firstName?.trim() || this.extractNames(dto.nombre).firstName;
       const lastName = dto.lastName?.trim() || this.extractNames(dto.nombre).lastName;
@@ -355,194 +269,177 @@ export class AdminService {
         createdBy: 'usr-admin-001',
       });
 
-      const cmsUser = await this.userRepository.findById(created.id);
-      if (!cmsUser) throw new NotFoundException('No se pudo recuperar el usuario creado.');
-      cmsUser.status = status;
-      await this.userRepository.save(cmsUser);
-      return this.mapUserRecord(cmsUser);
+      const customer = await this.prisma.customer.update({
+        where: { id: created.id },
+        data: { status: this.toPrismaStatus(status) },
+        include: { contracts: { where: { deletedAt: null } } },
+      });
+
+      return toAdminUser(customer, 0);
     }
 
-    const selectedPlan = this.resolvePlan(dto.planId ?? dto.plan);
-    const contractNumber = this.buildContractNumber(dto.contrato);
-    const contractOwner = await this.userRepository.findByContractNumber(contractNumber);
-    if (contractOwner) {
-      throw new ConflictException('Ese contrato ya está asociado a un usuario.');
-    }
-
-    const existingAccount = await this.accountRepository.findByContractNumber(contractNumber);
-    if (existingAccount) {
-      throw new ConflictException('Ese contrato ya está asociado a una cuenta.');
-    }
-
+    // Regular CLIENTE user path
     const names = this.extractNames(dto.nombre);
-    const account = new Account({
-      id: `acc-${uuidv4().slice(0, 8)}`,
-      contractNumber,
-      contractType: ContractType.OTT_ONLY,
-      isIspCustomer: false,
-      planId: selectedPlan.id,
-      subscriptionStatus: status === UserStatus.SUSPENDED ? SubscriptionStatus.SUSPENDED : SubscriptionStatus.ACTIVE,
-      serviceStatus: status === UserStatus.SUSPENDED ? ServiceStatus.SUSPENDIDO : null,
-      maxDevices: dto.maxDevices ?? selectedPlan.maxDevices ?? 3,
-      sessionDurationDays: dto.sessionDurationDays ?? 30,
-      sessionLimitPolicy: dto.sessionLimitPolicy ?? SessionLimitPolicy.BLOCK_NEW,
-    });
-    await this.accountRepository.save(account);
+    const passwordHash = await bcrypt.hash(randomBytes(16).toString('hex'), 10);
 
-    const user = new User({
-      id: `usr-${uuidv4().slice(0, 8)}`,
-      contractNumber,
-      email: normalizedEmail,
-      phone: dto.telefono?.trim() || null,
-      passwordHash: await this.hashService.hash(randomBytes(16).toString('hex')),
-      role: UserRole.CLIENTE,
-      status,
-      accountId: account.id,
-      createdAt: new Date(),
-      firstName: names.firstName,
-      lastName: names.lastName,
-      mustChangePassword: false,
+    const contractData = dto.contrato
+      ? (() => {
+          const contractNumber = this.buildContractNumber(dto.contrato);
+          return {
+            contracts: {
+              create: {
+                contractNumber,
+                planName: dto.plan ?? dto.planId ?? 'LUKI PLAY',
+                maxDevices: dto.maxDevices ?? 3,
+                sessionDurationDays: dto.sessionDurationDays ?? 30,
+                sessionLimitPolicy: this.toPrismaSessionLimitPolicy(dto.sessionLimitPolicy),
+                fechaInicio: new Date(),
+                fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              },
+            },
+          };
+        })()
+      : {};
+
+    const customer = await this.prisma.customer.create({
+      data: {
+        nombre: dto.nombre?.trim() || normalizedEmail.split('@')[0],
+        firstName: dto.firstName?.trim() || names.firstName,
+        lastName: dto.lastName?.trim() || names.lastName,
+        email: normalizedEmail,
+        telefono: dto.telefono?.trim() || null,
+        passwordHash,
+        role: this.toPrismaRole(role),
+        status: this.toPrismaStatus(status),
+        isSubscriber: true,
+        ...contractData,
+      },
+      include: { contracts: { where: { deletedAt: null } } },
     });
 
-    await this.userRepository.save(user);
-    return this.mapUserRecord(user);
+    return toAdminUser(customer, 0);
   }
 
-  async updateUser(id: string, dto: UpdateUserDto): Promise<AdminUserRecord> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-
-    if (dto.email && dto.email.trim().toLowerCase() !== user.email.toLowerCase()) {
-      const existing = await this.userRepository.findByEmail(dto.email.trim().toLowerCase());
-      if (existing && existing.id !== user.id) {
-        throw new ConflictException('Ya existe un usuario con ese correo.');
-      }
-      (user as unknown as { email: string }).email = dto.email.trim().toLowerCase();
-    }
-
-    if (dto.telefono !== undefined) {
-      (user as unknown as { phone: string | null }).phone = dto.telefono?.trim() || null;
-    }
-
-    if (dto.status) {
-      user.status = dto.status;
-    }
-
-    if (user.isCmsUser()) {
-      const names = this.extractNames(dto.nombre);
-      user.firstName = dto.firstName?.trim() || names.firstName || user.firstName;
-      user.lastName = dto.lastName?.trim() || names.lastName || user.lastName;
-
-      if (dto.role && dto.role !== UserRole.CLIENTE) {
-        user.role = dto.role;
-      }
-
-      await this.userRepository.save(user);
-      return this.mapUserRecord(user);
-    }
-
-    const names = this.extractNames(dto.nombre);
-    user.firstName = dto.firstName?.trim() || names.firstName || user.firstName;
-    user.lastName = dto.lastName?.trim() || names.lastName || user.lastName;
-
-    const currentAccount = user.accountId ? await this.accountRepository.findById(user.accountId) : null;
-    const plan = this.resolvePlan(dto.planId ?? dto.plan ?? currentAccount?.planId ?? 'plan-ott-basic');
-    const contractNumber = this.buildContractNumber(dto.contrato ?? user.contractNumber ?? undefined);
-
-    if (contractNumber !== (user.contractNumber ?? '')) {
-      const existingContractUser = await this.userRepository.findByContractNumber(contractNumber);
-      if (existingContractUser && existingContractUser.id !== user.id) {
-        throw new ConflictException('Ese contrato ya está asociado a otro usuario.');
-      }
-    }
-
-    const account = new Account({
-      id: currentAccount?.id ?? `acc-${uuidv4().slice(0, 8)}`,
-      contractNumber,
-      contractType: currentAccount?.contractType ?? ContractType.OTT_ONLY,
-      isIspCustomer: currentAccount?.isIspCustomer ?? false,
-      planId: plan.id,
-      subscriptionStatus: user.status === UserStatus.SUSPENDED || user.status === UserStatus.INACTIVE ? SubscriptionStatus.SUSPENDED : SubscriptionStatus.ACTIVE,
-      serviceStatus: user.status === UserStatus.SUSPENDED || user.status === UserStatus.INACTIVE ? ServiceStatus.SUSPENDIDO : currentAccount?.serviceStatus ?? null,
-      maxDevices: dto.maxDevices ?? currentAccount?.maxDevices ?? plan.maxDevices ?? 3,
-      sessionDurationDays: dto.sessionDurationDays ?? currentAccount?.sessionDurationDays ?? 30,
-      sessionLimitPolicy: dto.sessionLimitPolicy ?? currentAccount?.sessionLimitPolicy ?? SessionLimitPolicy.BLOCK_NEW,
+  async updateUser(id: string, dto: UpdateUserDto): Promise<AdminUser> {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+      include: { contracts: { where: { deletedAt: null } } },
     });
-    await this.accountRepository.save(account);
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    (user as unknown as { contractNumber: string | null }).contractNumber = contractNumber;
-    (user as unknown as { accountId: string | null }).accountId = account.id;
-    await this.userRepository.save(user);
-    return this.mapUserRecord(user);
+    if (dto.email) {
+      const normalizedEmail = dto.email.trim().toLowerCase();
+      if (normalizedEmail !== customer.email?.toLowerCase()) {
+        const dup = await this.prisma.customer.findUnique({ where: { email: normalizedEmail } });
+        if (dup && dup.id !== id) {
+          throw new ConflictException('Ya existe un usuario con ese correo.');
+        }
+      }
+    }
+
+    const names = dto.nombre !== undefined && dto.firstName === undefined && dto.lastName === undefined
+      ? this.extractNames(dto.nombre)
+      : { firstName: null, lastName: null };
+
+    await this.prisma.customer.update({
+      where: { id },
+      data: {
+        ...(dto.nombre !== undefined ? { nombre: dto.nombre.trim() } : {}),
+        ...(dto.firstName !== undefined
+          ? { firstName: dto.firstName.trim() }
+          : names.firstName
+            ? { firstName: names.firstName }
+            : {}),
+        ...(dto.lastName !== undefined
+          ? { lastName: dto.lastName.trim() }
+          : names.lastName
+            ? { lastName: names.lastName }
+            : {}),
+        ...(dto.email ? { email: dto.email.trim().toLowerCase() } : {}),
+        ...(dto.telefono !== undefined ? { telefono: dto.telefono?.trim() || null } : {}),
+        ...(dto.status ? { status: this.toPrismaStatus(dto.status) } : {}),
+      },
+    });
+
+    // Update contract-related fields on first contract
+    const contract = customer.contracts[0];
+    if (contract && (dto.maxDevices !== undefined || dto.sessionDurationDays !== undefined || dto.sessionLimitPolicy !== undefined)) {
+      await this.prisma.contract.update({
+        where: { id: contract.id },
+        data: {
+          ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
+          ...(dto.sessionDurationDays !== undefined ? { sessionDurationDays: dto.sessionDurationDays } : {}),
+          ...(dto.sessionLimitPolicy !== undefined ? { sessionLimitPolicy: this.toPrismaSessionLimitPolicy(dto.sessionLimitPolicy) } : {}),
+        },
+      });
+    }
+
+    const updated = await this.prisma.customer.findUniqueOrThrow({
+      where: { id },
+      include: { contracts: { where: { deletedAt: null } } },
+    });
+    const activeSessions = await this.countActiveSessions(id);
+    return toAdminUser(updated, activeSessions);
   }
 
   async deleteUser(id: string): Promise<void> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    user.status = UserStatus.INACTIVE;
-    await this.userRepository.save(user);
+    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
+
+    const now = new Date();
+    await this.prisma.customer.update({ where: { id }, data: { deletedAt: now } });
+    await this.prisma.contract.updateMany({ where: { customerId: id, deletedAt: null }, data: { deletedAt: now } });
   }
 
-  async updateUserStatus(id: string, status: UserStatus): Promise<AdminUserRecord> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    user.status = status;
-    await this.userRepository.save(user);
+  async updateUserStatus(id: string, status: UserStatus): Promise<AdminUser> {
+    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    if (user.accountId) {
-      const account = await this.accountRepository.findById(user.accountId);
-      if (account) {
-        account.subscriptionStatus = status === UserStatus.SUSPENDED || status === UserStatus.INACTIVE ? SubscriptionStatus.SUSPENDED : SubscriptionStatus.ACTIVE;
-        account.serviceStatus = status === UserStatus.SUSPENDED || status === UserStatus.INACTIVE ? ServiceStatus.SUSPENDIDO : account.serviceStatus;
-        await this.accountRepository.save(account);
-      }
-    }
-
-    return this.mapUserRecord(user);
+    const updated = await this.prisma.customer.update({
+      where: { id },
+      data: { status: this.toPrismaStatus(status) },
+      include: { contracts: { where: { deletedAt: null } } },
+    });
+    const activeSessions = await this.countActiveSessions(id);
+    return toAdminUser(updated, activeSessions);
   }
 
   async setUserPassword(id: string, dto: SetUserPasswordDto): Promise<{ message: string }> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    const passwordHash = await this.hashService.hash(dto.newPassword);
-    await this.userRepository.updatePassword(user.id, passwordHash);
-
-    const refreshedUser = await this.userRepository.findById(id);
-    if (refreshedUser) {
-      refreshedUser.mustChangePassword = true;
-      refreshedUser.failedAttempts = 0;
-      refreshedUser.lockedUntil = null;
-      await this.userRepository.save(refreshedUser);
-    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.customer.update({
+      where: { id },
+      data: { passwordHash, mustChangePassword: true, isLocked: false, lockedUntil: null },
+    });
 
     if (dto.revokeSessions !== false) {
-      await this.revokeAllSessionsInternal(user.id);
+      await this.revokeAllSessionsForCustomer(id);
     }
 
     return { message: 'Contraseña actualizada y sesiones revocadas.' };
   }
 
   async generateAndSendPassword(id: string): Promise<{ message: string }> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const password = this.generateSecurePassword();
-    const passwordHash = await this.hashService.hash(password);
-    await this.userRepository.updatePassword(user.id, passwordHash);
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.customer.update({
+      where: { id },
+      data: { passwordHash, mustChangePassword: true, isLocked: false, lockedUntil: null },
+    });
 
-    const refreshedUser = await this.userRepository.findById(id);
-    if (refreshedUser) {
-      refreshedUser.mustChangePassword = true;
-      refreshedUser.failedAttempts = 0;
-      refreshedUser.lockedUntil = null;
-      await this.userRepository.save(refreshedUser);
-    }
+    await this.revokeAllSessionsForCustomer(id);
 
-    await this.revokeAllSessionsInternal(user.id);
-    await this.emailService.sendGeneratedPassword(user.email, password, user.displayName());
+    const displayName = customer.firstName
+      ? `${customer.firstName} ${customer.lastName ?? ''}`.trim()
+      : customer.email?.split('@')[0] ?? 'Usuario';
 
-    return { message: `Contraseña generada y enviada a ${user.email}` };
+    await this.emailService.sendGeneratedPassword(customer.email ?? '', password, displayName);
+    return { message: `Contraseña generada y enviada a ${customer.email}` };
   }
 
   /**
@@ -580,156 +477,177 @@ export class AdminService {
   }
 
   async listUserSessions(id: string): Promise<AdminUserSessionRecord[]> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+      include: { contracts: { select: { id: true } } },
+    });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    const sessions = await this.sessionRepository.findByUserId(id);
-    return sessions
-      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
-      .map((session) => ({
-        id: session.id,
-        deviceId: session.deviceId,
-        audience: session.audience,
-        createdAt: session.createdAt.toISOString(),
-        expiresAt: session.expiresAt.toISOString(),
-        revokedAt: session.revokedAt?.toISOString() ?? null,
-        status: session.revokedAt ? 'revoked' : session.isExpired() ? 'expired' : 'active',
-      }));
+    const contractIds = customer.contracts.map(c => c.id);
+    const sessions = await this.prisma.session.findMany({
+      where: { contractId: { in: contractIds } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const now = new Date();
+    return sessions.map(s => ({
+      id: s.id,
+      deviceId: s.deviceId,
+      audience: s.audience,
+      createdAt: s.createdAt.toISOString(),
+      expiresAt: s.expiresAt.toISOString(),
+      revokedAt: s.revokedAt?.toISOString() ?? null,
+      status: (s.revokedAt ? 'revoked' : s.expiresAt < now ? 'expired' : 'active') as AdminUserSessionRecord['status'],
+    }));
   }
 
   async revokeUserSession(id: string, sessionId: string): Promise<{ message: string }> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+      include: { contracts: { select: { id: true } } },
+    });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    const session = await this.sessionRepository.findById(sessionId);
-    if (!session || session.userId !== id) {
+    const contractIds = customer.contracts.map(c => c.id);
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session || !contractIds.includes(session.contractId)) {
       throw new NotFoundException('La sesión indicada no existe para este usuario.');
     }
 
-    session.revokedAt = new Date();
-    await this.sessionRepository.save(session);
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
     return { message: 'Sesión revocada.' };
   }
 
   async revokeAllUserSessions(id: string): Promise<{ message: string }> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    await this.revokeAllSessionsInternal(id);
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+      include: { contracts: { select: { id: true } } },
+    });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
+    await this.revokeAllSessionsForCustomer(id);
     return { message: 'Todas las sesiones fueron revocadas.' };
   }
 
   async getUserPlan(id: string): Promise<AdminUserPlanRecord> {
-    const user = await this.userRepository.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+      include: { contracts: { where: { deletedAt: null }, take: 1 } },
+    });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    const account = user.accountId ? await this.accountRepository.findById(user.accountId) : null;
-    const plan = this.resolvePlan(account?.planId);
+    const contract = customer.contracts[0];
+    const plan = contract
+      ? await this.prisma.plan.findFirst({ where: { nombre: contract.planName } })
+      : null;
+
     return {
-      id: plan.id,
-      nombre: plan.nombre,
-      descripcion: plan.descripcion,
-      duracionDias: plan.duracionDias,
-      maxDevices: plan.maxDevices || 3,
-      maxConcurrentStreams: plan.maxConcurrentStreams,
-      maxProfiles: plan.maxProfiles,
-      videoQuality: plan.videoQuality,
-      allowDownloads: plan.allowDownloads,
-      allowCasting: plan.allowCasting,
-      hasAds: plan.hasAds,
-      trialDays: plan.trialDays,
-      gracePeriodDays: plan.gracePeriodDays,
-      entitlements: [...plan.entitlements],
-      allowedComponentIds: [...plan.allowedComponentIds],
-      allowedCategoryIds: [...plan.allowedCategoryIds],
+      id: plan?.id ?? contract?.id ?? id,
+      nombre: plan?.nombre ?? contract?.planName ?? 'LUKI PLAY',
+      descripcion: plan?.descripcion ?? '',
+      duracionDias: contract?.sessionDurationDays ?? 30,
+      maxDevices: plan?.maxDevices ?? contract?.maxDevices ?? 3,
+      maxConcurrentStreams: plan?.maxConcurrentStreams ?? contract?.maxConcurrentStreams ?? 1,
+      maxProfiles: plan?.maxProfiles ?? 3,
+      videoQuality: (plan?.videoQuality ?? 'HD') as PlanVideoQualityDto,
+      allowDownloads: plan?.allowDownloads ?? false,
+      allowCasting: plan?.allowCasting ?? true,
+      hasAds: plan?.hasAds ?? true,
+      trialDays: 0,
+      gracePeriodDays: 0,
+      entitlements: (plan?.entitlements ?? []) as PlanEntitlementDto[],
+      allowedComponentIds: (plan?.allowedComponentIds ?? []) as string[],
+      allowedCategoryIds: (plan?.allowedCategoryIds ?? []) as string[],
     };
   }
 
   // ---- Monitor -------------------------------------------------------------
 
   async getMonitorStats() {
-    const users = await this.getAllUsers();
-    const active = users.filter((u) => u.status === UserStatus.ACTIVE);
-    const withContract = users.filter((u) => u.contractNumber);
+    const [totalUsuarios, usuariosActivos, contratosActivos] = await Promise.all([
+      this.prisma.customer.count({ where: { deletedAt: null } }),
+      this.prisma.customer.count({ where: { deletedAt: null, status: PrismaUserStatus.ACTIVE } }),
+      this.prisma.contract.count({ where: { deletedAt: null } }),
+    ]);
 
     return {
-      totalUsuarios: users.length,
-      usuariosActivos: active.length,
+      totalUsuarios,
+      usuariosActivos,
       sesionesActivas: Math.floor(Math.random() * 20) + 5,
-      contratosActivos: withContract.length,
-      ingresosMes: parseFloat((withContract.length * 19.99).toFixed(2)),
+      contratosActivos,
+      ingresosMes: parseFloat((contratosActivos * 19.99).toFixed(2)),
       cargaServidor: Math.floor(Math.random() * 40) + 20,
     };
   }
 
-  // ---- Stub data for future modules ----------------------------------------
+  // ---- Plans (Prisma) -------------------------------------------------------
 
-  getPlanes() {
-    return this.planes.map((plan) => this.clonePlan(plan));
+  async getPlanes() {
+    return this.prisma.plan.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
   async createPlan(dto: CreatePlanDto) {
     await this.validatePlanReferences(dto.allowedComponentIds, dto.allowedCategoryIds ?? []);
 
-    const baseId = this.slugifyPlanId(dto.nombre);
-    const id = this.ensureUniquePlanId(baseId);
-
-    const plan: OttPlan = {
-      id,
-      nombre: dto.nombre,
-      descripcion: dto.descripcion,
-      grupoUsuarios: dto.grupoUsuarios,
-      precio: dto.precio,
-      moneda: dto.moneda ?? 'USD',
-      duracionDias: dto.duracionDias,
-      activo: dto.activo ?? true,
-      maxDevices: dto.maxDevices,
-      maxConcurrentStreams: dto.maxConcurrentStreams,
-      maxProfiles: dto.maxProfiles,
-      videoQuality: dto.videoQuality,
-      allowDownloads: dto.allowDownloads ?? false,
-      allowCasting: dto.allowCasting ?? true,
-      hasAds: dto.hasAds ?? false,
-      trialDays: dto.trialDays ?? 0,
-      gracePeriodDays: dto.gracePeriodDays ?? 0,
-      entitlements: [...dto.entitlements],
-      allowedComponentIds: [...dto.allowedComponentIds],
-      allowedCategoryIds: [...(dto.allowedCategoryIds ?? [])],
-    };
-
-    this.planes = [plan, ...this.planes];
-    return this.clonePlan(plan);
+    return this.prisma.plan.create({
+      data: {
+        nombre: dto.nombre,
+        descripcion: dto.descripcion,
+        activo: dto.activo ?? true,
+        maxDevices: dto.maxDevices,
+        maxConcurrentStreams: dto.maxConcurrentStreams,
+        maxProfiles: dto.maxProfiles,
+        videoQuality: dto.videoQuality,
+        allowDownloads: dto.allowDownloads ?? false,
+        allowCasting: dto.allowCasting ?? true,
+        hasAds: dto.hasAds ?? false,
+        entitlements: dto.entitlements as string[],
+        allowedComponentIds: dto.allowedComponentIds,
+        allowedCategoryIds: (dto.allowedCategoryIds ?? []) as string[],
+      },
+    });
   }
 
   async updatePlan(id: string, dto: UpdatePlanDto) {
-    const plan = this.planes.find((item) => item.id === id);
-    if (!plan) throw new NotFoundException(`Plan ${id} not found`);
+    const existing = await this.prisma.plan.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException(`Plan ${id} not found`);
 
-    const nextComponentIds = dto.allowedComponentIds ?? plan.allowedComponentIds;
-    const nextCategoryIds = dto.allowedCategoryIds ?? plan.allowedCategoryIds;
+    const nextComponentIds = dto.allowedComponentIds ?? (existing.allowedComponentIds as string[]);
+    const nextCategoryIds = dto.allowedCategoryIds ?? (existing.allowedCategoryIds as string[]);
     await this.validatePlanReferences(nextComponentIds, nextCategoryIds);
 
-    Object.assign(plan, {
-      ...dto,
-      moneda: dto.moneda ?? plan.moneda,
-      entitlements: dto.entitlements ? [...dto.entitlements] : plan.entitlements,
-      allowedComponentIds: [...nextComponentIds],
-      allowedCategoryIds: [...nextCategoryIds],
+    return this.prisma.plan.update({
+      where: { id },
+      data: {
+        ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
+        ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
+        ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
+        ...(dto.maxConcurrentStreams !== undefined ? { maxConcurrentStreams: dto.maxConcurrentStreams } : {}),
+        ...(dto.maxProfiles !== undefined ? { maxProfiles: dto.maxProfiles } : {}),
+        ...(dto.videoQuality !== undefined ? { videoQuality: dto.videoQuality } : {}),
+        ...(dto.allowDownloads !== undefined ? { allowDownloads: dto.allowDownloads } : {}),
+        ...(dto.allowCasting !== undefined ? { allowCasting: dto.allowCasting } : {}),
+        ...(dto.hasAds !== undefined ? { hasAds: dto.hasAds } : {}),
+        ...(dto.entitlements ? { entitlements: dto.entitlements as string[] } : {}),
+        allowedComponentIds: nextComponentIds,
+        allowedCategoryIds: nextCategoryIds,
+      },
     });
-
-    return this.clonePlan(plan);
   }
 
-  togglePlan(id: string) {
-    const plan = this.planes.find((item) => item.id === id);
+  async togglePlan(id: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id } });
     if (!plan) throw new NotFoundException(`Plan ${id} not found`);
-    plan.activo = !plan.activo;
-    return this.clonePlan(plan);
+    return this.prisma.plan.update({ where: { id }, data: { activo: !plan.activo } });
   }
 
-  deletePlan(id: string): void {
-    const exists = this.planes.some((item) => item.id === id);
-    if (!exists) throw new NotFoundException(`Plan ${id} not found`);
-    this.planes = this.planes.filter((item) => item.id !== id);
+  async deletePlan(id: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id } });
+    if (!plan) throw new NotFoundException(`Plan ${id} not found`);
+    await this.prisma.plan.delete({ where: { id } });
   }
 
   getSliders() {
@@ -996,10 +914,6 @@ export class AdminService {
 
   // ---- Helpers -------------------------------------------------------------
 
-  private async getAllUsers(): Promise<User[]> {
-    return this.userRepository.findAll();
-  }
-
   private cloneCanal(canal: AdminCanalRecord): AdminCanalRecord {
     return { ...canal };
   }
@@ -1061,56 +975,8 @@ export class AdminService {
     this.canalesCache = normalized;
   }
 
-  private async mapUserRecord(user: User): Promise<AdminUserRecord> {
-    const now = new Date();
-    const start = new Date(user.createdAt ?? now);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 30);
-    const sessions = await this.sessionRepository.findByUserId(user.id);
-    const activeSessions = sessions.filter((session) => !session.isExpired() && !session.isRevoked());
-    const account = user.accountId ? await this.accountRepository.findById(user.accountId) : null;
-    const plan = account ? this.planes.find((item) => item.id === account.planId) ?? null : null;
-
-    return {
-      id: user.id,
-      nombre: user.isCmsUser() ? user.displayName() : user.displayName().toUpperCase(),
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      telefono: user.phone ?? null,
-      plan: plan?.nombre ?? (user.isCmsUser() ? 'Usuario CMS' : 'OTT Básico'),
-      planId: plan?.id ?? null,
-      fechaInicio: start.toISOString().slice(0, 10),
-      fechaFin: end.toISOString().slice(0, 10),
-      sesiones: activeSessions.length,
-      contrato: user.contractNumber ?? null,
-      status: user.status,
-      role: user.role,
-      mustChangePassword: user.mustChangePassword,
-      mfaEnabled: user.mfaEnabled,
-      isLocked: user.isLocked(),
-      lockedUntil: user.lockedUntil?.toISOString() ?? null,
-      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
-      maxDevices: account?.maxDevices ?? plan?.maxDevices ?? 3,
-      sessionDurationDays: account?.sessionDurationDays ?? (user.isCmsUser() ? 7 : 30),
-      sessionLimitPolicy: account?.sessionLimitPolicy ?? SessionLimitPolicy.BLOCK_NEW,
-      isCmsUser: user.isCmsUser(),
-      isSubscriber: user.isClient(),
-    };
-  }
-
-  private clonePlan(plan: OttPlan): OttPlan {
-    return {
-      ...plan,
-      entitlements: [...plan.entitlements],
-      allowedComponentIds: [...plan.allowedComponentIds],
-      allowedCategoryIds: [...plan.allowedCategoryIds],
-    };
-  }
-
   private async validatePlanReferences(componentIds: string[], categoryIds: string[]): Promise<void> {
     const validComponentIds = new Set(this.componentes.map((item) => item.id));
-    // Carga el caché si aún no está inicializado — evita falsos negativos al arrancar
     const categorias = await this.readCategoriasStore();
     const validCategoryIds = new Set(categorias.map((item: AdminCategoriaRecord) => item.id));
 
@@ -1124,61 +990,6 @@ export class AdminService {
     if (invalidCategories.length > 0) {
       throw new BadRequestException(`Invalid category ids: ${invalidCategories.join(', ')}`);
     }
-  }
-
-  private slugifyPlanId(nombre: string): string {
-    const normalized = nombre
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    return normalized.startsWith('plan-') ? normalized : `plan-${normalized}`;
-  }
-
-  private ensureUniquePlanId(baseId: string): string {
-    if (!this.planes.some((plan) => plan.id === baseId)) return baseId;
-
-    let suffix = 2;
-    while (this.planes.some((plan) => plan.id === `${baseId}-${suffix}`)) {
-      suffix += 1;
-    }
-    return `${baseId}-${suffix}`;
-  }
-
-  private resolvePlan(planIdOrName?: string | null): OttPlan {
-    if (!planIdOrName) {
-      return this.planes.find((plan) => plan.id === 'plan-ott-basic') ?? {
-        id: 'plan-default',
-        nombre: 'Base OTT',
-        descripcion: 'Plan base temporal mientras se definen los planes finales.',
-        grupoUsuarios: PlanUserGroupDto.INDIVIDUAL,
-        precio: 0,
-        moneda: 'USD',
-        duracionDias: 30,
-        activo: true,
-        maxDevices: 3,
-        maxConcurrentStreams: 1,
-        maxProfiles: 1,
-        videoQuality: PlanVideoQualityDto.HD,
-        allowDownloads: false,
-        allowCasting: true,
-        hasAds: false,
-        trialDays: 0,
-        gracePeriodDays: 0,
-        entitlements: [PlanEntitlementDto.LIVE_TV, PlanEntitlementDto.VOD_BASIC],
-        allowedComponentIds: ['comp-001', 'comp-003'],
-        allowedCategoryIds: ['cat-001', 'cat-003'],
-      };
-    }
-
-    const normalized = planIdOrName.trim().toLowerCase();
-    const found = this.planes.find((plan) => plan.id.toLowerCase() === normalized || plan.nombre.toLowerCase() === normalized);
-    if (!found) {
-      throw new BadRequestException(`Plan inválido: ${planIdOrName}`);
-    }
-    return found;
   }
 
   private extractNames(fullName?: string): { firstName: string | null; lastName: string | null } {
@@ -1200,11 +1011,42 @@ export class AdminService {
     return `OTT-${suffix}`;
   }
 
-  private async revokeAllSessionsInternal(userId: string): Promise<void> {
-    const sessions = await this.sessionRepository.findByUserId(userId);
-    for (const session of sessions) {
-      session.revokedAt = new Date();
-      await this.sessionRepository.save(session);
+  private async countActiveSessions(customerId: string): Promise<number> {
+    const contracts = await this.prisma.contract.findMany({
+      where: { customerId, deletedAt: null },
+      select: { id: true },
+    });
+    const contractIds = contracts.map(c => c.id);
+    if (contractIds.length === 0) return 0;
+    return this.prisma.session.count({
+      where: { contractId: { in: contractIds }, revokedAt: null, expiresAt: { gt: new Date() } },
+    });
+  }
+
+  private async revokeAllSessionsForCustomer(customerId: string): Promise<void> {
+    const contracts = await this.prisma.contract.findMany({
+      where: { customerId },
+      select: { id: true },
+    });
+    const contractIds = contracts.map(c => c.id);
+    if (contractIds.length > 0) {
+      await this.prisma.session.updateMany({
+        where: { contractId: { in: contractIds }, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
     }
+  }
+
+  private toPrismaStatus(status: UserStatus): PrismaUserStatus {
+    return status.toUpperCase() as PrismaUserStatus;
+  }
+
+  private toPrismaRole(role: UserRole): PrismaUserRole {
+    return role.toUpperCase() as PrismaUserRole;
+  }
+
+  private toPrismaSessionLimitPolicy(policy?: SessionLimitPolicy): PrismaSessionLimitPolicy {
+    if (!policy) return PrismaSessionLimitPolicy.BLOCK_NEW;
+    return policy.toUpperCase() as PrismaSessionLimitPolicy;
   }
 }
