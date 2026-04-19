@@ -7,6 +7,54 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [0.2.0-beta] — 2026-04
+
+### Añadido
+
+#### Backend — Persistencia PostgreSQL
+- **prisma**: Schema con 7 modelos (`Customer`, `Contract`, `ViewingProfile`, `Session`, `Device`, `Plan`, `SyncLog`) y 3 enums
+- **prisma**: Configuración Prisma 7 con `PrismaPg` adapter para compatibilidad con NestJS (CJS)
+- **prisma**: 3 migraciones SQL (`init`, `optional_session_contract`, `add_session_customer`)
+- **prisma**: Seed con 47 suscriptores ISP reales + 2 usuarios CMS + plan + contratos
+- **prisma**: `PrismaService` como injectable que extiende `PrismaClient` con adapter PostgreSQL
+- **prisma**: `PrismaUserRepository` — implementación Prisma del puerto `UserRepository`
+- **prisma**: `PrismaSessionRepository` — implementación Prisma del puerto `SessionRepository`
+- **auth**: Endpoint `POST /auth/app/contract-login` — login por número de contrato
+- **auth**: Endpoint `POST /auth/app/first-access` — primer acceso con cédula + contrato
+- **auth**: Endpoint `POST /auth/app/activate` — activación de cuenta con código
+- **auth**: Endpoint `POST /auth/app/reset-password` — recuperación de contraseña
+- **auth**: Endpoint `POST /auth/app/switch-contract` — cambio de contrato activo
+- **admin**: Endpoint `GET /admin/users` ahora consulta PostgreSQL (ya no usa mocks)
+
+#### Frontend — Auth por contrato
+- **auth**: Pantalla de login adaptada a número de contrato + contraseña (sin OTP)
+- **auth**: Flujo de primer acceso (contrato + cédula)
+- **auth**: Flujo de activación de cuenta
+- **auth**: Flujo de recuperación de contraseña
+- **stores**: `authStore` actualizado con flujo contract-based
+
+#### Infraestructura
+- Docker Compose actualizado: PostgreSQL 15 + Redis 7 + backend
+- `prisma.config.ts` con datasource URL y comando de seed
+- `.env.example` con variables completas para desarrollo
+
+### Cambiado
+- **prisma/schema**: `Session.contractId` ahora es opcional (`String?`) para soportar sesiones CMS
+- **prisma/schema**: Agregado `Session.customerId` como relación directa para usuarios sin contrato
+- **imports**: Migrados de `generated/prisma/client.js` a `@prisma/client` (3 archivos)
+- **admin.service**: Soporte para `contractId` nullable en validación de sesiones
+- **session-repo**: Reemplazado `upsert` por `create`/`update` separados (compatibilidad Prisma 7)
+- **session-repo**: `findByUserId` y `deleteAllByUserId` buscan por contrato O customerId directo
+- **frontend**: Mocks de usuarios en `adminApi.ts` eliminados (los datos vienen de PostgreSQL)
+
+### Notas
+- Los servicios de billing, CRM y OTP siguen siendo mocks de desarrollo
+- Los suscriptores del seed tienen `mustChangePassword: true` — requieren flujo de primer acceso
+- Los módulos CMS no-auth (categorías, sliders, blog, impuestos, componentes) mantienen mocks temporales
+- La persistencia de PostgreSQL está activa para: usuarios, contratos, sesiones y planes
+
+---
+
 ## [0.1.0-alpha] — 2025-07
 
 ### Añadido
@@ -88,10 +136,11 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ## Convenciones de Versionado
 
 - **alpha**: Funcionalidad base implementada, sin persistencia real
-- **beta**: Con base de datos y servicios externos conectados
+- **beta**: Con base de datos PostgreSQL conectada via Prisma
 - **rc**: Candidato a release, con tests completos
 - **stable**: Release de producción
 
 ---
 
+[0.2.0-beta]: https://github.com/Sofilu1537/Luki-Play-OTT/compare/v0.1.0-alpha...v0.2.0-beta
 [0.1.0-alpha]: https://github.com/Sofilu1537/Luki-Play-OTT/releases/tag/v0.1.0-alpha

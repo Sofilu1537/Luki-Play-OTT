@@ -11,14 +11,14 @@
 | RAM          | 1 GB               | 2 GB+               |
 | Disco        | 5 GB libres        | 10 GB+              |
 
-### Servicios Opcionales (Para Producción Completa)
+### Servicios Requeridos
 
-| Servicio     | Puerto por defecto | Estado actual        |
-|--------------|--------------------|----------------------|
-| PostgreSQL   | 5432               | Configurado, no conectado |
-| Redis        | 6379               | Configurado, no conectado |
-| Nginx        | 8120               | Activo en producción |
-| PM2          | —                  | Gestor de procesos   |
+| Servicio     | Puerto por defecto | Estado actual         |
+|--------------|--------------------|------------------------|
+| PostgreSQL   | 5432               | **Activo** (via Docker) |
+| Redis        | 6379               | Configurado, preparado |
+| Nginx        | 8120               | Activo en producción   |
+| PM2          | —                  | Gestor de procesos     |
 
 ---
 
@@ -39,6 +39,9 @@ cd Luki-Play-OTT
 cd backend
 npm install
 ```
+
+> **Nota**: `npm install` ejecuta automáticamente `prisma generate` como postinstall,
+> creando el Prisma Client necesario para la conexión a PostgreSQL.
 
 ### Frontend
 
@@ -71,20 +74,46 @@ No requiere archivo `.env` separado.
 
 ---
 
-## Inicialización
+## Inicialización de Base de Datos
 
-### Datos Seed
+### Requisito previo: PostgreSQL + Redis
 
-El backend carga datos de prueba automáticamente al iniciar (repositorios in-memory).
-No se requieren migraciones ni scripts de seed adicionales en el estado actual.
+Levantar los servicios con Docker Compose:
 
-Cuando se implemente PostgreSQL, los pasos serán:
+```bash
+docker compose up -d postgres redis
+```
+
+Verificar que PostgreSQL esté `healthy`:
+
+```bash
+docker compose ps
+```
+
+### Migraciones y Seed (Desarrollo)
 
 ```bash
 cd backend
-npm run migration:run    # [PENDIENTE — completar cuando se implemente]
-npm run seed             # [PENDIENTE — completar cuando se implemente]
+npx prisma migrate dev      # Aplica todas las migraciones pendientes
+npx prisma db seed           # Carga datos de prueba (47 suscriptores + 2 CMS + plan)
 ```
+
+### Migraciones (Producción)
+
+```bash
+cd backend
+npx prisma migrate deploy   # Solo aplica migraciones, sin generar nuevas
+```
+
+### Verificar datos
+
+```bash
+npx prisma studio           # Abre interfaz web para inspeccionar la BD
+```
+
+> **Datos del seed**: 47 suscriptores ISP con contratos reales, 2 usuarios CMS
+> (admin@lukiplay.com / soporte@lukiplay.com), 1 plan "LUKI PLAY" y contratos
+> asociados. Contraseña por defecto: `password123`.
 
 ---
 
@@ -112,6 +141,9 @@ La app queda en `http://localhost:8081`.
 ```bash
 docker compose up --build -d
 ```
+
+> Esto levanta PostgreSQL, Redis y el backend. Las migraciones deben ejecutarse
+> después: `docker compose exec backend npx prisma migrate deploy`.
 
 ### Modo Producción (EC2 / PM2 + Nginx)
 
@@ -214,23 +246,25 @@ sudo systemctl reload nginx
 
 ## Servicios Externos Requeridos
 
-### Actuales (Mock)
+### Activos
 
-Todos los servicios externos están implementados como mocks. Para producción real
-se deben reemplazar las implementaciones:
+| Servicio               | Módulo                       | Implementación                  |
+|------------------------|------------------------------|---------------------------------|
+| PostgreSQL 15          | `PrismaModule`               | `PrismaService` + PrismaPg adapter |
+| Hash de contraseñas    | `HashService`                | `BcryptHashService` (real)      |
+| Tokens JWT             | `TokenService`               | `JwtTokenService` (real)        |
+
+### Mock (Para desarrollo)
 
 | Servicio               | Interfaz                     | Mock actual                     |
 |------------------------|------------------------------|---------------------------------|
 | Email / OTP            | `OtpService`                 | `MockOtpService` (código fijo)  |
 | Facturación ISP        | `BillingGateway`             | `MockBillingGateway`            |
 | CRM                    | `CrmGateway`                 | `MockCrmGateway`                |
-| Hash de contraseñas    | `HashService`                | `BcryptHashService` (real)      |
-| Tokens JWT             | `TokenService`               | `JwtTokenService` (real)        |
 
 ### Para Producción Completa
 
-- **PostgreSQL**: Reemplazar repositorios in-memory por TypeORM/Prisma
-- **Redis**: Almacenamiento de sesiones y caché de tokens
+- **Redis**: Caché de sesiones y tokens (configurado, no habilitado aún)
 - **Proveedor SMTP**: AWS SES, SendGrid o similar para envío real de OTP
 - **CDN de Video**: Integración con proveedor de streaming real
 - **Pasarela de Pagos**: Para gestión de suscripciones OTT-only

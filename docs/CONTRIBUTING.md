@@ -42,6 +42,7 @@ Este proyecto usa [Conventional Commits](https://www.conventionalcommits.org/es/
 | `profiles`     | Perfiles de usuario                     |
 | `componentes`  | Módulo de componentes OTT               |
 | `api`          | Endpoints REST generales                |
+| `prisma`       | ORM / Migraciones / Schema              |
 | `store`        | Stores Zustand (frontend)               |
 | `deps`         | Dependencias                            |
 
@@ -131,6 +132,37 @@ npm run test:e2e    # Tests E2E
 cd frontend
 npm test
 ```
+
+---
+
+## Workflow con Prisma
+
+### Modificar el schema
+
+1. Editar `backend/prisma/schema.prisma`
+2. Generar migración: `npx prisma migrate dev --name <nombre_descriptivo>`
+3. Verificar que el seed siga funcionando: `npx prisma db seed`
+4. Verificar que el backend compile: `npm run build`
+
+### Inspeccionar la BD
+
+```bash
+cd backend
+npx prisma studio    # Abre interfaz web en http://localhost:5555
+```
+
+### Reset completo (desarrollo)
+
+```bash
+cd backend
+npx prisma migrate reset   # ⚠️ Borra TODOS los datos y re-aplica migraciones + seed
+```
+
+### Convenciones de migraciones
+
+- Nombres descriptivos en snake_case: `add_session_customer`, `optional_session_contract`
+- Nunca editar migraciones ya aplicadas — crear una nueva migración correctiva
+- Incluir migraciones en los commits (carpeta `prisma/migrations/`)
 
 ---
 

@@ -51,9 +51,9 @@ y canales en vivo. El sistema incluye:
 │  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐     │
 │  │  AuthModule       │  │  AdminModule      │  │  PublicModule  │     │
 │  │  - Login App/CMS  │  │  - CRUD usuarios  │  │  - Componentes│     │
-│  │  - Verificar OTP  │  │  - Componentes    │  │    activos    │     │
-│  │  - Refresh token  │  │  - Canales        │  │  (sin auth)   │     │
-│  │  - Sesiones       │  │  - Planes         │  └────────────────┘    │
+│  │  - Contrato+Pwd  │  │  - Componentes    │  │    activos    │     │
+│  │  - Primer acceso │  │  - Canales        │  │  (sin auth)   │     │
+│  │  - Refresh token │  │  - Planes         │  └────────────────┘    │
 │  │  - Logout         │  │  - Sliders        │                        │
 │  └──────┬───────────┘  │  - Monitor        │                        │
 │         │              └──────────────────┘                          │
@@ -68,6 +68,13 @@ y canales en vivo. El sistema incluye:
 │  │  ProfilesModule   │                                               │
 │  │  (placeholder)    │                                               │
 │  └──────────────────┘                                                │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │  PrismaModule (Capa de Persistencia)                          │    │
+│  │  - PrismaService (PrismaClient + PrismaPg adapter)            │    │
+│  │  - PrismaUserRepository → implements UserRepository           │    │
+│  │  - PrismaSessionRepository → implements SessionRepository     │    │
+│  └──────────────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,29 +85,34 @@ y canales en vivo. El sistema incluye:
 ### Flujo del Suscriptor
 
 ```
-1. REGISTRO / LOGIN
+1. PRIMER ACCESO (primera vez)
+   └─ Ingresa número de contrato + número de cédula
+      └─ Backend valida datos contra Customer + Contract en PostgreSQL
+         └─ Si coinciden → devuelve token temporal para activación
+
+2. ACTIVACIÓN
+   └─ Establece contraseña permanente
+      └─ Backend actualiza Customer (isAccountActivated, passwordHash)
+         └─ Cuenta activada — puede hacer login normal
+
+3. LOGIN
    └─ Ingresa número de contrato + contraseña
-      └─ Backend valida credenciales contra UserRepository
-         └─ Evalúa acceso OTT (ISP activo o suscripción OTT activa)
-            └─ Envía OTP al correo del usuario
+      └─ Backend busca Contract → Customer en PostgreSQL
+         └─ Valida passwordHash con bcrypt
+            └─ Genera JWT (access 15m + refresh 7d)
+               └─ Registra sesión (dispositivo, audiencia, expiración)
 
-2. VERIFICACIÓN OTP
-   └─ Ingresa código de 6 dígitos
-      └─ Backend valida OTP
-         └─ Genera JWT (access 15m + refresh 7d)
-            └─ Registra sesión (dispositivo, audiencia, expiración)
-
-3. CATÁLOGO
+4. CATÁLOGO
    └─ Home: Hero banner + filas por categoría/tag
       └─ Datos: canales admin (prioridad) + catálogo hardcoded
          └─ Filtrado por componentes activos
 
-4. REPRODUCCIÓN
+5. REPRODUCCIÓN
    └─ Selecciona contenido → Player
       └─ HLS adaptive streaming (hls.js en web)
          └─ Controles: play/pause, volumen, pantalla completa
 
-5. SESIÓN
+6. SESIÓN
    └─ Token refresh automático cada 15 minutos
       └─ Logout: revoca sesión + limpia estado local
 ```
@@ -127,34 +139,55 @@ y canales en vivo. El sistema incluye:
 
 ## Modelo de Datos
 
-### Entidades Principales
+### Entidades Principales (Prisma / PostgreSQL)
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│    User      │     │   Account    │     │   Session    │
+│   Customer   │     │   Contract   │     │    Session   │
 ├──────────────┤     ├──────────────┤     ├──────────────┤
-│ id           │────▶│ id           │     │ id           │
-│ contractNum  │     │ contractNum  │     │ userId       │◀──┐
-│ email        │     │ contractType │     │ deviceId     │   │
-│ phone        │     │ isIspCustomer│     │ audience     │   │
-│ passwordHash │     │ planId       │     │ refreshHash  │   │
-│ role         │     │ subsStatus   │     │ expiresAt    │   │
-│ status       │     │ serviceStatus│     │ createdAt    │   │
-│ accountId ───┼────▶│ maxDevices   │     │ revokedAt    │   │
-│ createdAt    │     └──────────────┘     └──────────────┘   │
-└──────┬───────┘                                             │
-       └─────────────────────────────────────────────────────┘
-       (Un usuario puede tener N sesiones activas)
+│ id (uuid)    │◀──┐ │ id (uuid)    │     │ id (uuid)    │
+│ nombre       │   │ │ customerId ──┼────▶│ contractId?  │──┐
+│ email?       │   │ │ contractNum  │     │ customerId?  │──┤
+│ idNumber?    │   │ │ planName     │     │ deviceId     │  │
+│ passwordHash │   │ │ maxDevices   │     │ audience     │  │
+│ role         │   └─┤ sessionLimit │     │ refreshToken │  │
+│ status       │     │ fechaInicio? │     │ expiresAt    │  │
+│ isCmsUser    │     │ fechaFin?    │     │ revokedAt?   │  │
+│ isSubscriber │     └──────┬───────┘     └──────────────┘  │
+│ isAccountAct │            │                               │
+│ mustChangePw │            ▼                               │
+└──────────────┘     ┌──────────────┐                       │
+                     │ViewingProfile│     ┌──────────────┐  │
+                     ├──────────────┤     │    Device    │  │
+                     │ contractId   │     ├──────────────┤  │
+                     │ displayName  │     │ contractId   │  │
+                     │ avatarUrl?   │     │ deviceName?  │  │
+                     │ isDefault    │     │ fingerprint  │  │
+                     └──────────────┘     │ isActive     │  │
+                                          └──────────────┘  │
+┌──────────────┐     ┌──────────────┐                       │
+│     Plan     │     │   SyncLog    │    Customer ◀─────────┘
+├──────────────┤     ├──────────────┤    (Session puede
+│ nombre       │     │ syncType     │     vincular por
+│ maxDevices   │     │ startedAt    │     contract O
+│ maxProfiles  │     │ completedAt? │     directamente
+│ videoQuality │     │ errors       │     por customer)
+│ entitlements │     │ errorDetails │
+└──────────────┘     └──────────────┘
 ```
+
+> **Nota**: `Session` tiene dos FKs opcionales: `contractId` (para suscriptores que
+> acceden via contrato) y `customerId` (para usuarios CMS que no tienen contrato).
+> Las queries de sesión buscan con `OR` en ambos campos.
 
 ### Enumeraciones
 
-| Enum           | Valores                                    |
-|----------------|--------------------------------------------|
-| UserRole       | SUPERADMIN, SOPORTE, CLIENTE               |
-| UserStatus     | ACTIVE, INACTIVE, SUSPENDED                |
-| ContractType   | ISP, OTT_ONLY                              |
-| Audience       | app, cms                                   |
+| Enum                | Valores                                         |
+|---------------------|-------------------------------------------------|
+| UserRole            | SUPERADMIN, SOPORTE, CLIENTE                    |
+| UserStatus          | ACTIVE, INACTIVE, SUSPENDED, PENDING, TRIAL     |
+| SessionLimitPolicy  | BLOCK_NEW, REPLACE_OLDEST                       |
+| Audience (lógico)   | app, cms                                        |
 
 ### Componentes OTT
 
@@ -175,15 +208,15 @@ y canales en vivo. El sistema incluye:
 
 ## Integraciones Externas
 
-| Servicio             | Módulo       | Estado | Descripción                               |
-|----------------------|--------------|--------|-------------------------------------------|
-| Billing Gateway      | billing/     | Mock   | Valida contratos ISP y suscripciones      |
-| CRM Gateway          | crm/         | Mock   | Consulta datos de clientes por contrato   |
-| Servicio OTP (Email) | auth/        | Mock   | Envío de códigos OTP por correo           |
-| PostgreSQL           | —            | Config | Definido en .env.example, no conectado    |
-| Redis                | —            | Config | Definido en .env.example, no conectado    |
-| TMDB                 | frontend     | URLs   | Imágenes de referencia (sin API key)      |
-| CDN de Video         | frontend     | Demo   | URL de stream HLS de demostración         |
+| Servicio             | Módulo       | Estado  | Descripción                               |
+|----------------------|--------------|---------|-------------------------------------------|
+| Billing Gateway      | billing/     | Mock    | Valida contratos ISP y suscripciones      |
+| CRM Gateway          | crm/         | Mock    | Consulta datos de clientes por contrato   |
+| Servicio OTP (Email) | auth/        | Mock    | Envío de códigos OTP por correo           |
+| PostgreSQL 15        | prisma/      | **Activo** | Persistencia de usuarios, contratos, sesiones, planes |
+| Redis 7              | —            | Config  | Definido en .env, preparado para caché/sesiones |
+| TMDB                 | frontend     | URLs    | Imágenes de referencia (sin API key)      |
+| CDN de Video         | frontend     | Demo    | URL de stream HLS de demostración         |
 
 ---
 
@@ -205,10 +238,10 @@ y canales en vivo. El sistema incluye:
 
 ### Control de Acceso OTT
 
-- **Clientes ISP**: Acceso si `serviceStatus` ∈ {ACTIVO, CORTESIA}
-- **Clientes OTT-only**: Acceso si `subscriptionStatus` = ACTIVE
-- **Mensaje de restricción**: Se retorna cuando el acceso es denegado
-  indicando el motivo (suspensión, corte, suscripción expirada, etc.)
+- **Clientes ISP**: Acceso si contrato tiene estado activo y `isAccountActivated: true`
+- **Primer acceso**: Requiere número de contrato + cédula para activar cuenta
+- **Suspensión por contrato**: Solo afecta el contrato específico, no otros del mismo cliente
+- **CMS**: Acceso directo con email + contraseña (sin contrato)
 
 ---
 

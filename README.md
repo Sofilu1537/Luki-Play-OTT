@@ -14,7 +14,7 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 |---------------------|---------------------------------------------------------------|
 | **Nombre**          | LUKI Play OTT                                                 |
 | **Propósito**       | Plataforma OTT de streaming y contenido bajo demanda          |
-| **Estado**          | v0.1.0-alpha — Sprint 2 completado                       |
+| **Estado**          | v0.2.0-beta — Sprint 3 en progreso (persistencia PostgreSQL) |
 | **Autor**           | Marco Logacho — Director de Desarrollo Digital e IA, DataCom S.A. |
 | **Repositorio**     | https://github.com/Sofilu1537/Luki-Play-OTT                  |
 | **Zona horaria**    | America/Guayaquil (UTC-5)                                     |
@@ -29,8 +29,10 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 | Estilos         | NativeWind (Tailwind CSS para RN)       |
 | Estado          | Zustand 5                               |
 | Backend         | NestJS 11 / TypeScript 5                |
-| Autenticación   | JWT (access + refresh) + OTP por correo |
-| Persistencia    | In-memory (repositorios reemplazables)  |
+| ORM             | Prisma 7 con PrismaPg adapter           |
+| Autenticación   | JWT (access + refresh) + auth por contrato |
+| Base de datos   | PostgreSQL 15 (via Docker)              |
+| Caché           | Redis 7 (via Docker)                    |
 | Streaming       | HLS (hls.js en web, expo-av en native)  |
 | Deploy          | AWS EC2 + PM2 + Nginx                   |
 | Contenedores    | Docker + Docker Compose                 |
@@ -44,20 +46,31 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 - Node.js 20 LTS
 - npm 10+
 - Git
+- Docker Desktop (para PostgreSQL y Redis)
 
-### Backend
+### 1. Infraestructura (PostgreSQL + Redis)
+
+```bash
+docker compose up -d postgres redis
+```
+
+Esperar a que PostgreSQL reporte `healthy` antes de continuar.
+
+### 2. Backend
 
 ```bash
 cd backend
 cp .env.example .env
 npm install
+npx prisma migrate dev      # Aplica migraciones a la BD
+npx prisma db seed           # Carga datos de prueba (49 usuarios)
 npm run start:dev
 ```
 
 El backend queda disponible en `http://localhost:3000`.
 Swagger: `http://localhost:3000/api/docs`
 
-### Frontend
+### 3. Frontend
 
 ```bash
 cd frontend
@@ -67,7 +80,7 @@ npx expo start --web
 
 La app queda disponible en `http://localhost:8081`.
 
-### Con Docker
+### Todo con Docker
 
 ```bash
 docker compose up --build
@@ -79,16 +92,22 @@ docker compose up --build
 
 ## Credenciales de Prueba
 
-### App de Suscriptores
+> Los datos se cargan con `npx prisma db seed`. Contraseña por defecto: `password123`.
 
-| Contrato       | Contraseña     | Tipo        | Estado              |
-|----------------|----------------|-------------|---------------------|
-| CONTRACT-001   | password123    | ISP         | Activo              |
-| CONTRACT-002   | password123    | ISP         | Activo              |
-| CONTRACT-003   | password123    | ISP         | Suspendido          |
-| OTT-000001     | password123    | OTT-only    | Activo              |
+### App de Suscriptores (auth por contrato)
 
-OTP en desarrollo: `123456` (ver logs del backend).
+Los suscriptores se autentican con **número de contrato + contraseña**.
+La primera vez deben completar el flujo de **primer acceso** (`/auth/app/first-access`)
+para activar su cuenta y establecer contraseña.
+
+| Contrato    | Nombre                  | Estado     | Nota                      |
+|-------------|-------------------------|------------|---------------------------|
+| 000000000   | CASTRO DANIEL           | Anulado    | Cuenta cancelada          |
+| 000000002   | DOICELA NEGRETE J.      | Suspendido | Requiere primer acceso    |
+| 000000003   | TOCTE VELASQUE W.       | Suspendido | Requiere primer acceso    |
+
+Se incluyen 47 suscriptores del ISP con contratos reales en la BD.
+Todos tienen `mustChangePassword: true` hasta completar primer acceso.
 
 ### Panel CMS
 
@@ -104,6 +123,11 @@ OTP en desarrollo: `123456` (ver logs del backend).
 ```
 Luki-Play-OTT/
 ├── backend/                        # API NestJS
+│   ├── prisma/
+│   │   ├── schema.prisma           # Modelos de datos (7 modelos, 3 enums)
+│   │   ├── seed.ts                 # Seed: 47 suscriptores + 2 CMS + plan
+│   │   └── migrations/             # Migraciones SQL de PostgreSQL
+│   ├── prisma.config.ts            # Configuración Prisma 7 (datasource + seed)
 │   ├── src/
 │   │   ├── main.ts                 # Bootstrap + Swagger
 │   │   ├── app.module.ts           # Módulo raíz
@@ -111,11 +135,13 @@ Luki-Play-OTT/
 │   │   │   ├── filters/            # Filtro global de excepciones
 │   │   │   └── pipes/              # Pipe de validación global
 │   │   └── modules/
-│   │       ├── auth/               # Autenticación (login, OTP, JWT, sesiones)
+│   │       ├── auth/               # Autenticación (login, JWT, sesiones)
 │   │       │   ├── application/    # DTOs y casos de uso
 │   │       │   ├── domain/         # Entidades e interfaces
-│   │       │   ├── infrastructure/ # JWT, bcrypt, OTP mock, repos in-memory
+│   │       │   ├── infrastructure/ # JWT, bcrypt, OTP mock
 │   │       │   └── presentation/   # Controlador, guards, decoradores
+│   │       ├── prisma/             # PrismaService + repositorios PostgreSQL
+│   │       │   └── repositories/   # Implementaciones Prisma de los puertos
 │   │       ├── access-control/     # Permisos y roles (RBAC)
 │   │       ├── admin/              # Gestión CMS (usuarios, componentes, etc.)
 │   │       ├── billing/            # Facturación (mock)
@@ -149,8 +175,9 @@ Luki-Play-OTT/
 La plataforma sigue una arquitectura **frontend/backend separados**:
 
 - **Backend**: Arquitectura hexagonal (DDD + puertos y adaptadores) con NestJS.
-  Cada módulo expone interfaces que permiten reemplazar la implementación
-  (ej: pasar de in-memory a PostgreSQL sin cambiar lógica de negocio).
+  Persistencia real con PostgreSQL via Prisma 7 (PrismaPg adapter).
+  Los repositorios implementan interfaces de dominio, permitiendo
+  intercambiar la capa de datos sin afectar la lógica de negocio.
 
 - **Frontend**: Expo con file-based routing (Expo Router). Dos experiencias:
   la app OTT para suscriptores y el panel CMS para administradores.
@@ -180,13 +207,13 @@ La plataforma sigue una arquitectura **frontend/backend separados**:
 
 ## Estado del Proyecto
 
-| Sprint | Descripción                                               | Estado      |
-|--------|-----------------------------------------------------------|-------------|
-| 1      | Autenticación (login, OTP, JWT, roles)                    | Completado  |
-| 1.5    | Panel CMS base (diseño, estructura, módulos activos)      | Completado  |
-| 2      | Módulos CMS avanzados (componentes, autenticación segura) | Completado  |
-| 3      | Persistencia real (base de datos PostgreSQL + Redis)      | Pendiente   |
-| 4      | Integración billing/CRM real                              | Pendiente   |
+| Sprint | Descripción                                               | Estado        |
+|--------|-----------------------------------------------------------|---------------|
+| 1      | Autenticación (login, OTP, JWT, roles)                    | ✅ Completado |
+| 1.5    | Panel CMS base (diseño, estructura, módulos activos)      | ✅ Completado |
+| 2      | Módulos CMS avanzados (componentes, autenticación segura) | ✅ Completado |
+| 3      | Persistencia PostgreSQL + Prisma + auth por contrato      | 🔄 En progreso |
+| 4      | Integración billing/CRM real                              | ⏳ Pendiente  |
 
 ---
 
