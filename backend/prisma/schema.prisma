@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -55,6 +54,7 @@ model Customer {
   deletedAt          DateTime?
 
   contracts Contract[]
+  sessions  Session[]
 
   @@map("customers")
 }
@@ -106,7 +106,8 @@ model ViewingProfile {
 
 model Session {
   id           String    @id @default(uuid())
-  contractId   String
+  contractId   String?
+  customerId   String?
   deviceId     String
   audience     String    @default("app")
   refreshToken String?   @unique
@@ -116,9 +117,11 @@ model Session {
   revokedAt    DateTime?
   createdAt    DateTime  @default(now())
 
-  contract Contract @relation(fields: [contractId], references: [id])
+  contract Contract? @relation(fields: [contractId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
 
   @@index([contractId])
+  @@index([customerId])
   @@map("sessions")
 }
 

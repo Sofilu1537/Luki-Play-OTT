@@ -8,7 +8,7 @@ import {
   UserStatus as PrismaUserStatus,
   UserRole as PrismaUserRole,
   SessionLimitPolicy as PrismaSessionLimitPolicy,
-} from '../../../generated/prisma/client.js';
+} from '@prisma/client';
 import { UserRole, UserStatus } from '../auth/domain/entities/user.entity.js';
 import { SessionLimitPolicy } from '../auth/domain/entities/account.entity.js';
 import { HASH_SERVICE } from '../auth/domain/interfaces/hash.service.js';
@@ -510,7 +510,7 @@ export class AdminService {
 
     const contractIds = customer.contracts.map(c => c.id);
     const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
-    if (!session || !contractIds.includes(session.contractId)) {
+    if (!session || (session.contractId && !contractIds.includes(session.contractId)) || (!session.contractId && session.customerId !== id)) {
       throw new NotFoundException('La sesión indicada no existe para este usuario.');
     }
 

@@ -17,7 +17,12 @@ export class PrismaSessionRepository implements SessionRepository {
 
   async findByUserId(userId: string): Promise<DomainSession[]> {
     const sessions = await this.prisma.session.findMany({
-      where: { contract: { customerId: userId } },
+      where: {
+        OR: [
+          { contract: { customerId: userId } },
+          { customerId: userId },
+        ],
+      },
       include: { contract: true },
     });
     return sessions.map((s) => this.toDomain(s));
@@ -34,24 +39,36 @@ export class PrismaSessionRepository implements SessionRepository {
   async save(session: DomainSession): Promise<DomainSession> {
     const contractId = await this.resolveContractId(session.userId);
 
-    const data = {
-      deviceId: session.deviceId,
-      audience: session.audience,
-      refreshToken: session.refreshTokenHash,
-      expiresAt: session.expiresAt,
-      revokedAt: session.revokedAt,
-    };
+    const existing = await this.prisma.session.findUnique({ where: { id: session.id } });
 
-    const saved = await this.prisma.session.upsert({
-      where: { id: session.id },
-      update: data,
-      create: {
-        id: session.id,
-        contractId,
-        ...data,
-      },
-      include: { contract: true },
-    });
+    let saved: any;
+    if (existing) {
+      saved = await this.prisma.session.update({
+        where: { id: session.id },
+        data: {
+          deviceId: session.deviceId,
+          audience: session.audience,
+          refreshToken: session.refreshTokenHash,
+          expiresAt: session.expiresAt,
+          revokedAt: session.revokedAt,
+        },
+        include: { contract: true },
+      });
+    } else {
+      saved = await this.prisma.session.create({
+        data: {
+          id: session.id,
+          deviceId: session.deviceId,
+          audience: session.audience,
+          refreshToken: session.refreshTokenHash,
+          expiresAt: session.expiresAt,
+          revokedAt: session.revokedAt,
+          customer: { connect: { id: session.userId } },
+          ...(contractId ? { contract: { connect: { id: contractId } } } : {}),
+        },
+        include: { contract: true },
+      });
+    }
 
     return this.toDomain(saved);
   }
@@ -63,37 +80,31 @@ export class PrismaSessionRepository implements SessionRepository {
   }
 
   async deleteAllByUserId(userId: string): Promise<void> {
-    const contracts = await this.prisma.contract.findMany({
-      where: { customerId: userId },
-      select: { id: true },
+    await this.prisma.session.deleteMany({
+      where: {
+        OR: [
+          { contract: { customerId: userId } },
+          { customerId: userId },
+        ],
+      },
     });
-
-    if (contracts.length > 0) {
-      await this.prisma.session.deleteMany({
-        where: { contractId: { in: contracts.map((c) => c.id) } },
-      });
-    }
   }
 
   // ─── Private helpers ──────────────────────────────────────
 
-  private async resolveContractId(userId: string): Promise<string> {
+  private async resolveContractId(userId: string): Promise<string | null> {
     const contract = await this.prisma.contract.findFirst({
       where: { customerId: userId },
       select: { id: true },
     });
 
-    if (!contract) {
-      throw new Error(`No contract found for customer ${userId}`);
-    }
-
-    return contract.id;
+    return contract?.id ?? null;
   }
 
   private toDomain(session: any): DomainSession {
     return new DomainSession({
       id: session.id,
-      userId: session.contract?.customerId ?? session.contractId,
+      userId: session.contract?.customerId ?? session.customerId ?? '',
       deviceId: session.deviceId,
       audience: session.audience === 'cms' ? Audience.CMS : Audience.APP,
       refreshTokenHash: session.refreshToken ?? '',

@@ -1,9 +1,10 @@
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
-// Prisma 7 resolves the connection via prisma.config.ts at runtime
-const prisma = new PrismaClient(undefined as any);
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 // ─── Status mapping: ISP → Prisma UserStatus ───────────────
 type PrismaUserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING' | 'TRIAL';
