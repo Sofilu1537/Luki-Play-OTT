@@ -35,8 +35,6 @@ import {
 import { useCmsStore } from '../../services/cmsStore';
 
 type UserType = 'system' | 'subscriber';
-type UserTypeFilter = 'all' | UserType;
-type RoleFilter = 'all' | AdminUser['role'];
 type StatusFilter = 'all' | AdminUser['status'];
 type DetailTab = 'perfil' | 'seguridad' | 'sesiones' | 'comercial';
 type Feedback = { type: 'success' | 'error'; message: string } | null;
@@ -114,6 +112,7 @@ function getUserTypeMeta(user: Pick<AdminUser, 'isCmsUser' | 'isSubscriber'>) {
 
 function getRoleMeta(role: AdminUser['role']) {
   if (role === 'superadmin') return { label: 'Superadmin', color: C.rose, bg: C.roseSoft };
+  if (role === 'admin') return { label: 'Admin', color: C.accent, bg: C.accentSoft };
   if (role === 'soporte') return { label: 'Soporte', color: C.green, bg: C.greenSoft };
   return { label: 'Cliente', color: C.textDim, bg: C.lift };
 }
@@ -1112,8 +1111,6 @@ export default function CmsUsers() {
   const [sessionsByUser, setSessionsByUser] = useState<SessionsByUser>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [userTypeFilter, setUserTypeFilter] = useState<UserTypeFilter>('all');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [pageSize, setPageSize] = useState(50);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -1127,7 +1124,6 @@ export default function CmsUsers() {
   const isCmsStaff = profile?.role === 'superadmin' || profile?.role === 'soporte';
   const canWrite = isCmsStaff || hasPermission(profile?.permissions, 'cms:users:write');
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [actionMenuUserId, setActionMenuUserId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
   const menuButtonRefs = React.useRef<Record<string, View | null>>({});
@@ -1159,7 +1155,7 @@ export default function CmsUsers() {
         }),
       );
 
-      setUsers(usersData.filter((u) => !u.isCmsUser));
+      setUsers(usersData.filter((user) => !user.isCmsUser));
       setPlans(plansData);
       setSessionsByUser(Object.fromEntries(sessionsEntries));
     } catch (cause) {
@@ -1180,11 +1176,8 @@ export default function CmsUsers() {
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const userType = getUserType(user);
       const query = search.trim().toLowerCase();
 
-      if (userTypeFilter !== 'all' && userType !== userTypeFilter) return false;
-      if (roleFilter !== 'all' && user.role !== roleFilter) return false;
       if (statusFilter !== 'all' && user.status !== statusFilter) return false;
       if (!query) return true;
 
@@ -1198,7 +1191,7 @@ export default function CmsUsers() {
         getUserTypeMeta(user).label,
       ].some((value) => value.toLowerCase().includes(query));
     });
-  }, [users, search, userTypeFilter, roleFilter, statusFilter]);
+  }, [users, search, statusFilter]);
 
   const visibleUsers = filteredUsers.slice(0, pageSize);
 
@@ -1338,15 +1331,9 @@ export default function CmsUsers() {
   if (!profile) return null;
 
   return (
-    <CmsShell breadcrumbs={[{ label: 'Usuarios', path: '/cms/users' }, { label: 'Gestión OTT' }]}>
+    <CmsShell breadcrumbs={[{ label: 'Usuarios', path: '/cms/users' }, { label: 'Usuarios' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
-          <View style={{ maxWidth: 680 }}>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Usuarios</Text>
-            <Text style={{ color: C.textDim, fontSize: 13, marginTop: 6, lineHeight: 20 }}>
-              Consola unificada para identidad, negocio OTT, sesiones por dispositivo y autorización administrativa.
-            </Text>
-          </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.greenSoft, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(16,185,129,0.32)' }} onPress={exportCSV}>
               <FontAwesome name="download" size={13} color={C.green} />
@@ -1370,7 +1357,6 @@ export default function CmsUsers() {
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
             { label: 'Total', value: stats.total, icon: 'users', tone: C.accentLight, bg: C.accentSoft, warn: false },
-            { label: 'Internos', value: stats.internal, icon: 'shield', tone: C.green, bg: C.greenSoft, warn: false },
             { label: 'Abonados', value: stats.subscribers, icon: 'play-circle', tone: C.cyan, bg: C.cyanSoft, warn: false },
             { label: 'Suspendidos', value: stats.suspended, icon: 'exclamation-triangle', tone: C.rose, bg: C.roseSoft, warn: stats.suspended > stats.total * 0.3 },
           ].map((card) => (
@@ -1411,19 +1397,6 @@ export default function CmsUsers() {
             </View>
 
             {/* Dropdown-style compact filters */}
-
-            <DropdownFilter
-              label="Rol"
-              value={roleFilter}
-              options={[
-                { value: 'all', label: 'Todos' },
-                { value: 'superadmin', label: 'Superadmin' },
-                { value: 'soporte', label: 'Soporte' },
-                { value: 'cliente', label: 'Cliente' },
-              ]}
-              onSelect={(v) => setRoleFilter(v as RoleFilter)}
-            />
-
             <DropdownFilter
               label="Estado"
               value={statusFilter}
@@ -1446,10 +1419,10 @@ export default function CmsUsers() {
             </View>
 
             {/* Active filter count + clear */}
-            {(roleFilter !== 'all' || statusFilter !== 'all' || search) ? (
+            {(statusFilter !== 'all' || search) ? (
               <TouchableOpacity
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }}
-                onPress={() => { setSearch(''); setRoleFilter('all'); setStatusFilter('all'); }}
+                onPress={() => { setSearch(''); setStatusFilter('all'); }}
               >
                 <FontAwesome name="times" size={10} color={C.rose} />
                 <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700' }}>Limpiar</Text>
@@ -1471,89 +1444,8 @@ export default function CmsUsers() {
           </View>
         ) : (
           <>
-            {/* Bulk action bar */}
-            {selectedIds.size > 0 && canWrite ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12, backgroundColor: C.accentSoft, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.accentBorder }}>
-                <Text style={{ color: C.accent, fontSize: 13, fontWeight: '800' }}>{selectedIds.size} seleccionados</Text>
-                <View style={{ flex: 1 }} />
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.greenSoft, borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }}
-                  onPress={() => {
-                    if (!accessToken) return;
-                    openConfirm({
-                      title: 'Activar usuarios',
-                      message: `Se activarán ${selectedIds.size} usuarios seleccionados.`,
-                      confirmLabel: 'Activar',
-                      tone: 'primary',
-                      onConfirm: async () => {
-                        for (const id of selectedIds) {
-                          const updated = await adminUpdateUserStatus(accessToken, id, 'active');
-                          updateUserInList(updated);
-                        }
-                        setSelectedIds(new Set());
-                        setFeedback({ type: 'success', message: `${selectedIds.size} usuarios activados.` });
-                      },
-                    });
-                  }}
-                >
-                  <FontAwesome name="check" size={11} color={C.green} />
-                  <Text style={{ color: C.green, fontSize: 12, fontWeight: '700' }}>Activar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }}
-                  onPress={() => {
-                    if (!accessToken) return;
-                    openConfirm({
-                      title: 'Suspender usuarios',
-                      message: `Se suspenderán ${selectedIds.size} usuarios seleccionados.`,
-                      confirmLabel: 'Suspender',
-                      tone: 'danger',
-                      onConfirm: async () => {
-                        for (const id of selectedIds) {
-                          const updated = await adminUpdateUserStatus(accessToken, id, 'suspended');
-                          updateUserInList(updated);
-                        }
-                        setSelectedIds(new Set());
-                        setFeedback({ type: 'success', message: `${selectedIds.size} usuarios suspendidos.` });
-                      },
-                    });
-                  }}
-                >
-                  <FontAwesome name="ban" size={11} color={C.rose} />
-                  <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Suspender</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}
-                  onPress={() => setSelectedIds(new Set())}
-                >
-                  <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-
             {/* Table header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
-              {canWrite ? (
-                <TouchableOpacity
-                  style={{ width: 32, alignItems: 'center' }}
-                  onPress={() => {
-                    if (selectedIds.size === visibleUsers.length) {
-                      setSelectedIds(new Set());
-                    } else {
-                      setSelectedIds(new Set(visibleUsers.map((u) => u.id)));
-                    }
-                  }}
-                >
-                  <View style={{
-                    width: 18, height: 18, borderRadius: 4, borderWidth: 2,
-                    borderColor: selectedIds.size > 0 ? C.accent : C.muted,
-                    backgroundColor: selectedIds.size === visibleUsers.length ? C.accent : 'transparent',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {selectedIds.size === visibleUsers.length ? <FontAwesome name="check" size={10} color="#fff" /> : null}
-                  </View>
-                </TouchableOpacity>
-              ) : null}
               {[
                 { label: 'CONTRATO', flex: 1.2 },
                 { label: 'NOMBRE', flex: 2 },
@@ -1574,40 +1466,15 @@ export default function CmsUsers() {
             {visibleUsers.map((user) => {
               const roleMeta = getRoleMeta(user.role);
               const statusMeta = getStatusMeta(user.status);
-              const isSelected = selectedIds.has(user.id);
               const isMenuOpen = actionMenuUserId === user.id;
 
               return (
                 <View key={user.id} style={{
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
-                  backgroundColor: isSelected ? C.accentSoft : C.surface,
+                  backgroundColor: C.surface,
                   borderRadius: 8, marginBottom: 3, borderWidth: 1,
-                  borderColor: isSelected ? C.accentBorder : C.border,
+                  borderColor: C.border,
                 }}>
-                  {/* Checkbox */}
-                  {canWrite ? (
-                    <TouchableOpacity
-                      style={{ width: 32, alignItems: 'center' }}
-                      onPress={() => {
-                        setSelectedIds((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(user.id)) next.delete(user.id);
-                          else next.add(user.id);
-                          return next;
-                        });
-                      }}
-                    >
-                      <View style={{
-                        width: 18, height: 18, borderRadius: 4, borderWidth: 2,
-                        borderColor: isSelected ? C.accent : C.muted,
-                        backgroundColor: isSelected ? C.accent : 'transparent',
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {isSelected ? <FontAwesome name="check" size={10} color="#fff" /> : null}
-                      </View>
-                    </TouchableOpacity>
-                  ) : null}
-
                   {/* CONTRATO */}
                   <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
                     <Text style={{ color: user.contrato ? C.text : C.muted, fontSize: 12, fontWeight: user.contrato ? '600' : '400' }} numberOfLines={1}>{user.contrato || '—'}</Text>
