@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Modal,
+  TextInput,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,85 +14,72 @@ import { useRouter, usePathname } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../LukiPlayLogo';
+import { ThemeProvider, useTheme } from '../../hooks/useTheme';
+import { SIDEBAR } from '../../styles/theme';
 
 // ---------------------------------------------------------------------------
-// Theme — Luki Play Brand (purple + gold)
+// Backward-compatible C export — pages still importing C get dark theme values
 // ---------------------------------------------------------------------------
-
 export const C = {
-  // Background hierarchy (deep purple)
-  bg:          '#160035',
-  panel:       'rgba(26, 6, 62, 0.96)',
-  sidebar:     'rgba(26, 6, 62, 0.97)',
-  surface:     'rgba(42, 14, 90, 0.88)',
-  surfaceAlt:  'rgba(55, 20, 110, 0.85)',
+  bg:          '#090909',
+  panel:       'rgba(18,18,18,0.92)',
+  sidebar:     'rgba(17,17,17,0.97)',
+  surface:     'rgba(24,24,24,0.86)',
+  surfaceAlt:  'rgba(30,30,30,0.90)',
   surfaceSoft: 'transparent',
-  lift:        'rgba(70, 28, 130, 0.92)',
-  tableHead:   'rgba(70, 28, 130, 0.92)',
-
-  // Borders
-  border:       'rgba(255,255,255,0.10)',
-  borderMid:    'rgba(255,184,0,0.28)',
-
-  // Primary accent: GOLD
-  accent:       '#FFB800',
-  accentLight:  '#FFDA6B',
-  accentSoft:   'rgba(255,184,0,0.14)',
-  accentBorder: 'rgba(255,184,0,0.36)',
-  accentGlow:   'rgba(255,184,0,0.26)',
-  accentFaint:  'rgba(255,184,0,0.14)',
-
-  // Secondary: light violet
-  cyan:        '#B490FF',
-  cyanSoft:    'rgba(180,144,255,0.16)',
-
-  // Semantic
-  green:       '#10B981',
-  greenSoft:   'rgba(16,185,129,0.16)',
+  lift:        'rgba(34,34,34,0.96)',
+  tableHead:   'rgba(34,34,34,0.96)',
+  border:      'rgba(255,255,255,0.08)',
+  borderMid:   'rgba(255,184,0,0.28)',
+  accent:      '#FFB800',
+  accentLight: '#FFDA6B',
+  accentSoft:  'rgba(255,184,0,0.12)',
+  accentBorder:'rgba(255,184,0,0.30)',
+  accentGlow:  'rgba(255,184,0,0.22)',
+  accentFaint: 'rgba(255,184,0,0.10)',
+  cyan:        '#17D1C6',
+  cyanSoft:    'rgba(23,209,198,0.14)',
+  green:       '#17D1C6',
+  greenSoft:   'rgba(23,209,198,0.14)',
   amber:       '#FFB800',
-  rose:        '#F43F5E',
-  roseSoft:    'rgba(244,63,94,0.16)',
-  success:     '#10B981',
-  danger:      '#F43F5E',
-
-  // Typography
-  muted:       '#8B72B2',
-  text:        '#FFFFFF',
-  textSec:     '#D0C4E8',
-  textDim:     '#D0C4E8',
-
-  // Extra
-  void:        '#160035',
-  dimmed:      '#0D0020',
+  rose:        '#D1105A',
+  roseSoft:    'rgba(209,16,90,0.14)',
+  success:     '#17D1C6',
+  danger:      '#D1105A',
+  muted:       'rgba(250,246,231,0.38)',
+  text:        '#FAF6E7',
+  textSec:     'rgba(250,246,231,0.65)',
+  textDim:     'rgba(250,246,231,0.50)',
+  void:        '#060606',
+  dimmed:      '#030303',
 };
 
 // ---------------------------------------------------------------------------
-// Sidebar nav definition
+// Nav definition
 // ---------------------------------------------------------------------------
-
 export interface NavItem {
-  label: string;
-  icon: React.ComponentProps<typeof FontAwesome>['name'];
-  path: string;
+  label:     string;
+  labelFull: string;
+  icon:      React.ComponentProps<typeof FontAwesome>['name'];
+  path:      string;
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    icon: 'th-large',    path: '/cms/dashboard' },
-  { label: 'Usuarios',     icon: 'users',       path: '/cms/users' },
-  { label: 'Componentes',  icon: 'puzzle-piece', path: '/cms/componentes' },
-  { label: 'Planes',       icon: 'star',        path: '/cms/planes' },
-  { label: 'Canales',      icon: 'tv',          path: '/cms/canales' },
-  { label: 'Categorías',   icon: 'tags',        path: '/cms/categorias' },
-  { label: 'Sliders',      icon: 'image',       path: '/cms/sliders' },
-  { label: 'Monitor',      icon: 'bar-chart',   path: '/cms/monitor' },
-  { label: 'Notificaciones al administrador', icon: 'bell', path: '/cms/notificaciones-admin' },
-  { label: 'Analítica',    icon: 'line-chart',  path: '/cms/analitica' },
-  { label: 'Propaganda',   icon: 'bullhorn',    path: '/cms/propaganda' },
-  { label: 'Notificaciones al abonado', icon: 'commenting', path: '/cms/notificaciones-abonado' },
-  { label: 'Roles',                    icon: 'shield',     path: '/cms/roles' },
+  { label: 'Dashboard',     labelFull: 'Dashboard',                         icon: 'th-large',    path: '/cms/dashboard'              },
+  { label: 'Usuarios',      labelFull: 'Usuarios',                          icon: 'users',       path: '/cms/users'                  },
+  { label: 'Componentes',   labelFull: 'Componentes',                       icon: 'puzzle-piece',path: '/cms/componentes'            },
+  { label: 'Planes',        labelFull: 'Planes',                            icon: 'star',        path: '/cms/planes'                 },
+  { label: 'Canales',       labelFull: 'Canales',                           icon: 'tv',          path: '/cms/canales'                },
+  { label: 'Categorías',    labelFull: 'Categorías',                        icon: 'tags',        path: '/cms/categorias'             },
+  { label: 'Sliders',       labelFull: 'Sliders',                           icon: 'image',       path: '/cms/sliders'                },
+  { label: 'Monitor',       labelFull: 'Monitor',                           icon: 'bar-chart',   path: '/cms/monitor'                },
+  { label: 'Notif. Admin',  labelFull: 'Notificaciones al administrador',   icon: 'bell',        path: '/cms/notificaciones-admin'   },
+  { label: 'Analítica',     labelFull: 'Analítica',                         icon: 'line-chart',  path: '/cms/analitica'              },
+  { label: 'Propaganda',    labelFull: 'Propaganda',                        icon: 'bullhorn',    path: '/cms/propaganda'             },
+  { label: 'Notif. Abon.',  labelFull: 'Notificaciones al abonado',         icon: 'commenting',  path: '/cms/notificaciones-abonado' },
+  { label: 'Roles',         labelFull: 'Roles',                             icon: 'shield',      path: '/cms/roles'                  },
 ];
 
-/** Map each nav item path → required permission key. */
 const NAV_PERMISSION_MAP: Record<string, string> = {
   '/cms/dashboard':              'cms:dashboard',
   '/cms/users':                  'cms:users',
@@ -108,20 +96,19 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   '/cms/roles':                  'cms:roles',
 };
 
-/** Check if a permission set grants access to a given key. */
 function hasPermission(permissions: string[] | undefined, key: string): boolean {
-  if (!permissions) return true; // no permissions = show all (backwards compat)
+  if (!permissions) return true;
   return permissions.includes('cms:*') || permissions.includes(key);
 }
 
 // ---------------------------------------------------------------------------
-// Sidebar
+// Sidebar — always dark, collapsible
 // ---------------------------------------------------------------------------
-
-function Sidebar() {
-  const router = useRouter();
+function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const router  = useRouter();
   const pathname = usePathname();
-  const profile = useCmsStore((s) => s.profile);
+  const profile  = useCmsStore((s) => s.profile);
+
   const visibleItems = NAV_ITEMS.filter((item) => {
     const key = NAV_PERMISSION_MAP[item.path];
     return !key || hasPermission(profile?.permissions, key);
@@ -129,138 +116,201 @@ function Sidebar() {
 
   return (
     <LinearGradient
-      colors={['rgba(26,6,62,0.97)', 'rgba(16,2,42,0.99)']}
+      colors={[SIDEBAR.bg1, SIDEBAR.bg2]}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{
-        width: 260,
+        width: collapsed ? 68 : 230,
         borderRightWidth: 1,
-        borderRightColor: C.border,
-        paddingTop: 18,
-        paddingBottom: 18,
-        paddingHorizontal: 14,
+        borderRightColor: SIDEBAR.border,
+        paddingTop: 0,
+        paddingBottom: 16,
         height: '100%',
+        overflow: 'hidden',
       }}
     >
-      <View
+      {/* Logo area — click to toggle collapse */}
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.75}
         style={{
-          borderRadius: 24,
-          borderWidth: 1,
-          borderColor: C.border,
-          padding: 16,
-          marginBottom: 18,
-          backgroundColor: C.surface,
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: collapsed ? 0 : 16,
+          paddingVertical: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: SIDEBAR.border,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          marginBottom: 8,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <LukiPlayLogo variant="icon" size={42} />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={{ color: C.text, fontWeight: '900', fontSize: 17 }}>LUKI PLAY</Text>
-              <Text style={{ color: C.muted, fontSize: 10, letterSpacing: 1.5 }}>CONTROL CENTER</Text>
-            </View>
+        <LukiPlayLogo variant="icon" size={36} />
+        {!collapsed && (
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <Text
+              style={{
+                color: SIDEBAR.text,
+                fontWeight: '900',
+                fontSize: 15,
+                letterSpacing: -0.3,
+              }}
+            >
+              LUKI PLAY
+            </Text>
+            <Text
+              style={{
+                color: SIDEBAR.textMuted,
+                fontSize: 8,
+                fontWeight: '800',
+                letterSpacing: 2.2,
+                textTransform: 'uppercase',
+              }}
+            >
+              CONTROL CENTER
+            </Text>
           </View>
-          <View
-            style={{
-              backgroundColor: C.accentFaint,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: C.accentBorder,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: C.accent, fontWeight: '900', fontSize: 14 }}>24</Text>
-            <Text style={{ color: C.muted, fontSize: 8, letterSpacing: 1.2 }}>LIVE</Text>
-          </View>
-        </View>
+        )}
+        {!collapsed && (
+          <FontAwesome name="bars" size={11} color={SIDEBAR.textMuted} />
+        )}
+      </TouchableOpacity>
 
+      {/* Section label */}
+      {!collapsed && (
+        <Text
+          style={{
+            color: SIDEBAR.sectionLabel,
+            fontSize: 9,
+            fontWeight: '800',
+            letterSpacing: 2.2,
+            marginHorizontal: 18,
+            marginBottom: 6,
+            textTransform: 'uppercase',
+            fontFamily: 'Manrope',
+          }}
+        >
+          NAVEGACIÓN
+        </Text>
+      )}
+
+      {/* Nav items */}
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={{ paddingHorizontal: collapsed ? 6 : 8, paddingTop: 2 }}>
+          {visibleItems.map((item) => {
+            const active =
+              pathname === item.path || pathname?.startsWith(`${item.path}/`);
+
+            return (
+              <Pressable
+                key={item.path}
+                style={({ hovered }: { hovered?: boolean }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: collapsed ? 0 : 12,
+                  paddingVertical: 11,
+                  marginBottom: 2,
+                  borderRadius: 11,
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  backgroundColor: active
+                    ? SIDEBAR.activeBg
+                    : hovered
+                    ? SIDEBAR.hoverBg
+                    : 'transparent',
+                  borderLeftWidth: active && !collapsed ? 2 : 0,
+                  borderLeftColor: SIDEBAR.activeBorder,
+                })}
+                onPress={() => router.push(item.path as never)}
+              >
+                <FontAwesome
+                  name={item.icon}
+                  size={13}
+                  color={active ? SIDEBAR.activeText : SIDEBAR.iconDefault}
+                />
+                {!collapsed && (
+                  <Text
+                    style={{
+                      color: active ? SIDEBAR.activeText : SIDEBAR.text,
+                      fontWeight: active ? '700' : '500',
+                      fontSize: 13,
+                      marginLeft: 11,
+                      flex: 1,
+                      fontFamily: 'Manrope',
+                    }}
+                    numberOfLines={1}
+                  >
+                    {item.label}
+                  </Text>
+                )}
+                {!collapsed && active && (
+                  <View
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: SIDEBAR.activeBorder,
+                    }}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Footer status */}
+      <View
+        style={{
+          borderTopWidth: 1,
+          borderTopColor: SIDEBAR.footerBorder,
+          paddingHorizontal: collapsed ? 0 : 16,
+          paddingTop: 12,
+          alignItems: collapsed ? 'center' : 'flex-start',
+        }}
+      >
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: C.lift,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: C.border,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
+            gap: 8,
           }}
         >
           <View
             style={{
-              width: 10,
-              height: 10,
-              borderRadius: 999,
-              backgroundColor: C.success,
-              marginRight: 10,
-              shadowColor: C.success,
-              shadowOpacity: 0.5,
-              shadowRadius: 8,
+              width: 7,
+              height: 7,
+              borderRadius: 4,
+              backgroundColor: '#17D1C6',
+              shadowColor: '#17D1C6',
+              shadowOpacity: 0.7,
+              shadowRadius: 6,
               shadowOffset: { width: 0, height: 0 },
             }}
           />
-          <View>
-            <Text style={{ color: C.text, fontWeight: '700', fontSize: 12 }}>Operación estable</Text>
-            <Text style={{ color: C.textDim, fontSize: 11 }}>CMS activo para revisión local</Text>
-          </View>
-        </View>
-      </View>
-
-      <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2, marginHorizontal: 12, marginBottom: 12 }}>
-        NAVEGACIÓN
-      </Text>
-
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {visibleItems.map((item) => {
-          const active = pathname === item.path || pathname?.startsWith(`${item.path}/`);
-          return (
-            <Pressable
-              key={item.path}
-              style={({ hovered }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 14,
-                paddingVertical: 15,
-                marginHorizontal: 4,
-                borderRadius: 18,
-                backgroundColor: active ? C.lift : hovered ? 'rgba(70,28,130,0.5)' : 'transparent',
-                borderWidth: 1,
-                borderColor: active ? C.accentBorder : 'transparent',
-                borderLeftWidth: active ? 3 : 1,
-                borderLeftColor: active ? C.accent : 'transparent',
-                marginBottom: 8,
-                ...(active ? {
-                  shadowColor: '#FFB800',
-                  shadowOpacity: 0.15,
-                  shadowRadius: 16,
-                  shadowOffset: { width: 0, height: 4 },
-                } : {}),
-              })}
-              onPress={() => router.push(item.path as never)}
-            >
-              <FontAwesome
-                name={item.icon}
-                size={15}
-                color={active ? C.accent : C.textDim}
-                style={{ width: 22 }}
-              />
+          {!collapsed && (
+            <View>
               <Text
                 style={{
-                  flex: 1,
-                  color: active ? C.text : C.textDim,
-                  fontWeight: active ? '800' : '600',
-                  fontSize: 13,
-                  marginLeft: 10,
+                  color: SIDEBAR.text,
+                  fontSize: 11,
+                  fontWeight: '600',
+                  fontFamily: 'Manrope',
                 }}
               >
-                {item.label}
+                Sistema operativo
               </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+              <Text
+                style={{
+                  color: SIDEBAR.textMuted,
+                  fontSize: 10,
+                  fontFamily: 'Manrope',
+                }}
+              >
+                CMS v1.0 · Sprint 1
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
     </LinearGradient>
   );
 }
@@ -268,11 +318,7 @@ function Sidebar() {
 // ---------------------------------------------------------------------------
 // TopBar
 // ---------------------------------------------------------------------------
-
-interface BreadcrumbItem {
-  label: string;
-  path?: string;
-}
+interface BreadcrumbItem { label: string; path?: string }
 
 function TopBar({
   breadcrumbs,
@@ -283,151 +329,202 @@ function TopBar({
   onLogout: () => void;
   onShowProfile: () => void;
 }) {
-  const router = useRouter();
   const { profile } = useCmsStore();
+  const { isDark, theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  const firstName = profile?.email?.split('@')[0].toUpperCase() ?? 'ADMIN';
-  const currentTitle = breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
+  const [searchText, setSearchText] = useState('');
+
+  const firstName = profile?.email?.split('@')[0] ?? 'admin';
+  const initials  = firstName.slice(0, 2).toUpperCase();
+  const pageTitle = breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
+
+  const fecha = new Date().toLocaleDateString('es-EC', {
+    weekday: 'long',
+    day:     'numeric',
+    month:   'long',
+    year:    'numeric',
+  });
 
   return (
     <View
       style={{
-        position: 'relative',
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection:  'row',
+        alignItems:     'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingVertical: 18,
-        backgroundColor: C.panel,
+        paddingVertical:   14,
+        backgroundColor:   theme.headerBg,
         borderBottomWidth: 1,
-        borderBottomColor: C.border,
-        zIndex: 50,
+        borderBottomColor: theme.border,
+        zIndex:    50,
         elevation: 50,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 }}>
-          {currentTitle}
+      {/* Left: page title + date */}
+      <View>
+        <Text
+          style={{
+            color:        theme.text,
+            fontSize:     20,
+            fontWeight:   '700',
+            letterSpacing: -0.4,
+            fontFamily:   'Sora',
+          }}
+        >
+          {pageTitle}
         </Text>
-        <View style={{
-          backgroundColor: C.accentFaint,
-          borderRadius: 8,
-          borderWidth: 1,
-          borderColor: C.accentBorder,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-        }}>
-          <Text style={{ color: C.accent, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 }}>
-            LUKI PLAY CMS
-          </Text>
-        </View>
+        <Text
+          style={{
+            color:     theme.textMuted,
+            fontSize:  11,
+            fontWeight:'500',
+            marginTop: 1,
+            textTransform: 'capitalize',
+            fontFamily: 'Manrope',
+          }}
+        >
+          {fecha}
+        </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      {/* Right: search + theme toggle + avatar */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {/* Search */}
         <View
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 16,
-            backgroundColor: C.lift,
-            borderWidth: 1,
-            borderColor: C.border,
-            alignItems: 'center',
-            justifyContent: 'center',
+            flexDirection: 'row',
+            alignItems:    'center',
+            backgroundColor: theme.surfaceBg,
+            borderRadius:    10,
+            borderWidth:     1,
+            borderColor:     theme.border,
+            paddingHorizontal: 12,
+            paddingVertical:    8,
+            gap: 8,
+            minWidth: 170,
           }}
         >
-          <FontAwesome name="bell-o" size={16} color={C.textDim} />
+          <FontAwesome name="search" size={11} color={theme.textMuted} />
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Buscar..."
+            placeholderTextColor={theme.textMuted}
+            style={[
+              {
+                flex:       1,
+                color:      theme.text,
+                fontSize:   13,
+                fontWeight: '500',
+                fontFamily: 'Manrope',
+              },
+              // web-only: remove outline ring
+              { outlineStyle: 'none' } as any,
+            ]}
+          />
         </View>
 
-        <View
+        {/* Dark / Light toggle */}
+        <TouchableOpacity
+          onPress={toggleTheme}
+          activeOpacity={0.75}
           style={{
-            position: 'relative',
+            width:           38,
+            height:          38,
+            borderRadius:    10,
+            backgroundColor: theme.surfaceBg,
+            borderWidth:     1,
+            borderColor:     theme.border,
+            alignItems:      'center',
+            justifyContent:  'center',
           }}
         >
+          <FontAwesome
+            name={isDark ? 'sun-o' : 'moon-o'}
+            size={15}
+            color={isDark ? theme.accent : theme.textMuted}
+          />
+        </TouchableOpacity>
+
+        {/* Avatar dropdown */}
+        <View style={{ position: 'relative' }}>
           <TouchableOpacity
-            onPress={() => setMenuOpen((current) => !current)}
+            onPress={() => setMenuOpen((o) => !o)}
+            activeOpacity={0.8}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              backgroundColor: C.lift,
-              borderRadius: 18,
-              borderWidth: 1,
-              borderColor: C.border,
+              flexDirection:   'row',
+              alignItems:      'center',
+              gap:             8,
+              backgroundColor: theme.surfaceBg,
+              borderRadius:    12,
+              borderWidth:     1,
+              borderColor:     theme.border,
               paddingHorizontal: 8,
-              paddingVertical: 7,
+              paddingVertical:   6,
             }}
           >
             <View
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: C.accentSoft,
-                borderWidth: 1,
-                borderColor: C.accentBorder,
+                width:  30,
+                height: 30,
+                borderRadius:    8,
+                alignItems:      'center',
+                justifyContent:  'center',
+                backgroundColor: theme.accentSoft,
+                borderWidth:     1,
+                borderColor:     theme.accentBorder,
               }}
             >
-              <Text style={{ color: C.accentLight, fontSize: 11, fontWeight: '900' }}>
-                {firstName.charAt(0)}
+              <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '800' }}>
+                {initials}
               </Text>
             </View>
-            <View>
-              <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>ADMIN</Text>
-              <Text style={{ color: C.muted, fontSize: 10 }}>{firstName}</Text>
-            </View>
-            <FontAwesome name={menuOpen ? 'chevron-up' : 'chevron-down'} size={12} color={C.textDim} />
+            <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: 'Manrope' }}>
+              {firstName}
+            </Text>
+            <FontAwesome
+              name={menuOpen ? 'chevron-up' : 'chevron-down'}
+              size={9}
+              color={theme.textMuted}
+            />
           </TouchableOpacity>
 
           {menuOpen && (
             <View
               style={{
-                position: 'absolute',
-                top: 56,
-                right: 0,
-                minWidth: 170,
-                backgroundColor: C.surface,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: C.border,
-                overflow: 'hidden',
-                zIndex: 60,
+                position:        'absolute',
+                top:             46,
+                right:           0,
+                minWidth:        160,
+                backgroundColor: theme.cardBg,
+                borderRadius:    12,
+                borderWidth:     1,
+                borderColor:     theme.border,
+                overflow:        'hidden',
+                zIndex:    60,
                 elevation: 60,
-                shadowColor: '#0D0020',
-                shadowOpacity: 0.5,
-                shadowRadius: 24,
-                shadowOffset: { width: 0, height: 10 },
+                shadowColor:   '#000',
+                shadowOpacity: 0.25,
+                shadowRadius:  16,
+                shadowOffset:  { width: 0, height: 8 },
               }}
             >
               <TouchableOpacity
-                onPress={() => {
-                  setMenuOpen(false);
-                  onShowProfile();
-                }}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  backgroundColor: C.surface,
-                }}
+                onPress={() => { setMenuOpen(false); onShowProfile(); }}
+                style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>Perfil</Text>
+                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: 'Manrope' }}>
+                  Perfil
+                </Text>
               </TouchableOpacity>
+              <View style={{ height: 1, backgroundColor: theme.border }} />
               <TouchableOpacity
-                onPress={() => {
-                  setMenuOpen(false);
-                  onLogout();
-                }}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  backgroundColor: C.lift,
-                  borderTopWidth: 1,
-                  borderTopColor: C.border,
-                }}
+                onPress={() => { setMenuOpen(false); onLogout(); }}
+                style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: C.danger, fontSize: 13, fontWeight: '700' }}>Cerrar sesión</Text>
+                <Text style={{ color: '#D1105A', fontSize: 13, fontWeight: '700', fontFamily: 'Manrope' }}>
+                  Cerrar sesión
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -440,7 +537,6 @@ function TopBar({
 // ---------------------------------------------------------------------------
 // ProfileModal
 // ---------------------------------------------------------------------------
-
 function ProfileModal({
   visible,
   onClose,
@@ -454,91 +550,110 @@ function ProfileModal({
   if (!profile) return null;
 
   const displayName = profile.email?.split('@')[0].toUpperCase() ?? 'USUARIO';
-  const initials = displayName.slice(0, 2);
+  const initials    = displayName.slice(0, 2);
 
   const roleMeta: Record<string, { label: string; color: string; bg: string }> = {
-    superadmin: { label: 'SUPERADMIN', color: C.accent, bg: C.accentSoft },
-    soporte:    { label: 'SOPORTE', color: C.cyan, bg: C.cyanSoft },
-    cliente:    { label: 'CLIENTE', color: C.textSec, bg: 'rgba(255,255,255,0.06)' },
+    superadmin: { label: 'SUPERADMIN', color: '#FFB800', bg: 'rgba(255,184,0,0.12)'     },
+    admin:      { label: 'ADMIN',      color: '#B07CC6', bg: 'rgba(176,124,198,0.12)'   },
+    soporte:    { label: 'SOPORTE',    color: '#17D1C6', bg: 'rgba(23,209,198,0.12)'    },
+    cliente:    { label: 'CLIENTE',    color: 'rgba(255,255,255,0.45)', bg: 'rgba(255,255,255,0.06)' },
   };
-  const role = roleMeta[profile.role] ?? roleMeta.cliente;
+  const role = roleMeta[profile.role?.toLowerCase()] ?? roleMeta.cliente;
 
   const statusMeta: Record<string, { label: string; color: string; bg: string }> = {
-    active:    { label: 'Activo', color: C.green, bg: C.greenSoft },
-    inactive:  { label: 'Inactivo', color: C.rose, bg: C.roseSoft },
-    suspended: { label: 'Suspendido', color: C.amber, bg: C.accentSoft },
+    active:    { label: 'Activo',     color: '#17D1C6', bg: 'rgba(23,209,198,0.12)'  },
+    inactive:  { label: 'Inactivo',   color: '#D1105A', bg: 'rgba(209,16,90,0.12)'   },
+    suspended: { label: 'Suspendido', color: '#FF7900', bg: 'rgba(255,121,0,0.12)'   },
   };
   const status = statusMeta[profile.status] ?? statusMeta.active;
 
   const infoRows: { label: string; value: string; icon: React.ComponentProps<typeof FontAwesome>['name'] }[] = [
-    { label: 'Correo electrónico', value: profile.email, icon: 'envelope' },
-    { label: 'ID de usuario', value: profile.id, icon: 'id-badge' },
-    { label: 'Rol', value: role.label, icon: 'shield' },
-    { label: 'Estado', value: status.label, icon: 'circle' },
-    { label: 'Contrato', value: profile.contractNumber ?? 'N/A — Usuario interno', icon: 'file-text-o' },
+    { label: 'Correo electrónico', value: profile.email,                              icon: 'envelope'    },
+    { label: 'ID de usuario',      value: profile.id,                                 icon: 'id-badge'    },
+    { label: 'Rol',                value: role.label,                                 icon: 'shield'      },
+    { label: 'Estado',             value: status.label,                               icon: 'circle'      },
+    { label: 'Contrato',           value: profile.contractNumber ?? 'N/A — Interno',  icon: 'file-text-o' },
   ];
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
         style={{
-          flex: 1,
+          flex:            1,
           backgroundColor: 'rgba(0,0,0,0.55)',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20,
+          justifyContent:  'center',
+          alignItems:      'center',
+          padding:         20,
         }}
         onPress={onClose}
       >
         <Pressable
           style={{
-            width: '100%',
-            maxWidth: 440,
-            backgroundColor: C.panel,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: C.border,
-            overflow: 'hidden',
-            shadowColor: '#0D0020',
-            shadowOpacity: 0.6,
-            shadowRadius: 40,
-            shadowOffset: { width: 0, height: 20 },
+            width:           '100%',
+            maxWidth:        440,
+            backgroundColor: '#111111',
+            borderRadius:    20,
+            borderWidth:     1,
+            borderColor:     'rgba(255,255,255,0.10)',
+            overflow:        'hidden',
+            shadowColor:     '#000',
+            shadowOpacity:   0.6,
+            shadowRadius:    40,
+            shadowOffset:    { width: 0, height: 20 },
           }}
           onPress={() => {}}
         >
-          {/* Header */}
+          {/* Header gradient */}
           <LinearGradient
-            colors={['rgba(70,28,130,0.6)', 'rgba(42,14,90,0.9)']}
+            colors={['rgba(36,0,70,0.97)', 'rgba(96,38,158,0.88)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ padding: 24, alignItems: 'center' }}
           >
             <View
               style={{
-                width: 64,
-                height: 64,
-                borderRadius: 20,
-                backgroundColor: C.accentSoft,
-                borderWidth: 2,
-                borderColor: C.accentBorder,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 12,
+                width:           64,
+                height:          64,
+                borderRadius:    20,
+                backgroundColor: 'rgba(255,184,0,0.15)',
+                borderWidth:     2,
+                borderColor:     'rgba(255,184,0,0.35)',
+                alignItems:      'center',
+                justifyContent:  'center',
+                marginBottom:    12,
               }}
             >
-              <Text style={{ color: C.accent, fontSize: 22, fontWeight: '900' }}>{initials}</Text>
+              <Text style={{ color: '#FFB800', fontSize: 22, fontWeight: '900' }}>{initials}</Text>
             </View>
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>
+            <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800', marginBottom: 8, fontFamily: 'Sora' }}>
               {displayName}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ backgroundColor: role.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: role.color + '33' }}>
-                <Text style={{ color: role.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 }}>{role.label}</Text>
+              <View
+                style={{
+                  backgroundColor: role.bg,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                }}
+              >
+                <Text style={{ color: role.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, fontFamily: 'Manrope' }}>
+                  {role.label}
+                </Text>
               </View>
-              <View style={{ backgroundColor: status.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: status.color + '33' }}>
+              <View
+                style={{
+                  backgroundColor: status.bg,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: status.color }} />
-                  <Text style={{ color: status.color, fontSize: 10, fontWeight: '700' }}>{status.label}</Text>
+                  <Text style={{ color: status.color, fontSize: 10, fontWeight: '700', fontFamily: 'Manrope' }}>
+                    {status.label}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -546,35 +661,78 @@ function ProfileModal({
 
           {/* Info rows */}
           <View style={{ padding: 20 }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 }}>
+            <Text
+              style={{
+                color:         'rgba(255,255,255,0.35)',
+                fontSize:      10,
+                fontWeight:    '800',
+                letterSpacing: 1.5,
+                marginBottom:  12,
+                fontFamily:    'Manrope',
+              }}
+            >
               INFORMACIÓN DE LA CUENTA
             </Text>
             {infoRows.map((row, i) => (
               <View
                 key={row.label}
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 10,
+                  flexDirection:     'row',
+                  alignItems:        'center',
+                  paddingVertical:   10,
                   borderBottomWidth: i < infoRows.length - 1 ? 1 : 0,
-                  borderBottomColor: C.border,
+                  borderBottomColor: 'rgba(255,255,255,0.07)',
                 }}
               >
-                <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: C.lift, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <FontAwesome name={row.icon} size={12} color={C.muted} />
+                <View
+                  style={{
+                    width:           30,
+                    height:          30,
+                    borderRadius:    8,
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    alignItems:      'center',
+                    justifyContent:  'center',
+                    marginRight:     12,
+                  }}
+                >
+                  <FontAwesome name={row.icon} size={12} color="rgba(255,255,255,0.35)" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', marginBottom: 2 }}>{row.label}</Text>
-                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{row.value}</Text>
+                  <Text
+                    style={{
+                      color:      'rgba(255,255,255,0.38)',
+                      fontSize:   10,
+                      fontWeight: '700',
+                      marginBottom: 2,
+                      fontFamily: 'Manrope',
+                    }}
+                  >
+                    {row.label}
+                  </Text>
+                  <Text
+                    style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', fontFamily: 'Manrope' }}
+                    numberOfLines={1}
+                  >
+                    {row.value}
+                  </Text>
                 </View>
               </View>
             ))}
           </View>
 
           {/* Permissions */}
-          {profile.permissions && profile.permissions.length > 0 ? (
+          {profile.permissions && profile.permissions.length > 0 && (
             <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 10 }}>
+              <Text
+                style={{
+                  color:         'rgba(255,255,255,0.35)',
+                  fontSize:      10,
+                  fontWeight:    '800',
+                  letterSpacing: 1.5,
+                  marginBottom:  10,
+                  fontFamily:    'Manrope',
+                }}
+              >
                 PERMISOS ASIGNADOS
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -582,51 +740,57 @@ function ProfileModal({
                   <View
                     key={p}
                     style={{
-                      backgroundColor: C.lift,
-                      borderRadius: 8,
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      borderRadius:    6,
                       paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderWidth: 1,
-                      borderColor: C.border,
+                      paddingVertical:   4,
+                      borderWidth:     1,
+                      borderColor:     'rgba(255,255,255,0.08)',
                     }}
                   >
-                    <Text style={{ color: C.textSec, fontSize: 10, fontWeight: '600' }}>{p}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', fontFamily: 'Manrope' }}>
+                      {p}
+                    </Text>
                   </View>
                 ))}
               </View>
             </View>
-          ) : null}
+          )}
 
           {/* Actions */}
           <View style={{ padding: 20, paddingTop: 4, gap: 8 }}>
             <TouchableOpacity
               onPress={() => { onClose(); onLogout(); }}
               style={{
-                backgroundColor: C.roseSoft,
-                borderRadius: 14,
+                backgroundColor: 'rgba(209,16,90,0.12)',
+                borderRadius:    12,
                 paddingVertical: 12,
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(244,63,94,0.2)',
+                alignItems:      'center',
+                borderWidth:     1,
+                borderColor:     'rgba(209,16,90,0.25)',
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <FontAwesome name="sign-out" size={14} color={C.rose} />
-                <Text style={{ color: C.rose, fontWeight: '700', fontSize: 13 }}>Cerrar sesión</Text>
+                <FontAwesome name="sign-out" size={14} color="#D1105A" />
+                <Text style={{ color: '#D1105A', fontWeight: '700', fontSize: 13, fontFamily: 'Manrope' }}>
+                  Cerrar sesión
+                </Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onClose}
               style={{
-                backgroundColor: C.lift,
-                borderRadius: 14,
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                borderRadius:    12,
                 paddingVertical: 12,
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: C.border,
+                alignItems:      'center',
+                borderWidth:     1,
+                borderColor:     'rgba(255,255,255,0.08)',
               }}
             >
-              <Text style={{ color: C.textSec, fontWeight: '600', fontSize: 13 }}>Cerrar</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '600', fontSize: 13, fontFamily: 'Manrope' }}>
+                Cerrar
+              </Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -636,20 +800,25 @@ function ProfileModal({
 }
 
 // ---------------------------------------------------------------------------
-// CmsShell — main layout wrapper
+// CmsShellInner — consumes ThemeContext
 // ---------------------------------------------------------------------------
-
 interface CmsShellProps {
   breadcrumbs: BreadcrumbItem[];
-  children: React.ReactNode;
+  children:    React.ReactNode;
 }
 
-export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
+function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
   const { profile, logout } = useCmsStore();
   const router = useRouter();
+  const { isDark, theme } = useTheme();
   const { width } = useWindowDimensions();
-  const showSidebar = width >= 768;
-  const [showProfile, setShowProfile] = useState(false);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showProfile,      setShowProfile]      = useState(false);
+
+  useEffect(() => {
+    setSidebarCollapsed(width < 1024);
+  }, [width]);
 
   const handleLogout = () => {
     logout();
@@ -659,42 +828,75 @@ export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
   if (!profile) return null;
 
   return (
-    <LinearGradient
-      colors={['#1a0040', '#2e0a6e', '#4a18a0', '#2e0a6e']}
-      locations={[0, 0.4, 0.7, 1]}
-      start={{ x: 0.2, y: 0 }}
-      end={{ x: 0.8, y: 1 }}
-      style={{ flex: 1, flexDirection: 'row', overflow: 'hidden' }}
+    <View
+      style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bodyBg, overflow: 'hidden' }}
     >
-      {/* Bokeh orb 1 — purple, top-right */}
-      <View style={{
-        position: 'absolute', top: -120, right: -80,
-        width: 500, height: 500, borderRadius: 250,
-        backgroundColor: 'rgba(123,47,190,0.25)',
-      }} />
-      {/* Bokeh orb 2 — purple, bottom-left */}
-      <View style={{
-        position: 'absolute', bottom: -60, left: -100,
-        width: 400, height: 400, borderRadius: 200,
-        backgroundColor: 'rgba(90,30,158,0.20)',
-      }} />
-      {/* Bokeh orb 3 — faint gold, center-right */}
-      <View style={{
-        position: 'absolute', top: '30%', right: '20%',
-        width: 300, height: 300, borderRadius: 150,
-        backgroundColor: 'rgba(255,184,0,0.06)',
-      }} />
+      {/* Yellow radial orbs — dark mode only */}
+      {isDark && (
+        <>
+          <View
+            style={{
+              position:        'absolute',
+              top:             -140,
+              left:            -140,
+              width:           500,
+              height:          500,
+              borderRadius:    250,
+              backgroundColor: 'rgba(255,198,41,0.08)',
+            }}
+            pointerEvents="none"
+          />
+          <View
+            style={{
+              position:        'absolute',
+              top:             -80,
+              right:           '4%',
+              width:           320,
+              height:          320,
+              borderRadius:    160,
+              backgroundColor: 'rgba(255,213,77,0.04)',
+            }}
+            pointerEvents="none"
+          />
+        </>
+      )}
 
-      {showSidebar && <Sidebar />}
+      {/* Sidebar — always dark, hide below 640px */}
+      {width >= 640 && (
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((c) => !c)}
+        />
+      )}
 
+      {/* Main content */}
       <View style={{ flex: 1, overflow: 'hidden', zIndex: 1 }}>
-        <TopBar breadcrumbs={breadcrumbs} onLogout={handleLogout} onShowProfile={() => setShowProfile(true)} />
-        <View style={{ flex: 1, zIndex: 1 }}>
+        <TopBar
+          breadcrumbs={breadcrumbs}
+          onLogout={handleLogout}
+          onShowProfile={() => setShowProfile(true)}
+        />
+        <View style={{ flex: 1, overflow: 'hidden' }}>
           {children}
         </View>
       </View>
 
-      <ProfileModal visible={showProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} />
-    </LinearGradient>
+      <ProfileModal
+        visible={showProfile}
+        onClose={() => setShowProfile(false)}
+        onLogout={handleLogout}
+      />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CmsShell — public export, provides ThemeProvider
+// ---------------------------------------------------------------------------
+export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
+  return (
+    <ThemeProvider>
+      <CmsShellInner breadcrumbs={breadcrumbs}>{children}</CmsShellInner>
+    </ThemeProvider>
   );
 }
