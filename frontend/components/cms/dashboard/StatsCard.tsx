@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MiniChart from '../ui/MiniChart';
 import { useTheme } from '../../../hooks/useTheme';
+import { FONT_FAMILY } from '../../../styles/typography';
 
 interface StatsCardProps {
   label: string;
@@ -57,7 +58,7 @@ export default function StatsCard({
             textTransform: 'uppercase',
             flex: 1,
             marginRight: 8,
-            fontFamily: 'Manrope',
+            fontFamily: FONT_FAMILY.bodyBold,
           }}
         >
           {label}
@@ -84,7 +85,7 @@ export default function StatsCard({
           fontWeight: '700',
           marginBottom: 10,
           letterSpacing: -0.5,
-          fontFamily: 'Manrope',
+          fontFamily: FONT_FAMILY.bodyBold,
         }}
       >
         {value}
@@ -103,7 +104,7 @@ export default function StatsCard({
             color: trendColor,
             fontSize: 12,
             fontWeight: '700',
-            fontFamily: 'Manrope',
+            fontFamily: FONT_FAMILY.bodySemiBold,
           }}
         >
           {trend}

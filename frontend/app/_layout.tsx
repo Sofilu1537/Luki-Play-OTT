@@ -1,4 +1,5 @@
 import './global.css';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -23,12 +24,22 @@ SplashScreen.preventAutoHideAsync();
  * - `player` — fullscreen video player
  */
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Heavitas: require('../assets/fonts/Heavitas.ttf'),
+    'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
+    'Montserrat-SemiBold': require('../assets/fonts/Montserrat-SemiBold.ttf'),
+    'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
+  });
+
   useEffect(() => {
+    if (!fontsLoaded) return;
     const timer = setTimeout(() => {
       SplashScreen.hideAsync();
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <>

@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import StatusBadge from '../ui/StatusBadge';
 import { useTheme } from '../../../hooks/useTheme';
+import { FONT_FAMILY } from '../../../styles/typography';
 
 interface Channel {
   id: string;
@@ -47,7 +48,7 @@ export default function LiveChannels() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <FontAwesome name="tv" size={13} color={theme.textMuted} />
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700', fontFamily: 'Manrope' }}>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Canales en vivo
           </Text>
         </View>
@@ -92,13 +93,13 @@ export default function LiveChannels() {
               {/* Name + quality */}
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text
-                  style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: 'Manrope' }}
+                  style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
                   numberOfLines={1}
                 >
                   {channel.name}
                 </Text>
                 <Text
-                  style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', marginTop: 2, fontFamily: 'Manrope' }}
+                  style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', marginTop: 2, fontFamily: FONT_FAMILY.bodySemiBold }}
                 >
                   {channel.quality}
                 </Text>
@@ -110,7 +111,7 @@ export default function LiveChannels() {
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 10 }}
                 >
                   <FontAwesome name="eye" size={9} color={theme.textMuted} />
-                  <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '600', fontFamily: 'Manrope' }}>
+                  <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
                     {channel.viewers.toLocaleString()}
                   </Text>
                 </View>

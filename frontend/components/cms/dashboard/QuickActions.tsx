@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../hooks/useTheme';
+import { FONT_FAMILY } from '../../../styles/typography';
 
 interface QuickAction {
   icon: React.ComponentProps<typeof FontAwesome>['name'];
@@ -84,7 +85,7 @@ export default function QuickActions() {
                 fontSize: 14,
                 fontWeight: '700',
                 marginBottom: 3,
-                fontFamily: 'Manrope',
+                fontFamily: FONT_FAMILY.bodySemiBold,
               }}
             >
               {action.title}
@@ -95,7 +96,7 @@ export default function QuickActions() {
                 fontSize: 11,
                 fontWeight: '500',
                 lineHeight: 15,
-                fontFamily: 'Manrope',
+                fontFamily: FONT_FAMILY.body,
               }}
             >
               {action.description}

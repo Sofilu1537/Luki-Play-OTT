@@ -16,6 +16,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../LukiPlayLogo';
 import { ThemeProvider, useTheme } from '../../hooks/useTheme';
 import { SIDEBAR } from '../../styles/theme';
+import { FONT_FAMILY } from '../../styles/typography';
 
 // ---------------------------------------------------------------------------
 // Backward-compatible C export — pages still importing C get dark theme values
@@ -186,7 +187,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
             marginHorizontal: 18,
             marginBottom: 6,
             textTransform: 'uppercase',
-            fontFamily: 'Manrope',
+            fontFamily: FONT_FAMILY.bodySemiBold,
           }}
         >
           NAVEGACIÓN
@@ -234,7 +235,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                       fontSize: 13,
                       marginLeft: 11,
                       flex: 1,
-                      fontFamily: 'Manrope',
+                      fontFamily: FONT_FAMILY.bodySemiBold,
                     }}
                     numberOfLines={1}
                   >
@@ -293,7 +294,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                   color: SIDEBAR.text,
                   fontSize: 11,
                   fontWeight: '600',
-                  fontFamily: 'Manrope',
+                  fontFamily: FONT_FAMILY.bodySemiBold,
                 }}
               >
                 Sistema operativo
@@ -302,7 +303,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                 style={{
                   color: SIDEBAR.textMuted,
                   fontSize: 10,
-                  fontFamily: 'Manrope',
+                  fontFamily: FONT_FAMILY.body,
                 }}
               >
                 CMS v1.0 · Sprint 1
@@ -368,7 +369,7 @@ function TopBar({
             fontSize:     20,
             fontWeight:   '700',
             letterSpacing: -0.4,
-            fontFamily:   'Sora',
+            fontFamily:   FONT_FAMILY.heading,
           }}
         >
           {pageTitle}
@@ -380,7 +381,7 @@ function TopBar({
             fontWeight:'500',
             marginTop: 1,
             textTransform: 'capitalize',
-            fontFamily: 'Manrope',
+            fontFamily: FONT_FAMILY.body,
           }}
         >
           {fecha}
@@ -416,7 +417,7 @@ function TopBar({
                 color:      theme.text,
                 fontSize:   13,
                 fontWeight: '500',
-                fontFamily: 'Manrope',
+                fontFamily: FONT_FAMILY.body,
               },
               // web-only: remove outline ring
               { outlineStyle: 'none' } as any,
@@ -479,7 +480,7 @@ function TopBar({
                 {initials}
               </Text>
             </View>
-            <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: 'Manrope' }}>
+            <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
               {firstName}
             </Text>
             <FontAwesome
@@ -513,7 +514,7 @@ function TopBar({
                 onPress={() => { setMenuOpen(false); onShowProfile(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: 'Manrope' }}>
+                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   Perfil
                 </Text>
               </TouchableOpacity>
@@ -522,7 +523,7 @@ function TopBar({
                 onPress={() => { setMenuOpen(false); onLogout(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: '#D1105A', fontSize: 13, fontWeight: '700', fontFamily: 'Manrope' }}>
+                <Text style={{ color: '#D1105A', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodyBold }}>
                   Cerrar sesión
                 </Text>
               </TouchableOpacity>
@@ -625,7 +626,7 @@ function ProfileModal({
             >
               <Text style={{ color: '#FFB800', fontSize: 22, fontWeight: '900' }}>{initials}</Text>
             </View>
-            <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800', marginBottom: 8, fontFamily: 'Sora' }}>
+            <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800', marginBottom: 8, fontFamily: FONT_FAMILY.heading }}>
               {displayName}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -637,7 +638,7 @@ function ProfileModal({
                   paddingVertical: 4,
                 }}
               >
-                <Text style={{ color: role.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, fontFamily: 'Manrope' }}>
+                <Text style={{ color: role.color, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, fontFamily: FONT_FAMILY.bodyBold }}>
                   {role.label}
                 </Text>
               </View>
@@ -651,7 +652,7 @@ function ProfileModal({
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: status.color }} />
-                  <Text style={{ color: status.color, fontSize: 10, fontWeight: '700', fontFamily: 'Manrope' }}>
+                  <Text style={{ color: status.color, fontSize: 10, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
                     {status.label}
                   </Text>
                 </View>
@@ -668,7 +669,7 @@ function ProfileModal({
                 fontWeight:    '800',
                 letterSpacing: 1.5,
                 marginBottom:  12,
-                fontFamily:    'Manrope',
+                fontFamily:    FONT_FAMILY.bodyBold,
               }}
             >
               INFORMACIÓN DE LA CUENTA
@@ -704,13 +705,13 @@ function ProfileModal({
                       fontSize:   10,
                       fontWeight: '700',
                       marginBottom: 2,
-                      fontFamily: 'Manrope',
+                      fontFamily: FONT_FAMILY.bodySemiBold,
                     }}
                   >
                     {row.label}
                   </Text>
                   <Text
-                    style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', fontFamily: 'Manrope' }}
+                    style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
                     numberOfLines={1}
                   >
                     {row.value}
@@ -730,7 +731,7 @@ function ProfileModal({
                   fontWeight:    '800',
                   letterSpacing: 1.5,
                   marginBottom:  10,
-                  fontFamily:    'Manrope',
+                  fontFamily:    FONT_FAMILY.bodyBold,
                 }}
               >
                 PERMISOS ASIGNADOS
@@ -748,7 +749,7 @@ function ProfileModal({
                       borderColor:     'rgba(255,255,255,0.08)',
                     }}
                   >
-                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', fontFamily: 'Manrope' }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
                       {p}
                     </Text>
                   </View>
@@ -772,7 +773,7 @@ function ProfileModal({
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <FontAwesome name="sign-out" size={14} color="#D1105A" />
-                <Text style={{ color: '#D1105A', fontWeight: '700', fontSize: 13, fontFamily: 'Manrope' }}>
+                <Text style={{ color: '#D1105A', fontWeight: '700', fontSize: 13, fontFamily: FONT_FAMILY.bodyBold }}>
                   Cerrar sesión
                 </Text>
               </View>
@@ -788,7 +789,7 @@ function ProfileModal({
                 borderColor:     'rgba(255,255,255,0.08)',
               }}
             >
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '600', fontSize: 13, fontFamily: 'Manrope' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '600', fontSize: 13, fontFamily: FONT_FAMILY.bodySemiBold }}>
                 Cerrar
               </Text>
             </TouchableOpacity>

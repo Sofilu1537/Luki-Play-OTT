@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import StatusBadge from '../ui/StatusBadge';
 import { useTheme } from '../../../hooks/useTheme';
+import { FONT_FAMILY } from '../../../styles/typography';
 
 interface ContentItem {
   id: string;
@@ -47,12 +48,12 @@ export default function RecentContent() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <FontAwesome name="play-circle" size={13} color={theme.textMuted} />
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700', fontFamily: 'Manrope' }}>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Contenido reciente
           </Text>
         </View>
         <TouchableOpacity activeOpacity={0.7}>
-          <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600', fontFamily: 'Manrope' }}>
+          <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Ver todo
           </Text>
         </TouchableOpacity>
@@ -76,7 +77,7 @@ export default function RecentContent() {
                 fontSize: 13,
                 fontWeight: '600',
                 marginBottom: 5,
-                fontFamily: 'Manrope',
+                fontFamily: FONT_FAMILY.bodySemiBold,
               }}
               numberOfLines={1}
             >
@@ -90,12 +91,12 @@ export default function RecentContent() {
                 />
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                   <FontAwesome name="eye" size={9} color={theme.textMuted} />
-                  <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', fontFamily: 'Manrope' }}>
+                  <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
                     {item.views.toLocaleString()}
                   </Text>
                 </View>
               </View>
-              <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', fontFamily: 'Manrope' }}>
+              <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
                 {item.addedAt}
               </Text>
             </View>
