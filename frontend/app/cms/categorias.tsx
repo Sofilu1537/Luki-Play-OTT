@@ -47,7 +47,7 @@ const CATEGORY_META: Record<string, {
 
 function matchesCategory(categoryName: string, canal: AdminCanal) {
   const normalizedCategory = normalizeKey(categoryName);
-  const normalizedCanal = normalizeKey(canal.categoria || '');
+  const normalizedCanal = normalizeKey(canal.category?.nombre || '');
   const meta = CATEGORY_META[normalizedCategory];
   const aliases = meta?.aliases?.map(normalizeKey) ?? [];
   return normalizedCanal === normalizedCategory || aliases.includes(normalizedCanal);

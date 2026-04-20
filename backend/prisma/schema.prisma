@@ -28,6 +28,26 @@ enum SessionLimitPolicy {
   REPLACE_OLDEST
 }
 
+enum ChannelStatus {
+  ACTIVE
+  SCHEDULED
+  MAINTENANCE
+  INACTIVE
+}
+
+enum StreamProtocol {
+  HLS
+  DASH
+  HLS_DASH
+}
+
+enum ChannelHealthStatus {
+  HEALTHY
+  DEGRADED
+  OFFLINE
+  MAINTENANCE
+}
+
 // ─── Models ──────────────────────────────────────────────
 
 model Customer {
@@ -178,4 +198,66 @@ model SyncLog {
   createdAt          DateTime  @default(now())
 
   @@map("sync_log")
+}
+
+model Category {
+  id            String    @id @default(uuid())
+  nombre        String    @unique
+  descripcion   String    @default("")
+  icono         String    @default("")
+  activo        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  channels Channel[]
+
+  @@map("categories")
+}
+
+model Channel {
+  id                      String              @id @default(uuid())
+  nombre                  String              @unique
+  slug                    String              @unique
+
+  // Stream URLs
+  streamUrl               String
+  backupUrl               String?
+
+  // Metadata
+  logoUrl                 String?
+  categoryId              String
+  category                Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  epgSourceId             String?
+
+  // Status & Status Management
+  status                  ChannelStatus       @default(ACTIVE)
+  isLive                  Boolean             @default(false)
+  healthStatus            ChannelHealthStatus @default(OFFLINE)
+  uptimePercent           Float               @default(0)
+  lastHealthCheckAt       DateTime?
+
+  // Stream Configuration
+  streamProtocol          StreamProtocol      @default(HLS)
+  resolution              String              @default("1080p")
+  bitrateKbps             Int                 @default(5000)
+  isDrmProtected          Boolean             @default(false)
+
+  // Geographic & Access Control
+  geoRestriction          String?
+  sortOrder               Int                 @default(99)
+  planIds                 String[]            @default([])
+  requiereControlParental Boolean             @default(false)
+
+  // Analytics & Monitoring
+  viewerCount             Int                 @default(0)
+
+  // Audit
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  deletedAt               DateTime?
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([isLive])
+  @@map("channels")
 }

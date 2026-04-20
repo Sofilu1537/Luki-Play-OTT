@@ -1,13 +1,8 @@
 /**
  * channelStore — Single source of truth for CMS channels.
  *
- * Architecture:
- *  - Channels start completely EMPTY on a fresh install.
- *  - Each channel stores BOTH categoryId (relational FK) AND categoria (denormalized name).
- *  - categoriasStore calls updateCategoryName / deassignCategory on category events.
- *  - All views (canales, monitor) subscribe here — no API polling required.
- *  - Designed to migrate to a real DB without breaking the contract:
- *    just swap the persist() stub for an API call.
+ * Syncs from the backend API (Prisma) and caches locally.
+ * Optimistic updates: updates local state immediately, API persists in background.
  */
 import { create } from 'zustand';
 import type { AdminCanal, AdminCanalPayload } from './api/adminApi';
@@ -41,27 +36,22 @@ function genId() {
   return `ch-local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function autoSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface ChannelState {
   channels: AdminCanal[];
-  /** Sync from API response (no-op if empty — preserves local state). */
   syncFromApi: (data: AdminCanal[]) => void;
   createChannel: (payload: AdminCanalPayload) => AdminCanal;
   updateChannel: (id: string, patch: Partial<AdminCanalPayload>) => void;
   toggleChannelStatus: (id: string) => void;
   deleteChannel: (id: string) => void;
-  /**
-   * Called by categoriasStore when a category's name changes.
-   * Updates the denormalized `categoria` field on all affected channels.
-   */
   updateCategoryName: (categoryId: string, newName: string) => void;
-  /**
-   * Called by categoriasStore when a category is deleted.
-   * Sets categoryId = '' and categoria = 'Sin categoría' on affected channels.
-   */
   deassignCategory: (categoryId: string) => void;
 }
 
@@ -88,16 +78,27 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
     const record: AdminCanal = {
       id: genId(),
       nombre,
-      logo: payload.logo?.trim() ?? '',
+      slug: payload.slug || autoSlug(nombre),
       streamUrl: payload.streamUrl?.trim() ?? '',
-      detalle: payload.detalle?.trim() ?? '',
+      backupUrl: payload.backupUrl?.trim(),
+      logoUrl: payload.logoUrl?.trim(),
       categoryId: payload.categoryId.trim(),
-      categoria: payload.categoria?.trim() || 'General',
-      tipo: 'live',
+      epgSourceId: payload.epgSourceId,
+      status: payload.status ?? 'ACTIVE',
+      isLive: false,
+      healthStatus: 'OFFLINE',
+      uptimePercent: 0,
+      streamProtocol: payload.streamProtocol ?? 'HLS',
+      resolution: payload.resolution ?? '1080p',
+      bitrateKbps: payload.bitrateKbps ?? 5000,
+      isDrmProtected: payload.isDrmProtected ?? false,
+      geoRestriction: payload.geoRestriction,
+      sortOrder: payload.sortOrder ?? 99,
+      planIds: payload.planIds ?? [],
       requiereControlParental: payload.requiereControlParental ?? false,
-      activo: payload.activo ?? true,
-      creadoEn: now,
-      actualizadoEn: now,
+      viewerCount: 0,
+      createdAt: now,
+      updatedAt: now,
     };
     set({ channels: persist([record, ...current]) });
     return record;
@@ -117,10 +118,8 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
             ...patch,
             nombre: patch.nombre?.trim() ?? c.nombre,
             streamUrl: patch.streamUrl?.trim() ?? c.streamUrl,
-            detalle: patch.detalle?.trim() ?? c.detalle,
             categoryId: patch.categoryId?.trim() || c.categoryId,
-            categoria: patch.categoria?.trim() || c.categoria,
-            actualizadoEn: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           }
         : c,
     );
@@ -129,7 +128,13 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
 
   toggleChannelStatus(id) {
     const next = get().channels.map((c) =>
-      c.id === id ? { ...c, activo: !c.activo, actualizadoEn: new Date().toISOString() } : c,
+      c.id === id
+        ? {
+            ...c,
+            status: c.status === 'ACTIVE' ? ('INACTIVE' as const) : ('ACTIVE' as const),
+            updatedAt: new Date().toISOString(),
+          }
+        : c,
     );
     set({ channels: persist(next) });
   },
@@ -141,7 +146,7 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
   updateCategoryName(categoryId, newName) {
     const next = get().channels.map((c) =>
       c.categoryId === categoryId
-        ? { ...c, categoria: newName, actualizadoEn: new Date().toISOString() }
+        ? { ...c, updatedAt: new Date().toISOString() }
         : c,
     );
     set({ channels: persist(next) });
@@ -150,7 +155,7 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
   deassignCategory(categoryId) {
     const next = get().channels.map((c) =>
       c.categoryId === categoryId
-        ? { ...c, categoryId: '', categoria: 'Sin categoría', actualizadoEn: new Date().toISOString() }
+        ? { ...c, categoryId: '', updatedAt: new Date().toISOString() }
         : c,
     );
     set({ channels: persist(next) });

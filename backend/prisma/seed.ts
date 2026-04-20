@@ -153,7 +153,32 @@ async function main() {
 
     console.log('✅ 2 CMS users created (admin + soporte)');
 
-    // ─── 3. Create subscribers with contracts ───────────────
+    // ─── 3. Create default categories ───────────────────────
+    const defaultCategories = [
+      { nombre: 'Noticias', descripcion: 'Canales informativos nacionales e internacionales', icono: 'newspaper-o' },
+      { nombre: 'Deportes', descripcion: 'Canales y eventos deportivos en vivo', icono: 'futbol-o' },
+      { nombre: 'Infantil', descripcion: 'Contenido para niños con control parental', icono: 'child' },
+      { nombre: 'General', descripcion: 'Entretenimiento general', icono: 'tv' },
+      { nombre: 'Cine', descripcion: 'Películas y series de cine', icono: 'film' },
+      { nombre: 'Música', descripcion: 'Canales de música y videoclips', icono: 'music' },
+    ];
+
+    for (const cat of defaultCategories) {
+      await tx.category.upsert({
+        where: { nombre: cat.nombre },
+        update: {},
+        create: {
+          nombre: cat.nombre,
+          descripcion: cat.descripcion,
+          icono: cat.icono,
+          activo: true,
+        },
+      });
+    }
+
+    console.log('✅ 6 default categories created');
+
+    // ─── 4. Create subscribers with contracts ───────────────
     for (const sub of subscribers) {
       const isIspEmail = sub.email === 'facturacion@luki.ec';
       const hasNoEmail = sub.email === '';

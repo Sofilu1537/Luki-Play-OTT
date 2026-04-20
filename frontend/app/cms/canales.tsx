@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Platform, Modal } from 'react-native';
+import {
+  View, Text, TouchableOpacity, ScrollView, TextInput,
+  Platform, Modal, Pressable,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import { useChannelStore } from '../../services/channelStore';
@@ -8,486 +11,912 @@ import type { AdminCanal, AdminCanalPayload } from '../../services/api/adminApi'
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
 
-const CAT_COLORS: Record<string, string> = {
-  Noticias: '#0EA5E9', Deportes: '#10B981', Cine: '#F59E0B',
-  Infantil: '#EC4899', Música: '#8B5CF6', General: '#64748B',
+// ─── Types ────────────────────────────────────────────────────
+type ChannelStatus = AdminCanal['status'];
+type HealthStatus  = AdminCanal['healthStatus'];
+type StreamProto   = AdminCanal['streamProtocol'];
+type Resolution    = AdminCanal['resolution'];
+type ViewMode      = 'table' | 'grid';
+type ActiveTab     = 'general' | 'stream' | 'access';
+
+// ─── Config maps ──────────────────────────────────────────────
+const STATUS_CONFIG: Record<ChannelStatus, { label: string; color: string; bg: string }> = {
+  ACTIVE:      { label: 'Activo',         color: '#17D1C6', bg: 'rgba(23,209,198,0.12)' },
+  SCHEDULED:   { label: 'Programado',     color: '#FFB800', bg: 'rgba(255,184,0,0.12)' },
+  MAINTENANCE: { label: 'Mantenimiento',  color: '#FF7900', bg: 'rgba(255,121,0,0.12)' },
+  INACTIVE:    { label: 'Inactivo',       color: '#D1105A', bg: 'rgba(209,16,90,0.12)' },
 };
 
-function catColor(nombre: string) {
-  return CAT_COLORS[nombre] ?? '#64748B';
+const HEALTH_CONFIG: Record<HealthStatus, { label: string; color: string; icon: string }> = {
+  HEALTHY:     { label: 'Saludable',  color: '#17D1C6', icon: 'check-circle' },
+  DEGRADED:    { label: 'Degradado',  color: '#FF7900', icon: 'exclamation-circle' },
+  OFFLINE:     { label: 'Offline',    color: '#888',    icon: 'times-circle' },
+  MAINTENANCE: { label: 'Mant.',      color: '#1E96FC', icon: 'cog' },
+};
+
+const RESOLUTIONS: Resolution[] = ['480p', '720p', '1080p', '4K'];
+const PROTOCOLS:  StreamProto[] = ['HLS', 'DASH', 'HLS_DASH'];
+
+// ─── Helpers ──────────────────────────────────────────────────
+function autoSlug(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function isValidUrl(v: string) {
+  try { const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; }
+  catch { return false; }
 }
 
 function emptyForm(): AdminCanalPayload {
   return {
-    nombre: '',
-    logo: '',
-    streamUrl: '',
-    detalle: '',
-    categoryId: '',
-    categoria: '',
-    tipo: 'live',
+    nombre: '', slug: '', streamUrl: '', backupUrl: '', logoUrl: '',
+    categoryId: '', epgSourceId: '',
+    status: 'ACTIVE', streamProtocol: 'HLS', resolution: '1080p',
+    bitrateKbps: 5000, isDrmProtected: false,
+    geoRestriction: '', sortOrder: 99, planIds: [],
     requiereControlParental: false,
-    activo: true,
   };
 }
 
-function isValidUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+// ─── Sub-components ───────────────────────────────────────────
+
+function StatusBadge({ status, isLive }: { status: ChannelStatus; isLive: boolean }) {
+  const cfg = STATUS_CONFIG[status];
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: cfg.bg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+      {isLive && status === 'ACTIVE' && (
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cfg.color }} />
+      )}
+      <Text style={{ color: cfg.color, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
+        {isLive && status === 'ACTIVE' ? 'EN VIVO' : cfg.label.toUpperCase()}
+      </Text>
+    </View>
+  );
 }
 
+function HealthBadge({ health }: { health: HealthStatus }) {
+  const cfg = HEALTH_CONFIG[health];
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      <FontAwesome name={cfg.icon as any} size={12} color={cfg.color} />
+      <Text style={{ color: cfg.color, fontSize: 11, fontWeight: '600' }}>{cfg.label}</Text>
+    </View>
+  );
+}
+
+function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
+  return (
+    <View style={{ flex: 1, minWidth: 120, backgroundColor: C.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center' }}>
+        <FontAwesome name={icon as any} size={15} color={color} />
+      </View>
+      <View>
+        <Text style={{ color: C.muted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
+        <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginTop: 1 }}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function FormField({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>
+        {label} {required && <Text style={{ color: '#D1105A' }}>*</Text>}
+      </Text>
+      {children}
+      {hint && <Text style={{ color: C.muted, fontSize: 10, marginTop: 4 }}>{hint}</Text>}
+    </View>
+  );
+}
+
+// ─── Channel Detail Modal ─────────────────────────────────────
+function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
+  channel: AdminCanal;
+  onClose: () => void;
+  onEdit: (ch: AdminCanal) => void;
+  categories: { id: string; nombre: string }[];
+}) {
+  const [copied, setCopied] = useState(false);
+  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+
+  const catName = channel.category?.nombre
+    ?? categories.find((c) => c.id === channel.categoryId)?.nombre
+    ?? '—';
+
+  function copyUrl() {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(channel.streamUrl);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const infoRows = [
+    { label: 'Protocolo',    value: channel.streamProtocol },
+    { label: 'Resolución',   value: channel.resolution },
+    { label: 'Bitrate',      value: `${channel.bitrateKbps.toLocaleString()} kbps` },
+    { label: 'DRM',          value: channel.isDrmProtected ? 'Widevine/FairPlay' : 'Sin DRM' },
+    { label: 'Categoría',    value: catName },
+    { label: 'Geo',          value: channel.geoRestriction || 'Sin restricción' },
+    { label: 'Uptime',       value: `${channel.uptimePercent}%` },
+  ];
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(5,5,12,0.8)' }} onPress={onClose}>
+        <Pressable
+          style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 480, maxWidth: '95%', backgroundColor: C.surface, borderLeftWidth: 1, borderLeftColor: C.border }}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <ScrollView>
+            {/* Header */}
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                <View style={{ width: 42, height: 42, borderRadius: 10, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name="television" size={20} color="#FFB800" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>{channel.nombre}</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
+                    /{channel.slug}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => { onClose(); onEdit(channel); }}
+                >
+                  <FontAwesome name="pencil" size={13} color={C.muted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={onClose}
+                >
+                  <FontAwesome name="times" size={13} color={C.muted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Preview area 16:9 */}
+            <View style={{ margin: 20, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="television" size={36} color="rgba(255,255,255,0.1)" />
+              {channel.isLive && (
+                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 8 }}>Preview requiere HLS.js</Text>
+              )}
+              <View style={{ position: 'absolute', top: 10, left: 10 }}>
+                <StatusBadge status={channel.status} isLive={channel.isLive} />
+              </View>
+              {channel.isLive && (
+                <View style={{ position: 'absolute', bottom: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <FontAwesome name="eye" size={10} color="#fff" />
+                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{channel.viewerCount.toLocaleString()}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Stream URL */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Stream URL</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}>
+                <Text style={{ flex: 1, color: C.textDim, fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} numberOfLines={2}>
+                  {channel.streamUrl}
+                </Text>
+                <TouchableOpacity
+                  style={{ width: 30, height: 30, borderRadius: 6, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', backgroundColor: copied ? 'rgba(23,209,198,0.15)' : 'transparent' }}
+                  onPress={copyUrl}
+                >
+                  <FontAwesome name={copied ? 'check' : 'copy'} size={12} color={copied ? '#17D1C6' : C.muted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Info grid */}
+            <View style={{ paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+              {infoRows.map((row) => (
+                <View key={row.label} style={{ width: '47%', padding: 12, borderRadius: 10, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}>
+                  <Text style={{ color: C.muted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{row.label}</Text>
+                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{row.value}</Text>
+                </View>
+              ))}
+              <View style={{ width: '47%', padding: 12, borderRadius: 10, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}>
+                <Text style={{ color: C.muted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Salud</Text>
+                <HealthBadge health={channel.healthStatus} />
+              </View>
+            </View>
+
+            {/* Plans */}
+            {channel.planIds.length > 0 && (
+              <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+                <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Planes con acceso</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {channel.planIds.map((pid) => (
+                    <View key={pid} style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.15)' }}>
+                      <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>{pid}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Timestamps */}
+            <View style={{ marginHorizontal: 20, marginBottom: 24, padding: 14, borderRadius: 10, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>
+                Creado: <Text style={{ color: C.textDim }}>{new Date(channel.createdAt).toLocaleDateString('es-EC')}</Text>
+              </Text>
+              <Text style={{ color: C.muted, fontSize: 11 }}>
+                Actualizado: <Text style={{ color: C.textDim }}>{new Date(channel.updatedAt).toLocaleDateString('es-EC')}</Text>
+              </Text>
+            </View>
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ─── Create / Edit Modal ──────────────────────────────────────
+function ChannelFormModal({ channel, onSave, onClose, categories }: {
+  channel: AdminCanal | null;
+  onSave: (form: AdminCanalPayload) => void;
+  onClose: () => void;
+  categories: { id: string; nombre: string }[];
+}) {
+  const isEdit = !!channel;
+  const [form, setForm] = useState<AdminCanalPayload>(() =>
+    channel
+      ? {
+          nombre: channel.nombre,
+          slug: channel.slug,
+          streamUrl: channel.streamUrl,
+          backupUrl: channel.backupUrl ?? '',
+          logoUrl: channel.logoUrl ?? '',
+          categoryId: channel.categoryId,
+          epgSourceId: channel.epgSourceId ?? '',
+          status: channel.status,
+          streamProtocol: channel.streamProtocol,
+          resolution: channel.resolution,
+          bitrateKbps: channel.bitrateKbps,
+          isDrmProtected: channel.isDrmProtected,
+          geoRestriction: channel.geoRestriction ?? '',
+          sortOrder: channel.sortOrder,
+          planIds: channel.planIds,
+          requiereControlParental: channel.requiereControlParental,
+        }
+      : emptyForm()
+  );
+  const [activeTab, setActiveTab] = useState<ActiveTab>('general');
+  const [formError, setFormError] = useState('');
+
+  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+  const inputStyle = {
+    backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border,
+    color: C.text, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, ...webInput,
+  };
+
+  function upd<K extends keyof AdminCanalPayload>(key: K, val: AdminCanalPayload[K]) {
+    setForm((f) => {
+      const next = { ...f, [key]: val };
+      if (key === 'nombre' && !isEdit) next.slug = autoSlug(val as string);
+      return next;
+    });
+  }
+
+  function validate(): boolean {
+    if (!form.nombre.trim()) { setFormError('El nombre es requerido.'); return false; }
+    if (!form.streamUrl.trim() || !isValidUrl(form.streamUrl)) { setFormError('URL del stream inválida (requiere http/https).'); return false; }
+    if (!form.categoryId) { setFormError('Debes seleccionar una categoría.'); return false; }
+    if (form.backupUrl && !isValidUrl(form.backupUrl)) { setFormError('URL de respaldo inválida.'); return false; }
+    setFormError('');
+    return true;
+  }
+
+  const tabs: { id: ActiveTab; label: string; icon: string }[] = [
+    { id: 'general', label: 'General', icon: 'television' },
+    { id: 'stream',  label: 'Stream',  icon: 'globe' },
+    { id: 'access',  label: 'Acceso',  icon: 'lock' },
+  ];
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(5,5,12,0.82)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ width: '100%', maxWidth: 680, maxHeight: '92%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+
+          {/* Header */}
+          <View style={{ paddingHorizontal: 22, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={{ color: C.text, fontSize: 17, fontWeight: '800' }}>{isEdit ? 'Editar canal' : 'Nuevo canal'}</Text>
+              <Text style={{ color: C.muted, fontSize: 12, marginTop: 3 }}>
+                {isEdit ? `Editando: ${channel!.nombre}` : 'Configura el canal HLS/DASH'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="times" size={14} color={C.muted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Tabs */}
+          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 22 }}>
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  onPress={() => setActiveTab(tab.id)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 2, borderBottomColor: active ? '#FFB800' : 'transparent' }}
+                >
+                  <FontAwesome name={tab.icon as any} size={12} color={active ? '#FFB800' : C.muted} />
+                  <Text style={{ color: active ? '#FFB800' : C.muted, fontSize: 12, fontWeight: '700' }}>{tab.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Body */}
+          <ScrollView contentContainerStyle={{ padding: 22 }}>
+
+            {/* ─── TAB: General ─── */}
+            {activeTab === 'general' && (
+              <>
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  <View style={{ flex: 2 }}>
+                    <FormField label="Nombre del canal" required>
+                      <TextInput style={inputStyle} value={form.nombre} onChangeText={(v) => upd('nombre', v)} placeholder="ESPN Ecuador" placeholderTextColor={C.muted} />
+                    </FormField>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <FormField label="Slug (URL)" hint="Auto-generado">
+                      <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.slug} onChangeText={(v) => upd('slug', v)} placeholder="espn-ecuador" placeholderTextColor={C.muted} />
+                    </FormField>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  <View style={{ flex: 1 }}>
+                    <FormField label="Categoría" required>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+                        {categories.map((cat) => {
+                          const sel = form.categoryId === cat.id;
+                          return (
+                            <TouchableOpacity
+                              key={cat.id}
+                              onPress={() => upd('categoryId', cat.id)}
+                              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: sel ? '#FFB800' : C.border, backgroundColor: sel ? 'rgba(255,184,0,0.12)' : C.lift }}
+                            >
+                              <Text style={{ color: sel ? '#FFB800' : C.textDim, fontSize: 12, fontWeight: '700' }}>{cat.nombre}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </FormField>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <FormField label="Estado">
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        {(Object.keys(STATUS_CONFIG) as ChannelStatus[]).map((s) => {
+                          const sel = form.status === s;
+                          const cfg = STATUS_CONFIG[s];
+                          return (
+                            <TouchableOpacity
+                              key={s}
+                              onPress={() => upd('status', s)}
+                              style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: sel ? cfg.color : C.border, backgroundColor: sel ? cfg.bg : C.lift }}
+                            >
+                              <Text style={{ color: sel ? cfg.color : C.textDim, fontSize: 11, fontWeight: '700' }}>{cfg.label}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </FormField>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  <View style={{ flex: 2 }}>
+                    <FormField label="Logo URL" hint="PNG transparente, 200×100px recomendado">
+                      <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.logoUrl} onChangeText={(v) => upd('logoUrl', v)} placeholder="https://..." placeholderTextColor={C.muted} autoCapitalize="none" />
+                    </FormField>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <FormField label="Orden">
+                      <TextInput style={inputStyle} value={String(form.sortOrder)} onChangeText={(v) => upd('sortOrder', parseInt(v) || 99)} keyboardType="number-pad" placeholderTextColor={C.muted} />
+                    </FormField>
+                  </View>
+                </View>
+
+                <FormField label="Fuente EPG" hint="ID del proveedor XMLTV (ej: epg_espn_ec)">
+                  <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.epgSourceId} onChangeText={(v) => upd('epgSourceId', v)} placeholder="epg_espn_ec" placeholderTextColor={C.muted} autoCapitalize="none" />
+                </FormField>
+
+                <TouchableOpacity
+                  onPress={() => upd('requiereControlParental', !form.requiereControlParental)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: form.requiereControlParental ? 'rgba(244,63,94,0.35)' : C.border, backgroundColor: form.requiereControlParental ? 'rgba(244,63,94,0.08)' : C.lift }}
+                >
+                  <FontAwesome name={form.requiereControlParental ? 'lock' : 'unlock'} size={13} color={form.requiereControlParental ? '#D1105A' : C.textDim} />
+                  <Text style={{ color: form.requiereControlParental ? '#D1105A' : C.textDim, fontSize: 12, fontWeight: '700' }}>Control parental</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* ─── TAB: Stream ─── */}
+            {activeTab === 'stream' && (
+              <>
+                <FormField label="URL del stream (principal)" required hint="URL HLS (.m3u8) o DASH (.mpd) del CDN">
+                  <TextInput
+                    style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}
+                    value={form.streamUrl} onChangeText={(v) => upd('streamUrl', v)}
+                    placeholder="https://cdn.example.com/.../playlist.m3u8"
+                    placeholderTextColor={C.muted} autoCapitalize="none"
+                  />
+                </FormField>
+                <FormField label="URL de respaldo (failover)" hint="Se usa si el stream principal falla">
+                  <TextInput
+                    style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}
+                    value={form.backupUrl} onChangeText={(v) => upd('backupUrl', v)}
+                    placeholder="https://backup-cdn.example.com/.../playlist.m3u8"
+                    placeholderTextColor={C.muted} autoCapitalize="none"
+                  />
+                </FormField>
+
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  <View style={{ flex: 1 }}>
+                    <FormField label="Protocolo">
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {PROTOCOLS.map((p) => {
+                          const sel = form.streamProtocol === p;
+                          return (
+                            <TouchableOpacity key={p} onPress={() => upd('streamProtocol', p)}
+                              style={{ flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: sel ? '#FFB800' : C.border, backgroundColor: sel ? 'rgba(255,184,0,0.12)' : C.lift, alignItems: 'center' }}>
+                              <Text style={{ color: sel ? '#FFB800' : C.textDim, fontSize: 11, fontWeight: '700' }}>{p}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </FormField>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <FormField label="Resolución">
+                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                        {RESOLUTIONS.map((r) => {
+                          const sel = form.resolution === r;
+                          return (
+                            <TouchableOpacity key={r} onPress={() => upd('resolution', r)}
+                              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: sel ? '#FFB800' : C.border, backgroundColor: sel ? 'rgba(255,184,0,0.12)' : C.lift }}>
+                              <Text style={{ color: sel ? '#FFB800' : C.textDim, fontSize: 11, fontWeight: '700' }}>{r}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </FormField>
+                  </View>
+                </View>
+
+                <FormField label="Bitrate (kbps)">
+                  <TextInput style={inputStyle} value={String(form.bitrateKbps)} onChangeText={(v) => upd('bitrateKbps', parseInt(v) || 5000)} keyboardType="number-pad" placeholderTextColor={C.muted} />
+                </FormField>
+
+                <TouchableOpacity
+                  onPress={() => upd('isDrmProtected', !form.isDrmProtected)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: form.isDrmProtected ? 'rgba(255,184,0,0.35)' : C.border, backgroundColor: form.isDrmProtected ? 'rgba(255,184,0,0.08)' : C.lift }}>
+                  <FontAwesome name="shield" size={13} color={form.isDrmProtected ? '#FFB800' : C.textDim} />
+                  <Text style={{ color: form.isDrmProtected ? '#FFB800' : C.textDim, fontSize: 12, fontWeight: '700' }}>Protección DRM (Widevine/FairPlay)</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* ─── TAB: Access ─── */}
+            {activeTab === 'access' && (
+              <>
+                <FormField label="Restricción geográfica" hint="Códigos ISO 3166-1 separados por coma (ej: EC,CO,PE). Vacío = sin restricción.">
+                  <TextInput
+                    style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}
+                    value={form.geoRestriction} onChangeText={(v) => upd('geoRestriction', v.toUpperCase())}
+                    placeholder="EC" placeholderTextColor={C.muted} autoCapitalize="characters"
+                  />
+                </FormField>
+              </>
+            )}
+
+            {formError ? (
+              <Text style={{ color: '#D1105A', fontSize: 12, fontWeight: '700', marginTop: 8 }}>{formError}</Text>
+            ) : null}
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+            <TouchableOpacity onPress={onClose} style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { if (validate()) onSave(form); }}
+              style={{ paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10, backgroundColor: '#FFB800' }}
+            >
+              <Text style={{ color: '#1A1A2E', fontSize: 13, fontWeight: '800' }}>{isEdit ? 'Guardar cambios' : 'Crear canal'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN SCREEN
+// ═══════════════════════════════════════════════════════════════
 export default function CmsCanales() {
   const { profile } = useCmsStore();
   const router = useRouter();
 
-  // ---------------------------------------------------------------------------
-  // Store subscriptions
-  // ---------------------------------------------------------------------------
   const { channels, createChannel, updateChannel, toggleChannelStatus, deleteChannel } = useChannelStore();
   const categorias = useCategoriasStore((s) => s.categorias);
   const activeCategories = useMemo(() => categorias.filter((c) => c.activo), [categorias]);
 
-  // ---------------------------------------------------------------------------
-  // Local UI state
-  // ---------------------------------------------------------------------------
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingCanal, setEditingCanal] = useState<AdminCanal | null>(null);
-  const [form, setForm] = useState<AdminCanalPayload>(emptyForm());
-  const [formError, setFormError] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | ChannelStatus>('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [showForm, setShowForm] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<AdminCanal | null>(null);
+  const [detailChannel, setDetailChannel] = useState<AdminCanal | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
   React.useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
-  // ---------------------------------------------------------------------------
-  // Derived data
-  // ---------------------------------------------------------------------------
+  // ── Derived data ──
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return channels
-      .filter((c) => {
-        if (categoryFilter !== 'all' && c.categoria !== categoryFilter) return false;
-        if (!query) return true;
-        return (
-          c.nombre.toLowerCase().includes(query)
-          || c.categoria.toLowerCase().includes(query)
-          || c.detalle.toLowerCase().includes(query)
-          || c.streamUrl.toLowerCase().includes(query)
-        );
-      })
-      .sort((a, b) => new Date(b.actualizadoEn ?? b.creadoEn).getTime() - new Date(a.actualizadoEn ?? a.creadoEn).getTime());
-  }, [channels, search, categoryFilter]);
+    const q = search.trim().toLowerCase();
+    return channels.filter((ch) => {
+      if (filterStatus !== 'all' && ch.status !== filterStatus) return false;
+      if (filterCategory !== 'all' && ch.categoryId !== filterCategory) return false;
+      if (q) return ch.nombre.toLowerCase().includes(q) || ch.slug.includes(q);
+      return true;
+    });
+  }, [channels, search, filterStatus, filterCategory]);
 
   const stats = useMemo(() => ({
     total: channels.length,
-    activos: channels.filter((c) => c.activo).length,
-    parentales: channels.filter((c) => c.requiereControlParental).length,
+    live: channels.filter((c) => c.isLive).length,
+    viewers: channels.reduce((s, c) => s + c.viewerCount, 0),
+    healthy: channels.filter((c) => c.healthStatus === 'HEALTHY').length,
   }), [channels]);
-
-  // Filter chips: "Todos" + one per active category that has at least one channel
-  const categoryChips = useMemo(() => {
-    const usedNames = new Set(channels.map((c) => c.categoria));
-    const chips = activeCategories.filter((c) => usedNames.has(c.nombre)).map((c) => c.nombre);
-    return ['all', ...chips];
-  }, [channels, activeCategories]);
 
   if (!profile) return null;
 
-  // ---------------------------------------------------------------------------
-  // Handlers (synchronous — store manages persistence)
-  // ---------------------------------------------------------------------------
-  function openCreateModal() {
-    setEditingCanal(null);
-    setForm(emptyForm());
-    setFormError('');
-    setModalVisible(true);
+  // ── Handlers ──
+  function openCreate() {
+    setEditingChannel(null);
+    setShowForm(true);
   }
 
-  function openEditModal(canal: AdminCanal) {
-    setEditingCanal(canal);
-    setForm({
-      nombre: canal.nombre,
-      logo: canal.logo,
-      streamUrl: canal.streamUrl,
-      detalle: canal.detalle,
-      categoryId: canal.categoryId ?? '',
-      categoria: canal.categoria,
-      tipo: 'live',
-      requiereControlParental: canal.requiereControlParental,
-      activo: canal.activo,
-    });
-    setFormError('');
-    setModalVisible(true);
+  function openEdit(ch: AdminCanal) {
+    setEditingChannel(ch);
+    setShowForm(true);
+    setDetailChannel(null);
   }
 
-  function closeModal() {
-    setModalVisible(false);
-    setEditingCanal(null);
-    setForm(emptyForm());
-    setFormError('');
-  }
-
-  function updateField<K extends keyof AdminCanalPayload>(field: K, value: AdminCanalPayload[K]) {
-    setForm((f) => ({ ...f, [field]: value }));
-  }
-
-  function selectCategory(cat: { id: string; nombre: string }) {
-    setForm((f) => ({ ...f, categoryId: cat.id, categoria: cat.nombre }));
-  }
-
-  async function pickLogoFromFile() {
-    if (Platform.OS !== 'web' || typeof document === 'undefined') {
-      setFormError('La carga desde archivo solo está disponible en web.');
-      return;
-    }
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/png,image/jpeg,image/webp';
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        updateField('logo', result);
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-  }
-
-  function handleSave() {
-    if (!form.nombre.trim()) { setFormError('El nombre del canal es requerido.'); return; }
-    if (!form.streamUrl.trim() || !isValidUrl(form.streamUrl.trim())) { setFormError('La URL del canal debe ser válida (http/https).'); return; }
-    if (!form.detalle.trim()) { setFormError('El detalle del canal es requerido.'); return; }
-    if (!form.categoryId) { setFormError('Debes seleccionar una categoría para el canal.'); return; }
-
-    setFormError('');
-    setFeedback(null);
+  function handleSave(formData: AdminCanalPayload) {
     try {
-      if (editingCanal) {
-        updateChannel(editingCanal.id, {
-          ...form,
-          nombre: form.nombre.trim(),
-          streamUrl: form.streamUrl.trim(),
-          detalle: form.detalle.trim(),
-        });
-        setFeedback({ type: 'success', message: 'Canal actualizado correctamente.' });
+      if (editingChannel) {
+        updateChannel(editingChannel.id, formData);
+        setFeedback({ type: 'success', message: 'Canal actualizado.' });
       } else {
-        createChannel({
-          ...form,
-          nombre: form.nombre.trim(),
-          streamUrl: form.streamUrl.trim(),
-          detalle: form.detalle.trim(),
-        });
-        setFeedback({ type: 'success', message: 'Canal registrado correctamente.' });
+        createChannel(formData);
+        setFeedback({ type: 'success', message: 'Canal creado correctamente.' });
       }
-      closeModal();
+      setShowForm(false);
+      setEditingChannel(null);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'No se pudo guardar el canal.');
+      setFeedback({ type: 'error', message: err instanceof Error ? err.message : 'Error al guardar.' });
     }
   }
 
-  function handleToggle(canal: AdminCanal) {
-    try {
-      toggleChannelStatus(canal.id);
-      setFeedback({ type: 'success', message: `Canal ${canal.activo ? 'dado de baja' : 'activado'} correctamente.` });
-    } catch (err: unknown) {
-      setFeedback({ type: 'error', message: err instanceof Error ? err.message : 'No se pudo cambiar el estado del canal.' });
-    }
+  function handleDelete(id: string) {
+    deleteChannel(id);
+    setDeleteConfirm(null);
+    setFeedback({ type: 'success', message: 'Canal eliminado.' });
   }
-
-  function handleDelete(canal: AdminCanal) {
-    const confirmed = Platform.OS !== 'web' || typeof window === 'undefined'
-      ? true
-      : window.confirm(`¿Eliminar el canal "${canal.nombre}"?`);
-    if (!confirmed) return;
-    deleteChannel(canal.id);
-    setFeedback({ type: 'success', message: 'Canal eliminado correctamente.' });
-  }
-
-  function resetFilters() {
-    setCategoryFilter('all');
-    setSearch('');
-  }
-
-  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
-  const formInputStyle = {
-    backgroundColor: C.lift,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: C.border,
-    color: C.text,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-    ...webInput,
-  };
-
-  const isCompactResults = filtered.length > 0 && filtered.length <= 2;
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Canales' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
 
-        {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
+        {/* ── Header ── */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <View>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Canales</Text>
-            <Text style={{ color: C.muted, fontSize: 13, marginTop: 2 }}>{stats.total} canales registrados · {stats.activos} activos</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <FontAwesome name="television" size={20} color="#FFB800" />
+              <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Canales</Text>
+            </View>
+            <Text style={{ color: C.muted, fontSize: 13 }}>Gestión de streams HLS/DASH en vivo · {channels.length} canales</Text>
           </View>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 }}
-            onPress={openCreateModal}
+            onPress={openCreate}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, backgroundColor: '#FFB800' }}
           >
-            <FontAwesome name="plus" size={13} color="white" />
-            <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Nuevo Canal</Text>
+            <FontAwesome name="plus" size={14} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '800', fontSize: 13 }}>Nuevo canal</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Feedback */}
-        {feedback ? (
-          <View style={{ marginBottom: 14, borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)', backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 12, fontWeight: '700' }}>{feedback.message}</Text>
+        {/* ── Feedback ── */}
+        {feedback && (
+          <View style={{ marginBottom: 14, borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(23,209,198,0.3)' : 'rgba(209,16,90,0.3)', backgroundColor: feedback.type === 'success' ? 'rgba(23,209,198,0.08)' : 'rgba(209,16,90,0.08)', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
+            <Text style={{ color: feedback.type === 'success' ? '#17D1C6' : '#D1105A', fontSize: 12, fontWeight: '700' }}>{feedback.message}</Text>
           </View>
-        ) : null}
+        )}
 
-        {/* Stats */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-          <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minWidth: 120 }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>TOTALES</Text>
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{stats.total}</Text>
-          </View>
-          <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minWidth: 120 }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>ACTIVOS</Text>
-            <Text style={{ color: C.green, fontSize: 18, fontWeight: '900' }}>{stats.activos}</Text>
-          </View>
-          <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minWidth: 120 }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>PARENTALES</Text>
-            <Text style={{ color: C.amber, fontSize: 18, fontWeight: '900' }}>{stats.parentales}</Text>
-          </View>
+        {/* ── Stats ── */}
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+          <StatCard label="Total canales"     value={stats.total}   icon="television"  color="#B07CC6" />
+          <StatCard label="En vivo ahora"     value={stats.live}    icon="bolt"        color="#17D1C6" />
+          <StatCard label="Viewers totales"   value={stats.viewers.toLocaleString()} icon="eye" color="#1E96FC" />
+          <StatCard label="Streams saludables" value={`${stats.healthy}/${stats.total}`} icon="check-circle" color="#17D1C6" />
         </View>
 
-        {/* Search + filter */}
-        <View style={{ marginBottom: 18 }}>
-          <View style={{ marginBottom: 10 }}>
-            <Text style={{ color: C.text, fontSize: 14, fontWeight: '800' }}>Catálogo de canales</Text>
-            <Text style={{ color: C.muted, fontSize: 11, marginTop: 3 }}>Búsqueda rápida y filtros por categoría.</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 10 }}>
+        {/* ── Filters bar ── */}
+        <View style={{ backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 18, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          {/* Search */}
+          <View style={{ flex: 1, minWidth: 180, flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
             <FontAwesome name="search" size={13} color={C.muted} />
             <TextInput
-              style={{ flex: 1, color: C.text, paddingVertical: 12, paddingHorizontal: 10, fontSize: 13, ...webInput }}
-              placeholder="Buscar canal, categoría o URL..."
+              style={{ flex: 1, color: C.text, fontSize: 13, ...webInput }}
+              value={search} onChangeText={setSearch}
+              placeholder="Buscar por nombre o slug..."
               placeholderTextColor={C.muted}
-              value={search}
-              onChangeText={setSearch}
             />
-            {(search || categoryFilter !== 'all') ? (
-              <TouchableOpacity onPress={resetFilters} style={{ paddingLeft: 8, paddingVertical: 8 }}>
-                <FontAwesome name="times-circle" size={15} color={C.muted} />
-              </TouchableOpacity>
-            ) : null}
           </View>
 
-          {categoryChips.length > 1 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 12 }}>
-              {categoryChips.map((cat) => {
-                const selected = categoryFilter === cat;
-                const label = cat === 'all' ? 'Todos' : cat;
-                return (
-                  <TouchableOpacity
-                    key={cat}
-                    style={{ paddingHorizontal: 16, paddingVertical: 9, borderRadius: 12, backgroundColor: selected ? C.accentSoft : C.surface, borderWidth: 1, borderColor: selected ? C.accentBorder : C.border }}
-                    onPress={() => setCategoryFilter(cat)}
-                  >
-                    <Text style={{ color: selected ? C.accentLight : C.textDim, fontSize: 12, fontWeight: '800' }}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          ) : null}
+          {/* Status filter */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+            {(['all', 'ACTIVE', 'SCHEDULED', 'MAINTENANCE', 'INACTIVE'] as const).map((s) => {
+              const sel = filterStatus === s;
+              const cfg = s === 'all' ? null : STATUS_CONFIG[s];
+              return (
+                <TouchableOpacity
+                  key={s}
+                  onPress={() => setFilterStatus(s)}
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: sel ? (cfg?.color ?? '#FFB800') : C.border, backgroundColor: sel ? (cfg ? cfg.bg : 'rgba(255,184,0,0.1)') : 'transparent' }}
+                >
+                  <Text style={{ color: sel ? (cfg?.color ?? '#FFB800') : C.textDim, fontSize: 11, fontWeight: '700' }}>
+                    {s === 'all' ? 'Todos' : STATUS_CONFIG[s].label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Category filter (web-only select) */}
+          {Platform.OS === 'web' && (
+            <View style={{ borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift, overflow: 'hidden' }}>
+              {/* @ts-ignore */}
+              <select
+                value={filterCategory}
+                onChange={(e: any) => setFilterCategory(e.target.value)}
+                style={{ padding: '7px 12px', background: 'transparent', border: 'none', color: C.textDim, fontSize: 12, fontFamily: 'inherit', outline: 'none', cursor: 'pointer', minWidth: 140 } as any}
+              >
+                <option value="all">Todas las categorías</option>
+                {activeCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                ))}
+              </select>
+            </View>
+          )}
+
+          {/* View toggle */}
+          <View style={{ flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
+            {(['table', 'grid'] as ViewMode[]).map((m) => (
+              <TouchableOpacity
+                key={m} onPress={() => setViewMode(m)}
+                style={{ width: 34, height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: viewMode === m ? 'rgba(255,184,0,0.12)' : 'transparent' }}
+              >
+                <FontAwesome name={m === 'table' ? 'list' : 'th-large'} size={13} color={viewMode === m ? '#FFB800' : C.muted} />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        {/* Empty state */}
+        {/* ── Empty state ── */}
         {channels.length === 0 ? (
-          <View style={{ backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 40, alignItems: 'center', gap: 14 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="television" size={26} color={C.accentLight} />
+          <View style={{ backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 48, alignItems: 'center', gap: 14 }}>
+            <View style={{ width: 60, height: 60, borderRadius: 14, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="television" size={26} color="#FFB800" />
             </View>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>Aún no hay canales registrados</Text>
-            <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
-              Crea tu primer canal con nombre, URL de stream, categoría y configuración parental. Aparecerá automáticamente en el Monitor.
+            <Text style={{ color: C.text, fontSize: 15, fontWeight: '800' }}>Sin canales registrados</Text>
+            <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 320 }}>
+              Crea tu primer canal con URL HLS/DASH, categoría y configuración OTT.
             </Text>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 11, marginTop: 4 }}
-              onPress={openCreateModal}
-            >
-              <FontAwesome name="plus" size={13} color="white" />
-              <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Crear primer canal</Text>
+            <TouchableOpacity onPress={openCreate} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, backgroundColor: '#FFB800', marginTop: 4 }}>
+              <FontAwesome name="plus" size={13} color="#1A1A2E" />
+              <Text style={{ color: '#1A1A2E', fontWeight: '800', fontSize: 13 }}>Crear primer canal</Text>
             </TouchableOpacity>
           </View>
         ) : filtered.length === 0 ? (
-          <View style={{ backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 20, alignItems: 'center' }}>
-            <FontAwesome name="tv" size={22} color={C.muted} />
-            <Text style={{ color: C.text, fontSize: 14, fontWeight: '700', marginTop: 10 }}>Sin canales para mostrar</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginTop: 6, textAlign: 'center' }}>Ajusta los filtros o crea un nuevo canal.</Text>
+          <View style={{ backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 24, alignItems: 'center' }}>
+            <FontAwesome name="television" size={24} color={C.muted} />
+            <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginTop: 10 }}>Sin canales para mostrar</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Ajusta los filtros de búsqueda</Text>
           </View>
-        ) : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
-            {filtered.map((canal) => {
-              const color = catColor(canal.categoria);
+
+        ) : viewMode === 'table' ? (
+          /* ── Table view ── */
+          <View style={{ backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+            {/* Table header */}
+            <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border }}>
+              {['Canal', 'Categoría', 'Estado', 'Resolución', 'Viewers', 'Salud', ''].map((h, i) => (
+                <Text key={i} style={{ flex: [2.2, 1, 0.8, 0.8, 0.6, 0.8, 0.6][i], color: C.muted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: i === 6 ? 'right' : 'left' }}>
+                  {h}
+                </Text>
+              ))}
+            </View>
+
+            {filtered.map((ch, i) => {
+              const catName = ch.category?.nombre ?? activeCategories.find((c) => c.id === ch.categoryId)?.nombre ?? '—';
               return (
-                <View
-                  key={canal.id}
-                  style={{ backgroundColor: C.surface, borderRadius: 12, padding: 18, borderWidth: 1, borderColor: C.border, minWidth: isCompactResults ? 260 : 200, flexGrow: 0, flexShrink: 0, flexBasis: isCompactResults ? 260 : 220, maxWidth: isCompactResults ? 340 : 280 }}
+                <TouchableOpacity
+                  key={ch.id}
+                  onPress={() => setDetailChannel(ch)}
+                  style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 13, alignItems: 'center', borderBottomWidth: i < filtered.length - 1 ? 1 : 0, borderBottomColor: C.border }}
                 >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <View style={{ width: 44, height: 44, backgroundColor: `${color}22`, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                      {canal.logo ? (
-                        <View style={{ width: '100%', height: '100%' }}>
-                          {/* @ts-ignore */}
-                          <img src={canal.logo} alt={canal.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </View>
-                      ) : (
-                        <FontAwesome name="tv" size={20} color={color} />
-                      )}
+                  {/* Canal */}
+                  <View style={{ flex: 2.2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: 'rgba(255,184,0,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.12)' }}>
+                      <FontAwesome name="television" size={14} color="#FFB800" />
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }} onPress={() => handleToggle(canal)}>
-                        <FontAwesome name={canal.activo ? 'power-off' : 'play'} size={11} color={C.green} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(canal)}>
-                        <FontAwesome name="pencil" size={11} color={C.cyan} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(canal)}>
-                        <FontAwesome name="trash" size={11} color={C.rose} />
-                      </TouchableOpacity>
+                    <View>
+                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{ch.nombre}</Text>
+                      <Text style={{ color: C.muted, fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>/{ch.slug}</Text>
                     </View>
                   </View>
-                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 4 }}>{canal.nombre}</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 8 }} numberOfLines={2}>{canal.detalle}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                    <View style={{ backgroundColor: `${color}22`, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
-                      <Text style={{ color, fontSize: 10, fontWeight: '700' }}>{canal.categoria || 'Sin categoría'}</Text>
+                  {/* Categoría */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ backgroundColor: 'rgba(176,124,198,0.1)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: '#B07CC6', fontSize: 10, fontWeight: '700' }}>{catName}</Text>
                     </View>
-                    <View style={{ backgroundColor: canal.activo ? C.greenSoft : C.roseSoft, borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
-                      <Text style={{ color: canal.activo ? C.green : C.rose, fontSize: 10, fontWeight: '700' }}>
-                        {canal.activo ? 'ACTIVO' : 'DE BAJA'}
-                      </Text>
+                  </View>
+                  {/* Estado */}
+                  <View style={{ flex: 0.8 }}>
+                    <StatusBadge status={ch.status} isLive={ch.isLive} />
+                  </View>
+                  {/* Resolución */}
+                  <Text style={{ flex: 0.8, color: C.textDim, fontSize: 12, fontWeight: '500' }}>{ch.resolution}</Text>
+                  {/* Viewers */}
+                  <Text style={{ flex: 0.6, color: ch.isLive ? C.text : C.muted, fontSize: 12, fontWeight: ch.isLive ? '700' : '400' }}>
+                    {ch.isLive ? ch.viewerCount.toLocaleString() : '—'}
+                  </Text>
+                  {/* Salud */}
+                  <View style={{ flex: 0.8 }}>
+                    <HealthBadge health={ch.healthStatus} />
+                  </View>
+                  {/* Acciones */}
+                  <View style={{ flex: 0.6, flexDirection: 'row', gap: 4, justifyContent: 'flex-end' }}>
+                    <TouchableOpacity
+                      onPress={(e) => { e.stopPropagation?.(); openEdit(ch); }}
+                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <FontAwesome name="pencil" size={11} color={C.textDim} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={(e) => { e.stopPropagation?.(); setDeleteConfirm(ch.id); }}
+                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <FontAwesome name="trash" size={11} color="#D1105A" />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+        ) : (
+          /* ── Grid view ── */
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+            {filtered.map((ch) => {
+              const catName = ch.category?.nombre ?? activeCategories.find((c) => c.id === ch.categoryId)?.nombre ?? '—';
+              return (
+                <TouchableOpacity
+                  key={ch.id}
+                  onPress={() => setDetailChannel(ch)}
+                  style={{ width: 260, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}
+                >
+                  {/* Preview 16:9 */}
+                  <View style={{ aspectRatio: 16 / 9, backgroundColor: '#0a0a12', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <FontAwesome name="television" size={28} color="rgba(255,255,255,0.1)" />
+                    <View style={{ position: 'absolute', top: 8, left: 8 }}>
+                      <StatusBadge status={ch.status} isLive={ch.isLive} />
                     </View>
-                    {canal.requiereControlParental ? (
-                      <View style={{ backgroundColor: 'rgba(245,158,11,0.18)', borderRadius: 4, paddingHorizontal: 7, paddingVertical: 2 }}>
-                        <Text style={{ color: C.amber, fontSize: 10, fontWeight: '700' }}>PARENTAL</Text>
+                    {ch.isLive && (
+                      <View style={{ position: 'absolute', bottom: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+                        <FontAwesome name="eye" size={9} color="#fff" />
+                        <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>{ch.viewerCount.toLocaleString()}</Text>
                       </View>
-                    ) : null}
+                    )}
                   </View>
-                  <Text style={{ color: C.muted, fontSize: 10, marginBottom: 3 }}>Tipo: LIVE</Text>
-                  <Text style={{ color: C.muted, fontSize: 10 }} numberOfLines={1}>{canal.streamUrl}</Text>
-                </View>
+
+                  <View style={{ padding: 14 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>{ch.nombre}</Text>
+                      <HealthBadge health={ch.healthStatus} />
+                    </View>
+                    <Text style={{ color: C.muted, fontSize: 11 }}>{catName} · {ch.resolution} · {ch.streamProtocol}</Text>
+                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 12, justifyContent: 'flex-end' }}>
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation?.(); toggleChannelStatus(ch.id); }}
+                        style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: C.border }}
+                      >
+                        <FontAwesome name={ch.status === 'ACTIVE' ? 'power-off' : 'play'} size={11} color={ch.status === 'ACTIVE' ? '#17D1C6' : C.textDim} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation?.(); openEdit(ch); }}
+                        style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: C.border }}
+                      >
+                        <FontAwesome name="pencil" size={11} color={C.textDim} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation?.(); setDeleteConfirm(ch.id); }}
+                        style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: C.border }}
+                      >
+                        <FontAwesome name="trash" size={11} color="#D1105A" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               );
             })}
           </View>
         )}
+
       </ScrollView>
 
-      {/* Create / Edit Modal */}
-      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ width: '100%', maxWidth: 760, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-
-            {/* Modal header */}
-            <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{editingCanal ? 'Editar canal' : 'Registrar canal'}</Text>
-                <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Registro con URL, logo, categoría, estado y control parental.</Text>
+      {/* ── Delete Confirm Dialog ── */}
+      {deleteConfirm && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setDeleteConfirm(null)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(5,5,12,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ width: '100%', maxWidth: 380, backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 28, alignItems: 'center' }}>
+              <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: 'rgba(209,16,90,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <FontAwesome name="trash" size={20} color="#D1105A" />
               </View>
-              <TouchableOpacity onPress={closeModal}>
-                <FontAwesome name="times" size={18} color={C.muted} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
-              <Text style={{ color: C.textDim, fontSize: 12 }}>NOMBRE DEL CANAL</Text>
-              <TextInput style={formInputStyle} value={form.nombre} onChangeText={(v) => updateField('nombre', v)} placeholder="Ej: Noticias 24" placeholderTextColor={C.muted} />
-
-              <Text style={{ color: C.textDim, fontSize: 12 }}>URL DEL CANAL (STREAM)</Text>
-              <TextInput style={formInputStyle} value={form.streamUrl} onChangeText={(v) => updateField('streamUrl', v)} placeholder="https://stream.example.com/canal" placeholderTextColor={C.muted} autoCapitalize="none" />
-
-              <Text style={{ color: C.textDim, fontSize: 12 }}>LOGO DEL CANAL (URL o ARCHIVO)</Text>
-              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextInput style={{ ...formInputStyle, flex: 1 }} value={form.logo} onChangeText={(v) => updateField('logo', v)} placeholder="https://.../logo.png" placeholderTextColor={C.muted} autoCapitalize="none" />
-                <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }} onPress={pickLogoFromFile}>
-                  <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cargar imagen</Text>
+              <Text style={{ color: C.text, fontSize: 16, fontWeight: '800', marginBottom: 8 }}>¿Eliminar canal?</Text>
+              <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
+                Esta acción no se puede deshacer. El canal será eliminado del catálogo.
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => setDeleteConfirm(null)} style={{ paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border }}>
+                  <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(deleteConfirm)} style={{ paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10, backgroundColor: '#D1105A' }}>
+                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>Eliminar</Text>
                 </TouchableOpacity>
               </View>
-
-              <Text style={{ color: C.textDim, fontSize: 12 }}>DETALLE</Text>
-              <TextInput style={{ ...formInputStyle, minHeight: 88, textAlignVertical: 'top' }} value={form.detalle} onChangeText={(v) => updateField('detalle', v)} placeholder="Describe programación, enfoque y audiencia." placeholderTextColor={C.muted} multiline numberOfLines={3} />
-
-              {/* Category selector — populated from categoriasStore */}
-              <Text style={{ color: C.textDim, fontSize: 12 }}>CATEGORÍA <Text style={{ color: C.rose }}>*</Text></Text>
-              {activeCategories.length === 0 ? (
-                <View style={{ backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, padding: 14 }}>
-                  <Text style={{ color: C.muted, fontSize: 12 }}>No hay categorías activas. Ve a la sección Categorías para crear una.</Text>
-                </View>
-              ) : (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {activeCategories.map((cat) => {
-                    const selected = form.categoryId === cat.id;
-                    const color = catColor(cat.nombre);
-                    return (
-                      <TouchableOpacity
-                        key={cat.id}
-                        style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: selected ? `${color}22` : C.lift, borderWidth: 1, borderColor: selected ? color : C.border }}
-                        onPress={() => selectCategory(cat)}
-                      >
-                        <Text style={{ color: selected ? color : C.textDim, fontSize: 12, fontWeight: '700' }}>{cat.nombre}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-              {form.categoryId === '' && (
-                <Text style={{ color: C.muted, fontSize: 11, marginTop: -4 }}>Selecciona una categoría para continuar.</Text>
-              )}
-
-              {/* Toggles */}
-              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: form.activo ? C.greenSoft : C.lift, borderWidth: 1, borderColor: form.activo ? 'rgba(16,185,129,0.28)' : C.border }} onPress={() => updateField('activo', !form.activo)}>
-                  <FontAwesome name={form.activo ? 'toggle-on' : 'toggle-off'} size={16} color={form.activo ? C.green : C.textDim} />
-                  <Text style={{ color: form.activo ? C.green : C.textDim, fontSize: 12, fontWeight: '700' }}>{form.activo ? 'Activo' : 'De baja'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: form.requiereControlParental ? C.roseSoft : C.lift, borderWidth: 1, borderColor: form.requiereControlParental ? 'rgba(244,63,94,0.28)' : C.border }} onPress={() => updateField('requiereControlParental', !form.requiereControlParental)}>
-                  <FontAwesome name={form.requiereControlParental ? 'lock' : 'unlock'} size={14} color={form.requiereControlParental ? C.rose : C.textDim} />
-                  <Text style={{ color: form.requiereControlParental ? C.rose : C.textDim, fontSize: 12, fontWeight: '700' }}>Control parental</Text>
-                </TouchableOpacity>
-              </View>
-
-              {formError ? <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>{formError}</Text> : null}
-            </ScrollView>
-
-            {/* Modal footer */}
-            <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeModal}>
-                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent }} onPress={handleSave}>
-                <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>{editingCanal ? 'Guardar cambios' : 'Registrar canal'}</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
+
+      {/* ── Create/Edit Modal ── */}
+      {showForm && (
+        <ChannelFormModal
+          channel={editingChannel}
+          onSave={handleSave}
+          onClose={() => { setShowForm(false); setEditingChannel(null); }}
+          categories={activeCategories}
+        />
+      )}
+
+      {/* ── Detail Panel ── */}
+      {detailChannel && (
+        <ChannelDetailModal
+          channel={detailChannel}
+          onClose={() => setDetailChannel(null)}
+          onEdit={openEdit}
+          categories={activeCategories}
+        />
+      )}
     </CmsShell>
   );
 }

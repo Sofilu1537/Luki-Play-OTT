@@ -31,15 +31,15 @@ function getInitials(nombre: string) {
   return nombre.split(/\s+/).map((part) => part[0] ?? '').join('').slice(0, 2).toUpperCase();
 }
 
-function getStatusTone(activo: boolean) {
-  return activo
+function getStatusTone(isActive: boolean) {
+  return isActive
     ? { label: 'Activo', color: '#4ADE80', background: 'rgba(74,222,128,0.14)', border: 'rgba(74,222,128,0.28)' }
     : { label: 'Inactivo', color: '#FB7185', background: 'rgba(251,113,133,0.14)', border: 'rgba(251,113,133,0.28)' };
 }
 
 function getOperationalTone(canal: AdminCanal, playback: PlaybackState) {
   const hasValidUrl = isValidStreamUrl(canal.streamUrl);
-  if (!canal.activo) {
+  if (canal.status !== 'ACTIVE') {
     return {
       label: 'INACTIVO',
       color: '#FB7185',
@@ -75,8 +75,8 @@ function getOperationalTone(canal: AdminCanal, playback: PlaybackState) {
   };
 }
 
-function getSignalLabel(tipo: string) {
-  return tipo === 'live' ? 'En vivo' : (tipo || 'Streaming');
+function getSignalLabel(isLive: boolean, protocol: string) {
+  return isLive ? 'En vivo' : (protocol || 'Streaming');
 }
 
 function WebMonitorPreview({ url, onPlaybackOk, onPlaybackError }: { url: string; onPlaybackOk: () => void; onPlaybackError: () => void }) {
@@ -183,9 +183,10 @@ function EmptyMonitorTile({ index }: { index: number }) {
 }
 
 function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: { canal: AdminCanal; playback: PlaybackState; onPlaybackOk: () => void; onPlaybackError: () => void }) {
-  const tone = getStatusTone(canal.activo);
+  const isActive = canal.status === 'ACTIVE';
+  const tone = getStatusTone(isActive);
   const operationalTone = getOperationalTone(canal, playback);
-  const shouldRenderVideo = canal.activo && playback !== 'error' && isValidStreamUrl(canal.streamUrl);
+  const shouldRenderVideo = isActive && playback !== 'error' && isValidStreamUrl(canal.streamUrl);
   const showVideoChrome = shouldRenderVideo && playback === 'playing';
 
   return (
@@ -202,8 +203,8 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
         <>
           <View style={{ position: 'absolute', top: 0, right: 0, left: 0, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: 'rgba(4,8,15,0.18)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-              {canal.logo ? (
-                <Image source={{ uri: canal.logo }} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              {canal.logoUrl ? (
+                <Image source={{ uri: canal.logoUrl }} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)' }} />
               ) : (
                 <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,198,41,0.14)', borderWidth: 1, borderColor: C.accentBorder, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: C.accent, fontSize: 10, fontWeight: '800' }}>{getInitials(canal.nombre)}</Text>
@@ -211,7 +212,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
               )}
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={{ color: 'white', fontSize: 13, fontWeight: '800' }}>{canal.nombre}</Text>
-                <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11, marginTop: 2 }}>{canal.categoria || 'Canal registrado'}</Text>
+                <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11, marginTop: 2 }}>{canal.category?.nombre || 'Canal registrado'}</Text>
               </View>
             </View>
             <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: operationalTone.background, borderWidth: 1, borderColor: operationalTone.border }}>
@@ -229,7 +230,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
                 <Text style={{ color: operationalTone.color, fontSize: 10, fontWeight: '800' }}>{operationalTone.label}</Text>
               </View>
               <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' }}>
-                <Text style={{ color: 'white', fontSize: 10, fontWeight: '800' }}>{getSignalLabel(canal.tipo)}</Text>
+                <Text style={{ color: 'white', fontSize: 10, fontWeight: '800' }}>{getSignalLabel(canal.isLive, canal.streamProtocol)}</Text>
               </View>
             </View>
           </View>
@@ -240,8 +241,8 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
           <View style={{ padding: 16, gap: 14, flex: 1, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                {canal.logo ? (
-                  <Image source={{ uri: canal.logo }} style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.04)' }} />
+                {canal.logoUrl ? (
+                  <Image source={{ uri: canal.logoUrl }} style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.04)' }} />
                 ) : (
                   <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,198,41,0.12)', borderWidth: 1, borderColor: C.accentBorder, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800' }}>{getInitials(canal.nombre)}</Text>
@@ -249,7 +250,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
                 )}
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={{ color: 'white', fontSize: 14, fontWeight: '800' }}>{canal.nombre}</Text>
-                  <Text numberOfLines={1} style={{ color: C.textDim, fontSize: 12, marginTop: 3 }}>{canal.categoria || 'Canal registrado'}</Text>
+                  <Text numberOfLines={1} style={{ color: C.textDim, fontSize: 12, marginTop: 3 }}>{canal.category?.nombre || 'Canal registrado'}</Text>
                 </View>
               </View>
               <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: C.border }}>
@@ -265,7 +266,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
                 <Text style={{ color: operationalTone.color, fontSize: 10, fontWeight: '800' }}>{operationalTone.label}</Text>
               </View>
               <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '800' }}>{getSignalLabel(canal.tipo)}</Text>
+                <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '800' }}>{getSignalLabel(canal.isLive, canal.streamProtocol)}</Text>
               </View>
             </View>
 
@@ -278,12 +279,6 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
                 <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>ESTADO OPERATIVO</Text>
                 <Text style={{ color: operationalTone.color, fontSize: 11, lineHeight: 16 }}>{operationalTone.reason}</Text>
               </View>
-              {canal.detalle ? (
-                <View>
-                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>DETALLE</Text>
-                  <Text style={{ color: C.textDim, fontSize: 11, lineHeight: 16 }}>{canal.detalle}</Text>
-                </View>
-              ) : null}
             </View>
           </View>
         </>
@@ -300,7 +295,7 @@ export default function CmsMonitor() {
   // Subscribe to channelStore — no polling needed, fully reactive
   // ---------------------------------------------------------------------------
   const allChannels = useChannelStore((s) => s.channels);
-  const canales = useMemo(() => allChannels.filter((c) => c.activo), [allChannels]);
+  const canales = useMemo(() => allChannels.filter((c) => c.status === 'ACTIVE'), [allChannels]);
 
   const [playback, setPlayback] = useState<Record<string, PlaybackState>>({});
   const [page, setPage] = useState(0);
@@ -323,7 +318,7 @@ export default function CmsMonitor() {
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(canales.length / CHANNELS_PER_PAGE)), [canales.length]);
   const visibles = useMemo(() => canales.slice(page * CHANNELS_PER_PAGE, page * CHANNELS_PER_PAGE + CHANNELS_PER_PAGE), [canales, page]);
-  const activos = useMemo(() => canales.filter((item) => item.activo && isValidStreamUrl(item.streamUrl)).length, [canales]);
+  const activos = useMemo(() => canales.filter((item) => item.status === 'ACTIVE' && isValidStreamUrl(item.streamUrl)).length, [canales]);
   const conPreview = useMemo(() => Object.values(playback).filter((state) => state === 'playing').length, [playback]);
   const vacios = Math.max(0, CHANNELS_PER_PAGE - visibles.length);
 

@@ -1,13 +1,14 @@
 import { Injectable, Inject, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, resolve } from 'path';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
   UserStatus as PrismaUserStatus,
   UserRole as PrismaUserRole,
   SessionLimitPolicy as PrismaSessionLimitPolicy,
+  ChannelStatus,
+  StreamProtocol,
+  ChannelHealthStatus,
 } from '@prisma/client';
 import { UserRole, UserStatus } from '../auth/domain/entities/user.entity.js';
 import { SessionLimitPolicy } from '../auth/domain/entities/account.entity.js';
@@ -21,7 +22,7 @@ import type { AdminUser } from './utils/to-admin-user.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { SetUserPasswordDto } from './dto/set-user-password.dto.js';
-import { CanalTipoDto, CreateCanalDto } from './dto/create-canal.dto.js';
+import { CanalStatusDto, StreamProtocolDto, CreateCanalDto } from './dto/create-canal.dto.js';
 import { CreateCategoriaDto } from './dto/create-categoria.dto.js';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
 import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto.js';
@@ -123,50 +124,47 @@ export interface AdminUserPlanRecord {
   allowedCategoryIds: string[];
 }
 
-export interface AdminCanalRecord {
+export interface AdminChannelRecord {
   id: string;
   nombre: string;
-  logo: string;
+  slug: string;
   streamUrl: string;
-  detalle: string;
-  categoria: string;
-  tipo: CanalTipoDto;
+  backupUrl: string | null;
+  logoUrl: string | null;
+  categoryId: string;
+  category?: { id: string; nombre: string };
+  epgSourceId: string | null;
+  status: ChannelStatus;
+  isLive: boolean;
+  healthStatus: ChannelHealthStatus;
+  uptimePercent: number;
+  lastHealthCheckAt: Date | null;
+  streamProtocol: StreamProtocol;
+  resolution: string;
+  bitrateKbps: number;
+  isDrmProtected: boolean;
+  geoRestriction: string | null;
+  sortOrder: number;
+  planIds: string[];
   requiereControlParental: boolean;
-  activo: boolean;
-  creadoEn: string;
-  actualizadoEn: string;
+  viewerCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
 }
 
-export interface AdminCategoriaRecord {
+export interface AdminCategoryRecord {
   id: string;
   nombre: string;
   descripcion: string;
   icono: string;
   activo: boolean;
-  creadoEn: string;
-  actualizadoEn: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 @Injectable()
 export class AdminService {
-  private readonly canalesStorePath = resolve(process.cwd(), 'data', 'admin-canales.json');
-  private canalesCache: AdminCanalRecord[] | null = null;
-  private canalesLock: Promise<void> = Promise.resolve();
-
-  private readonly categoriasStorePath = resolve(process.cwd(), 'data', 'admin-categorias.json');
-  private categoriasCache: AdminCategoriaRecord[] | null = null;
-  private categoriasLock: Promise<void> = Promise.resolve();
-
-  /** Categorías semilla — IDs fijos que coinciden con los planes predefinidos */
-  private readonly SEED_CATEGORIAS: AdminCategoriaRecord[] = [
-    { id: 'cat-001', nombre: 'Noticias',  descripcion: 'Canales informativos nacionales e internacionales', icono: 'newspaper-o', activo: true, creadoEn: '2026-01-01T00:00:00.000Z', actualizadoEn: '2026-01-01T00:00:00.000Z' },
-    { id: 'cat-002', nombre: 'Deportes',  descripcion: 'Canales y eventos deportivos en vivo',              icono: 'futbol-o',    activo: true, creadoEn: '2026-01-01T00:00:00.000Z', actualizadoEn: '2026-01-01T00:00:00.000Z' },
-    { id: 'cat-003', nombre: 'Infantil',  descripcion: 'Contenido para niños con control parental',         icono: 'child',       activo: true, creadoEn: '2026-01-01T00:00:00.000Z', actualizadoEn: '2026-01-01T00:00:00.000Z' },
-    { id: 'cat-004', nombre: 'General',   descripcion: 'Entretenimiento general',                            icono: 'tv',          activo: true, creadoEn: '2026-01-01T00:00:00.000Z', actualizadoEn: '2026-01-01T00:00:00.000Z' },
-    { id: 'cat-005', nombre: 'Cine',      descripcion: 'Películas y series de cine',                         icono: 'film',        activo: true, creadoEn: '2026-01-01T00:00:00.000Z', actualizadoEn: '2026-01-01T00:00:00.000Z' },
-    { id: 'cat-006', nombre: 'Música',    descripcion: 'Canales de música y videoclips',                     icono: 'music',       activo: true, creadoEn: '2026-01-01T00:00:00.000Z', actualizadoEn: '2026-01-01T00:00:00.000Z' },
-  ];
-
   constructor(
     private readonly prisma: PrismaService,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
@@ -669,241 +667,277 @@ export class AdminService {
     ];
   }
 
+  // ---- Canales CRUD (Prisma persistence) ----------------------------------
+
   async getCanales() {
-    return this.readCanalesStore();
+    return this.prisma.channel.findMany({
+      where: { deletedAt: null },
+      include: { category: true },
+      orderBy: { sortOrder: 'asc' },
+    });
   }
 
   async createCanal(dto: CreateCanalDto) {
-    return this.withCanalesLock(async () => {
-      const canales = await this.readCanalesStore();
-      const now = new Date().toISOString();
-      const created = this.normalizeCanalRecord({
-        id: `ch-${uuidv4().slice(0, 8)}`,
+    // Verify category exists
+    const categoryExists = await this.prisma.category.findUnique({
+      where: { id: dto.categoryId },
+    });
+    if (!categoryExists) {
+      throw new NotFoundException(`Category ${dto.categoryId} not found`);
+    }
+
+    // Check if channel name/slug already exists
+    const existing = await this.prisma.channel.findFirst({
+      where: {
+        OR: [{ nombre: dto.nombre }, { slug: dto.slug || this.autoSlug(dto.nombre) }],
+        deletedAt: null,
+      },
+    });
+    if (existing) {
+      throw new ConflictException(`Channel "${dto.nombre}" already exists`);
+    }
+
+    const slug = dto.slug || this.autoSlug(dto.nombre);
+    const status = this.mapStatusToDb(dto.status);
+
+    return this.prisma.channel.create({
+      data: {
         nombre: dto.nombre,
-        logo: dto.logo ?? '',
+        slug,
         streamUrl: dto.streamUrl,
-        detalle: dto.detalle,
-        categoria: dto.categoria,
-        tipo: dto.tipo ?? CanalTipoDto.LIVE,
+        backupUrl: dto.backupUrl,
+        logoUrl: dto.logoUrl,
+        categoryId: dto.categoryId,
+        epgSourceId: dto.epgSourceId,
+        status: status ?? ChannelStatus.ACTIVE,
+        streamProtocol: this.mapProtocolToDb(dto.streamProtocol),
+        resolution: dto.resolution ?? '1080p',
+        bitrateKbps: dto.bitrateKbps ?? 5000,
+        isDrmProtected: dto.isDrmProtected ?? false,
+        geoRestriction: dto.geoRestriction,
+        sortOrder: dto.sortOrder ?? 99,
+        planIds: dto.planIds ?? [],
         requiereControlParental: dto.requiereControlParental ?? false,
-        activo: dto.activo ?? true,
-        creadoEn: now,
-        actualizadoEn: now,
-      });
-      canales.unshift(created);
-      await this.writeCanalesStore(canales);
-      return this.cloneCanal(created);
+      },
+      include: { category: true },
     });
   }
 
   async updateCanal(id: string, dto: UpdateCanalDto) {
-    return this.withCanalesLock(async () => {
-      const canales = await this.readCanalesStore();
-      const index = canales.findIndex((item) => item.id === id);
-      if (index === -1) throw new NotFoundException(`Canal ${id} not found`);
+    const channel = await this.prisma.channel.findUnique({
+      where: { id, deletedAt: null },
+    });
+    if (!channel) {
+      throw new NotFoundException(`Channel ${id} not found`);
+    }
 
-      const updated = this.normalizeCanalRecord({
-        ...canales[index],
-        ...dto,
-        id,
-        tipo: dto.tipo ?? canales[index].tipo,
-        actualizadoEn: new Date().toISOString(),
+    // If name or slug is being updated, check for duplicates
+    if (dto.nombre || dto.slug) {
+      const newNombre = dto.nombre || channel.nombre;
+      const newSlug = dto.slug || this.autoSlug(newNombre);
+
+      const duplicate = await this.prisma.channel.findFirst({
+        where: {
+          AND: [
+            { deletedAt: null },
+            { id: { not: id } },
+            {
+              OR: [{ nombre: newNombre }, { slug: newSlug }],
+            },
+          ],
+        },
       });
+      if (duplicate) {
+        throw new ConflictException(`Channel "${newNombre}" already exists`);
+      }
+    }
 
-      canales[index] = updated;
-      await this.writeCanalesStore(canales);
-      return this.cloneCanal(updated);
+    // Verify category if being updated
+    if (dto.categoryId) {
+      const categoryExists = await this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!categoryExists) {
+        throw new NotFoundException(`Category ${dto.categoryId} not found`);
+      }
+    }
+
+    const updateData: any = {};
+    if (dto.nombre !== undefined) updateData.nombre = dto.nombre;
+    if (dto.slug !== undefined) updateData.slug = dto.slug;
+    if (dto.streamUrl !== undefined) updateData.streamUrl = dto.streamUrl;
+    if (dto.backupUrl !== undefined) updateData.backupUrl = dto.backupUrl;
+    if (dto.logoUrl !== undefined) updateData.logoUrl = dto.logoUrl;
+    if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
+    if (dto.epgSourceId !== undefined) updateData.epgSourceId = dto.epgSourceId;
+    if (dto.status !== undefined) updateData.status = this.mapStatusToDb(dto.status);
+    if (dto.streamProtocol !== undefined) updateData.streamProtocol = this.mapProtocolToDb(dto.streamProtocol);
+    if (dto.resolution !== undefined) updateData.resolution = dto.resolution;
+    if (dto.bitrateKbps !== undefined) updateData.bitrateKbps = dto.bitrateKbps;
+    if (dto.isDrmProtected !== undefined) updateData.isDrmProtected = dto.isDrmProtected;
+    if (dto.geoRestriction !== undefined) updateData.geoRestriction = dto.geoRestriction;
+    if (dto.sortOrder !== undefined) updateData.sortOrder = dto.sortOrder;
+    if (dto.planIds !== undefined) updateData.planIds = dto.planIds;
+    if (dto.requiereControlParental !== undefined) updateData.requiereControlParental = dto.requiereControlParental;
+
+    return this.prisma.channel.update({
+      where: { id },
+      data: updateData,
+      include: { category: true },
     });
   }
 
   async toggleCanal(id: string) {
-    return this.withCanalesLock(async () => {
-      const canales = await this.readCanalesStore();
-      const index = canales.findIndex((item) => item.id === id);
-      if (index === -1) throw new NotFoundException(`Canal ${id} not found`);
+    const channel = await this.prisma.channel.findUnique({
+      where: { id, deletedAt: null },
+    });
+    if (!channel) {
+      throw new NotFoundException(`Channel ${id} not found`);
+    }
 
-      const updated = this.normalizeCanalRecord({
-        ...canales[index],
-        activo: !canales[index].activo,
-        actualizadoEn: new Date().toISOString(),
-      });
-
-      canales[index] = updated;
-      await this.writeCanalesStore(canales);
-      return this.cloneCanal(updated);
+    const newStatus = channel.status === ChannelStatus.ACTIVE ? ChannelStatus.INACTIVE : ChannelStatus.ACTIVE;
+    return this.prisma.channel.update({
+      where: { id },
+      data: { status: newStatus },
+      include: { category: true },
     });
   }
 
   async deleteCanal(id: string) {
-    return this.withCanalesLock(async () => {
-      const canales = await this.readCanalesStore();
-      const next = canales.filter((item) => item.id !== id);
-      if (next.length === canales.length) throw new NotFoundException(`Canal ${id} not found`);
-      await this.writeCanalesStore(next);
+    const channel = await this.prisma.channel.findUnique({
+      where: { id, deletedAt: null },
+    });
+    if (!channel) {
+      throw new NotFoundException(`Channel ${id} not found`);
+    }
+
+    // Soft delete
+    await this.prisma.channel.update({
+      where: { id },
+      data: { deletedAt: new Date() },
     });
   }
 
-  // ---- Categorias CRUD (JSON persistence) ---------------------------------
+  // ---- Categorias CRUD (Prisma persistence) ---------------------------------
 
-  async getCategorias(): Promise<AdminCategoriaRecord[]> {
-    return this.readCategoriasStore();
+  async getCategorias(): Promise<any[]> {
+    return this.prisma.category.findMany({
+      orderBy: { nombre: 'asc' },
+    });
   }
 
-  async createCategoria(dto: CreateCategoriaDto): Promise<AdminCategoriaRecord> {
-    return this.withCategoriasLock(async () => {
-      const categorias = await this.readCategoriasStore();
+  async createCategoria(dto: CreateCategoriaDto): Promise<any> {
+    const normalizedName = dto.nombre.trim();
 
-      const normalizedName = dto.nombre.trim();
-      const duplicate = categorias.find(
-        (c) => c.nombre.toLowerCase() === normalizedName.toLowerCase(),
-      );
-      if (duplicate) {
-        throw new ConflictException(`La categoría "${normalizedName}" ya existe.`);
-      }
+    // Check for duplicate
+    const existing = await this.prisma.category.findUnique({
+      where: { nombre: normalizedName },
+    });
+    if (existing) {
+      throw new ConflictException(`Category "${normalizedName}" already exists`);
+    }
 
-      const now = new Date().toISOString();
-      const record: AdminCategoriaRecord = {
-        id: `cat-${uuidv4().slice(0, 8)}`,
+    return this.prisma.category.create({
+      data: {
         nombre: normalizedName,
         descripcion: dto.descripcion?.trim() ?? '',
         icono: dto.icono?.trim() ?? '',
         activo: dto.activo !== false,
-        creadoEn: now,
-        actualizadoEn: now,
-      };
-
-      categorias.push(record);
-      await this.writeCategoriasStore(categorias);
-      return { ...record };
+      },
     });
   }
 
-  async updateCategoria(id: string, dto: UpdateCategoriaDto): Promise<AdminCategoriaRecord> {
-    return this.withCategoriasLock(async () => {
-      const categorias = await this.readCategoriasStore();
-      const index = categorias.findIndex((c) => c.id === id);
-      if (index === -1) throw new NotFoundException(`Categoría ${id} not found`);
+  async updateCategoria(id: string, dto: UpdateCategoriaDto): Promise<any> {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category ${id} not found`);
+    }
 
-      let nombreAnterior: string | null = null;
-      if (dto.nombre !== undefined) {
-        const normalizedName = dto.nombre.trim();
-        const duplicate = categorias.find(
-          (c) => c.id !== id && c.nombre.toLowerCase() === normalizedName.toLowerCase(),
-        );
-        if (duplicate) {
-          throw new ConflictException(`La categoría "${normalizedName}" ya existe.`);
-        }
-        if (normalizedName.toLowerCase() !== categorias[index].nombre.toLowerCase()) {
-          nombreAnterior = categorias[index].nombre;
-        }
-      }
-
-      const updated: AdminCategoriaRecord = {
-        ...categorias[index],
-        nombre: dto.nombre?.trim() ?? categorias[index].nombre,
-        descripcion: dto.descripcion?.trim() ?? categorias[index].descripcion,
-        icono: dto.icono?.trim() ?? categorias[index].icono,
-        activo: dto.activo !== undefined ? dto.activo : categorias[index].activo,
-        actualizadoEn: new Date().toISOString(),
-      };
-
-      categorias[index] = updated;
-      await this.writeCategoriasStore(categorias);
-
-      // Cascade: actualizar los canales que referencian esta categoría por nombre
-      if (nombreAnterior !== null) {
-        await this.withCanalesLock(async () => {
-          const canales = await this.readCanalesStore();
-          const now = new Date().toISOString();
-          let changed = false;
-          const actualizados = canales.map((canal) => {
-            if (canal.categoria === nombreAnterior) {
-              changed = true;
-              return { ...canal, categoria: updated.nombre, actualizadoEn: now };
-            }
-            return canal;
-          });
-          if (changed) await this.writeCanalesStore(actualizados);
+    // Check for name duplicate
+    if (dto.nombre) {
+      const normalizedName = dto.nombre.trim();
+      if (normalizedName.toLowerCase() !== category.nombre.toLowerCase()) {
+        const duplicate = await this.prisma.category.findUnique({
+          where: { nombre: normalizedName },
         });
+        if (duplicate) {
+          throw new ConflictException(`Category "${normalizedName}" already exists`);
+        }
       }
+    }
 
-      return { ...updated };
+    const updateData: any = {};
+    if (dto.nombre !== undefined) updateData.nombre = dto.nombre.trim();
+    if (dto.descripcion !== undefined) updateData.descripcion = dto.descripcion.trim();
+    if (dto.icono !== undefined) updateData.icono = dto.icono.trim();
+    if (dto.activo !== undefined) updateData.activo = dto.activo;
+
+    return this.prisma.category.update({
+      where: { id },
+      data: updateData,
     });
   }
 
-  async toggleCategoria(id: string): Promise<AdminCategoriaRecord> {
-    return this.withCategoriasLock(async () => {
-      const categorias = await this.readCategoriasStore();
-      const index = categorias.findIndex((c) => c.id === id);
-      if (index === -1) throw new NotFoundException(`Categoría ${id} not found`);
+  async toggleCategoria(id: string): Promise<any> {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category ${id} not found`);
+    }
 
-      categorias[index] = {
-        ...categorias[index],
-        activo: !categorias[index].activo,
-        actualizadoEn: new Date().toISOString(),
-      };
-      await this.writeCategoriasStore(categorias);
-      return { ...categorias[index] };
+    return this.prisma.category.update({
+      where: { id },
+      data: { activo: !category.activo },
     });
   }
 
   async deleteCategoria(id: string): Promise<void> {
-    return this.withCategoriasLock(async () => {
-      const categorias = await this.readCategoriasStore();
-      const target = categorias.find((c) => c.id === id);
-      if (!target) throw new NotFoundException(`Categoría ${id} not found`);
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category ${id} not found`);
+    }
 
-      // Integridad referencial: verificar que ningún canal use esta categoría
-      const canales = await this.readCanalesStore();
-      const enUso = canales.some((canal) => canal.categoria === target.nombre);
-      if (enUso) {
-        throw new ConflictException(
-          `No se puede eliminar la categoría "${target.nombre}" porque está asignada a uno o más canales.`,
-        );
-      }
+    // Check if category is in use
+    const channelsUsing = await this.prisma.channel.count({
+      where: { categoryId: id, deletedAt: null },
+    });
+    if (channelsUsing > 0) {
+      throw new ConflictException(
+        `Cannot delete category "${category.nombre}" because it's assigned to ${channelsUsing} channel(s)`,
+      );
+    }
 
-      const next = categorias.filter((c) => c.id !== id);
-      await this.writeCategoriasStore(next);
+    await this.prisma.category.delete({
+      where: { id },
     });
   }
 
-  private async readCategoriasStore(): Promise<AdminCategoriaRecord[]> {
-    if (this.categoriasCache) {
-      return this.categoriasCache.map((item) => ({ ...item }));
-    }
+  // ---- Helper methods for channels ------
 
-    try {
-      const raw = await readFile(this.categoriasStorePath, 'utf8');
-      const parsed = JSON.parse(raw) as unknown;
-      const now = new Date().toISOString();
-      const categorias: AdminCategoriaRecord[] = Array.isArray(parsed)
-        ? (parsed as Partial<AdminCategoriaRecord>[]).map((item) => ({
-            id: typeof item.id === 'string' ? item.id : `cat-${uuidv4().slice(0, 8)}`,
-            nombre: typeof item.nombre === 'string' ? item.nombre : 'Sin nombre',
-            descripcion: typeof item.descripcion === 'string' ? item.descripcion : '',
-            icono: typeof item.icono === 'string' ? item.icono : '',
-            activo: item.activo !== false,
-            creadoEn: typeof item.creadoEn === 'string' ? item.creadoEn : now,
-            actualizadoEn: typeof item.actualizadoEn === 'string' ? item.actualizadoEn : now,
-          }))
-        : [];
-
-      // Primera instalación: sembrar categorías por defecto con IDs fijos
-      const seed = categorias.length === 0 ? [...this.SEED_CATEGORIAS] : categorias;
-      if (categorias.length === 0) await this.writeCategoriasStore(seed);
-      this.categoriasCache = seed;
-      return seed.map((item) => ({ ...item }));
-    } catch {
-      // Archivo no existe: sembrar y persistir
-      await this.writeCategoriasStore([...this.SEED_CATEGORIAS]);
-      return this.SEED_CATEGORIAS.map((item) => ({ ...item }));
-    }
+  private autoSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
-  private async writeCategoriasStore(categorias: AdminCategoriaRecord[]): Promise<void> {
-    this.categoriasCache = categorias.map((item) => ({ ...item }));
-    await mkdir(dirname(this.categoriasStorePath), { recursive: true });
-    await writeFile(this.categoriasStorePath, JSON.stringify(categorias, null, 2), 'utf8');
+  private mapStatusToDb(status?: string): ChannelStatus | null {
+    if (!status) return null;
+    const mapping: Record<string, ChannelStatus> = {
+      ACTIVE: ChannelStatus.ACTIVE,
+      SCHEDULED: ChannelStatus.SCHEDULED,
+      MAINTENANCE: ChannelStatus.MAINTENANCE,
+      INACTIVE: ChannelStatus.INACTIVE,
+    };
+    return mapping[status] || null;
+  }
+
+  private mapProtocolToDb(protocol?: string): StreamProtocol {
+    const mapping: Record<string, StreamProtocol> = {
+      HLS: StreamProtocol.HLS,
+      DASH: StreamProtocol.DASH,
+      HLS_DASH: StreamProtocol.HLS_DASH,
+    };
+    return mapping[protocol || 'HLS'] || StreamProtocol.HLS;
   }
 
 
@@ -925,71 +959,10 @@ export class AdminService {
 
   // ---- Helpers -------------------------------------------------------------
 
-  private cloneCanal(canal: AdminCanalRecord): AdminCanalRecord {
-    return { ...canal };
-  }
-
-  /** Serializa el acceso de lectura-modificación-escritura sobre el almacén de canales */
-  private withCanalesLock<T>(fn: () => Promise<T>): Promise<T> {
-    const result = this.canalesLock.then(() => fn());
-    this.canalesLock = result.then(() => undefined, () => undefined);
-    return result;
-  }
-
-  /** Serializa el acceso de lectura-modificación-escritura sobre el almacén de categorías */
-  private withCategoriasLock<T>(fn: () => Promise<T>): Promise<T> {
-    const result = this.categoriasLock.then(() => fn());
-    this.categoriasLock = result.then(() => undefined, () => undefined);
-    return result;
-  }
-
-  private normalizeCanalRecord(canal: Partial<AdminCanalRecord>): AdminCanalRecord {
-    const now = new Date().toISOString();
-    return {
-      id: canal.id ?? `ch-${uuidv4().slice(0, 8)}`,
-      nombre: canal.nombre?.trim() || 'Canal sin nombre',
-      logo: canal.logo?.trim() ?? '',
-      streamUrl: canal.streamUrl?.trim() || '',
-      detalle: canal.detalle?.trim() || '',
-      categoria: canal.categoria?.trim() || 'General',
-      tipo: canal.tipo ?? CanalTipoDto.LIVE,
-      requiereControlParental: canal.requiereControlParental ?? false,
-      activo: canal.activo ?? true,
-      creadoEn: canal.creadoEn ?? now,
-      actualizadoEn: canal.actualizadoEn ?? canal.creadoEn ?? now,
-    };
-  }
-
-  private async readCanalesStore(): Promise<AdminCanalRecord[]> {
-    if (this.canalesCache) {
-      return this.canalesCache.map((item) => this.cloneCanal(item));
-    }
-
-    try {
-      const raw = await readFile(this.canalesStorePath, 'utf8');
-      const parsed = JSON.parse(raw) as unknown;
-      const canales = Array.isArray(parsed)
-        ? parsed.map((item) => this.normalizeCanalRecord(item as Partial<AdminCanalRecord>))
-        : [];
-      this.canalesCache = canales;
-      return canales.map((item) => this.cloneCanal(item));
-    } catch {
-      await this.writeCanalesStore([]);
-      return [];
-    }
-  }
-
-  private async writeCanalesStore(canales: AdminCanalRecord[]) {
-    const normalized = canales.map((item) => this.normalizeCanalRecord(item));
-    await mkdir(dirname(this.canalesStorePath), { recursive: true });
-    await writeFile(this.canalesStorePath, JSON.stringify(normalized, null, 2), 'utf8');
-    this.canalesCache = normalized;
-  }
-
   private async validatePlanReferences(componentIds: string[], categoryIds: string[]): Promise<void> {
     const validComponentIds = new Set(this.componentes.map((item) => item.id));
-    const categorias = await this.readCategoriasStore();
-    const validCategoryIds = new Set(categorias.map((item: AdminCategoriaRecord) => item.id));
+    const categorias = await this.prisma.category.findMany();
+    const validCategoryIds = new Set(categorias.map((item) => item.id));
 
     const invalidComponents = componentIds.filter((id) => !validComponentIds.has(id));
     const invalidCategories = categoryIds.filter((id) => !validCategoryIds.has(id));

@@ -123,21 +123,56 @@ export type AdminSliderPayload = Omit<AdminSlider, 'id' | 'orden'> & {
 export interface AdminCanal {
   id: string;
   nombre: string;
-  logo: string;
+  slug: string;
+  // Stream
   streamUrl: string;
-  detalle: string;
-  /** categoryId references AdminCategoria.id. Primary relational key. */
+  backupUrl?: string;
+  // Metadata
+  logoUrl?: string;
   categoryId: string;
-  /** categoria stores the category name as a denormalized display field. */
-  categoria: string;
-  tipo: 'live';
+  category?: { id: string; nombre: string };
+  epgSourceId?: string;
+  // Status
+  status: 'ACTIVE' | 'SCHEDULED' | 'MAINTENANCE' | 'INACTIVE';
+  isLive: boolean;
+  healthStatus: 'HEALTHY' | 'DEGRADED' | 'OFFLINE' | 'MAINTENANCE';
+  uptimePercent: number;
+  // Stream config
+  streamProtocol: 'HLS' | 'DASH' | 'HLS_DASH';
+  resolution: '480p' | '720p' | '1080p' | '4K';
+  bitrateKbps: number;
+  isDrmProtected: boolean;
+  // Access control
+  geoRestriction?: string;
+  sortOrder: number;
+  planIds: string[];
   requiereControlParental: boolean;
-  activo: boolean;
-  creadoEn: string;
-  actualizadoEn: string;
+  // Analytics
+  viewerCount: number;
+  // Audit
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
 }
 
-export type AdminCanalPayload = Omit<AdminCanal, 'id' | 'creadoEn' | 'actualizadoEn'>;
+export type AdminCanalPayload = {
+  nombre: string;
+  slug?: string;
+  streamUrl: string;
+  backupUrl?: string;
+  logoUrl?: string;
+  categoryId: string;
+  epgSourceId?: string;
+  status?: 'ACTIVE' | 'SCHEDULED' | 'MAINTENANCE' | 'INACTIVE';
+  streamProtocol?: 'HLS' | 'DASH' | 'HLS_DASH';
+  resolution?: '480p' | '720p' | '1080p' | '4K';
+  bitrateKbps?: number;
+  isDrmProtected?: boolean;
+  geoRestriction?: string;
+  sortOrder?: number;
+  planIds?: string[];
+  requiereControlParental?: boolean;
+};
 
 export interface AdminCategoria {
   id: string;
@@ -503,7 +538,7 @@ const mockCategorias: AdminCategoria[] = [
   { id: 'cat-006', nombre: 'Música y conciertos',    descripcion: 'Videoclips, conciertos, festivales y especiales musicales.',                     icono: 'music',          activo: true },
   { id: 'cat-007', nombre: 'Noticias y actualidad',  descripcion: 'Cobertura informativa, análisis y noticias en tiempo real.',                      icono: 'newspaper-o',    activo: true },
   { id: 'cat-008', nombre: 'Estilo de vida',         descripcion: 'Bienestar, moda, hogar, salud y entretenimiento lifestyle.',                      icono: 'heart-o',        activo: true },
-  { id: 'cat-009', nombre: 'Educación',              descripcion: 'Aprendizaje, formación, cursos y contenido didáctico.',                           icono: 'graduation-cap', active: true },
+  { id: 'cat-009', nombre: 'Educación',              descripcion: 'Aprendizaje, formación, cursos y contenido didáctico.',                           icono: 'graduation-cap', activo: true },
   { id: 'cat-010', nombre: 'Religioso / espiritual', descripcion: 'Programación de fe, reflexión y contenido espiritual.',                            icono: 'sun-o',          activo: true },
   { id: 'cat-011', nombre: 'Cocina',                 descripcion: 'Recetas, gastronomía, chefs y contenido culinario.',                              icono: 'cutlery',        activo: true },
   { id: 'cat-012', nombre: 'Viajes',                 descripcion: 'Destinos, turismo, aventura y cultura internacional.',                            icono: 'plane',          activo: true },
