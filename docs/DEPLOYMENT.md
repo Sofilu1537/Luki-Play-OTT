@@ -273,11 +273,23 @@ sudo systemctl reload nginx
 
 ## URLs de Acceso
 
+### Desarrollo Local
+
+| Servicio          | URL                                       |
+|-------------------|-------------------------------------------|
+| App OTT (login)   | `http://localhost:8081/login`              |
+| CMS Login         | `http://localhost:8081/cms/login`          |
+| Swagger API       | `http://localhost:3000/api/docs`           |
+| Backend API       | `http://localhost:3000`                    |
+| Prisma Studio     | `http://localhost:5555` (via `npx prisma studio`) |
+
+### Producción (Nginx)
+
 | Servicio          | URL                                       |
 |-------------------|-------------------------------------------|
 | App OTT           | `http://<HOST>:8120`                      |
-| Login cliente OTT | `http://<HOST>:8120/login`     |
-| CMS Login         | `http://<HOST>:8120/cms/login` |
+| Login cliente OTT | `http://<HOST>:8120/login`                |
+| CMS Login         | `http://<HOST>:8120/cms/login`            |
 | Swagger API       | `http://<HOST>:8120/api/docs`             |
 
 > Reemplazar `<HOST>` con la IP o dominio del servidor.

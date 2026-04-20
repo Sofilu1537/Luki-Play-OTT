@@ -80,6 +80,15 @@ npx expo start --web
 
 La app queda disponible en `http://localhost:8081`.
 
+### URLs de Desarrollo
+
+| Servicio      | URL                                  |
+|---------------|--------------------------------------|
+| App (login)   | http://localhost:8081/login           |
+| CMS (login)   | http://localhost:8081/cms/login       |
+| Swagger API   | http://localhost:3000/api/docs        |
+| Backend API   | http://localhost:3000                 |
+
 ### Todo con Docker
 
 ```bash
