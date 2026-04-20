@@ -97,18 +97,25 @@ export const lightTheme: ThemeTokens = {
   tag:          '#B07CC6',
 };
 
-/** Sidebar always stays dark regardless of app theme. */
+/**
+ * Sidebar tokens — always violet-dark regardless of app theme.
+ * bg1/bg2 form the vertical LinearGradient (#240046 → #1a0033).
+ */
 export const SIDEBAR = {
-  bg1:         'rgba(17,17,17,0.97)',
-  bg2:         'rgba(12,12,12,0.99)',
-  border:      'rgba(255,255,255,0.06)',
-  sectionLabel:'rgba(255,255,255,0.22)',
-  text:        '#FAF6E7',
-  textMuted:   'rgba(250,246,231,0.38)',
-  iconDefault: 'rgba(250,246,231,0.42)',
-  hoverBg:     'rgba(255,255,255,0.04)',
-  activeText:  '#FFB800',
-  activeBg:    'rgba(255,198,41,0.11)',
-  activeBorder:'#FFB800',
-  footerBorder:'rgba(255,255,255,0.06)',
+  bg1:          '#240046',
+  bg2:          '#1a0033',
+  border:       'rgba(255,255,255,0.10)',
+  sectionLabel: 'rgba(250,246,231,0.28)',
+  text:         '#FAF6E7',
+  textMuted:    'rgba(250,246,231,0.55)',
+  iconDefault:  'rgba(250,246,231,0.55)',
+  hoverBg:      'rgba(255,198,41,0.06)',
+  activeText:   '#FFB800',
+  activeIcon:   '#FFB800',
+  activeBg1:    'rgba(255,198,41,0.18)',
+  activeBg2:    'rgba(255,198,41,0.05)',
+  activeBorder: '#FFB800',
+  footerBorder: 'rgba(255,255,255,0.10)',
+  footerText:   '#17D1C6',
+  footerSub:    'rgba(250,246,231,0.35)',
 } as const;

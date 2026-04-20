@@ -88,12 +88,9 @@ function initials(name: string) {
     .slice(0, 2);
 }
 
-function avatarColor(name: string) {
-  const palette = ['#FFB800', '#B490FF', '#10B981', '#FFDA6B', '#F43F5E', '#8B72B2', '#D0C4E8', '#7B2FBE'];
-  let hash = 0;
-  for (let index = 0; index < name.length; index += 1) hash = name.charCodeAt(index) + ((hash << 5) - hash);
-  return palette[Math.abs(hash) % palette.length];
-}
+// Avatar uses consistent brand gradient (Selective Yellow)
+const AVATAR_BG = 'rgba(255,184,0,0.22)';
+const AVATAR_TEXT = '#FFB800';
 
 function hasPermission(permissions: string[] | undefined, permission: string) {
   if (!permissions) return false;
@@ -118,10 +115,10 @@ function getRoleMeta(role: AdminUser['role']) {
 }
 
 function getStatusMeta(status: AdminUser['status']) {
-  if (status === 'active') return { label: 'Activo', color: C.green, bg: C.greenSoft };
-  if (status === 'suspended') return { label: 'Suspendido', color: C.rose, bg: C.roseSoft };
-  if (status === 'pending') return { label: 'Pendiente', color: '#f59e0b', bg: 'rgba(245,158,11,0.16)' };
-  return { label: 'Inactivo', color: C.amber, bg: 'rgba(245,158,11,0.16)' };
+  if (status === 'active')    return { label: 'Activo',     color: '#17D1C6', bg: 'rgba(23,209,198,0.12)'  };
+  if (status === 'suspended') return { label: 'Suspendido', color: '#D1105A', bg: 'rgba(209,16,90,0.12)'   };
+  if (status === 'pending')   return { label: 'Pendiente',  color: '#FF7900', bg: 'rgba(255,121,0,0.12)'   };
+  return                             { label: 'Inactivo',   color: '#FF7900', bg: 'rgba(255,121,0,0.12)'   };
 }
 
 function getDeviceCount(sessions: AdminUserSession[]) {
@@ -832,7 +829,7 @@ function UserDetailModal({
 
   const askStatusChange = (status: AdminUser['status']) => {
     if (!accessToken || !user) return;
-    const labels = { active: 'activar', suspended: 'suspender', inactive: 'desactivar' };
+    const labels: Record<string, string> = { active: 'activar', suspended: 'suspender', inactive: 'desactivar', pending: 'activar' };
     onRequestConfirm({
       title: `Confirmar ${labels[status]}`,
       message: `Se actualizará el estado de ${user.nombre} a ${labels[status]}. Esta acción afecta acceso y operación del usuario.`,
@@ -937,8 +934,8 @@ function UserDetailModal({
                 <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
                   <View style={{ flex: 1, minWidth: 260, backgroundColor: C.lift, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16 }}>
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                      <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: avatarColor(user.nombre), alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>{initials(user.nombre)}</Text>
+                      <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+                        <Text style={{ color: AVATAR_TEXT, fontSize: 13, fontWeight: '800' }}>{initials(user.nombre)}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>{user.nombre}</Text>
@@ -1335,14 +1332,35 @@ export default function CmsUsers() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.greenSoft, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(16,185,129,0.32)' }} onPress={exportCSV}>
-              <FontAwesome name="download" size={13} color={C.green} />
-              <Text style={{ color: C.green, fontWeight: '700', fontSize: 13 }}>Exportar</Text>
+            {/* Exportar — outline amarillo */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 8,
+                backgroundColor: 'transparent',
+                borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
+                borderWidth: 1, borderColor: 'rgba(255,184,0,0.40)',
+              }}
+              onPress={exportCSV}
+            >
+              <FontAwesome name="download" size={13} color="#FFB800" />
+              <Text style={{ color: '#FFB800', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
             </TouchableOpacity>
             {canWrite ? (
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 }} onPress={() => { setEditingUser(null); setShowFormModal(true); }}>
-                <FontAwesome name="plus" size={13} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Crear usuario</Text>
+              /* Crear usuario — CTA gradiente amarillo/naranja */
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 8,
+                  borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
+                  overflow: 'hidden',
+                }}
+                onPress={() => { setEditingUser(null); setShowFormModal(true); }}
+              >
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+                  {/* Gradient via border-color trick since LinearGradient needs separate import */}
+                  <View style={{ flex: 1, backgroundColor: '#FFB800' }} />
+                </View>
+                <FontAwesome name="plus" size={13} color="#240046" />
+                <Text style={{ color: '#240046', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Crear usuario</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1356,39 +1374,46 @@ export default function CmsUsers() {
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Total', value: stats.total, icon: 'users', tone: C.accentLight, bg: C.accentSoft, warn: false },
-            { label: 'Abonados', value: stats.subscribers, icon: 'play-circle', tone: C.cyan, bg: C.cyanSoft, warn: false },
-            { label: 'Suspendidos', value: stats.suspended, icon: 'exclamation-triangle', tone: C.rose, bg: C.roseSoft, warn: stats.suspended > stats.total * 0.3 },
+            { label: 'Total',       value: stats.total,       icon: 'users',                color: '#FFB800', bg: 'rgba(255,184,0,0.12)',   warn: false },
+            { label: 'Abonados',    value: stats.subscribers, icon: 'play-circle',          color: '#17D1C6', bg: 'rgba(23,209,198,0.12)',  warn: false },
+            { label: 'Suspendidos', value: stats.suspended,   icon: 'exclamation-triangle', color: '#D1105A', bg: 'rgba(209,16,90,0.12)',   warn: stats.suspended > stats.total * 0.3 },
           ].map((card) => (
             <View key={card.label} style={{
-              flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16,
-              borderWidth: card.warn ? 2 : 1,
-              borderColor: card.warn ? 'rgba(244,63,94,0.5)' : C.border,
-              ...(card.warn ? { shadowColor: '#F43F5E', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } } : {}),
+              flex: 1, minWidth: 180,
+              backgroundColor: 'rgba(26,26,46,0.85)',
+              borderRadius: 14, padding: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(96,38,158,0.20)',
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
-                  <FontAwesome name={card.icon as never} size={16} color={card.tone} />
+                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={card.icon as never} size={16} color={card.color} />
                 </View>
                 {card.warn ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.roseSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <FontAwesome name="warning" size={10} color={C.rose} />
-                    <Text style={{ color: C.rose, fontSize: 10, fontWeight: '700' }}>Alto</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(209,16,90,0.12)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <FontAwesome name="warning" size={10} color="#D1105A" />
+                    <Text style={{ color: '#D1105A', fontSize: 10, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
                   </View>
                 ) : null}
               </View>
-              <Text style={{ color: C.text, fontSize: 24, fontWeight: '900' }}>{card.value}</Text>
-              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{card.label}</Text>
+              <Text style={{ color: C.text, fontSize: 24, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
+              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
             </View>
           ))}
         </View>
 
         <View style={{ backgroundColor: C.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: C.border, marginBottom: 16, zIndex: 50, elevation: 50 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {/* Search — prominent, left */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, flex: 1, minWidth: 240 }}>
-              <FontAwesome name="search" size={13} color={C.muted} />
-              <TextInput style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, ...webInput }} placeholder="Buscar nombre, email, rol, plan..." placeholderTextColor={C.muted} value={search} onChangeText={setSearch} />
+            {/* Search */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(96,38,158,0.20)', paddingHorizontal: 12, flex: 1, minWidth: 240 }}>
+              <FontAwesome name="search" size={12} color={C.muted} />
+              <TextInput
+                style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, fontFamily: 'Montserrat-SemiBold', ...webInput }}
+                placeholder="Buscar nombre, email, rol, plan..."
+                placeholderTextColor="rgba(250,246,231,0.35)"
+                value={search}
+                onChangeText={setSearch}
+              />
               {search ? (
                 <TouchableOpacity onPress={() => setSearch('')}>
                   <FontAwesome name="times-circle" size={14} color={C.muted} />
@@ -1409,11 +1434,22 @@ export default function CmsUsers() {
               onSelect={(v) => setStatusFilter(v as StatusFilter)}
             />
 
-            {/* Page size compact */}
+            {/* Page size */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               {[25, 50, 100].map((size) => (
-                <TouchableOpacity key={size} style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: pageSize === size ? C.accent : C.lift, borderWidth: 1, borderColor: pageSize === size ? C.accent : C.border }} onPress={() => setPageSize(size)}>
-                  <Text style={{ color: pageSize === size ? '#160035' : C.textDim, fontSize: 11, fontWeight: '700' }}>{size}</Text>
+                <TouchableOpacity
+                  key={size}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical:    6,
+                    borderRadius:       6,
+                    backgroundColor:   pageSize === size ? '#FFB800' : 'transparent',
+                    borderWidth:        pageSize === size ? 0 : 1,
+                    borderColor:       'rgba(96,38,158,0.20)',
+                  }}
+                  onPress={() => setPageSize(size)}
+                >
+                  <Text style={{ color: pageSize === size ? '#240046' : 'rgba(250,246,231,0.55)', fontSize: 12, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1445,19 +1481,27 @@ export default function CmsUsers() {
         ) : (
           <>
             {/* Table header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 4 }}>
               {[
                 { label: 'CONTRATO', flex: 1.2 },
-                { label: 'NOMBRE', flex: 2 },
-                { label: 'ROL', flex: 1 },
-                { label: 'ESTADO', flex: 1 },
-                { label: 'PLAN', flex: 1 },
+                { label: 'NOMBRE',   flex: 2   },
+                { label: 'ROL',      flex: 1   },
+                { label: 'ESTADO',   flex: 1   },
+                { label: 'PLAN',     flex: 1   },
                 { label: 'SESIONES', flex: 0.7 },
-                { label: 'EMAIL', flex: 1.6 },
-                { label: '', flex: 0.4 },
+                { label: 'EMAIL',    flex: 1.6 },
+                { label: '',         flex: 0.4 },
               ].map((col) => (
                 <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
-                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 }}>{col.label}</Text>
+                  <Text style={{
+                    color: 'rgba(250,246,231,0.40)',
+                    fontSize: 10, fontWeight: '800',
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    fontFamily: 'Montserrat-SemiBold',
+                  }}>
+                    {col.label}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -1472,43 +1516,44 @@ export default function CmsUsers() {
                 <View key={user.id} style={{
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
                   backgroundColor: C.surface,
-                  borderRadius: 8, marginBottom: 3, borderWidth: 1,
-                  borderColor: C.border,
+                  borderRadius: 8, marginBottom: 3,
+                  borderBottomWidth: 1,
+                  borderBottomColor: 'rgba(96,38,158,0.12)',
                 }}>
                   {/* CONTRATO */}
                   <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
-                    <Text style={{ color: user.contrato ? C.text : C.muted, fontSize: 12, fontWeight: user.contrato ? '600' : '400' }} numberOfLines={1}>{user.contrato || '—'}</Text>
+                    <Text style={{ color: user.contrato ? C.text : C.muted, fontSize: 12, fontWeight: user.contrato ? '600' : '400', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.contrato || '—'}</Text>
                   </View>
 
-                  {/* NOMBRE (avatar + name + type badge) */}
+                  {/* NOMBRE — avatar consistente + name */}
                   <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: avatarColor(user.nombre), alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{initials(user.nombre)}</Text>
+                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+                      <Text style={{ color: AVATAR_TEXT, fontSize: 11, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{initials(user.nombre)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{user.nombre}</Text>
-                      <Text style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>{getUserTypeMeta(user).label}</Text>
+                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.nombre}</Text>
+                      <Text style={{ color: C.muted, fontSize: 10, marginTop: 2, fontFamily: 'Montserrat-SemiBold' }}>{getUserTypeMeta(user).label}</Text>
                     </View>
                   </View>
 
                   {/* ROL */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <View style={{ backgroundColor: roleMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: roleMeta.color, fontSize: 11, fontWeight: '700' }}>{roleMeta.label}</Text>
+                    <View style={{ backgroundColor: roleMeta.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: roleMeta.color, fontSize: 11, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{roleMeta.label}</Text>
                     </View>
                   </View>
 
                   {/* ESTADO */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <View style={{ backgroundColor: statusMeta.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: statusMeta.color, fontSize: 11, fontWeight: '700' }}>{statusMeta.label}</Text>
+                    <View style={{ backgroundColor: statusMeta.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: statusMeta.color, fontSize: 11, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{statusMeta.label}</Text>
                     </View>
                   </View>
 
-                  {/* PLAN */}
+                  {/* PLAN — gradiente amarillo/naranja (marca Luki Play) */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <View style={{ backgroundColor: C.cyanSoft, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>{user.plan}</Text>
+                    <View style={{ backgroundColor: '#FFB800', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: '#240046', fontSize: 10, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
                     </View>
                   </View>
 
@@ -1578,7 +1623,7 @@ export default function CmsUsers() {
       />
 
       {confirmState ? <ConfirmModal state={confirmState} onClose={closeConfirm} /> : null}
-      {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
+      {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken ?? ''} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
 
       {/* Action menu popover */}
       {actionMenuUserId ? (() => {
@@ -1591,7 +1636,7 @@ export default function CmsUsers() {
           ...(canWrite ? [
             { icon: 'pencil', label: 'Editar', color: C.cyan, action: () => { setEditingUser(menuUser); setShowFormModal(true); } },
             { icon: 'lock', label: 'Recuperar contraseña', color: '#fbbf24', action: () => setRecoveryUser(menuUser) },
-            { icon: isActive ? 'ban' : 'check-circle', label: isActive ? 'Suspender' : 'Activar', color: isActive ? C.rose : C.emerald, action: () => handleDeactivate(menuUser) },
+            { icon: isActive ? 'ban' : 'check-circle', label: isActive ? 'Suspender' : 'Activar', color: isActive ? C.rose : C.cyan, action: () => handleDeactivate(menuUser) },
           ] : []),
         ];
         return (

@@ -201,27 +201,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
             const active =
               pathname === item.path || pathname?.startsWith(`${item.path}/`);
 
-            return (
-              <Pressable
-                key={item.path}
-                style={({ hovered }: { hovered?: boolean }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: collapsed ? 0 : 12,
-                  paddingVertical: 11,
-                  marginBottom: 2,
-                  borderRadius: 11,
-                  justifyContent: collapsed ? 'center' : 'flex-start',
-                  backgroundColor: active
-                    ? SIDEBAR.activeBg
-                    : hovered
-                    ? SIDEBAR.hoverBg
-                    : 'transparent',
-                  borderLeftWidth: active && !collapsed ? 2 : 0,
-                  borderLeftColor: SIDEBAR.activeBorder,
-                })}
-                onPress={() => router.push(item.path as never)}
-              >
+            const innerContent = (
+              <>
                 <FontAwesome
                   name={item.icon}
                   size={13}
@@ -230,11 +211,11 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                 {!collapsed && (
                   <Text
                     style={{
-                      color: active ? SIDEBAR.activeText : SIDEBAR.text,
+                      color:      active ? SIDEBAR.activeText : SIDEBAR.text,
                       fontWeight: active ? '700' : '500',
-                      fontSize: 13,
+                      fontSize:   13,
                       marginLeft: 11,
-                      flex: 1,
+                      flex:       1,
                       fontFamily: FONT_FAMILY.bodySemiBold,
                     }}
                     numberOfLines={1}
@@ -243,15 +224,48 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                   </Text>
                 )}
                 {!collapsed && active && (
-                  <View
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: SIDEBAR.activeBorder,
-                    }}
-                  />
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: SIDEBAR.activeBorder }} />
                 )}
+              </>
+            );
+
+            const rowBase = {
+              flexDirection:     'row'        as const,
+              alignItems:        'center'     as const,
+              paddingHorizontal: collapsed ? 0 : 12,
+              paddingVertical:   11,
+              marginBottom:      2,
+              borderRadius:      11,
+              justifyContent:    collapsed ? ('center' as const) : ('flex-start' as const),
+              borderLeftWidth:   active && !collapsed ? 3 : 0,
+              borderLeftColor:   SIDEBAR.activeBorder,
+            };
+
+            if (active) {
+              return (
+                <Pressable key={item.path} onPress={() => router.push(item.path as never)}>
+                  <LinearGradient
+                    colors={[SIDEBAR.activeBg1, SIDEBAR.activeBg2]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={rowBase}
+                  >
+                    {innerContent}
+                  </LinearGradient>
+                </Pressable>
+              );
+            }
+
+            return (
+              <Pressable
+                key={item.path}
+                style={({ hovered }: { hovered?: boolean }) => ({
+                  ...rowBase,
+                  backgroundColor: hovered ? SIDEBAR.hoverBg : 'transparent',
+                })}
+                onPress={() => router.push(item.path as never)}
+              >
+                {innerContent}
               </Pressable>
             );
           })}
@@ -291,8 +305,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
             <View>
               <Text
                 style={{
-                  color: SIDEBAR.text,
-                  fontSize: 11,
+                  color:      SIDEBAR.footerText,
+                  fontSize:   11,
                   fontWeight: '600',
                   fontFamily: FONT_FAMILY.bodySemiBold,
                 }}
@@ -301,8 +315,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
               </Text>
               <Text
                 style={{
-                  color: SIDEBAR.textMuted,
-                  fontSize: 10,
+                  color:      SIDEBAR.footerSub,
+                  fontSize:   10,
                   fontFamily: FONT_FAMILY.body,
                 }}
               >
