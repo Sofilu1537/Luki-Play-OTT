@@ -23,7 +23,7 @@ export interface AdminUser {
   sesiones: number;
   contrato: string | null;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
-  role: 'superadmin' | 'soporte' | 'cliente';
+  role: 'superadmin' | 'admin' | 'soporte' | 'cliente';
   mustChangePassword: boolean;
   mfaEnabled: boolean;
   isLocked: boolean;
@@ -32,6 +32,7 @@ export interface AdminUser {
   maxDevices: number;
   sessionDurationDays: number;
   sessionLimitPolicy: 'block_new' | 'replace_oldest';
+  permissions: string[];
   isCmsUser: boolean;
   isSubscriber: boolean;
 }
@@ -50,6 +51,7 @@ export interface AdminUserPayload {
   maxDevices?: number;
   sessionDurationDays?: number;
   sessionLimitPolicy?: AdminUser['sessionLimitPolicy'];
+  permissions?: string[];
 }
 
 export interface AdminUserSession {
@@ -241,8 +243,9 @@ function buildMockUsers(): AdminUser[] {
 
   const rawUsers = [
     // ── Usuarios internos ──────────────────────────────────────────────────
-    { nombre: 'Admin Principal', firstName: 'Admin', lastName: 'Principal', email: 'admin@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'superadmin' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, fechaInicio: '', fechaFin: '', isCmsUser: true },
-    { nombre: 'Agente Soporte', firstName: 'Agente', lastName: 'Soporte', email: 'soporte@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'soporte' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, fechaInicio: '', fechaFin: '', isCmsUser: true },
+    { nombre: 'Admin Principal', firstName: 'Admin', lastName: 'Principal', email: 'admin@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'superadmin' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, permissions: ['cms:*'], fechaInicio: '', fechaFin: '', isCmsUser: true },
+    { nombre: 'Coordinador CMS', firstName: 'Coordinador', lastName: 'CMS', email: 'coordinacion@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'admin' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, permissions: ['cms:dashboard', 'cms:users', 'cms:componentes', 'cms:planes', 'cms:canales', 'cms:categorias', 'cms:sliders', 'cms:monitor', 'cms:analitica', 'cms:propaganda', 'cms:notificaciones-admin', 'cms:notificaciones-abonado'], fechaInicio: '', fechaFin: '', isCmsUser: true },
+    { nombre: 'Agente Soporte', firstName: 'Agente', lastName: 'Soporte', email: 'soporte@lukiplay.com', telefono: null, contrato: null, plan: 'Usuario CMS', planId: null, role: 'soporte' as const, status: 'active' as const, maxDevices: 3, sessionDurationDays: 7, sessionLimitPolicy: 'block_new' as const, permissions: ['cms:dashboard', 'cms:users', 'cms:canales', 'cms:monitor', 'cms:analitica'], fechaInicio: '', fechaFin: '', isCmsUser: true },
     // ── Abonados desde Excel (report-contract.xlsx) ────────────────────────
     { nombre: 'CASTRO DANIEL',                         firstName: 'CASTRO',      lastName: 'DANIEL',      email: '',                               telefono: '0987284494',        contrato: '000000000', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('ANULADO'),    maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-09-14', fechaFin: '',           isCmsUser: false },
     { nombre: 'DOICELA NEGRETE JEFFERSON XAVIER',       firstName: 'DOICELA',     lastName: 'NEGRETE',     email: 'facturacion@luki.ec',            telefono: '0939246460',        contrato: '000000002', plan: 'PLAN BASICO',           planId: null, role: 'cliente' as const, status: mapStatus('SUSPENDIDO'), maxDevices: 2, sessionDurationDays: 30, sessionLimitPolicy: 'block_new' as const, fechaInicio: '2020-08-27', fechaFin: '2022-12-01', isCmsUser: false },
@@ -316,6 +319,7 @@ function buildMockUsers(): AdminUser[] {
       maxDevices: u.maxDevices,
       sessionDurationDays: u.sessionDurationDays,
       sessionLimitPolicy: u.sessionLimitPolicy,
+      permissions: u.isCmsUser ? (u.permissions ?? []) : [],
       isCmsUser: u.isCmsUser,
       isSubscriber: !u.isCmsUser,
     }));
@@ -392,6 +396,7 @@ export async function adminCreateUser(
       maxDevices: role === 'cliente' ? data.maxDevices ?? selectedPlan?.maxDevices ?? 3 : 3,
       sessionDurationDays: data.sessionDurationDays ?? (role === 'cliente' ? 30 : 7),
       sessionLimitPolicy: data.sessionLimitPolicy ?? 'block_new',
+      permissions: role === 'cliente' ? [] : (data.permissions ?? []),
       isCmsUser: role !== 'cliente',
       isSubscriber: role === 'cliente',
     };
@@ -436,6 +441,7 @@ export async function adminUpdateUser(
       maxDevices: isSubscriber ? data.maxDevices ?? current.maxDevices ?? selectedPlan?.maxDevices ?? 3 : 3,
       sessionDurationDays: data.sessionDurationDays ?? current.sessionDurationDays,
       sessionLimitPolicy: data.sessionLimitPolicy ?? current.sessionLimitPolicy,
+      permissions: isSubscriber ? [] : (data.permissions ?? current.permissions ?? []),
       isCmsUser: !isSubscriber,
       isSubscriber,
     };
