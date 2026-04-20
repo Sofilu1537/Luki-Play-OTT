@@ -47,7 +47,7 @@ export class CompleteFirstAccessUseCase {
     await this.userRepo.updatePassword(user.id, newHash);
     await this.tokenRepo.markUsed(token.id);
 
-    const permissions = getPermissionsForRole(user.role);
+    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
     const tokenPair = await this.tokenService.generateTokenPair({
       sub: user.id,
       role: user.role,

@@ -19,8 +19,9 @@ export interface CreateCmsUserDto {
   email: string;
   firstName: string;
   lastName: string;
-  role: UserRole.SUPERADMIN | UserRole.SOPORTE;
+  role: UserRole.SUPERADMIN | UserRole.ADMIN | UserRole.SOPORTE;
   phone?: string;
+  permissions?: string[];
   createdBy: string;
 }
 

@@ -97,6 +97,7 @@ export class PrismaUserRepository implements UserRepository {
       failedAttempts: 0,
       lastLoginAt: customer.lastLoginAt,
       createdBy: null,
+      dynamicPermissions: customer.permissions ?? [],
     });
   }
 
@@ -104,6 +105,8 @@ export class PrismaUserRepository implements UserRepository {
     switch (prismaRole) {
       case 'SUPERADMIN':
         return UserRole.SUPERADMIN;
+      case 'ADMIN':
+        return UserRole.ADMIN;
       case 'SOPORTE':
         return UserRole.SOPORTE;
       case 'CLIENTE':
@@ -131,6 +134,8 @@ export class PrismaUserRepository implements UserRepository {
     switch (role) {
       case UserRole.SUPERADMIN:
         return 'SUPERADMIN';
+      case UserRole.ADMIN:
+        return 'ADMIN';
       case UserRole.SOPORTE:
         return 'SOPORTE';
       case UserRole.CLIENTE:

@@ -12,7 +12,7 @@ export interface AdminUser {
   sesiones: number;
   contrato: string | null;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
-  role: 'superadmin' | 'soporte' | 'cliente';
+  role: 'superadmin' | 'admin' | 'soporte' | 'cliente';
   mustChangePassword: boolean;
   mfaEnabled: boolean;
   isLocked: boolean;
@@ -23,6 +23,7 @@ export interface AdminUser {
   sessionLimitPolicy: 'block_new' | 'replace_oldest';
   isCmsUser: boolean;
   isSubscriber: boolean;
+  permissions: string[];
 }
 
 export function toAdminUser(customer: any, activeSessions: number = 0): AdminUser {
@@ -52,5 +53,6 @@ export function toAdminUser(customer: any, activeSessions: number = 0): AdminUse
     sessionLimitPolicy: contract?.sessionLimitPolicy === 'REPLACE_OLDEST' ? 'replace_oldest' : 'block_new',
     isCmsUser: customer.isCmsUser,
     isSubscriber: customer.isSubscriber,
+    permissions: customer.permissions ?? [],
   };
 }

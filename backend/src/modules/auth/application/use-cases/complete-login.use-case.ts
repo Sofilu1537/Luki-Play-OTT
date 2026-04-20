@@ -92,7 +92,7 @@ export class CompleteLoginUseCase {
     }
 
     // 5. Generate JWT token pair
-    const permissions = getPermissionsForRole(user.role);
+    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
     const tokenPair = await this.tokenService.generateTokenPair({
       sub: user.id,
       role: user.role,

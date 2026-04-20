@@ -1,6 +1,7 @@
 /** Roles available in the platform. */
 export enum UserRole {
   SUPERADMIN = 'superadmin',
+  ADMIN = 'admin',
   SOPORTE = 'soporte',
   CLIENTE = 'cliente',
 }
@@ -39,6 +40,7 @@ export class User {
   failedAttempts: number;
   lastLoginAt: Date | null;
   readonly createdBy: string | null;
+  readonly dynamicPermissions: string[];
 
   constructor(props: {
     id: string;
@@ -58,6 +60,7 @@ export class User {
     failedAttempts?: number;
     lastLoginAt?: Date | null;
     createdBy?: string | null;
+    dynamicPermissions?: string[];
   }) {
     this.id = props.id;
     this.contractNumber = props.contractNumber;
@@ -76,6 +79,7 @@ export class User {
     this.failedAttempts = props.failedAttempts ?? 0;
     this.lastLoginAt = props.lastLoginAt ?? null;
     this.createdBy = props.createdBy ?? null;
+    this.dynamicPermissions = props.dynamicPermissions ?? [];
   }
 
   /** Whether the user’s status allows login. */
@@ -88,9 +92,9 @@ export class User {
     return this.role === UserRole.CLIENTE;
   }
 
-  /** Whether this user can access the CMS panel (SUPERADMIN or SOPORTE). */
+  /** Whether this user can access the CMS panel (SUPERADMIN, ADMIN, or SOPORTE). */
   isCmsUser(): boolean {
-    return this.role === UserRole.SUPERADMIN || this.role === UserRole.SOPORTE;
+    return this.role === UserRole.SUPERADMIN || this.role === UserRole.ADMIN || this.role === UserRole.SOPORTE;
   }
 
   isLocked(): boolean {

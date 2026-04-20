@@ -589,31 +589,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-            <SectionCard title="Información básica" subtitle="Identidad principal del usuario o abonado.">
-              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>TIPO DE USUARIO</Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                {[
-                  { value: 'subscriber' as const, label: 'Abonado' },
-                  { value: 'system' as const, label: 'Interno' },
-                ].map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: userType === option.value ? C.accent : C.border,
-                      backgroundColor: userType === option.value ? C.accentSoft : C.lift,
-                      alignItems: 'center',
-                    }}
-                    onPress={() => setUserType(option.value)}
-                  >
-                    <Text style={{ color: userType === option.value ? C.accentLight : C.textDim, fontSize: 12, fontWeight: '700' }}>{option.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
+            <SectionCard title="Información básica" subtitle="Identidad principal del abonado.">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>NOMBRE COMPLETO</Text>
@@ -631,38 +607,10 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
             </SectionCard>
 
             <SectionCard title="Acceso y seguridad" subtitle="Autorización, estado y políticas básicas de acceso.">
-              {userType === 'system' ? (
-                <>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>ROL</Text>
-                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                    {[
-                      { value: 'soporte' as const, label: 'Soporte' },
-                      { value: 'superadmin' as const, label: 'Superadmin' },
-                    ].map((option) => (
-                      <TouchableOpacity
-                        key={option.value}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 10,
-                          borderRadius: 8,
-                          borderWidth: 1,
-                          borderColor: role === option.value ? C.cyan : C.border,
-                          backgroundColor: role === option.value ? C.cyanSoft : C.lift,
-                          alignItems: 'center',
-                        }}
-                        onPress={() => setRole(option.value)}
-                      >
-                        <Text style={{ color: role === option.value ? C.cyan : C.textDim, fontSize: 12, fontWeight: '700' }}>{option.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
-              ) : (
-                <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 12 }}>
-                  <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Rol de abonado</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Los abonados usan el rol de negocio Cliente y no admiten edición manual de autorización.</Text>
-                </View>
-              )}
+              <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 12 }}>
+                <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Rol de abonado</Text>
+                <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Los abonados usan el rol de negocio Cliente. Para gestionar usuarios CMS, usa el módulo Roles.</Text>
+              </View>
 
               <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>ESTADO</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -1211,7 +1159,7 @@ export default function CmsUsers() {
         }),
       );
 
-      setUsers(usersData);
+      setUsers(usersData.filter((u) => !u.isCmsUser));
       setPlans(plansData);
       setSessionsByUser(Object.fromEntries(sessionsEntries));
     } catch (cause) {
@@ -1463,16 +1411,6 @@ export default function CmsUsers() {
             </View>
 
             {/* Dropdown-style compact filters */}
-            <DropdownFilter
-              label="Tipo"
-              value={userTypeFilter}
-              options={[
-                { value: 'all', label: 'Todos' },
-                { value: 'subscriber', label: 'Abonados' },
-                { value: 'system', label: 'Internos' },
-              ]}
-              onSelect={(v) => setUserTypeFilter(v as UserTypeFilter)}
-            />
 
             <DropdownFilter
               label="Rol"
@@ -1508,10 +1446,10 @@ export default function CmsUsers() {
             </View>
 
             {/* Active filter count + clear */}
-            {(userTypeFilter !== 'all' || roleFilter !== 'all' || statusFilter !== 'all' || search) ? (
+            {(roleFilter !== 'all' || statusFilter !== 'all' || search) ? (
               <TouchableOpacity
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }}
-                onPress={() => { setSearch(''); setUserTypeFilter('all'); setRoleFilter('all'); setStatusFilter('all'); }}
+                onPress={() => { setSearch(''); setRoleFilter('all'); setStatusFilter('all'); }}
               >
                 <FontAwesome name="times" size={10} color={C.rose} />
                 <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700' }}>Limpiar</Text>

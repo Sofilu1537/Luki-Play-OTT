@@ -7,6 +7,41 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [0.3.0-beta] — 2026-04
+
+### Añadido
+
+#### Backend — RBAC Híbrido
+- **prisma**: Rol `ADMIN` en enum `UserRole` + campo `permissions String[]` en modelo `Customer`
+- **prisma**: Migración `add_admin_role_and_permissions`
+- **auth**: Lógica de permisos híbrida — estáticos (SUPERADMIN/SOPORTE) + dinámicos (ADMIN desde BD)
+- **auth**: `getPermissionsForRole()` soporta merge de permisos estáticos + `dynamicPermissions`
+- **auth**: `CMS_MODULES` constante — fuente de verdad de 13 módulos del sidebar
+- **auth**: `dynamicPermissions` en entidad `User` del dominio
+- **admin**: Campo `permissions` en `CreateUserDto`/`UpdateUserDto` para CMS users
+- **admin**: Endpoint `PATCH /admin/users/:id/permissions` — actualizar permisos CMS
+- **admin**: Endpoint `GET /admin/permissions/modules` — listar módulos disponibles
+- **admin**: `getPermissionModules()` en AdminService
+
+#### Frontend — Módulo de Roles
+- **cms/roles**: Reescritura completa — de placeholder a módulo funcional con 2 tabs
+- **roles/RolesOverviewTab**: Vista de 4 roles con permisos base (read-only)
+- **roles/CmsUsersTab**: CRUD de usuarios CMS con tabla, filtros y modales
+- **roles/CmsUserFormModal**: Crear/editar usuario CMS con selector de rol + toggles
+- **roles/CmsUserDetailModal**: Detalle de usuario con permisos editables
+- **roles/PermissionToggles**: Componente reutilizable de switches ON/OFF por módulo
+- **roles/types.ts**: Tipos compartidos, CMS_MODULES, ROLE_META, buildToggleItems()
+- **adminApi**: Funciones `adminListCmsUsers()`, `adminCreateCmsUser()`, `adminUpdateCmsUserPermissions()`
+- **CmsShell**: Sidebar dinámico — filtra NAV_ITEMS según `profile.permissions`
+
+### Cambiado
+- **users.tsx**: Solo muestra clientes/abonados (filtro `isCmsUser` en data layer)
+- **users.tsx**: Eliminado selector "Tipo de usuario" (Interno/Abonado) del formulario
+- **users.tsx**: Eliminado filtro dropdown de tipo de usuario
+- **CmsShell**: NAV_ITEMS filtrados por `NAV_PERMISSION_MAP` + `hasPermission()`
+
+---
+
 ## [0.2.0-beta] — 2026-04
 
 ### Añadido

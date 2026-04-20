@@ -112,7 +112,7 @@ export class LoginCmsUseCase {
     }));
 
     // 6. Generate session
-    const permissions = getPermissionsForRole(user.role);
+    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
     const tokenPair = await this.tokenService.generateTokenPair({
       sub: user.id, role: user.role, permissions,
       aud: Audience.CMS, accountId: null, entitlements: [],

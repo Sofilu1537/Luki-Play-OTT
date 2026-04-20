@@ -85,7 +85,7 @@ export class RefreshTokenUseCase {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    const permissions = getPermissionsForRole(user.role);
+    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
 
     let entitlements: string[] = [];
     let canAccessOtt = true;

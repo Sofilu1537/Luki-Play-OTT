@@ -23,7 +23,7 @@ export interface AdminUser {
   sesiones: number;
   contrato: string | null;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
-  role: 'superadmin' | 'soporte' | 'cliente';
+  role: 'superadmin' | 'admin' | 'soporte' | 'cliente';
   mustChangePassword: boolean;
   mfaEnabled: boolean;
   isLocked: boolean;
@@ -34,6 +34,7 @@ export interface AdminUser {
   sessionLimitPolicy: 'block_new' | 'replace_oldest';
   isCmsUser: boolean;
   isSubscriber: boolean;
+  permissions: string[];
 }
 
 export interface AdminUserPayload {
@@ -287,6 +288,52 @@ export async function adminGetUserPlan(accessToken: string, id: string): Promise
 
 export async function adminDeleteUser(accessToken: string, id: string): Promise<void> {
   await apiFetch<void>(`/admin/users/${id}`, accessToken, { method: 'DELETE' });
+}
+
+// ---------------------------------------------------------------------------
+// CMS Users (roles module)
+// ---------------------------------------------------------------------------
+
+export interface CmsUserPayload {
+  nombre: string;
+  email: string;
+  telefono?: string;
+  role: 'admin' | 'soporte';
+  permissions?: string[];
+  password?: string;
+}
+
+export async function adminListCmsUsers(accessToken: string): Promise<AdminUser[]> {
+  const all = await apiFetch<AdminUser[]>('/admin/users', accessToken);
+  return all.filter((u) => u.isCmsUser);
+}
+
+export async function adminCreateCmsUser(
+  accessToken: string,
+  data: CmsUserPayload,
+): Promise<AdminUser> {
+  return apiFetch<AdminUser>('/admin/users', accessToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      nombre: data.nombre,
+      email: data.email,
+      telefono: data.telefono,
+      role: data.role,
+      permissions: data.permissions,
+      password: data.password ?? 'TempPass2025!',
+    }),
+  });
+}
+
+export async function adminUpdateCmsUserPermissions(
+  accessToken: string,
+  userId: string,
+  permissions: string[],
+): Promise<AdminUser> {
+  return apiFetch<AdminUser>(`/admin/users/${userId}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify({ permissions }),
+  });
 }
 
 // ---------------------------------------------------------------------------

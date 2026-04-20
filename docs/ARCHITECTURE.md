@@ -220,21 +220,48 @@ y canales en vivo. El sistema incluye:
 
 ---
 
-## Roles y Niveles de Acceso
+## Roles y Niveles de Acceso (RBAC Híbrido)
 
-### Permisos por Rol
+### Roles del Sistema
 
-| Permiso                | SUPERADMIN | SOPORTE | CLIENTE |
-|------------------------|:----------:|:-------:|:-------:|
-| cms:users:read         | ✅         | ✅      | ❌      |
-| cms:users:write        | ✅         | ❌      | ❌      |
-| cms:content:read       | ✅         | ✅      | ❌      |
-| cms:content:write      | ✅         | ❌      | ❌      |
-| cms:settings:read      | ✅         | ❌      | ❌      |
-| cms:settings:write     | ✅         | ❌      | ❌      |
-| cms:analytics:read     | ✅         | ✅      | ❌      |
-| app:playback           | ✅         | ❌      | ✅      |
-| app:profiles           | ✅         | ❌      | ✅      |
+| Rol | Código | Tipo | Acceso CMS | Permisos |
+|-----|--------|------|:----------:|----------|
+| **Super Admin** | `SUPERADMIN` | Estático | ✅ | `cms:*` — inmutable, todos los permisos |
+| **Administrador** | `ADMIN` | Dinámico | ✅ | Configurables por SUPERADMIN vía toggles |
+| **Soporte** | `SOPORTE` | Estático | ✅ | Fijos: dashboard, usuarios, canales, monitor, analítica |
+| **Cliente** | `CLIENTE` | Estático | ❌ | `app:playback`, `app:profiles` |
+
+### Permisos por Módulo del CMS
+
+| Permiso | Módulo | SUPERADMIN | ADMIN | SOPORTE |
+|---------|--------|:----------:|:-----:|:-------:|
+| `cms:dashboard` | Dashboard | ✅ siempre | 🔧 toggle | ✅ fijo |
+| `cms:users` | Usuarios | ✅ siempre | 🔧 toggle | ✅ fijo |
+| `cms:componentes` | Componentes | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:planes` | Planes | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:canales` | Canales | ✅ siempre | 🔧 toggle | ✅ fijo |
+| `cms:categorias` | Categorías | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:sliders` | Sliders | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:monitor` | Monitor | ✅ siempre | 🔧 toggle | ✅ fijo |
+| `cms:notif-admin` | Notif. Admin | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:analitica` | Analítica | ✅ siempre | 🔧 toggle | ✅ fijo |
+| `cms:propaganda` | Propaganda | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:notif-abonado` | Notif. Abonado | ✅ siempre | 🔧 toggle | ❌ |
+| `cms:roles` | Roles | ✅ siempre | ❌ nunca | ❌ nunca |
+
+### Resolución de Permisos
+
+- **SUPERADMIN**: `cms:*` wildcard, hardcoded, no se almacena en BD
+- **ADMIN**: `Customer.permissions[]` en PostgreSQL, configurable por SUPERADMIN
+- **SOPORTE**: Permisos fijos en código (`SOPORTE_DEFAULT_PERMISSIONS`)
+- Los permisos se incluyen en el JWT y se refrescan en cada login/refresh
+- El sidebar CMS se filtra dinámicamente según `profile.permissions`
+
+### Módulo Roles (`/cms/roles`)
+
+- **Pestaña "Roles"**: Vista general de roles con permisos (read-only)
+- **Pestaña "Usuarios CMS"**: CRUD de usuarios internos con toggles de permisos
+- Solo accesible para SUPERADMIN (`cms:roles` permission)
 
 ### Control de Acceso OTT
 

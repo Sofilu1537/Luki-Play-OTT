@@ -27,6 +27,7 @@ import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
 import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto.js';
 import { UpdateCanalDto } from './dto/update-canal.dto.js';
 import { UpdatePlanDto } from './dto/update-plan.dto.js';
+import { CMS_MODULES } from '../access-control/domain/permissions.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // ---------------------------------------------------------------------------
@@ -253,7 +254,7 @@ export class AdminService {
     const status = dto.status ?? UserStatus.ACTIVE;
 
     // CMS user path
-    if (role === UserRole.SUPERADMIN || role === UserRole.SOPORTE) {
+    if (role === UserRole.SUPERADMIN || role === UserRole.ADMIN || role === UserRole.SOPORTE) {
       const firstName = dto.firstName?.trim() || this.extractNames(dto.nombre).firstName;
       const lastName = dto.lastName?.trim() || this.extractNames(dto.nombre).lastName;
       if (!firstName) {
@@ -271,7 +272,10 @@ export class AdminService {
 
       const customer = await this.prisma.customer.update({
         where: { id: created.id },
-        data: { status: this.toPrismaStatus(status) },
+        data: {
+          status: this.toPrismaStatus(status),
+          ...(dto.permissions ? { permissions: dto.permissions } : {}),
+        },
         include: { contracts: { where: { deletedAt: null } } },
       });
 
@@ -358,6 +362,7 @@ export class AdminService {
         ...(dto.email ? { email: dto.email.trim().toLowerCase() } : {}),
         ...(dto.telefono !== undefined ? { telefono: dto.telefono?.trim() || null } : {}),
         ...(dto.status ? { status: this.toPrismaStatus(dto.status) } : {}),
+        ...(dto.permissions !== undefined ? { permissions: dto.permissions } : {}),
       },
     });
 
@@ -580,6 +585,12 @@ export class AdminService {
       ingresosMes: parseFloat((contratosActivos * 19.99).toFixed(2)),
       cargaServidor: Math.floor(Math.random() * 40) + 20,
     };
+  }
+
+  // ---- Permissions -----------------------------------------------------------
+
+  getPermissionModules() {
+    return CMS_MODULES.map((m) => ({ key: m.key, label: m.label }));
   }
 
   // ---- Plans (Prisma) -------------------------------------------------------

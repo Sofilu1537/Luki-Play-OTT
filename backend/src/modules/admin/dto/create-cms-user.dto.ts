@@ -17,9 +17,9 @@ export class CreateCmsUserDto {
   @MinLength(2)
   lastName: string;
 
-  @ApiProperty({ enum: [UserRole.SUPERADMIN, UserRole.SOPORTE] })
-  @IsEnum([UserRole.SUPERADMIN, UserRole.SOPORTE], { message: 'Rol inválido.' })
-  role: UserRole.SUPERADMIN | UserRole.SOPORTE;
+  @ApiProperty({ enum: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SOPORTE] })
+  @IsEnum([UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SOPORTE], { message: 'Rol inválido.' })
+  role: UserRole.SUPERADMIN | UserRole.ADMIN | UserRole.SOPORTE;
 
   @ApiProperty({ required: false })
   @IsOptional()

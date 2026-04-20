@@ -91,6 +91,29 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Roles',                    icon: 'shield',     path: '/cms/roles' },
 ];
 
+/** Map each nav item path → required permission key. */
+const NAV_PERMISSION_MAP: Record<string, string> = {
+  '/cms/dashboard':              'cms:dashboard',
+  '/cms/users':                  'cms:users',
+  '/cms/componentes':            'cms:componentes',
+  '/cms/planes':                 'cms:planes',
+  '/cms/canales':                'cms:canales',
+  '/cms/categorias':             'cms:categorias',
+  '/cms/sliders':                'cms:sliders',
+  '/cms/monitor':                'cms:monitor',
+  '/cms/notificaciones-admin':   'cms:notif-admin',
+  '/cms/analitica':              'cms:analitica',
+  '/cms/propaganda':             'cms:propaganda',
+  '/cms/notificaciones-abonado': 'cms:notif-abonado',
+  '/cms/roles':                  'cms:roles',
+};
+
+/** Check if a permission set grants access to a given key. */
+function hasPermission(permissions: string[] | undefined, key: string): boolean {
+  if (!permissions) return true; // no permissions = show all (backwards compat)
+  return permissions.includes('cms:*') || permissions.includes(key);
+}
+
 // ---------------------------------------------------------------------------
 // Sidebar
 // ---------------------------------------------------------------------------
@@ -98,6 +121,11 @@ export const NAV_ITEMS: NavItem[] = [
 function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const profile = useCmsStore((s) => s.profile);
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    const key = NAV_PERMISSION_MAP[item.path];
+    return !key || hasPermission(profile?.permissions, key);
+  });
 
   return (
     <LinearGradient
@@ -185,7 +213,7 @@ function Sidebar() {
       </Text>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const active = pathname === item.path || pathname?.startsWith(`${item.path}/`);
           return (
             <Pressable

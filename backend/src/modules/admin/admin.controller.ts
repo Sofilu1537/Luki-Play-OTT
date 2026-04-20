@@ -123,6 +123,20 @@ export class AdminController {
     return this.adminService.getUserPlan(id);
   }
 
+  @ApiOperation({ summary: 'Update CMS user permissions (SUPERADMIN only)' })
+  @Permissions('cms:roles')
+  @Patch('users/:id/permissions')
+  async updateUserPermissions(@Param('id') id: string, @Body() body: { permissions: string[] }) {
+    return this.adminService.updateUser(id, { permissions: body.permissions });
+  }
+
+  @ApiOperation({ summary: 'Get available CMS permission modules' })
+  @Permissions('cms:roles')
+  @Get('permissions/modules')
+  async getPermissionModules() {
+    return this.adminService.getPermissionModules();
+  }
+
   // ---- Monitor -------------------------------------------------------------
 
   @ApiOperation({ summary: 'Get system monitor stats' })

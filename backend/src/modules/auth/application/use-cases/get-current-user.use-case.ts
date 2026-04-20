@@ -28,7 +28,7 @@ export class GetCurrentUserUseCase {
       throw new NotFoundException('User not found');
     }
 
-    const permissions = getPermissionsForRole(user.role);
+    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
     let entitlements: string[] = [];
     let canAccessOtt = true;
     let restrictionMessage: string | null = null;

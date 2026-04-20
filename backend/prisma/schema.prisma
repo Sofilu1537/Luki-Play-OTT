@@ -18,6 +18,7 @@ enum UserStatus {
 
 enum UserRole {
   SUPERADMIN
+  ADMIN
   SOPORTE
   CLIENTE
 }
@@ -49,6 +50,7 @@ model Customer {
   isCmsUser          Boolean    @default(false)
   isSubscriber       Boolean    @default(true)
   isAccountActivated Boolean    @default(false)
+  permissions        String[]   @default([])
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   deletedAt          DateTime?
