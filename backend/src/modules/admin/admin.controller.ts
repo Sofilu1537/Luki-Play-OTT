@@ -93,6 +93,14 @@ export class AdminController {
     return this.adminService.generateAndSendPassword(id);
   }
 
+  @ApiOperation({ summary: 'Generate a 6-character recovery code and send it by email (admin)' })
+  @Permissions('cms:users:write')
+  @Post('users/:id/recovery-code')
+  @HttpCode(HttpStatus.OK)
+  async sendRecoveryCode(@Param('id') id: string, @Body() body: { email?: string }) {
+    return this.adminService.sendRecoveryCode(id, body.email);
+  }
+
   @ApiOperation({ summary: 'List sessions for a user by device (admin)' })
   @Permissions('cms:users:read')
   @Get('users/:id/sessions')

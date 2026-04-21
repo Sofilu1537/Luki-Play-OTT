@@ -383,7 +383,7 @@ export class AdminService {
           ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
           ...(dto.sessionDurationDays !== undefined ? { sessionDurationDays: dto.sessionDurationDays } : {}),
           ...(dto.sessionLimitPolicy !== undefined ? { sessionLimitPolicy: this.toPrismaSessionLimitPolicy(dto.sessionLimitPolicy) } : {}),
-          ...(dto.planId !== undefined && plan ? { planName: plan.nombre, planId: plan.id, maxDevices: plan.maxDevices, maxDevices: plan.maxDevices } : {}),
+          ...(dto.planId !== undefined && plan ? { planName: plan.nombre, planId: plan.id, maxDevices: plan.maxDevices } : {}),
           ...(dto.contrato !== undefined ? { contractNumber: dto.contrato } : {}),
         },
       });
@@ -455,6 +455,35 @@ export class AdminService {
 
     await this.emailService.sendGeneratedPassword(customer.email ?? '', password, displayName);
     return { message: `Contraseña generada y enviada a ${customer.email}` };
+  }
+
+  async sendRecoveryCode(id: string, emailStr?: string): Promise<{ message: string, code: string }> {
+    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    const passwordHash = await bcrypt.hash(code, 10);
+    await this.prisma.customer.update({
+      where: { id },
+      data: { passwordHash, mustChangePassword: true, isLocked: false, lockedUntil: null },
+    });
+
+    await this.revokeAllSessionsForCustomer(id);
+
+    const displayName = customer.firstName
+      ? `${customer.firstName} ${customer.lastName ?? ''}`.trim()
+      : customer.email?.split('@')[0] ?? 'Usuario';
+
+    const targetEmail = emailStr || customer.email || customer.ispEmail;
+    if (targetEmail) {
+      await this.emailService.sendRecoveryCode(targetEmail, code, displayName);
+    }
+    return { message: `Código enviado a ${targetEmail || 'correo no registrado'}`, code };
   }
 
   /**

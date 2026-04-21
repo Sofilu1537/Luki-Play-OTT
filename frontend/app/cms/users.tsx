@@ -276,6 +276,13 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
 
   const handleSavePersonalData = async () => {
     if (!nombre.trim() || !email.trim()) { onFeedback({ type: 'error', message: 'Nombre y email son requeridos.' }); return; }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      onFeedback({ type: 'error', message: 'Por favor, ingresa un correo electrónico válido.' });
+      return;
+    }
+
     setSaving(true);
     try {
       const updated = await adminUpdateUser(accessToken, user.id, { nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim() || undefined } as AdminUserPayload);
@@ -292,9 +299,15 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
   };
 
   const handleSendCode = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      onFeedback({ type: 'error', message: 'El correo actualizado es inválido. Por favor corrígelo antes de enviar el código.' });
+      return;
+    }
+
     setSending(true);
     try {
-      const result = await adminSendRecoveryCode(email.trim());
+      const result = await adminSendRecoveryCode(accessToken, user.id, email.trim());
       setCodeSent(true);
       if (result.code) {
         setGeneratedCode(result.code);
@@ -1032,8 +1045,21 @@ function UserDetailModal({
                 </View>
 
                 {activeTab === 'perfil' ? (
-                  <SectionCard title="Perfil Personal e Identidad" subtitle="Dominio User: información personal editable y estado general.">
-                    {isEditingProfile ? (
+                  <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: C.border, marginBottom: 16 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <View>
+                        <Text style={{ color: C.text, fontSize: 16, fontWeight: '800', fontFamily: 'Montserrat-Bold' }}>Perfil Personal e Identidad</Text>
+                        <Text style={{ color: C.textDim, fontSize: 13, marginTop: 4 }}>Dominio User: información personal editable y estado general.</Text>
+                      </View>
+                      {canWrite && !isEditingProfile && (
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: `${C.cyan}40` }} onPress={() => setIsEditingProfile(true)}>
+                          <FontAwesome name="pencil" size={11} color={C.cyan} />
+                          <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700' }}>Editar</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={{ marginTop: 8 }}>
+                      {isEditingProfile ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
                           <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>NOMBRES Y APELLIDOS *</Text>
@@ -1100,14 +1126,10 @@ function UserDetailModal({
                           <Text style={{ color: C.textDim, fontSize: 12 }}>Rol: <Text style={{ color: C.text }}>{roleMeta?.label}</Text></Text>
                           <Text style={{ color: C.textDim, fontSize: 12 }}>Último acceso: <Text style={{ color: C.text }}>{fmtDate(user.lastLoginAt)}</Text></Text>
                         </View>
-                        {canWrite && (
-                          <TouchableOpacity style={{ marginTop: 16, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.cyan }} onPress={() => setIsEditingProfile(true)}>
-                            <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700' }}>Editar Información</Text>
-                          </TouchableOpacity>
-                        )}
                       </View>
                     )}
-                  </SectionCard>
+                    </View>
+                  </View>
                 ) : null}
 
                 {activeTab === 'seguridad' ? (

@@ -283,17 +283,11 @@ export async function adminSetUserPassword(accessToken: string, id: string, newP
   });
 }
 
-export async function adminSendRecoveryCode(email: string): Promise<{ message: string; code?: string }> {
-  const res = await fetch(`${API_BASE_URL}/auth/send-recovery-code`, {
+export async function adminSendRecoveryCode(accessToken: string, id: string, email: string): Promise<{ message: string; code?: string }> {
+  return apiFetch<{ message: string; code?: string }>(`/admin/users/${id}/recovery-code`, accessToken, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message ?? 'Error al enviar código de recuperación');
-  }
-  return res.json();
 }
 
 export async function adminGenerateActivationCode(userId: string, email: string): Promise<{ message: string; code?: string }> {

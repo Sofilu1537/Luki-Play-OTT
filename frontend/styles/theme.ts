@@ -44,11 +44,11 @@ export interface ThemeTokens {
 }
 
 export const darkTheme: ThemeTokens = {
-  bodyBg:       '#090909',
+  bodyBg:       '#24004D',
   cardBg:       'rgba(18,18,18,0.92)',
   surfaceBg:    'rgba(24,24,24,0.86)',
   liftBg:       'rgba(34,34,34,0.96)',
-  headerBg:     'rgba(20,20,20,0.92)',
+  headerBg:     '#24004D',
   border:       'rgba(255,255,255,0.08)',
   borderAccent: 'rgba(255,184,0,0.28)',
   text:         '#FAF6E7',

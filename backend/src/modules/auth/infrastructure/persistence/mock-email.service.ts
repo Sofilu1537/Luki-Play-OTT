@@ -26,7 +26,7 @@ export class MockEmailService implements EmailService {
     this.logger.log(`[MOCK EMAIL] Por seguridad, cámbiala después de iniciar sesión.`);
   }
 
-  async sendRecoveryCode(to: string, code: string): Promise<void> {
+  async sendRecoveryCode(to: string, code: string, name?: string): Promise<void> {
     this.logger.log(`[MOCK EMAIL] Recovery code sent to ${to}`);
     this.logger.log(`[MOCK EMAIL] Tu código de recuperación es: ${code}`);
   }

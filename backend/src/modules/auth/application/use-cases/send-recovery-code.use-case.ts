@@ -57,7 +57,7 @@ export class SendRecoveryCodeUseCase {
     this.logger.log(`Recovery code generated for ${normalizedEmail}`);
 
     try {
-      await this.emailService.sendRecoveryCode(normalizedEmail, rawCode);
+      await this.emailService.sendRecoveryCode(normalizedEmail, rawCode, (user as any)?.nombre || (user as any)?.firstName || '');
     } catch (err) {
       this.logger.warn(`SMTP error for ${normalizedEmail}: ${(err as Error).message}`);
     }
