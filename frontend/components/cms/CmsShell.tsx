@@ -152,8 +152,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       end={{ x: 0, y: 1 }}
       style={{
         width: collapsed ? 68 : 230,
-        borderRightWidth: 1,
-        borderRightColor: SIDEBAR.border,
+        borderRightWidth: 0,
         paddingTop: 0,
         paddingBottom: 16,
         height: '100%',
@@ -169,21 +168,20 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           alignItems: 'center',
           paddingHorizontal: collapsed ? 0 : 16,
           paddingVertical: 16,
-          borderBottomWidth: 1,
-          borderBottomColor: SIDEBAR.border,
+          borderBottomWidth: 0,
           justifyContent: collapsed ? 'center' : 'flex-start',
           marginBottom: 8,
         }}
       >
-        <LukiPlayLogo variant="icon" size={36} />
+        <LukiPlayLogo variant="icon" size={44} />
         {!collapsed && (
           <View style={{ marginLeft: 10, flex: 1 }}>
             <Text
               style={{
                 color: SIDEBAR.text,
-                fontWeight: '900',
-                fontSize: 15,
-                letterSpacing: -0.3,
+                fontFamily: FONT_FAMILY.heading,
+                fontSize: 17,
+                letterSpacing: 0.5,
               }}
             >
               LUKI PLAY
@@ -301,61 +299,6 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           })}
         </View>
       </ScrollView>
-
-      {/* Footer status */}
-      <View
-        style={{
-          borderTopWidth: 1,
-          borderTopColor: SIDEBAR.footerBorder,
-          paddingHorizontal: collapsed ? 0 : 16,
-          paddingTop: 12,
-          alignItems: collapsed ? 'center' : 'flex-start',
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <View
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: 4,
-              backgroundColor: '#17D1C6',
-              shadowColor: '#17D1C6',
-              shadowOpacity: 0.7,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 0 },
-            }}
-          />
-          {!collapsed && (
-            <View>
-              <Text
-                style={{
-                  color:      SIDEBAR.footerText,
-                  fontSize:   11,
-                  fontWeight: '600',
-                  fontFamily: FONT_FAMILY.bodySemiBold,
-                }}
-              >
-                Sistema operativo
-              </Text>
-              <Text
-                style={{
-                  color:      SIDEBAR.footerSub,
-                  fontSize:   10,
-                  fontFamily: FONT_FAMILY.body,
-                }}
-              >
-                CMS v1.0 · Sprint 1
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
     </LinearGradient>
   );
 }
@@ -367,10 +310,12 @@ interface BreadcrumbItem { label: string; path?: string }
 
 function TopBar({
   breadcrumbs,
+  pageIcon,
   onLogout,
   onShowProfile,
 }: {
   breadcrumbs: BreadcrumbItem[];
+  pageIcon?: string;
   onLogout: () => void;
   onShowProfile: () => void;
 }) {
@@ -399,25 +344,29 @@ function TopBar({
         paddingHorizontal: 24,
         paddingVertical:   14,
         backgroundColor:   '#240046',
-        borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomWidth: 0,
         zIndex:    50,
         elevation: 50,
       }}
     >
       {/* Left: page title + date */}
       <View>
-        <Text
-          style={{
-            color:        theme.text,
-            fontSize:     20,
-            fontWeight:   'normal',
-            letterSpacing: -0.4,
-            fontFamily:   FONT_FAMILY.heading,
-          }}
-        >
-          {pageTitle}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {pageIcon ? (
+            <FontAwesome name={pageIcon as any} size={16} color="#FFFFFF" />
+          ) : null}
+          <Text
+            style={{
+              color:        '#FFFFFF',
+              fontSize:     20,
+              fontWeight:   '600',
+              letterSpacing: -0.2,
+              fontFamily:   FONT_FAMILY.bodySemiBold,
+            }}
+          >
+            {pageTitle}
+          </Text>
+        </View>
         <Text
           style={{
             color:     theme.textMuted,
@@ -815,10 +764,11 @@ function ProfileModal({
 // ---------------------------------------------------------------------------
 interface CmsShellProps {
   breadcrumbs: BreadcrumbItem[];
+  pageIcon?:   string;
   children:    React.ReactNode;
 }
 
-function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
+function CmsShellInner({ breadcrumbs, pageIcon, children }: CmsShellProps) {
   const { profile, logout } = useCmsStore();
   const router = useRouter();
   const { isDark, theme } = useTheme();
@@ -909,6 +859,7 @@ function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
       <View style={{ flex: 1, overflow: 'hidden', zIndex: 2 }}>
         <TopBar
           breadcrumbs={breadcrumbs}
+          pageIcon={pageIcon}
           onLogout={handleLogout}
           onShowProfile={() => setShowProfile(true)}
         />
@@ -929,10 +880,10 @@ function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
 // ---------------------------------------------------------------------------
 // CmsShell — public export, provides ThemeProvider
 // ---------------------------------------------------------------------------
-export default function CmsShell({ breadcrumbs, children }: CmsShellProps) {
+export default function CmsShell({ breadcrumbs, pageIcon, children }: CmsShellProps) {
   return (
     <ThemeProvider>
-      <CmsShellInner breadcrumbs={breadcrumbs}>{children}</CmsShellInner>
+      <CmsShellInner breadcrumbs={breadcrumbs} pageIcon={pageIcon}>{children}</CmsShellInner>
     </ThemeProvider>
   );
 }

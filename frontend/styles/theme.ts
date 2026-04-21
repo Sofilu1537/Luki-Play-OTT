@@ -44,17 +44,18 @@ export interface ThemeTokens {
 }
 
 export const darkTheme: ThemeTokens = {
-  bodyBg:       '#24004D',
-  cardBg:       'rgba(18,18,18,0.92)',
-  surfaceBg:    'rgba(24,24,24,0.86)',
-  liftBg:       'rgba(34,34,34,0.96)',
-  headerBg:     '#24004D',
+  // Backgrounds — brand palette: Russian Violet base, Rebecca Purple for surfaces
+  bodyBg:       '#240046',                    // Russian Violet — fondo base de pantalla
+  cardBg:       'rgba(96, 38, 158, 0.22)',    // Rebecca Purple 22% — tarjetas sobre bodyBg
+  surfaceBg:    'rgba(96, 38, 158, 0.14)',    // Rebecca Purple 14% — superficies secundarias
+  liftBg:       'rgba(96, 38, 158, 0.34)',    // Rebecca Purple 34% — elementos elevados (modales, popovers)
+  headerBg:     '#240046',                    // Russian Violet sólido — navbar y headers
   border:       'rgba(255,255,255,0.08)',
   borderAccent: 'rgba(255,184,0,0.28)',
-  text:         '#FAF6E7',
+  text:         '#FAF6E7',                    // Cosmic Latte — texto primario
   textSec:      'rgba(250,246,231,0.65)',
-  textMuted:    'rgba(250,246,231,0.38)',
-  accent:       '#FFB800',
+  textMuted:    'rgba(250,246,231,0.45)',      // subido de 0.38 → 0.45 para pasar contraste AA
+  accent:       '#FFB800',                    // Selective Yellow — acción principal
   accentSoft:   'rgba(255,184,0,0.12)',
   accentBorder: 'rgba(255,184,0,0.30)',
   accentLight:  '#FFDA6B',
@@ -71,20 +72,21 @@ export const darkTheme: ThemeTokens = {
 };
 
 export const lightTheme: ThemeTokens = {
-  bodyBg:       '#F5F3EE',
-  cardBg:       '#FFFFFF',
-  surfaceBg:    '#EEE9E2',
-  liftBg:       '#E4DED7',
-  headerBg:     'rgba(255,255,255,0.96)',
-  border:       'rgba(0,0,0,0.08)',
+  // Backgrounds — brand palette: Cosmic Latte base, Rebecca Purple tint para superficies
+  bodyBg:       '#FAF6E7',                    // Cosmic Latte — fondo base de pantalla
+  cardBg:       '#FFFFFF',                    // Blanco puro — tarjetas principales
+  surfaceBg:    'rgba(96, 38, 158, 0.06)',    // Rebecca Purple 6% tint — superficies secundarias
+  liftBg:       'rgba(96, 38, 158, 0.10)',    // Rebecca Purple 10% tint — elementos elevados
+  headerBg:     'rgba(250, 246, 231, 0.96)',  // Cosmic Latte semitransparente — navbar con blur
+  border:       'rgba(96, 38, 158, 0.12)',    // Borde con tinte de marca (antes era negro neutro)
   borderAccent: 'rgba(255,184,0,0.40)',
-  text:         '#1A1A2E',
-  textSec:      'rgba(26,26,46,0.65)',
-  textMuted:    'rgba(26,26,46,0.38)',
-  accent:       '#FFB800',
+  text:         '#240046',                    // Russian Violet — texto primario (más on-brand que azul noche)
+  textSec:      'rgba(36, 0, 70, 0.62)',
+  textMuted:    'rgba(36, 0, 70, 0.42)',       // subido de 0.38 → 0.42 para pasar contraste AA
+  accent:       '#FFB800',                    // Selective Yellow — acción principal
   accentSoft:   'rgba(255,184,0,0.12)',
   accentBorder: 'rgba(255,184,0,0.38)',
-  accentLight:  '#CC9200',
+  accentLight:  '#CC9200',                    // Yellow más oscuro para contraste sobre fondo claro
   success:      '#17D1C6',
   successSoft:  'rgba(23,209,198,0.12)',
   info:         '#1E96FC',
@@ -102,8 +104,8 @@ export const lightTheme: ThemeTokens = {
  * bg1/bg2 form the vertical LinearGradient (#240046 → #1a0033).
  */
 export const SIDEBAR = {
-  bg1:          '#240046',
-  bg2:          '#1a0033',
+  bg1:          '#240046',   // Russian Violet — igual que header
+  bg2:          '#240046',   // Russian Violet — flat, sin degradado
   border:       'rgba(255,255,255,0.10)',
   sectionLabel: 'rgba(250,246,231,0.28)',
   text:         '#FAF6E7',

@@ -523,10 +523,10 @@ export default function CmsPlanes() {
                   {/* Price */}
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 14 }}>
                     <Text style={{ color: C.accent, fontSize: 28, fontWeight: '900' }}>
-                      {isIsp || plan.precio === 0 ? 'Incluido' : `$${plan.precio.toFixed(2)}`}
+                      {isIsp || !(plan.precio ?? 0) ? 'Incluido' : `$${(plan.precio ?? 0).toFixed(2)}`}
                     </Text>
-                    {!isIsp && plan.precio > 0 && (
-                      <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '600' }}>{plan.moneda} / {plan.duracionDias} días</Text>
+                    {!isIsp && (plan.precio ?? 0) > 0 && (
+                      <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'} / {plan.duracionDias ?? 30} días</Text>
                     )}
                   </View>
 

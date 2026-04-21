@@ -102,9 +102,15 @@ function getUserType(user: Pick<AdminUser, 'isCmsUser' | 'isSubscriber'>): UserT
 }
 
 function getUserTypeMeta(user: Pick<AdminUser, 'isCmsUser' | 'isSubscriber'>) {
-  const userType = getUserType(user);
-  if (userType === 'system') return { label: 'Interno', color: C.accentLight, bg: C.accentSoft };
-  return { label: 'Abonado', color: C.cyan, bg: C.cyanSoft };
+  if (user.isCmsUser)      return { label: 'Interno',  color: C.accentLight, bg: C.accentSoft };
+  if (user.isSubscriber)   return { label: 'Abonado',  color: C.cyan,        bg: C.cyanSoft   };
+  return                          { label: 'Cliente',  color: C.accent,      bg: C.accentSoft };
+}
+
+// Tipo de usuario OTT derivado de isSubscriber (fuente de verdad: base de datos)
+function getTipoMeta(user: Pick<AdminUser, 'isSubscriber'>) {
+  if (user.isSubscriber) return { label: 'Abonado', color: C.cyan,   bg: C.cyanSoft   };
+  return                        { label: 'Cliente', color: C.accent, bg: C.accentSoft };
 }
 
 function getRoleMeta(role: AdminUser['role']) {
@@ -133,8 +139,7 @@ function getDeviceSummary(sessions: AdminUserSession[]) {
 }
 
 function generateTemporaryPassword() {
-  const seed = Math.random().toString(36).slice(-6).toUpperCase();
-  return `Luki!${seed}9`;
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
 function fieldBase(webInput: object) {
@@ -324,99 +329,109 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-        <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 24, width: 460, borderWidth: 1, borderColor: C.border }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(13,0,32,0.76)' }}>
+        <View style={{ backgroundColor: '#0e0e1f', borderRadius: 16, width: 460, borderWidth: 1, borderColor: 'rgba(96,38,158,0.3)', overflow: 'hidden' }}>
+
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(96,38,158,0.15)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-                <FontAwesome name="lock" size={16} color={C.accentLight} />
+              <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: 'rgba(255,121,0,0.12)', borderWidth: 1, borderColor: 'rgba(255,121,0,0.25)', alignItems: 'center', justifyContent: 'center' }}>
+                <FontAwesome name="lock" size={15} color="#FF7900" />
               </View>
-              <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>Recuperación de contraseña</Text>
+              <Text style={{ color: '#FAF6E7', fontSize: 15, fontWeight: '800' }}>Recuperación de contraseña</Text>
             </View>
-            <TouchableOpacity onPress={onClose}><FontAwesome name="times" size={16} color={C.muted} /></TouchableOpacity>
-          </View>
-
-          <View style={{ backgroundColor: C.lift, borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: C.border }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>DATOS PERSONALES</Text>
-              {!editing ? (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: `${C.cyan}40` }} onPress={() => setEditing(true)}>
-                  <FontAwesome name="pencil" size={10} color={C.cyan} />
-                  <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>Editar</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-
-            {editing ? (
-              <View style={{ gap: 10 }}>
-                <View>
-                  <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>NOMBRE</Text>
-                  <TextInput style={inputStyle} value={nombre} onChangeText={setNombre} autoFocus />
-                </View>
-                <View>
-                  <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>EMAIL</Text>
-                  <TextInput style={inputStyle} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-                </View>
-                <View>
-                  <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>TELÉFONO</Text>
-                  <TextInput style={inputStyle} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                  <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center' }} onPress={() => { setNombre(user.nombre); setEmail(user.email); setTelefono(user.telefono ?? ''); setEditing(false); }}>
-                    <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, backgroundColor: hasChanges ? C.accent : C.accentSoft, alignItems: 'center', opacity: saving ? 0.6 : 1 }} onPress={handleSavePersonalData} disabled={saving || !hasChanges}>
-                    {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: hasChanges ? '#fff' : C.accentLight, fontSize: 12, fontWeight: '700' }}>Guardar cambios</Text>}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={{ gap: 6 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, width: 65 }}>Nombre</Text>
-                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600', flex: 1 }}>{user.nombre}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, width: 65 }}>Email</Text>
-                  <Text style={{ color: C.accentLight, fontSize: 13, fontWeight: '600', flex: 1 }}>{user.email}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, width: 65 }}>Teléfono</Text>
-                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '600', flex: 1 }}>{user.telefono || '—'}</Text>
-                </View>
-              </View>
-            )}
-          </View>
-
-          {generatedCode ? (
-            <View style={{ backgroundColor: C.cyanSoft, borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: `${C.cyan}40` }}>
-              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 6 }}>CÓDIGO DE RECUPERACIÓN</Text>
-              <Text style={{ color: C.cyan, fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{generatedCode}</Text>
-              <Text style={{ color: C.textDim, fontSize: 11, marginTop: 6, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
-            </View>
-          ) : codeSent ? (
-            <View style={{ backgroundColor: C.greenSoft, borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: `${C.green}40` }}>
-              <Text style={{ color: C.green, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
-            </View>
-          ) : null}
-
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity style={{ flex: 1, paddingVertical: 11, borderRadius: 8, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border, alignItems: 'center' }} onPress={onClose}>
-              <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>Cerrar</Text>
+            <TouchableOpacity onPress={onClose} style={{ width: 26, height: 26, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', backgroundColor: 'rgba(250,246,231,0.05)', alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="times" size={12} color="rgba(250,246,231,0.4)" />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={{ flex: 1, paddingVertical: 11, borderRadius: 8, backgroundColor: codeSent ? C.accentSoft : C.accent, alignItems: 'center', opacity: (sending || editing) ? 0.6 : 1 }}
-              onPress={handleSendCode}
-              disabled={sending || editing}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color="#fff" />
+          </View>
+
+          {/* Body */}
+          <View style={{ padding: 20, gap: 14 }}>
+            {/* Datos personales card */}
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: 'rgba(96,38,158,0.18)' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Datos personales</Text>
+                {!editing ? (
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)' }} onPress={() => setEditing(true)}>
+                    <FontAwesome name="pencil" size={10} color="#FFB800" />
+                    <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>Editar</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              {editing ? (
+                <View style={{ gap: 10 }}>
+                  <View>
+                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Nombre</Text>
+                    <TextInput style={inputStyle} value={nombre} onChangeText={setNombre} autoFocus />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Email</Text>
+                    <TextInput style={inputStyle} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Teléfono</Text>
+                    <TextInput style={inputStyle} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                    <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', alignItems: 'center' }} onPress={() => { setNombre(user.nombre); setEmail(user.email); setTelefono(user.telefono ?? ''); setEditing(false); }}>
+                      <Text style={{ color: 'rgba(250,246,231,0.5)', fontSize: 12, fontWeight: '600' }}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, backgroundColor: hasChanges ? '#FFB800' : 'rgba(255,184,0,0.15)', alignItems: 'center', opacity: saving ? 0.6 : 1 }} onPress={handleSavePersonalData} disabled={saving || !hasChanges}>
+                      {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: hasChanges ? '#000' : 'rgba(255,184,0,0.5)', fontSize: 12, fontWeight: '700' }}>Guardar cambios</Text>}
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ) : (
-                <Text style={{ color: codeSent ? C.accentLight : '#fff', fontSize: 13, fontWeight: '700' }}>
-                  {codeSent ? 'Generar nuevo código' : 'Generar clave temporal'}
-                </Text>
+                <View style={{ gap: 8 }}>
+                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline' }}>
+                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 12, width: 68 }}>Nombre</Text>
+                    <Text style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '700', flex: 1 }}>{user.nombre.toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline' }}>
+                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 12, width: 68 }}>Email</Text>
+                    <Text style={{ color: '#FFB800', fontSize: 13, fontWeight: '600', flex: 1 }}>{user.email}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline' }}>
+                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 12, width: 68 }}>Teléfono</Text>
+                    <Text style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', flex: 1 }}>{user.telefono || '—'}</Text>
+                  </View>
+                </View>
               )}
-            </TouchableOpacity>
+            </View>
+
+            {/* Código generado */}
+            {generatedCode ? (
+              <View style={{ backgroundColor: 'rgba(23,209,198,0.07)', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
+                <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Código de recuperación</Text>
+                <Text style={{ color: '#17D1C6', fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' }}>{generatedCode}</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.35)', fontSize: 11, marginTop: 8, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
+              </View>
+            ) : codeSent ? (
+              <View style={{ backgroundColor: 'rgba(23,209,198,0.07)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
+                <Text style={{ color: '#17D1C6', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
+              </View>
+            ) : null}
+
+            {/* Footer buttons */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', alignItems: 'center' }} onPress={onClose}>
+                <Text style={{ color: 'rgba(250,246,231,0.55)', fontSize: 13, fontWeight: '600' }}>Cerrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: codeSent ? 'rgba(255,184,0,0.15)' : '#FFB800', alignItems: 'center', opacity: (sending || editing) ? 0.6 : 1 }}
+                onPress={handleSendCode}
+                disabled={sending || editing}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color={codeSent ? '#FFB800' : '#000'} />
+                ) : (
+                  <Text style={{ color: codeSent ? '#FFB800' : '#000', fontSize: 13, fontWeight: '700' }}>
+                    {codeSent ? 'Generar nuevo código' : 'Generar clave temporal'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -439,27 +454,20 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
 
   return (
     <Modal visible={state.visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <View style={{ width: '100%', maxWidth: 420, backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 22 }}>
-          <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{state.title}</Text>
-          <Text style={{ color: C.textDim, fontSize: 13, marginTop: 8, lineHeight: 20 }}>{state.message}</Text>
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-            <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center' }} onPress={onClose} disabled={loading}>
-              <Text style={{ color: C.textDim, fontWeight: '700' }}>Cancelar</Text>
+      <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View style={{ width: '100%', maxWidth: 400, backgroundColor: '#0e0e1f', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(96,38,158,0.3)', padding: 24 }}>
+          <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800', marginBottom: 10 }}>{state.title}</Text>
+          <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 13, lineHeight: 20, marginBottom: 24 }}>{state.message}</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' }} onPress={onClose} disabled={loading}>
+              <Text style={{ color: 'rgba(250,246,231,0.55)', fontSize: 13, fontWeight: '600' }}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{
-                flex: 1,
-                paddingVertical: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-                backgroundColor: state.tone === 'danger' ? C.rose : C.accent,
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: state.tone === 'danger' ? '#D1105A' : '#FFB800', opacity: loading ? 0.7 : 1 }}
               onPress={handleConfirm}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '800' }}>{state.confirmLabel}</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>{state.confirmLabel}</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -472,8 +480,8 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [userType, setUserType] = useState<UserType>('subscriber');
-  const [role, setRole] = useState<AdminUser['role']>('soporte');
+  const [idNumber, setIdNumber] = useState('');
+  const [clienteType, setClienteType] = useState<'cliente' | 'abonado'>('cliente');
   const [status, setStatus] = useState<AdminUser['status']>('active');
   const [planId, setPlanId] = useState('');
   const [contrato, setContrato] = useState('');
@@ -489,84 +497,64 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
   const activePlans = useMemo(() => plans.filter((plan) => plan.activo), [plans]);
   const selectedCatalogPlan = useMemo(() => activePlans.find((plan) => plan.id === planId) ?? null, [activePlans, planId]);
   const contractLocked = Boolean(initialData?.isSubscriber && initialData?.contrato);
+  const isAbonado = clienteType === 'abonado';
 
   useEffect(() => {
     if (!visible) return;
-    const currentType = initialData ? getUserType(initialData) : 'subscriber';
+    const tipo = initialData?.isSubscriber ? 'abonado' : 'cliente';
+    setClienteType(tipo);
     setNombre(initialData?.nombre ?? '');
     setEmail(initialData?.email ?? '');
     setTelefono(initialData?.telefono ?? '');
-    setUserType(currentType);
-    setRole(initialData?.role ?? (currentType === 'system' ? 'soporte' : 'cliente'));
+    setIdNumber(initialData?.idNumber ?? '');
     setStatus(initialData?.status ?? 'active');
     setPlanId(initialData?.planId ?? activePlans[0]?.id ?? '');
     setContrato(initialData?.contrato ?? '');
     setMaxDevices(String(initialData?.maxDevices ?? 3));
-    setSessionDurationDays(String(initialData?.sessionDurationDays ?? (currentType === 'subscriber' ? 30 : 7)));
+    setSessionDurationDays(String(initialData?.sessionDurationDays ?? 30));
     setSessionLimitPolicy(initialData?.sessionLimitPolicy ?? 'block_new');
     previousPlanIdRef.current = initialData?.planId ?? activePlans[0]?.id ?? null;
     setError('');
   }, [visible, initialData, activePlans]);
 
   useEffect(() => {
-    if (userType === 'system') {
-      setRole((current) => (current === 'superadmin' || current === 'soporte' ? current : 'soporte'));
-      setPlanId('');
-      setContrato(initialData?.contrato ?? '');
-      setMaxDevices('3');
-      setSessionDurationDays(String(initialData?.sessionDurationDays ?? 7));
-      setSessionLimitPolicy(initialData?.sessionLimitPolicy ?? 'block_new');
-      previousPlanIdRef.current = null;
-      return;
-    }
-
-    setRole((prev) => (prev === 'cliente' ? prev : 'cliente'));
     const selectedPlan = activePlans.find((plan) => plan.id === planId) ?? activePlans[0];
-    if (selectedPlan && !planId) {
-      setPlanId(selectedPlan.id);
-      setMaxDevices(String(selectedPlan.maxDevices || 3));
-    }
-  }, [userType, planId, activePlans, initialData]);
+    if (selectedPlan && !planId) setPlanId(selectedPlan.id);
+  }, [clienteType, planId, activePlans]);
 
   useEffect(() => {
-    if (!visible || userType !== 'subscriber' || !selectedCatalogPlan) return;
+    if (!visible || !selectedCatalogPlan) return;
     const planChanged = previousPlanIdRef.current !== selectedCatalogPlan.id;
-
     if (planChanged) {
       setMaxDevices(String(selectedCatalogPlan.maxDevices || 3));
       previousPlanIdRef.current = selectedCatalogPlan.id;
-      return;
     }
-
-    if (!initialData && !maxDevices.trim()) {
-      setMaxDevices(String(selectedCatalogPlan.maxDevices || 3));
-    }
-  }, [visible, userType, selectedCatalogPlan, initialData]);
+  }, [visible, selectedCatalogPlan]);
 
   const handleSave = async () => {
     if (!nombre.trim() || !email.trim()) {
       setError('Nombre y email son requeridos.');
       return;
     }
-
-    if (userType === 'subscriber' && activePlans.length === 0) {
-      setError('No hay planes disponibles en el catálogo. Crea o activa un plan en la sección Planes antes de guardar este abonado.');
+    if (activePlans.length === 0) {
+      setError('No hay planes disponibles. Crea o activa un plan en la sección Planes.');
       return;
     }
 
     const selectedPlan = activePlans.find((plan) => plan.id === planId);
     const payload: AdminUserPayload = {
-      nombre: nombre.trim(),
-      email: email.trim().toLowerCase(),
+      nombre:   nombre.trim(),
+      email:    email.trim().toLowerCase(),
       telefono: telefono.trim() || undefined,
+      idNumber: isAbonado ? (idNumber.trim() || undefined) : undefined,
       status,
-      role,
-      maxDevices: userType === 'subscriber' ? Math.max(1, Number(maxDevices) || 3) : 3,
-      sessionDurationDays: Math.max(1, Number(sessionDurationDays) || (userType === 'subscriber' ? 30 : 7)),
+      role:     'cliente',
+      maxDevices: Math.max(1, Number(maxDevices) || 3),
+      sessionDurationDays: Math.max(1, Number(sessionDurationDays) || 30),
       sessionLimitPolicy,
-      planId: userType === 'subscriber' ? selectedPlan?.id : undefined,
-      plan: userType === 'subscriber' ? selectedPlan?.nombre : 'Usuario CMS',
-      contrato: userType === 'subscriber'
+      planId:   selectedPlan?.id,
+      plan:     selectedPlan?.nombre,
+      contrato: isAbonado
         ? (contractLocked ? initialData?.contrato ?? undefined : contrato.trim() || undefined)
         : undefined,
     };
@@ -574,7 +562,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
     setLoading(true);
     setError('');
     try {
-      await onSave(payload, { isSubscriber: userType === 'subscriber' });
+      await onSave(payload, { isSubscriber: isAbonado });
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo guardar el usuario.');
@@ -590,7 +578,6 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
           <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
-              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Refactor OTT por dominios: identidad, seguridad, sesiones y negocio.</Text>
             </View>
             <TouchableOpacity onPress={onClose}>
               <FontAwesome name="times" size={18} color={C.muted} />
@@ -598,7 +585,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-            <SectionCard title="Información básica" subtitle="Identidad principal del abonado.">
+            <SectionCard title="Datos de Registro">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>NOMBRE COMPLETO</Text>
@@ -610,40 +597,28 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>TELÉFONO</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3001234567" placeholderTextColor={C.muted} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="+593 999 999 999" placeholderTextColor={C.muted} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
                 </View>
-              </View>
-            </SectionCard>
-
-            <SectionCard title="Acceso y seguridad" subtitle="Autorización, estado y políticas básicas de acceso.">
-              <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 12 }}>
-                <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Rol de abonado</Text>
-                <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Los abonados usan el rol de negocio Cliente. Para gestionar usuarios CMS, usa el módulo Roles.</Text>
-              </View>
-
-              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>ESTADO</Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {[
-                  { value: 'active' as const, label: 'Activo' },
-                  { value: 'suspended' as const, label: 'Suspendido' },
-                  { value: 'inactive' as const, label: 'Inactivo' },
-                ].map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: status === option.value ? C.accent : C.border,
-                      backgroundColor: status === option.value ? C.accentSoft : C.lift,
-                      alignItems: 'center',
-                    }}
-                    onPress={() => setStatus(option.value)}
-                  >
-                    <Text style={{ color: status === option.value ? C.accentLight : C.textDim, fontSize: 12, fontWeight: '700' }}>{option.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                {isAbonado ? (
+                  <View style={{ flex: 1, minWidth: 220 }}>
+                    <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>CÉDULA DE IDENTIDAD</Text>
+                    <TextInput
+                      style={{ ...baseInput, marginBottom: 0 }}
+                      placeholder="Ej: 1712345678"
+                      placeholderTextColor={C.muted}
+                      value={idNumber}
+                      onChangeText={setIdNumber}
+                      keyboardType="number-pad"
+                      maxLength={13}
+                    />
+                  </View>
+                ) : (
+                  <View style={{ flex: 1, minWidth: 220, justifyContent: 'flex-end' }}>
+                    <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: C.border, padding: 10 }}>
+                      <Text style={{ color: C.textDim, fontSize: 11 }}>Los clientes completan su registro desde la app Luki Play.</Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </SectionCard>
 
@@ -651,38 +626,25 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>SESIONES SIMULTÁNEAS</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3" placeholderTextColor={C.muted} value={maxDevices} onChangeText={setMaxDevices} keyboardType="number-pad" editable={userType === 'subscriber'} />
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3" placeholderTextColor={C.muted} value={maxDevices} onChangeText={setMaxDevices} keyboardType="number-pad" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="30" placeholderTextColor={C.muted} value={sessionDurationDays} onChangeText={setSessionDurationDays} keyboardType="number-pad" />
                 </View>
-                <View style={{ flex: 1, minWidth: 220, justifyContent: 'flex-end' }}>
-                  <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12 }}>
-                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Política aplicada</Text>
-                    <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
-                      {userType === 'subscriber'
-                        ? 'El límite es editable y se sincroniza con la cuenta comercial del abonado.'
-                        : 'Los usuarios internos usan control interno y no exponen edición de sesiones comerciales.'}
-                    </Text>
-                  </View>
-                </View>
               </View>
 
               <Text style={{ color: C.textDim, fontSize: 12, marginTop: 12, marginBottom: 6 }}>AL EXCEDER EL LÍMITE</Text>
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                {[
-                  { value: 'block_new' as const, label: 'Bloquear nuevo acceso' },
-                  { value: 'replace_oldest' as const, label: 'Cerrar la sesión más antigua' },
-                ].map((option) => (
+                {([
+                  { value: 'block_new'       as const, label: 'Bloquear nuevo acceso' },
+                  { value: 'replace_oldest'  as const, label: 'Cerrar la sesión más antigua' },
+                ] as const).map((option) => (
                   <TouchableOpacity
                     key={option.value}
                     style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: sessionLimitPolicy === option.value ? C.cyan : C.border,
+                      paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1,
+                      borderColor:     sessionLimitPolicy === option.value ? C.cyan : C.border,
                       backgroundColor: sessionLimitPolicy === option.value ? C.cyanSoft : C.lift,
                     }}
                     onPress={() => setSessionLimitPolicy(option.value)}
@@ -693,57 +655,47 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
               </View>
             </SectionCard>
 
-            <SectionCard title="Información comercial" subtitle="Plan, contrato y datos de negocio del abonado.">
-              {userType === 'subscriber' ? (
+            <SectionCard title="Plan y servicio" subtitle={isAbonado ? 'Suscripción mensual ISP. Genera contrato.' : 'Acceso one-shot OTT. Sin contrato.'}>
+              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 10 }}>PLAN DESDE CATÁLOGO</Text>
+
+              {activePlans.length > 0 ? (
                 <>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>PLAN DESDE CATÁLOGO</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 10 }}>
-                    {initialData
-                      ? 'Al editar puedes cambiar el plan del abonado usando cualquier plan activo del catálogo.'
-                      : 'Selecciona el plan comercial que quieres asignar desde el catálogo activo.'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {activePlans.map((plan) => (
+                      <TouchableOpacity
+                        key={plan.id}
+                        style={{
+                          minWidth: 150, paddingHorizontal: 12, paddingVertical: 10,
+                          borderRadius: 10, borderWidth: 1,
+                          borderColor:     planId === plan.id ? C.cyan : C.border,
+                          backgroundColor: planId === plan.id ? C.cyanSoft : C.lift,
+                        }}
+                        onPress={() => setPlanId(plan.id)}
+                      >
+                        <Text style={{ color: planId === plan.id ? C.cyan : C.text, fontSize: 12, fontWeight: '800' }}>{plan.nombre}</Text>
+                        <Text style={{ color: planId === plan.id ? C.cyan : C.textDim, fontSize: 11, marginTop: 4 }}>
+                          {plan.maxDevices} disp. · {plan.videoQuality} · {plan.moneda} {plan.precio}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
 
-                  {activePlans.length > 0 ? (
-                    <>
-                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-                        {activePlans.map((plan) => (
-                          <TouchableOpacity
-                            key={plan.id}
-                            style={{
-                              minWidth: 150,
-                              paddingHorizontal: 12,
-                              paddingVertical: 10,
-                              borderRadius: 10,
-                              borderWidth: 1,
-                              borderColor: planId === plan.id ? C.cyan : C.border,
-                              backgroundColor: planId === plan.id ? C.cyanSoft : C.lift,
-                            }}
-                            onPress={() => setPlanId(plan.id)}
-                          >
-                            <Text style={{ color: planId === plan.id ? C.cyan : C.text, fontSize: 12, fontWeight: '800' }}>{plan.nombre}</Text>
-                            <Text style={{ color: planId === plan.id ? C.cyan : C.textDim, fontSize: 11, marginTop: 4 }}>
-                              {plan.maxDevices} disp. · {plan.videoQuality} · {plan.moneda} {plan.precio}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-
-                      {selectedCatalogPlan ? (
-                        <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 12 }}>
-                          <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
-                          <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{selectedCatalogPlan.descripcion}</Text>
-                          <Text style={{ color: C.textDim, fontSize: 12, marginTop: 8 }}>
-                            Incluye {selectedCatalogPlan.maxDevices} dispositivos, {selectedCatalogPlan.maxConcurrentStreams} streams y calidad {selectedCatalogPlan.videoQuality}.
-                          </Text>
-                        </View>
-                      ) : null}
-                    </>
-                  ) : (
-                    <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, borderWidth: 1, borderColor: `${C.rose}40`, padding: 12, marginBottom: 12 }}>
-                      <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
+                  {selectedCatalogPlan ? (
+                    <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 12 }}>
+                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
+                      <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{selectedCatalogPlan.descripcion}</Text>
                     </View>
-                  )}
+                  ) : null}
+                </>
+              ) : (
+                <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, borderWidth: 1, borderColor: `${C.rose}40`, padding: 12, marginBottom: 12 }}>
+                  <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
+                </View>
+              )}
 
+              {/* Contrato — solo para Abonados */}
+              {isAbonado ? (
+                <>
                   <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>CONTRATO / CÓDIGO</Text>
                   <TextInput
                     style={{ ...baseInput, opacity: contractLocked ? 0.6 : 1 }}
@@ -754,12 +706,13 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                     editable={!contractLocked}
                     autoCapitalize="characters"
                   />
-                  {contractLocked ? <Text style={{ color: C.amber, fontSize: 12, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text> : null}
+                  {contractLocked ? (
+                    <Text style={{ color: C.amber, fontSize: 12, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
+                  ) : null}
                 </>
               ) : (
-                <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12 }}>
-                  <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Sin datos comerciales editables</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Los usuarios internos no usan plan ni contrato porque pertenecen al dominio de identidad y autorización.</Text>
+                <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: C.border, padding: 10 }}>
+                  <Text style={{ color: C.textDim, fontSize: 12 }}>Los clientes one-shot no generan número de contrato.</Text>
                 </View>
               )}
             </SectionCard>
@@ -771,7 +724,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                 <Text style={{ color: C.textDim, fontWeight: '700' }}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: C.accent, alignItems: 'center', opacity: loading ? 0.7 : 1 }} onPress={handleSave} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '800' }}>Guardar cambios</Text>}
+                {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '800' }}>Guardar</Text>}
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -780,6 +733,45 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
     </Modal>
   );
 }
+
+// ─── Detail modal helpers ────────────────────────────────────────────────────
+
+function FieldCard({
+  label, value, na, accent, mono, error, full, style,
+}: {
+  label: string; value?: string | null;
+  na?: boolean; accent?: boolean; mono?: boolean; error?: boolean; full?: boolean;
+  style?: object;
+}) {
+  const isEmpty = !value || value === '—';
+  return (
+    <View style={[{
+      backgroundColor: 'rgba(255,255,255,0.03)',
+      borderWidth: 1, borderColor: 'rgba(96,38,158,0.14)',
+      borderRadius: 9, paddingHorizontal: 13, paddingVertical: 10,
+    }, style]}>
+      <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(250,246,231,0.3)', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 3 }}>{label}</Text>
+      <Text style={{
+        fontSize: 12.5, fontWeight: isEmpty ? '400' : '600',
+        color: isEmpty ? 'rgba(250,246,231,0.25)' : accent ? '#FFB800' : error ? '#D1105A' : '#FAF6E7',
+        fontStyle: isEmpty ? 'italic' : 'normal',
+        fontFamily: mono ? (Platform.OS === 'web' ? 'monospace' : 'Courier') : undefined,
+        letterSpacing: mono ? 0.5 : undefined,
+      }}>{isEmpty ? 'No registrado' : value}</Text>
+    </View>
+  );
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+      <Text style={{ fontSize: 9.5, fontWeight: '700', color: 'rgba(250,246,231,0.25)', textTransform: 'uppercase', letterSpacing: 1.1 }}>{children}</Text>
+      <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(250,246,231,0.05)' }} />
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function UserDetailModal({
   visible,
@@ -976,18 +968,55 @@ function UserDetailModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <View style={{ width: '100%', maxWidth: 640, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-          <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>Detalle de usuario</Text>
-              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>User, Account, Session y Role/Permission en una sola consola.</Text>
-            </View>
-            <TouchableOpacity onPress={onClose}>
-              <FontAwesome name="times" size={18} color={C.muted} />
+        <View style={{ width: '100%', maxWidth: 580, maxHeight: '92%', backgroundColor: '#0e0e1f', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(96,38,158,0.3)', overflow: 'hidden' }}>
+
+          {/* ── HEADER ── */}
+          <View style={{ backgroundColor: '#1a0038', paddingHorizontal: 22, paddingTop: 20, paddingBottom: 0 }}>
+            {/* Close button */}
+            <TouchableOpacity onPress={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 26, height: 26, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', backgroundColor: 'rgba(250,246,231,0.05)', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+              <FontAwesome name="times" size={13} color="rgba(250,246,231,0.4)" />
             </TouchableOpacity>
+
+            {/* Avatar + name + tags */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13, marginBottom: 16 }}>
+              <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: 'rgba(255,184,0,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,184,0,0.35)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Text style={{ color: '#FFB800', fontSize: 15, fontWeight: '800', letterSpacing: -0.5 }}>{user ? initials(user.nombre) : '?'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FAF6E7', fontSize: 16, fontWeight: '800', letterSpacing: -0.3, marginBottom: 3 }}>{user?.nombre ?? '—'}</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 11.5, fontWeight: '500' }}>{user?.email ?? '—'}</Text>
+                <View style={{ flexDirection: 'row', gap: 6, marginTop: 5 }}>
+                  {userTypeMeta && (
+                    <View style={{ backgroundColor: user?.isSubscriber ? 'rgba(255,184,0,0.1)' : 'rgba(255,184,0,0.08)', borderWidth: 1, borderColor: user?.isSubscriber ? 'rgba(255,184,0,0.2)' : 'rgba(255,184,0,0.15)', borderRadius: 5, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Text style={{ color: '#FFB800', fontSize: 9.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>{userTypeMeta.label}</Text>
+                    </View>
+                  )}
+                  {statusMeta && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${statusMeta.color}18`, borderWidth: 1, borderColor: `${statusMeta.color}30`, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusMeta.color }} />
+                      <Text style={{ color: statusMeta.color, fontSize: 9.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>{statusMeta.label}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Underline tabs */}
+            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(96,38,158,0.2)' }}>
+              {([
+                { id: 'perfil' as const, label: 'Perfil' },
+                { id: 'sesiones' as const, label: 'Dispositivos y sesiones' },
+                { id: 'comercial' as const, label: 'Plan / contrato' },
+              ] as const).map(tab => (
+                <TouchableOpacity key={tab.id} onPress={() => setActiveTab(tab.id)} style={{ paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: activeTab === tab.id ? '#FFB800' : 'transparent', marginBottom: -1 }}>
+                  <Text style={{ color: activeTab === tab.id ? '#FFB800' : 'rgba(250,246,231,0.4)', fontSize: 11.5, fontWeight: '600', whiteSpace: 'nowrap' } as any}>{tab.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+          {/* ── BODY ── */}
+          <ScrollView contentContainerStyle={{ padding: 22, gap: 14 }}>
             {loading ? (
               <View style={{ alignItems: 'center', paddingVertical: 48 }}>
                 <ActivityIndicator color={C.accent} size="large" />
@@ -996,69 +1025,25 @@ function UserDetailModal({
             ) : user ? (
               <>
                 {feedback ? (
-                  <View style={{ borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
+                  <View style={{ borderRadius: 10, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
                     <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 13, fontWeight: '700' }}>{feedback.message}</Text>
                   </View>
                 ) : null}
 
-                <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
-                  <View style={{ flex: 1, minWidth: 260, backgroundColor: C.lift, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16 }}>
-                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                      <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: `${C.accent}40` }}>
-                        <Text style={{ color: AVATAR_TEXT, fontSize: 13, fontWeight: '800' }}>{initials(user.nombre)}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>{user.nombre}</Text>
-                        <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{user.email}</Text>
-                      </View>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-                      {userTypeMeta ? (
-                        <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: userTypeMeta.bg }}>
-                          <Text style={{ color: userTypeMeta.color, fontSize: 11, fontWeight: '700' }}>{userTypeMeta.label}</Text>
-                        </View>
-                      ) : null}
-                      {roleMeta ? (
-                        <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: roleMeta.bg }}>
-                          <Text style={{ color: roleMeta.color, fontSize: 11, fontWeight: '700' }}>{roleMeta.label}</Text>
-                        </View>
-                      ) : null}
-                      {statusMeta ? (
-                        <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: statusMeta.bg }}>
-                          <Text style={{ color: statusMeta.color, fontSize: 11, fontWeight: '700' }}>{statusMeta.label}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                  {[
-                    { id: 'perfil' as const, label: 'Perfil' },
-                    { id: 'seguridad' as const, label: 'Seguridad' },
-                    { id: 'sesiones' as const, label: 'Dispositivos y sesiones' },
-                    { id: 'comercial' as const, label: 'Plan / contrato' },
-                  ].map((tab) => (
-                    <FilterChip key={tab.id} active={activeTab === tab.id} label={tab.label} onPress={() => setActiveTab(tab.id)} tone={activeTab === tab.id ? 'accent' : 'neutral'} />
-                  ))}
-                </View>
-
                 {activeTab === 'perfil' ? (
-                  <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: C.border, marginBottom: 16 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <View>
+                    {/* Section header */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                       <View>
-                        <Text style={{ color: C.text, fontSize: 16, fontWeight: '800', fontFamily: 'Montserrat-Bold' }}>Perfil Personal e Identidad</Text>
-                        <Text style={{ color: C.textDim, fontSize: 13, marginTop: 4 }}>Dominio User: información personal editable y estado general.</Text>
+                        <Text style={{ color: '#FAF6E7', fontSize: 12.5, fontWeight: '700', marginBottom: 2 }}>Perfil personal e identidad</Text>
                       </View>
                       {canWrite && !isEditingProfile && (
-                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: `${C.cyan}40` }} onPress={() => setIsEditingProfile(true)}>
-                          <FontAwesome name="pencil" size={11} color={C.cyan} />
-                          <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700' }}>Editar</Text>
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)' }} onPress={() => setIsEditingProfile(true)}>
+                          <FontAwesome name="pencil" size={11} color="#FFB800" />
+                          <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>Editar</Text>
                         </TouchableOpacity>
                       )}
                     </View>
-                    <View style={{ marginTop: 8 }}>
                       {isEditingProfile ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
@@ -1114,28 +1099,36 @@ function UserDetailModal({
                         </View>
                       </View>
                     ) : (
-                      <View>
-                        <View style={{ gap: 8 }}>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Nombre: <Text style={{ color: C.text }}>{user.nombre}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Cédula: <Text style={{ color: C.text }}>{user.idNumber ?? 'N/A'}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Email: <Text style={{ color: C.text }}>{user.email}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Teléfono: <Text style={{ color: C.text }}>{user.telefono ?? 'N/A'}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Dirección: <Text style={{ color: C.text }}>{user.address ?? 'N/A'}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Estado: <Text style={{ color: C.text }}>{statusMeta?.label}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Tipo: <Text style={{ color: C.text }}>{userTypeMeta?.label}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Rol: <Text style={{ color: C.text }}>{roleMeta?.label}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Último acceso: <Text style={{ color: C.text }}>{fmtDate(user.lastLoginAt)}</Text></Text>
+                      <>
+                        {/* DATOS PERSONALES */}
+                        <SectionLabel>Datos personales</SectionLabel>
+                        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                          <FieldCard label="Nombres" value={user.nombre.split(' ').slice(0, -1).join(' ') || user.nombre} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Apellidos" value={user.nombre.split(' ').length > 1 ? user.nombre.split(' ').slice(-1).join(' ') : undefined} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Cédula" value={user.idNumber} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Teléfono" value={user.telefono} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Email" value={user.email} accent style={{ width: '100%' }} />
+                          <FieldCard label="Dirección" value={user.address} style={{ width: '100%' }} />
                         </View>
-                      </View>
+
+                        {/* ESTADO DE CUENTA */}
+                        <SectionLabel>Estado de cuenta</SectionLabel>
+                        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                          <FieldCard label="N° Contrato" value={user.contrato} mono style={{ width: '100%' }} />
+                          <FieldCard label="Estado" value={statusMeta?.label} error={user.status !== 'active'} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Tipo" value={userTypeMeta?.label} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Rol" value="Usuario" style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Creado" value={fmtDate(user.createdAt)} style={{ flex: 1, minWidth: 200 }} />
+                        </View>
+                      </>
                     )}
-                    </View>
                   </View>
                 ) : null}
 
                 {activeTab === 'seguridad' ? (
                   <SectionCard title="Seguridad" subtitle="Role/Permission y eventos críticos del acceso.">
                     <View style={{ gap: 8 }}>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Rol actual: <Text style={{ color: C.text }}>{roleMeta?.label}</Text></Text>
+                      <Text style={{ color: C.textDim, fontSize: 12 }}>Rol actual: <Text style={{ color: C.text }}>Usuario</Text></Text>
                       <Text style={{ color: C.textDim, fontSize: 12 }}>MFA: <Text style={{ color: C.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
                       <Text style={{ color: C.textDim, fontSize: 12 }}>Bloqueo: <Text style={{ color: C.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
                       <Text style={{ color: C.textDim, fontSize: 12 }}>Cambio obligatorio de contraseña: <Text style={{ color: C.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
@@ -1149,22 +1142,42 @@ function UserDetailModal({
                 ) : null}
 
                 {activeTab === 'sesiones' ? (
-                  <SectionCard title="Dispositivos y sesiones" subtitle="Dominio Session/Device: actividad por dispositivo y cierres controlados.">
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+                  <View>
+                    {/* Section header */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <View>
-                        <Text style={{ color: C.text, fontSize: 14, fontWeight: '700' }}>{getDeviceCount(sessions)} dispositivos activos</Text>
-                        <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Límite permitido: {user.maxDevices} sesiones simultáneas.</Text>
-                        <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Duración: {user.sessionDurationDays} días · Política: {user.sessionLimitPolicy === 'replace_oldest' ? 'Cerrar la más antigua' : 'Bloquear nuevo acceso'}</Text>
+                        <Text style={{ color: '#FAF6E7', fontSize: 12.5, fontWeight: '700', marginBottom: 2 }}>Dispositivos y sesiones</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10.5, fontWeight: '500' }}>Dominio Session/Device — actividad y cierres controlados</Text>
                       </View>
                       {canWrite ? (
-                        <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }} onPress={askRevokeAllSessions}>
-                          <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Cerrar todas</Text>
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(209,16,90,0.3)', backgroundColor: 'rgba(209,16,90,0.08)' }} onPress={askRevokeAllSessions}>
+                          <FontAwesome name="times" size={11} color={C.rose} />
+                          <Text style={{ color: C.rose, fontSize: 11, fontWeight: '600' }}>Cerrar todas</Text>
                         </TouchableOpacity>
                       ) : null}
                     </View>
 
+                    {/* Info box */}
+                    <View style={{ backgroundColor: 'rgba(255,184,0,0.04)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.1)', borderRadius: 9, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12, gap: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 11.5 }}>Sesiones simultáneas permitidas</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 11.5, fontWeight: '600' }}>{user.maxDevices}</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 11.5 }}>Duración de sesión</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 11.5, fontWeight: '600' }}>{user.sessionDurationDays} días</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 11.5 }}>Política</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 11.5, fontWeight: '600' }}>{user.sessionLimitPolicy === 'replace_oldest' ? 'Cerrar la más antigua' : 'Bloquear nuevo acceso'}</Text>
+                      </View>
+                    </View>
+
                     {sessions.length === 0 ? (
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>No hay sesiones registradas para este usuario.</Text>
+                      <View style={{ alignItems: 'center', paddingVertical: 28, paddingBottom: 10 }}>
+                        <FontAwesome name="television" size={38} color="rgba(250,246,231,0.12)" />
+                        <Text style={{ color: 'rgba(250,246,231,0.25)', fontSize: 12, marginTop: 8 }}>0 dispositivos activos para este usuario</Text>
+                      </View>
                     ) : (
                       sessions.map((session) => (
                         <View key={session.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.border }}>
@@ -1185,11 +1198,19 @@ function UserDetailModal({
                         </View>
                       ))
                     )}
-                  </SectionCard>
+                  </View>
                 ) : null}
 
                 {activeTab === 'comercial' ? (
-                  <SectionCard title="Plan y contrato" subtitle="Dominio Account/Subscription: catálogo, contrato y capacidad comercial.">
+                  <View>
+                    {/* Section header */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <View>
+                        <Text style={{ color: '#FAF6E7', fontSize: 12.5, fontWeight: '700', marginBottom: 2 }}>Plan y contrato</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10.5, fontWeight: '500' }}>Dominio Account/Subscription — catálogo, contrato y capacidad</Text>
+                      </View>
+                    </View>
+
                     {isEditingPlan ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
@@ -1213,7 +1234,6 @@ function UserDetailModal({
                             </TouchableOpacity>
                           ))}
                         </View>
-
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
                           <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border }} onPress={() => setIsEditingPlan(false)}>
                             <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
@@ -1225,28 +1245,51 @@ function UserDetailModal({
                       </View>
                     ) : (
                       <View>
-                        <View style={{ gap: 8 }}>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Contrato / código: <Text style={{ color: C.text }}>{user.contrato ?? 'N/A'}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Plan actual en sistema: <Text style={{ color: C.text }}>{plan?.nombre ?? user.plan}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Plan asignado desde catálogo: <Text style={{ color: C.text }}>{selectedCatalogPlan?.nombre ?? 'Sin coincidencia'}</Text></Text>
-                          <Text style={{ color: C.textDim, fontSize: 12 }}>Sesiones simultáneas permitidas: <Text style={{ color: C.text }}>{user.maxDevices}</Text></Text>
+                        {/* Plan card */}
+                        <View style={{ background: undefined, backgroundColor: 'rgba(96,38,158,0.15)', borderWidth: 1, borderColor: 'rgba(96,38,158,0.25)', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 12 }}>
+                          <Text style={{ color: '#FAF6E7', fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginBottom: 2 }}>{plan?.nombre ?? 'LUKI PLAY'}</Text>
+                          <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier', letterSpacing: 0.5, marginBottom: 12 }}>Contrato #{user.contrato ?? '—'}</Text>
+                          {plan ? (
+                            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                              {[
+                                { label: 'Dispositivos', value: String(plan.maxDevices) },
+                                { label: 'Streams', value: String(plan.maxConcurrentStreams) },
+                                { label: 'Perfiles', value: String(plan.maxProfiles) },
+                                { label: 'Calidad', value: plan.videoQuality },
+                              ].map(item => (
+                                <View key={item.label} style={{ flex: 1, minWidth: 100, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(96,38,158,0.12)', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8 }}>
+                                  <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(250,246,231,0.28)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 }}>{item.label}</Text>
+                                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FAF6E7' }}>{item.value}</Text>
+                                </View>
+                              ))}
+                            </View>
+                          ) : null}
                         </View>
-                        {plan ? (
-                          <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap', marginTop: 12 }}>
-                            <Text style={{ color: C.textDim, fontSize: 12 }}>Dispositivos: <Text style={{ color: C.text }}>{plan.maxDevices}</Text></Text>
-                            <Text style={{ color: C.textDim, fontSize: 12 }}>Streams: <Text style={{ color: C.text }}>{plan.maxConcurrentStreams}</Text></Text>
-                            <Text style={{ color: C.textDim, fontSize: 12 }}>Perfiles: <Text style={{ color: C.text }}>{plan.maxProfiles}</Text></Text>
-                            <Text style={{ color: C.textDim, fontSize: 12 }}>Calidad: <Text style={{ color: C.text }}>{plan.videoQuality}</Text></Text>
+
+                        {/* Alert if no catalog match */}
+                        {!selectedCatalogPlan && (
+                          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: 'rgba(255,121,0,0.07)', borderWidth: 1, borderColor: 'rgba(255,121,0,0.2)', borderRadius: 9, paddingHorizontal: 13, paddingVertical: 10, marginBottom: 12 }}>
+                            <FontAwesome name="exclamation-circle" size={15} color="#FF7900" style={{ marginTop: 1 }} />
+                            <Text style={{ flex: 1, color: 'rgba(250,246,231,0.5)', fontSize: 11, lineHeight: 17 }}>
+                              Plan asignado desde catálogo: <Text style={{ color: '#FF7900', fontWeight: '700' }}>Sin coincidencia</Text> — el plan en sistema no coincide con ningún producto del catálogo actual.
+                            </Text>
                           </View>
-                        ) : null}
+                        )}
+
+                        {/* Action buttons */}
                         {canWrite && (
-                          <TouchableOpacity style={{ marginTop: 16, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.cyan }} onPress={() => setIsEditingPlan(true)}>
-                            <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700' }}>Cambiar Plan</Text>
-                          </TouchableOpacity>
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)', alignItems: 'center' }} onPress={() => setIsEditingPlan(true)}>
+                              <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>Cambiar plan</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(209,16,90,0.25)', backgroundColor: 'rgba(209,16,90,0.06)', alignItems: 'center' }}>
+                              <Text style={{ color: C.rose, fontSize: 11, fontWeight: '600' }}>Cancelar suscripción</Text>
+                            </TouchableOpacity>
+                          </View>
                         )}
                       </View>
                     )}
-                  </SectionCard>
+                  </View>
                 ) : null}
               </>
             ) : (
@@ -1271,6 +1314,7 @@ export default function CmsUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [tipoFilter, setTipoFilter] = useState<'all' | 'abonado' | 'cliente'>('all');
   const [pageSize, setPageSize] = useState(50);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [showFormModal, setShowFormModal] = useState(false);
@@ -1338,6 +1382,8 @@ export default function CmsUsers() {
       const query = search.trim().toLowerCase();
 
       if (statusFilter !== 'all' && user.status !== statusFilter) return false;
+      if (tipoFilter === 'abonado' && !user.isSubscriber) return false;
+      if (tipoFilter === 'cliente' && user.isSubscriber) return false;
       if (!query) return true;
 
       return [
@@ -1350,15 +1396,15 @@ export default function CmsUsers() {
         getUserTypeMeta(user).label,
       ].some((value) => value.toLowerCase().includes(query));
     });
-  }, [users, search, statusFilter]);
+  }, [users, search, statusFilter, tipoFilter]);
 
   const visibleUsers = filteredUsers.slice(0, pageSize);
 
   const stats = {
-    total: users.length,
-    internal: users.filter((user) => user.isCmsUser).length,
+    total:       users.length,
+    internal:    users.filter((user) => user.isCmsUser).length,
     subscribers: users.filter((user) => user.isSubscriber).length,
-    suspended: users.filter((user) => user.status === 'suspended').length,
+    clients:     users.filter((user) => !user.isSubscriber).length,  // one-shot, sin contrato
   };
 
   const updateUserInList = (nextUser: AdminUser) => {
@@ -1375,35 +1421,152 @@ export default function CmsUsers() {
 
   const closeConfirm = () => setConfirmState(null);
 
-  const exportCSV = () => {
+  const exportExcel = () => {
     if (Platform.OS !== 'web') return;
-    const header = 'Nombre,Tipo,Rol,Estado,Plan,Sesiones,Dispositivos,Email,Telefono,Contrato,UltimoAcceso\n';
-    const rows = filteredUsers
-      .map((user) => {
-        const sessions = sessionsByUser[user.id] ?? [];
-        return [
-          user.nombre,
-          getUserTypeMeta(user).label,
-          getRoleMeta(user.role).label,
-          getStatusMeta(user.status).label,
-          user.plan,
-          `${user.sesiones}/${user.maxDevices}`,
-          getDeviceSummary(sessions),
-          user.email,
-          user.telefono ?? '',
-          user.contrato ?? '',
-          fmtDate(user.lastLoginAt),
-        ].join(',');
-      })
-      .join('\n');
+    import('exceljs').then(async (ExcelJS) => {
+      const today     = new Date();
+      const dateStr   = today.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const period    = today.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+      const periodCap = period.charAt(0).toUpperCase() + period.slice(1);
+      const tipoLabel   = tipoFilter === 'abonado' ? 'Abonados' : tipoFilter === 'cliente' ? 'Clientes' : 'Abonados y Clientes';
+      const estadoLabel = statusFilter === 'all' ? 'Todos' : statusFilter === 'active' ? 'Activos' : statusFilter === 'suspended' ? 'Suspendidos' : 'Inactivos';
 
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'usuarios-luki-play.csv';
-    link.click();
-    URL.revokeObjectURL(url);
+      // Usa exactamente los mismos filtros activos en pantalla
+      const exportUsers = filteredUsers;
+
+      // Colores de marca Luki Play (ARGB) — solo encabezado
+      const VIOLET  = 'FF240046';
+      const PURPLE  = 'FF60269E';
+      const YELLOW  = 'FFFFB800';
+      const CREAM   = 'FFFAF6E7';
+      const DARK    = 'FF1A1A2E';
+      const PURPLE2 = 'FF2A0055';
+
+      const COLS = 11;
+      const lastCol = 'K';
+
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Luki Play CMS';
+      wb.created = today;
+
+      const ws = wb.addWorksheet('Facturación', { views: [{ showGridLines: false }] });
+      ws.columns = [
+        { width: 5  }, { width: 16 }, { width: 28 }, { width: 14 },
+        { width: 32 }, { width: 16 }, { width: 12 }, { width: 12 },
+        { width: 18 }, { width: 10 }, { width: 18 },
+      ];
+
+      const fill = (argb: string) => ({ type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb } });
+
+      // ── Fila 1: Título principal ──────────────────────────────────────
+      ws.addRow(['LUKI PLAY — Reporte de Usuarios para Facturación Mensual']);
+      ws.mergeCells(`A1:${lastCol}1`);
+      ws.getRow(1).height = 34;
+      const c1 = ws.getCell('A1');
+      c1.value = 'LUKI PLAY — Reporte de Usuarios para Facturación Mensual';
+      c1.fill  = fill(VIOLET);
+      c1.font  = { bold: true, size: 14, color: { argb: YELLOW }, name: 'Arial' };
+      c1.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // ── Fila 2: Subtítulo ─────────────────────────────────────────────
+      ws.addRow(['Luki Internet S.A.']);
+      ws.mergeCells(`A2:${lastCol}2`);
+      ws.getRow(2).height = 20;
+      const c2 = ws.getCell('A2');
+      c2.value = 'Luki Internet S.A.';
+      c2.fill  = fill(PURPLE);
+      c2.font  = { size: 10, color: { argb: CREAM }, name: 'Arial' };
+      c2.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // ── Separador ─────────────────────────────────────────────────────
+      const sep1 = ws.addRow([]);
+      sep1.height = 6;
+      for (let c = 1; c <= COLS; c++) sep1.getCell(c).fill = fill('FF1A0035');
+
+      // ── Filas de info ─────────────────────────────────────────────────
+      const infoRows: [string, string][] = [
+        ['Período',          periodCap],
+        ['Estado',           estadoLabel],
+        ['Tipo de reporte',  tipoLabel],
+        ['Total registros',  `${exportUsers.length} usuarios`],
+        ['Generado',         dateStr],
+      ];
+      infoRows.forEach(([label, value], i) => {
+        const r = ws.addRow([label, value]);
+        r.height = 19;
+        const lc = r.getCell(1);
+        lc.fill  = fill(PURPLE2);
+        lc.font  = { bold: true, size: 10, color: { argb: YELLOW } };
+        lc.alignment = { horizontal: 'right', vertical: 'middle' };
+        lc.border = { right: { style: 'thin', color: { argb: PURPLE } } };
+        const vc = r.getCell(2);
+        vc.fill  = fill(PURPLE2);
+        vc.font  = { size: 10, color: { argb: CREAM } };
+        vc.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+        for (let c = 3; c <= COLS; c++) r.getCell(c).fill = fill(PURPLE2);
+        if (i === infoRows.length - 1) {
+          for (let c = 1; c <= COLS; c++)
+            r.getCell(c).border = { ...r.getCell(c).border, bottom: { style: 'thin', color: { argb: PURPLE } } };
+        }
+      });
+
+      // ── Separador ─────────────────────────────────────────────────────
+      const sep2 = ws.addRow([]);
+      sep2.height = 6;
+      for (let c = 1; c <= COLS; c++) sep2.getCell(c).fill = fill('FF1A0035');
+
+      // ── Encabezados de columna ────────────────────────────────────────
+      const hr = ws.addRow(['N°', 'Contrato', 'Nombre', 'Cédula', 'Email', 'Teléfono', 'Tipo', 'Estado', 'Plan', 'Sesiones', 'Fecha registro']);
+      hr.height = 22;
+      hr.eachCell((cell) => {
+        cell.fill      = fill(YELLOW);
+        cell.font      = { bold: true, size: 10, color: { argb: DARK } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border    = { bottom: { style: 'medium', color: { argb: 'FFCC9200' } } };
+      });
+
+      // ── Filas de datos ────────────────────────────────────────────────
+      exportUsers.forEach((user, i) => {
+        const dr = ws.addRow([
+          i + 1,
+          user.contrato ?? '—',
+          user.nombre,
+          user.idNumber ?? '—',
+          user.email,
+          user.telefono ?? '—',
+          getUserTypeMeta(user).label,
+          getStatusMeta(user.status).label,
+          user.plan ?? '—',
+          `${user.sesiones}/${user.maxDevices}`,
+          fmtDate(user.createdAt),
+        ]);
+        dr.height = 17;
+        dr.getCell(1).alignment  = { horizontal: 'center', vertical: 'middle' };
+        dr.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+
+      // ── Footer ────────────────────────────────────────────────────────
+      const fr = ws.addRow([`Luki Play CMS · ${dateStr} · Documento confidencial de uso interno`]);
+      ws.mergeCells(`A${fr.number}:${lastCol}${fr.number}`);
+      fr.height = 16;
+      const fc = fr.getCell(1);
+      fc.fill      = fill(VIOLET);
+      fc.font      = { italic: true, size: 9, color: { argb: 'FF7B3BBB' } };
+      fc.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // ── Descarga ──────────────────────────────────────────────────────
+      const buffer   = await wb.xlsx.writeBuffer();
+      const blob     = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url      = URL.createObjectURL(blob);
+      const a        = document.createElement('a');
+      const filename = `luki-play-facturacion-${tipoFilter !== 'all' ? tipoFilter + '-' : ''}${today.toISOString().slice(0, 7)}.xlsx`;
+      a.href         = url;
+      a.download     = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
   };
 
   const handleSaveUser = async (payload: AdminUserPayload, context: { isSubscriber: boolean }) => {
@@ -1472,29 +1635,21 @@ export default function CmsUsers() {
     setFeedback({ type: 'success', message: 'Usuario creado correctamente.' });
   };
 
-  const handleDeactivate = (user: AdminUser) => {
+  const handleDeactivate = async (user: AdminUser) => {
     if (!accessToken || !canWrite) return;
-    openConfirm({
-      title: 'Desactivar usuario',
-      message: `Se desactivará a ${user.nombre}. Esta acción es reversible, pero bloqueará su operación actual.`,
-      confirmLabel: 'Desactivar',
-      tone: 'danger',
-      onConfirm: async () => {
-        const updated = await adminUpdateUserStatus(accessToken, user.id, 'inactive');
-        updateUserInList(updated);
-        setFeedback({ type: 'success', message: 'Usuario desactivado correctamente.' });
-      },
-    });
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    const updated = await adminUpdateUserStatus(accessToken, user.id, newStatus);
+    updateUserInList(updated);
+    setFeedback({ type: 'success', message: newStatus === 'inactive' ? 'Usuario desactivado.' : 'Usuario activado.' });
   };
 
   if (!profile) return null;
 
   return (
-    <CmsShell breadcrumbs={[{ label: 'Usuarios', path: '/cms/users' }, { label: 'Usuarios' }]}>
+    <CmsShell breadcrumbs={[{ label: 'Usuarios', path: '/cms/users' }, { label: 'Usuarios' }]} pageIcon="users">
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {/* Exportar — outline C.accent */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', marginBottom: 20, gap: 10, flexWrap: 'wrap' }}>
+            {/* Exportar Excel — outline C.accent */}
             <TouchableOpacity
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -1502,7 +1657,7 @@ export default function CmsUsers() {
                 borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
                 borderWidth: 1, borderColor: `${C.accent}66`,
               }}
-              onPress={exportCSV}
+              onPress={exportExcel}
             >
               <FontAwesome name="download" size={13} color={C.accent} />
               <Text style={{ color: C.accent, fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
@@ -1518,14 +1673,12 @@ export default function CmsUsers() {
                 onPress={() => { setEditingUser(null); setShowFormModal(true); }}
               >
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
-                  {/* Gradient via border-color trick since LinearGradient needs separate import */}
                   <View style={{ flex: 1, backgroundColor: C.accent }} />
                 </View>
                 <FontAwesome name="plus" size={13} color="#1A1A2E" />
                 <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Crear usuario</Text>
               </TouchableOpacity>
             ) : null}
-          </View>
         </View>
 
         {feedback ? (
@@ -1536,30 +1689,32 @@ export default function CmsUsers() {
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Total',       value: stats.total,       icon: 'users',                color: C.accent,  bg: C.accentSoft,   warn: false },
-            { label: 'Abonados',    value: stats.subscribers, icon: 'play-circle',          color: C.cyan,    bg: C.cyanSoft,    warn: false },
-            { label: 'Suspendidos', value: stats.suspended,   icon: 'exclamation-triangle', color: C.rose,    bg: C.roseSoft,    warn: stats.suspended > stats.total * 0.3 },
+            { label: 'Total',     value: stats.total,       icon: 'users',       color: C.accent, bg: C.accentSoft, warn: false },
+            { label: 'Abonados',  value: stats.subscribers, icon: 'play-circle', color: C.cyan,   bg: C.cyanSoft,   warn: false },
+            { label: 'Clientes',  value: stats.clients,     icon: 'shopping-bag',color: C.amber,  bg: C.accentSoft, warn: false },
           ].map((card) => (
             <View key={card.label} style={{
               flex: 1, minWidth: 180,
               backgroundColor: C.surface,
               borderRadius: 14, padding: 16,
-              borderWidth: 1,
-              borderColor: C.border,
+              borderWidth: 1, borderColor: C.border,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={card.icon as never} size={16} color={card.color} />
                 </View>
+                <Text style={{ color: C.textDim, fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {card.warn ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.roseSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
                     <FontAwesome name="warning" size={10} color={C.rose} />
                     <Text style={{ color: C.rose, fontSize: 10, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
                   </View>
                 ) : null}
+                <Text style={{ color: C.text, fontSize: 24, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
               </View>
-              <Text style={{ color: C.text, fontSize: 24, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
-              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
             </View>
           ))}
         </View>
@@ -1596,6 +1751,17 @@ export default function CmsUsers() {
               onSelect={(v) => setStatusFilter(v as StatusFilter)}
             />
 
+            <DropdownFilter
+              label="Tipo"
+              value={tipoFilter}
+              options={[
+                { value: 'all',      label: 'Todos' },
+                { value: 'abonado',  label: 'Abonados' },
+                { value: 'cliente',  label: 'Clientes' },
+              ]}
+              onSelect={(v) => setTipoFilter(v as 'all' | 'abonado' | 'cliente')}
+            />
+
             {/* Page size */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               {[25, 50, 100].map((size) => (
@@ -1617,10 +1783,10 @@ export default function CmsUsers() {
             </View>
 
             {/* Active filter count + clear */}
-            {(statusFilter !== 'all' || search) ? (
+            {(statusFilter !== 'all' || tipoFilter !== 'all' || search) ? (
               <TouchableOpacity
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }}
-                onPress={() => { setSearch(''); setStatusFilter('all'); }}
+                onPress={() => { setSearch(''); setStatusFilter('all'); setTipoFilter('all'); }}
               >
                 <FontAwesome name="times" size={10} color={C.rose} />
                 <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700' }}>Limpiar</Text>
@@ -1647,7 +1813,7 @@ export default function CmsUsers() {
               {[
                 { label: 'CONTRATO', flex: 1.2 },
                 { label: 'NOMBRE',   flex: 2   },
-                { label: 'ROL',      flex: 1   },
+                { label: 'TIPO',     flex: 1   },
                 { label: 'ESTADO',   flex: 1   },
                 { label: 'PLAN',     flex: 1   },
                 { label: 'SESIONES', flex: 0.7 },
@@ -1698,11 +1864,13 @@ export default function CmsUsers() {
                     </View>
                   </View>
 
-                  {/* ROL */}
+                  {/* TIPO — derivado de isSubscriber (fuente: BD) */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <View style={{ backgroundColor: roleMeta.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: roleMeta.color, fontSize: 11, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{roleMeta.label}</Text>
-                    </View>
+                    {(() => { const t = getTipoMeta(user); return (
+                      <View style={{ backgroundColor: t.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
+                        <Text style={{ color: t.color, fontSize: 11, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{t.label}</Text>
+                      </View>
+                    ); })()}
                   </View>
 
                   {/* ESTADO */}
@@ -1732,27 +1900,27 @@ export default function CmsUsers() {
                   {/* Inline Actions */}
                   <View style={{ flex: 1.2, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 }}>
                     <TouchableOpacity
-                      style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)', alignItems: 'center', justifyContent: 'center' }}
                       onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}
                       title="Ver y Editar"
                     >
-                      <FontAwesome name="eye" size={12} color={C.accentLight} />
+                      <FontAwesome name="eye" size={12} color="#FFB800" />
                     </TouchableOpacity>
                     {canWrite && (
                       <>
                         <TouchableOpacity
-                          style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}
+                          style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,121,0,0.3)', backgroundColor: 'rgba(255,121,0,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => setRecoveryUser(user)}
                           title="Recuperar contraseña"
                         >
-                          <FontAwesome name="lock" size={12} color={C.amber} />
+                          <FontAwesome name="lock" size={12} color="#FF7900" />
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}
+                          style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: user.status === 'active' ? 'rgba(209,16,90,0.3)' : 'rgba(23,209,198,0.3)', backgroundColor: user.status === 'active' ? 'rgba(209,16,90,0.08)' : 'rgba(23,209,198,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => handleDeactivate(user)}
                           title={user.status === 'active' ? 'Suspender' : 'Activar'}
                         >
-                          <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? C.rose : C.cyan} />
+                          <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? '#D1105A' : '#17D1C6'} />
                         </TouchableOpacity>
                       </>
                     )}
