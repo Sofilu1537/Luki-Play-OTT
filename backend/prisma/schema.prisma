@@ -256,15 +256,36 @@ model SyncLog {
 model Category {
   id            String    @id @default(uuid())
   nombre        String    @unique
+  slug          String?   @unique
   descripcion   String    @default("")
   icono         String    @default("")
+  accentColor   String    @default("#FFB800")
+  displayOrder  Int       @default(99)
   activo        Boolean   @default(true)
+  deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  channels Channel[]
+  channels          Channel[]
+  channelCategories ChannelCategory[]
 
+  @@index([activo])
+  @@index([displayOrder])
   @@map("categories")
+}
+
+model ChannelCategory {
+  channelId  String
+  categoryId String
+  assignedAt DateTime @default(now())
+
+  channel  Channel  @relation(fields: [channelId],  references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, categoryId])
+  @@index([channelId])
+  @@index([categoryId])
+  @@map("channel_categories")
 }
 
 model Channel {
@@ -308,6 +329,8 @@ model Channel {
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
   deletedAt               DateTime?
+
+  channelCategories ChannelCategory[]
 
   @@index([categoryId])
   @@index([status])
