@@ -56,14 +56,14 @@ function DashboardContent({ roleLabel, email }: { roleLabel: string; email: stri
 
   return (
     <ScrollView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: '#FAF6E7' }}
       contentContainerStyle={{ padding: 24, gap: 24 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Hero banner */}
       <LinearGradient
-        colors={['#240046', '#60269E', '#7303C0']}
-        locations={[0, 0.5, 1]}
+        colors={['#240046', '#60269E']}
+        locations={[0, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ borderRadius: 20, padding: 28, overflow: 'hidden' }}
@@ -245,7 +245,9 @@ export default function CmsDashboard() {
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Dashboard' }]}>
-      <DashboardContent roleLabel={roleLabel} email={profile.email} />
+      <View style={{ flex: 1, backgroundColor: '#FAF6E7', margin: -28 }}>
+        <DashboardContent roleLabel={roleLabel} email={profile.email} />
+      </View>
     </CmsShell>
   );
 }

@@ -213,8 +213,13 @@ export class AdminService {
   async listUsers(): Promise<AdminUser[]> {
     const customers = await this.prisma.customer.findMany({
       where: { deletedAt: null },
-      include: { contracts: { where: { deletedAt: null } } },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        contracts: {
+          where: { deletedAt: null },
+          orderBy: { contractNumber: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
     });
 
     const sessionCounts = await this.prisma.session.groupBy({
@@ -224,11 +229,13 @@ export class AdminService {
     });
     const sessionMap = new Map(sessionCounts.map(s => [s.contractId, s._count]));
 
-    return customers.map(c => {
+    const users = customers.map(c => {
       const contractIds = c.contracts.map(ct => ct.id);
       const activeSessions = contractIds.reduce((sum, cid) => sum + (sessionMap.get(cid) ?? 0), 0);
       return toAdminUser(c, activeSessions);
     });
+
+    return users;
   }
 
   async getUser(id: string): Promise<AdminUser> {
@@ -359,6 +366,8 @@ export class AdminService {
             : {}),
         ...(dto.email ? { email: dto.email.trim().toLowerCase() } : {}),
         ...(dto.telefono !== undefined ? { telefono: dto.telefono?.trim() || null } : {}),
+        ...(dto.idNumber !== undefined ? { idNumber: dto.idNumber?.trim() || null } : {}),
+        ...(dto.address !== undefined ? { address: dto.address?.trim() || null } : {}),
         ...(dto.status ? { status: this.toPrismaStatus(dto.status) } : {}),
         ...(dto.permissions !== undefined ? { permissions: dto.permissions } : {}),
       },
@@ -366,13 +375,16 @@ export class AdminService {
 
     // Update contract-related fields on first contract
     const contract = customer.contracts[0];
-    if (contract && (dto.maxDevices !== undefined || dto.sessionDurationDays !== undefined || dto.sessionLimitPolicy !== undefined)) {
+    if (contract && (dto.maxDevices !== undefined || dto.sessionDurationDays !== undefined || dto.sessionLimitPolicy !== undefined || dto.planId !== undefined || dto.contrato !== undefined)) {
+      const plan = dto.planId ? await this.prisma.plan.findUnique({ where: { id: dto.planId } }) : null;
       await this.prisma.contract.update({
         where: { id: contract.id },
         data: {
           ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
           ...(dto.sessionDurationDays !== undefined ? { sessionDurationDays: dto.sessionDurationDays } : {}),
           ...(dto.sessionLimitPolicy !== undefined ? { sessionLimitPolicy: this.toPrismaSessionLimitPolicy(dto.sessionLimitPolicy) } : {}),
+          ...(dto.planId !== undefined && plan ? { planName: plan.nombre, planId: plan.id, maxDevices: plan.maxDevices, maxDevices: plan.maxDevices } : {}),
+          ...(dto.contrato !== undefined ? { contractNumber: dto.contrato } : {}),
         },
       });
     }

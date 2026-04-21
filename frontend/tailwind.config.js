@@ -19,10 +19,12 @@ module.exports = {
           purple: '#4A148C',
           lightPurple: '#7c43bd',
           accent: '#FFC107', // Yellow dots from logo
-          background: '#2A0E47', // A bit lighter than deep purple for main BG
-          dark: '#1A052E', // Deep background
+          background: '#050B17', // Nebula Dark bg
+          dark: '#070E1D', // Deep background
+          surface: '#0C1829', // Cards surface
           white: '#ffffff',
-          gray: '#9E9E9E',
+          gray: '#94A3B8', // textSec
+          gold: '#FFB800', // Selective Yellow
         }
       }
     },

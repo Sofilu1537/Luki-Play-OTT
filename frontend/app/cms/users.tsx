@@ -787,6 +787,80 @@ function UserDetailModal({
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('perfil');
 
+  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+  const baseInput = { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 9, color: C.text, fontSize: 14, paddingHorizontal: 14, paddingVertical: 11, marginBottom: 16, ...webInput };
+
+  const [editPayload, setEditPayload] = useState<Partial<AdminUserPayload>>({});
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingPlan, setIsEditingPlan] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setEditPayload({
+        nombre: user.nombre || '',
+        email: user.email || '',
+        telefono: user.telefono || '',
+        idNumber: user.idNumber || '',
+        address: user.address || '',
+        planId: user.planId || '',
+        contrato: user.contrato || '',
+        status: user.status,
+      });
+      setIsEditingProfile(false);
+      setIsEditingPlan(false);
+    }
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!accessToken || !user || !editPayload.nombre || !editPayload.email) {
+      setFeedback({ type: 'error', message: 'Faltan campos obligatorios' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const payload: Partial<AdminUserPayload> = {
+        nombre: editPayload.nombre,
+        email: editPayload.email,
+        telefono: editPayload.telefono,
+        idNumber: editPayload.idNumber,
+        address: editPayload.address,
+        status: editPayload.status,
+      };
+      await adminUpdateUser(accessToken, user.id, payload as AdminUserPayload);
+      await refreshUser();
+      setFeedback({ type: 'success', message: 'Perfil actualizado correctamente' });
+      setIsEditingProfile(false);
+    } catch (e) {
+      setFeedback({ type: 'error', message: e instanceof Error ? e.message : 'Error al guardar' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSavePlan = async () => {
+    if (!accessToken || !user || !editPayload.planId || !editPayload.email) {
+      setFeedback({ type: 'error', message: 'Falta información requerida' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const payload: Partial<AdminUserPayload> = {
+        email: editPayload.email,
+        planId: editPayload.planId,
+        contrato: editPayload.contrato,
+      };
+      await adminUpdateUser(accessToken, user.id, payload as AdminUserPayload);
+      await refreshUser();
+      setFeedback({ type: 'success', message: 'Plan actualizado correctamente' });
+      setIsEditingPlan(false);
+    } catch (e) {
+      setFeedback({ type: 'error', message: e instanceof Error ? e.message : 'Error al guardar' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const roleMeta = user ? getRoleMeta(user.role) : null;
   const userTypeMeta = user ? getUserTypeMeta(user) : null;
   const statusMeta = user ? getStatusMeta(user.status) : null;
@@ -825,23 +899,6 @@ function UserDetailModal({
     setSessions(nextSessions);
     onUserUpdated(nextUser);
     onSessionsUpdated(userId, nextSessions);
-  };
-
-  const askStatusChange = (status: AdminUser['status']) => {
-    if (!accessToken || !user) return;
-    const labels: Record<string, string> = { active: 'activar', suspended: 'suspender', inactive: 'desactivar', pending: 'activar' };
-    onRequestConfirm({
-      title: `Confirmar ${labels[status]}`,
-      message: `Se actualizará el estado de ${user.nombre} a ${labels[status]}. Esta acción afecta acceso y operación del usuario.`,
-      confirmLabel: labels[status].charAt(0).toUpperCase() + labels[status].slice(1),
-      tone: status === 'active' ? 'primary' : 'danger',
-      onConfirm: async () => {
-        const updated = await adminUpdateUserStatus(accessToken, user.id, status);
-        setUser(updated);
-        onUserUpdated(updated);
-        setFeedback({ type: 'success', message: 'Estado actualizado correctamente.' });
-      },
-    });
   };
 
   const askPasswordReset = () => {
@@ -906,7 +963,7 @@ function UserDetailModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <View style={{ width: '100%', maxWidth: 980, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+        <View style={{ width: '100%', maxWidth: 640, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
           <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>Detalle de usuario</Text>
@@ -961,30 +1018,6 @@ function UserDetailModal({
                       ) : null}
                     </View>
                   </View>
-
-                  <View style={{ flex: 1, minWidth: 260, backgroundColor: C.lift, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16 }}>
-                    <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 12 }}>Acciones seguras</Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      {canWrite ? (
-                        <>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.greenSoft, borderWidth: 1, borderColor: `${C.green}40` }} onPress={() => askStatusChange('active')}>
-                            <Text style={{ color: C.green, fontSize: 12, fontWeight: '700' }}>Activar</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }} onPress={() => askStatusChange('suspended')}>
-                            <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Suspender</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.amberSoft, borderWidth: 1, borderColor: `${C.amber}40` }} onPress={() => askStatusChange('inactive')}>
-                            <Text style={{ color: C.amber, fontSize: 12, fontWeight: '700' }}>Desactivar</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.accent, borderWidth: 1, borderColor: C.accent }} onPress={askPasswordReset}>
-                            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Resetear contraseña</Text>
-                          </TouchableOpacity>
-                        </>
-                      ) : (
-                        <Text style={{ color: C.textDim, fontSize: 12 }}>Tu perfil tiene acceso de lectura para este módulo.</Text>
-                      )}
-                    </View>
-                  </View>
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -999,16 +1032,81 @@ function UserDetailModal({
                 </View>
 
                 {activeTab === 'perfil' ? (
-                  <SectionCard title="Perfil" subtitle="Dominio User: identidad, tipo y atributos principales.">
-                    <View style={{ gap: 8 }}>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Nombre: <Text style={{ color: C.text }}>{user.nombre}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Tipo: <Text style={{ color: C.text }}>{userTypeMeta?.label}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Rol: <Text style={{ color: C.text }}>{roleMeta?.label}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Estado: <Text style={{ color: C.text }}>{statusMeta?.label}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Email: <Text style={{ color: C.text }}>{user.email}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Teléfono: <Text style={{ color: C.text }}>{user.telefono ?? 'N/A'}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Último acceso: <Text style={{ color: C.text }}>{fmtDate(user.lastLoginAt)}</Text></Text>
-                    </View>
+                  <SectionCard title="Perfil Personal e Identidad" subtitle="Dominio User: información personal editable y estado general.">
+                    {isEditingProfile ? (
+                      <View style={{ gap: 12 }}>
+                        <View style={{ gap: 4 }}>
+                          <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>NOMBRES Y APELLIDOS *</Text>
+                          <TextInput style={baseInput} value={editPayload.nombre} onChangeText={v => setEditPayload({ ...editPayload, nombre: v })} />
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+                          <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
+                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>CÉDULA DE IDENTIDAD</Text>
+                            <TextInput style={baseInput} value={editPayload.idNumber} onChangeText={v => setEditPayload({ ...editPayload, idNumber: v })} />
+                          </View>
+                          <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
+                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>CORREO ELECTRÓNICO *</Text>
+                            <TextInput style={baseInput} value={editPayload.email} onChangeText={v => setEditPayload({ ...editPayload, email: v })} keyboardType="email-address" autoCapitalize="none" />
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+                          <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
+                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>TELÉFONO CELULAR</Text>
+                            <TextInput style={baseInput} value={editPayload.telefono} onChangeText={v => setEditPayload({ ...editPayload, telefono: v })} keyboardType="phone-pad" />
+                          </View>
+                          <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
+                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>DIRECCIÓN</Text>
+                            <TextInput style={baseInput} value={editPayload.address} onChangeText={v => setEditPayload({ ...editPayload, address: v })} />
+                          </View>
+                        </View>
+
+                        <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginTop: 10 }}>ESTADO</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          {(['active', 'suspended', 'inactive'] as const).map(estado => (
+                            <TouchableOpacity
+                              key={estado}
+                              style={{
+                                flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1,
+                                borderColor: editPayload.status === estado ? C.accent : C.border,
+                                backgroundColor: editPayload.status === estado ? C.accentSoft : 'transparent',
+                                alignItems: 'center'
+                              }}
+                              onPress={() => setEditPayload({ ...editPayload, status: estado })}
+                            >
+                              <Text style={{ color: editPayload.status === estado ? C.accentLight : C.text, fontSize: 12 }}>{estado === 'active' ? 'Activo' : estado === 'suspended' ? 'Suspendido' : 'Inactivo'}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
+                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border }} onPress={() => setIsEditingProfile(false)}>
+                            <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent, opacity: isSaving ? 0.7 : 1 }} onPress={handleSaveProfile}>
+                            <Text style={{ color: '#000', fontSize: 12, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Perfil'}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View>
+                        <View style={{ gap: 8 }}>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Nombre: <Text style={{ color: C.text }}>{user.nombre}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Cédula: <Text style={{ color: C.text }}>{user.idNumber ?? 'N/A'}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Email: <Text style={{ color: C.text }}>{user.email}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Teléfono: <Text style={{ color: C.text }}>{user.telefono ?? 'N/A'}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Dirección: <Text style={{ color: C.text }}>{user.address ?? 'N/A'}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Estado: <Text style={{ color: C.text }}>{statusMeta?.label}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Tipo: <Text style={{ color: C.text }}>{userTypeMeta?.label}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Rol: <Text style={{ color: C.text }}>{roleMeta?.label}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Último acceso: <Text style={{ color: C.text }}>{fmtDate(user.lastLoginAt)}</Text></Text>
+                        </View>
+                        {canWrite && (
+                          <TouchableOpacity style={{ marginTop: 16, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.cyan }} onPress={() => setIsEditingProfile(true)}>
+                            <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700' }}>Editar Información</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
                   </SectionCard>
                 ) : null}
 
@@ -1070,20 +1168,62 @@ function UserDetailModal({
 
                 {activeTab === 'comercial' ? (
                   <SectionCard title="Plan y contrato" subtitle="Dominio Account/Subscription: catálogo, contrato y capacidad comercial.">
-                    <View style={{ gap: 8 }}>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Plan actual: <Text style={{ color: C.text }}>{plan?.nombre ?? user.plan}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Contrato / código: <Text style={{ color: C.text }}>{user.contrato ?? 'N/A'}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Sesiones simultáneas: <Text style={{ color: C.text }}>{user.maxDevices}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Plan desde catálogo: <Text style={{ color: C.text }}>{selectedCatalogPlan?.nombre ?? 'Sin coincidencia'}</Text></Text>
-                    </View>
-                    {plan ? (
-                      <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap', marginTop: 12 }}>
-                        <Text style={{ color: C.textDim, fontSize: 12 }}>Dispositivos: <Text style={{ color: C.text }}>{plan.maxDevices}</Text></Text>
-                        <Text style={{ color: C.textDim, fontSize: 12 }}>Streams: <Text style={{ color: C.text }}>{plan.maxConcurrentStreams}</Text></Text>
-                        <Text style={{ color: C.textDim, fontSize: 12 }}>Perfiles: <Text style={{ color: C.text }}>{plan.maxProfiles}</Text></Text>
-                        <Text style={{ color: C.textDim, fontSize: 12 }}>Calidad: <Text style={{ color: C.text }}>{plan.videoQuality}</Text></Text>
+                    {isEditingPlan ? (
+                      <View style={{ gap: 12 }}>
+                        <View style={{ gap: 4 }}>
+                          <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>CÓDIGO DE CONTRATO</Text>
+                          <TextInput style={baseInput} value={editPayload.contrato} onChangeText={v => setEditPayload({ ...editPayload, contrato: v })} />
+                        </View>
+                        <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
+                        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                          {plans.map(p => (
+                            <TouchableOpacity
+                              key={p.id}
+                              style={{
+                                padding: 12, borderRadius: 8, borderWidth: 1, minWidth: 150,
+                                borderColor: editPayload.planId === p.id ? C.accent : C.border,
+                                backgroundColor: editPayload.planId === p.id ? C.accentSoft : C.surface,
+                              }}
+                              onPress={() => setEditPayload({ ...editPayload, planId: p.id })}
+                            >
+                              <Text style={{ color: editPayload.planId === p.id ? C.accentLight : C.text, fontSize: 12, fontWeight: '700' }}>{p.nombre}</Text>
+                              <Text style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>Dispositivos: {p.maxDevices} máx.</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
+                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border }} onPress={() => setIsEditingPlan(false)}>
+                            <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent, opacity: isSaving ? 0.7 : 1 }} onPress={handleSavePlan}>
+                            <Text style={{ color: '#000', fontSize: 12, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Plan'}</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    ) : null}
+                    ) : (
+                      <View>
+                        <View style={{ gap: 8 }}>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Contrato / código: <Text style={{ color: C.text }}>{user.contrato ?? 'N/A'}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Plan actual en sistema: <Text style={{ color: C.text }}>{plan?.nombre ?? user.plan}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Plan asignado desde catálogo: <Text style={{ color: C.text }}>{selectedCatalogPlan?.nombre ?? 'Sin coincidencia'}</Text></Text>
+                          <Text style={{ color: C.textDim, fontSize: 12 }}>Sesiones simultáneas permitidas: <Text style={{ color: C.text }}>{user.maxDevices}</Text></Text>
+                        </View>
+                        {plan ? (
+                          <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap', marginTop: 12 }}>
+                            <Text style={{ color: C.textDim, fontSize: 12 }}>Dispositivos: <Text style={{ color: C.text }}>{plan.maxDevices}</Text></Text>
+                            <Text style={{ color: C.textDim, fontSize: 12 }}>Streams: <Text style={{ color: C.text }}>{plan.maxConcurrentStreams}</Text></Text>
+                            <Text style={{ color: C.textDim, fontSize: 12 }}>Perfiles: <Text style={{ color: C.text }}>{plan.maxProfiles}</Text></Text>
+                            <Text style={{ color: C.textDim, fontSize: 12 }}>Calidad: <Text style={{ color: C.text }}>{plan.videoQuality}</Text></Text>
+                          </View>
+                        ) : null}
+                        {canWrite && (
+                          <TouchableOpacity style={{ marginTop: 16, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.cyan }} onPress={() => setIsEditingPlan(true)}>
+                            <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700' }}>Cambiar Plan</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
                   </SectionCard>
                 ) : null}
               </>
@@ -1409,7 +1549,7 @@ export default function CmsUsers() {
               <FontAwesome name="search" size={12} color={C.muted} />
               <TextInput
                 style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, fontFamily: 'Montserrat-SemiBold', ...webInput }}
-                placeholder="Buscar nombre, email, rol, plan..."
+                placeholder="Buscar nombre, email, plan..."
                 placeholderTextColor={C.muted}
                 value={search}
                 onChangeText={setSearch}
@@ -1489,8 +1629,8 @@ export default function CmsUsers() {
                 { label: 'ESTADO',   flex: 1   },
                 { label: 'PLAN',     flex: 1   },
                 { label: 'SESIONES', flex: 0.7 },
-                { label: 'EMAIL',    flex: 1.6 },
-                { label: '',         flex: 0.4 },
+                { label: 'EMAIL',    flex: 1.5 },
+                { label: 'ACCIONES', flex: 1.2 },
               ].map((col) => (
                 <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
                   <Text style={{
@@ -1563,30 +1703,37 @@ export default function CmsUsers() {
                   </View>
 
                   {/* EMAIL */}
-                  <View style={{ flex: 1.6, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 1.5, paddingHorizontal: 4 }}>
                     <Text style={{ color: C.textDim, fontSize: 11 }} numberOfLines={1}>{user.email}</Text>
                   </View>
 
-                  {/* Action menu "..." */}
-                  <View style={{ flex: 0.4, alignItems: 'center' }}>
+                  {/* Inline Actions */}
+                  <View style={{ flex: 1.2, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 }}>
                     <TouchableOpacity
-                      ref={(ref) => { menuButtonRefs.current[user.id] = ref as unknown as View; }}
-                      style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: isMenuOpen ? C.lift : 'transparent', alignItems: 'center', justifyContent: 'center' }}
-                      onPress={() => {
-                        if (isMenuOpen) { setActionMenuUserId(null); return; }
-                        const ref = menuButtonRefs.current[user.id];
-                        if (ref) {
-                          (ref as unknown as View).measureInWindow((x: number, y: number, w: number, h: number) => {
-                            setMenuPosition({ top: y + h + 4, right: Math.max(16, (typeof window !== 'undefined' ? window.innerWidth : 1400) - x - w) });
-                            setActionMenuUserId(user.id);
-                          });
-                        } else {
-                          setActionMenuUserId(user.id);
-                        }
-                      }}
+                      style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}
+                      onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}
+                      title="Ver y Editar"
                     >
-                      <FontAwesome name="ellipsis-h" size={14} color={C.muted} />
+                      <FontAwesome name="eye" size={12} color={C.accentLight} />
                     </TouchableOpacity>
+                    {canWrite && (
+                      <>
+                        <TouchableOpacity
+                          style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}
+                          onPress={() => setRecoveryUser(user)}
+                          title="Recuperar contraseña"
+                        >
+                          <FontAwesome name="lock" size={12} color={C.amber} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}
+                          onPress={() => handleDeactivate(user)}
+                          title={user.status === 'active' ? 'Suspender' : 'Activar'}
+                        >
+                          <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? C.rose : C.cyan} />
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 </View>
               );
@@ -1624,79 +1771,6 @@ export default function CmsUsers() {
 
       {confirmState ? <ConfirmModal state={confirmState} onClose={closeConfirm} /> : null}
       {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken ?? ''} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
-
-      {/* Action menu popover */}
-      {actionMenuUserId ? (() => {
-        const menuUser = users.find((u) => u.id === actionMenuUserId);
-        if (!menuUser) return null;
-        const statusMeta = getStatusMeta(menuUser.status);
-        const isActive = menuUser.status === 'active';
-        const actions = [
-          { icon: 'eye', label: 'Ver detalle', color: C.accentLight, action: () => { setDetailUserId(menuUser.id); setShowDetailModal(true); } },
-          ...(canWrite ? [
-            { icon: 'pencil', label: 'Editar', color: C.cyan, action: () => { setEditingUser(menuUser); setShowFormModal(true); } },
-            { icon: 'lock', label: 'Recuperar contraseña', color: C.amber, action: () => setRecoveryUser(menuUser) },
-            { icon: isActive ? 'ban' : 'check-circle', label: isActive ? 'Suspender' : 'Activar', color: isActive ? C.rose : C.cyan, action: () => handleDeactivate(menuUser) },
-          ] : []),
-        ];
-        return (
-          <Modal visible transparent animationType="fade" onRequestClose={() => setActionMenuUserId(null)}>
-            <TouchableOpacity activeOpacity={1} onPress={() => setActionMenuUserId(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }}>
-              <View style={{
-                position: 'absolute',
-                top: menuPosition.top,
-                right: menuPosition.right,
-                width: 240,
-                backgroundColor: C.surface,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: C.border,
-                overflow: 'hidden',
-                shadowColor: '#0D0020',
-                shadowOpacity: 0.5,
-                shadowRadius: 24,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 12,
-              }}>
-                {/* User header */}
-                <View style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.lift }}>
-                  <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }} numberOfLines={1}>{menuUser.nombre}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                    <Text style={{ color: C.muted, fontSize: 10 }} numberOfLines={1}>{menuUser.email}</Text>
-                    <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.muted, opacity: 0.4 }} />
-                    <View style={{
-                      backgroundColor: statusMeta.bg,
-                      paddingHorizontal: 6,
-                      paddingVertical: 1,
-                      borderRadius: 4,
-                    }}>
-                      <Text style={{ color: statusMeta.color, fontSize: 9, fontWeight: '700' }}>{menuUser.status.toUpperCase()}</Text>
-                    </View>
-                  </View>
-                </View>
-                {/* Actions */}
-                {actions.map((item, i) => (
-                  <TouchableOpacity
-                    key={item.label}
-                    onPress={() => { setActionMenuUserId(null); item.action(); }}
-                    style={{
-                      flexDirection: 'row', alignItems: 'center', gap: 10,
-                      paddingHorizontal: 14, paddingVertical: 11,
-                      borderBottomWidth: i < actions.length - 1 ? 1 : 0,
-                      borderBottomColor: C.border,
-                    }}
-                  >
-                    <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: item.color + '18', alignItems: 'center', justifyContent: 'center' }}>
-                      <FontAwesome name={item.icon as never} size={11} color={item.color} />
-                    </View>
-                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '600' }}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        );
-      })() : null}
     </CmsShell>
   );
 }

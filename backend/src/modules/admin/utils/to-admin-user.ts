@@ -5,6 +5,8 @@ export interface AdminUser {
   lastName: string | null;
   email: string;
   telefono: string | null;
+  idNumber: string | null;
+  address: string | null;
   plan: string;
   planId: string | null;
   fechaInicio: string;
@@ -35,8 +37,10 @@ export function toAdminUser(customer: any, activeSessions: number = 0): AdminUse
     lastName: customer.lastName,
     email: customer.email ?? customer.ispEmail ?? '',
     telefono: customer.telefono,
-    plan: customer.isCmsUser ? 'Usuario CMS' : 'LUKI PLAY',
-    planId: null,
+    idNumber: customer.idNumber,
+    address: customer.address,
+    plan: customer.isCmsUser ? 'Usuario CMS' : (contract?.planName ?? 'LUKI PLAY'),
+    planId: contract?.planId ?? null,
     fechaInicio: contract?.fechaInicio?.toISOString().slice(0, 10) ?? '',
     fechaFin: contract?.fechaFin?.toISOString().slice(0, 10) ?? '',
     sesiones: activeSessions,

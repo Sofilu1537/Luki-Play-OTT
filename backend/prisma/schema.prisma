@@ -58,7 +58,8 @@ model Customer {
   email              String?    @unique
   ispEmail           String?
   telefono           String?
-  idNumber           String?    @unique
+  idNumber           String?    @unique // Cédula de identidad
+  address            String?    // Dirección
   passwordHash       String?
   role               UserRole   @default(CLIENTE)
   status             UserStatus @default(PENDING)
@@ -86,6 +87,7 @@ model Contract {
   customerId          String
   contractNumber      String             @unique @db.VarChar(20)
   planName            String             @default("LUKI PLAY")
+  planId              String?
   ispPlanName         String?
   maxDevices          Int                @default(2)
   maxConcurrentStreams Int               @default(1)

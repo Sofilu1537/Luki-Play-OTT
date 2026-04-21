@@ -31,12 +31,17 @@ export default function StatsCard({
       style={{
         flex: 1,
         minWidth: 200,
-        backgroundColor: C.surface,
+        backgroundColor: '#FFFFFF',
         borderRadius: 14,
         padding: 16,
         margin: 6,
         borderWidth: 1,
-        borderColor: C.border,
+        borderColor: 'rgba(36, 0, 70, 0.1)',
+        shadowColor: '#240046',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
       }}
     >
       {/* Top row */}
@@ -50,7 +55,7 @@ export default function StatsCard({
       >
         <Text
           style={{
-            color: C.muted,
+            color: '#60269E',
             fontSize: 9,
             fontWeight: '700',
             letterSpacing: 0.8,
@@ -79,7 +84,7 @@ export default function StatsCard({
       {/* Value */}
       <Text
         style={{
-          color: C.text,
+          color: '#240046',
           fontSize: 24,
           fontWeight: '800',
           marginBottom: 10,

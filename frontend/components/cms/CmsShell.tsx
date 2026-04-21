@@ -398,7 +398,7 @@ function TopBar({
         justifyContent: 'space-between',
         paddingHorizontal: 24,
         paddingVertical:   14,
-        backgroundColor:   theme.headerBg,
+        backgroundColor:   '#240046',
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
         zIndex:    50,
@@ -411,7 +411,7 @@ function TopBar({
           style={{
             color:        theme.text,
             fontSize:     20,
-            fontWeight:   '700',
+            fontWeight:   'normal',
             letterSpacing: -0.4,
             fontFamily:   FONT_FAMILY.heading,
           }}
@@ -432,42 +432,8 @@ function TopBar({
         </Text>
       </View>
 
-      {/* Right: search + theme toggle + avatar */}
+      {/* Right: theme toggle + avatar */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        {/* Search */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems:    'center',
-            backgroundColor: theme.surfaceBg,
-            borderRadius:    10,
-            borderWidth:     1,
-            borderColor:     theme.border,
-            paddingHorizontal: 12,
-            paddingVertical:    8,
-            gap: 8,
-            minWidth: 170,
-          }}
-        >
-          <FontAwesome name="search" size={11} color={theme.textMuted} />
-          <TextInput
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder="Buscar..."
-            placeholderTextColor={theme.textMuted}
-            style={[
-              {
-                flex:       1,
-                color:      theme.text,
-                fontSize:   13,
-                fontWeight: '500',
-                fontFamily: FONT_FAMILY.body,
-              },
-              // web-only: remove outline ring
-              { outlineStyle: 'none' } as any,
-            ]}
-          />
-        </View>
 
         {/* Dark / Light toggle */}
         <TouchableOpacity

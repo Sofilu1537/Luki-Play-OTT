@@ -16,6 +16,8 @@ export interface AdminUser {
   lastName: string | null;
   email: string;
   telefono: string | null;
+  idNumber: string | null;
+  address: string | null;
   plan: string;
   planId: string | null;
   fechaInicio: string;
@@ -43,6 +45,8 @@ export interface AdminUserPayload {
   lastName?: string;
   email: string;
   telefono?: string;
+  idNumber?: string;
+  address?: string;
   plan?: string;
   planId?: string;
   contrato?: string;
