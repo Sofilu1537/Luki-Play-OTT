@@ -924,95 +924,134 @@ export class AdminService {
 
   // ---- Categorias CRUD (Prisma persistence) ---------------------------------
 
-  async getCategorias(): Promise<any[]> {
+  async getCategorias(query?: { active?: string; search?: string; limit?: string; offset?: string }): Promise<any[]> {
+    const where: any = { deletedAt: null };
+    if (query?.active === 'true') where.activo = true;
+    if (query?.active === 'false') where.activo = false;
+    if (query?.search) where.nombre = { contains: query.search, mode: 'insensitive' };
     return this.prisma.category.findMany({
-      orderBy: { nombre: 'asc' },
+      where,
+      include: { channelCategories: { include: { channel: { select: { id: true, nombre: true, status: true } } } } },
+      orderBy: { displayOrder: 'asc' },
+      ...(query?.limit ? { take: parseInt(query.limit, 10) } : {}),
+      ...(query?.offset ? { skip: parseInt(query.offset, 10) } : {}),
     });
+  }
+
+  async getCategoriaById(id: string): Promise<any> {
+    const category = await this.prisma.category.findFirst({
+      where: { id, deletedAt: null },
+      include: { channelCategories: { include: { channel: { select: { id: true, nombre: true, status: true } } } } },
+    });
+    if (!category) throw new NotFoundException(`Category ${id} not found`);
+    return category;
   }
 
   async createCategoria(dto: CreateCategoriaDto): Promise<any> {
     const normalizedName = dto.nombre.trim();
+    const slug = dto.slug?.trim() || this.autoSlug(normalizedName);
 
-    // Check for duplicate
-    const existing = await this.prisma.category.findUnique({
-      where: { nombre: normalizedName },
+    const existing = await this.prisma.category.findFirst({
+      where: { OR: [{ nombre: normalizedName }, { slug }], deletedAt: null },
     });
-    if (existing) {
-      throw new ConflictException(`Category "${normalizedName}" already exists`);
-    }
+    if (existing) throw new ConflictException(`Category "${normalizedName}" already exists`);
 
-    return this.prisma.category.create({
+    const category = await this.prisma.category.create({
       data: {
         nombre: normalizedName,
+        slug,
         descripcion: dto.descripcion?.trim() ?? '',
         icono: dto.icono?.trim() ?? '',
+        accentColor: dto.accentColor ?? '#FFB800',
+        displayOrder: dto.displayOrder ?? 99,
         activo: dto.activo !== false,
       },
     });
+
+    if (dto.channelIds?.length) {
+      await this.syncCategoryChannels(category.id, dto.channelIds);
+    }
+
+    return this.getCategoriaById(category.id);
   }
 
   async updateCategoria(id: string, dto: UpdateCategoriaDto): Promise<any> {
-    const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      throw new NotFoundException(`Category ${id} not found`);
-    }
+    const category = await this.prisma.category.findFirst({ where: { id, deletedAt: null } });
+    if (!category) throw new NotFoundException(`Category ${id} not found`);
 
-    // Check for name duplicate
     if (dto.nombre) {
       const normalizedName = dto.nombre.trim();
       if (normalizedName.toLowerCase() !== category.nombre.toLowerCase()) {
-        const duplicate = await this.prisma.category.findUnique({
-          where: { nombre: normalizedName },
+        const duplicate = await this.prisma.category.findFirst({
+          where: { nombre: normalizedName, deletedAt: null, id: { not: id } },
         });
-        if (duplicate) {
-          throw new ConflictException(`Category "${normalizedName}" already exists`);
-        }
+        if (duplicate) throw new ConflictException(`Category "${normalizedName}" already exists`);
       }
     }
 
     const updateData: any = {};
-    if (dto.nombre !== undefined) updateData.nombre = dto.nombre.trim();
+    if (dto.nombre !== undefined) { updateData.nombre = dto.nombre.trim(); updateData.slug = dto.slug?.trim() || this.autoSlug(dto.nombre.trim()); }
+    if (dto.slug !== undefined) updateData.slug = dto.slug.trim();
     if (dto.descripcion !== undefined) updateData.descripcion = dto.descripcion.trim();
     if (dto.icono !== undefined) updateData.icono = dto.icono.trim();
+    if (dto.accentColor !== undefined) updateData.accentColor = dto.accentColor;
+    if (dto.displayOrder !== undefined) updateData.displayOrder = dto.displayOrder;
     if (dto.activo !== undefined) updateData.activo = dto.activo;
 
-    return this.prisma.category.update({
-      where: { id },
-      data: updateData,
-    });
+    await this.prisma.category.update({ where: { id }, data: updateData });
+
+    if (dto.channelIds !== undefined) {
+      await this.syncCategoryChannels(id, dto.channelIds);
+    }
+
+    return this.getCategoriaById(id);
   }
 
   async toggleCategoria(id: string): Promise<any> {
-    const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      throw new NotFoundException(`Category ${id} not found`);
-    }
-
-    return this.prisma.category.update({
-      where: { id },
-      data: { activo: !category.activo },
-    });
+    const category = await this.prisma.category.findFirst({ where: { id, deletedAt: null } });
+    if (!category) throw new NotFoundException(`Category ${id} not found`);
+    return this.prisma.category.update({ where: { id }, data: { activo: !category.activo } });
   }
 
   async deleteCategoria(id: string): Promise<void> {
-    const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      throw new NotFoundException(`Category ${id} not found`);
+    const category = await this.prisma.category.findFirst({ where: { id, deletedAt: null } });
+    if (!category) throw new NotFoundException(`Category ${id} not found`);
+
+    // Protect base categories (displayOrder <= 5)
+    if (category.displayOrder <= 5) {
+      throw new ConflictException(`Cannot delete base category "${category.nombre}". Deactivate it instead.`);
     }
 
-    // Check if category is in use
-    const channelsUsing = await this.prisma.channel.count({
-      where: { categoryId: id, deletedAt: null },
-    });
-    if (channelsUsing > 0) {
-      throw new ConflictException(
-        `Cannot delete category "${category.nombre}" because it's assigned to ${channelsUsing} channel(s)`,
-      );
-    }
+    // Soft delete
+    await this.prisma.category.update({ where: { id }, data: { deletedAt: new Date() } });
+  }
 
-    await this.prisma.category.delete({
-      where: { id },
+  async syncCategoryChannels(categoryId: string, channelIds: string[]): Promise<void> {
+    // Remove existing associations
+    await this.prisma.channelCategory.deleteMany({ where: { categoryId } });
+    if (!channelIds.length) return;
+    // Validate channels exist
+    const existing = await this.prisma.channel.findMany({
+      where: { id: { in: channelIds }, deletedAt: null },
+      select: { id: true },
     });
+    const validIds = existing.map((c) => c.id);
+    if (validIds.length > 0) {
+      await this.prisma.channelCategory.createMany({
+        data: validIds.map((channelId) => ({ channelId, categoryId })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  async removeCategoryChannel(categoryId: string, channelId: string): Promise<void> {
+    await this.prisma.channelCategory.deleteMany({ where: { categoryId, channelId } });
+  }
+
+  async bulkReorderCategorias(items: { id: string; displayOrder: number }[]): Promise<void> {
+    await this.prisma.$transaction(
+      items.map((item) => this.prisma.category.update({ where: { id: item.id }, data: { displayOrder: item.displayOrder } })),
+    );
   }
 
   // ---- Helper methods for channels ------

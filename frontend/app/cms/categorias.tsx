@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Pressable, Modal, TextInput, Platform } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Pressable, Modal, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import type { AdminCanal, AdminCategoria } from '../../services/api/adminApi';
@@ -54,20 +54,28 @@ function matchesCategory(categoryName: string, canal: AdminCanal) {
 }
 
 export default function CmsCategorias() {
-  const { profile } = useCmsStore();
+  const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const cats = useCategoriasStore((s) => s.categorias);
-  const { add: storeAdd, update: storeUpdate, toggle: storeToggle, remove: storeRemove } = useCategoriasStore();
+  const isLoading = useCategoriasStore((s) => s.isLoading);
+  const storeError = useCategoriasStore((s) => s.error);
+  const { fetchFromApi, add: storeAdd, update: storeUpdate, toggle: storeToggle, remove: storeRemove } = useCategoriasStore();
   const canales = useChannelStore((s) => s.channels);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<AdminCategoria | null>(null);
   const [editingCategory, setEditingCategory] = useState<AdminCategoria | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '' });
+  const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '', accentColor: '#FFB800', displayOrder: 99 });
+  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  if (!profile) { router.replace('/cms/login' as never); }
+  useEffect(() => {
+    if (!profile) { router.replace('/cms/login' as never); return; }
+    if (accessToken) fetchFromApi(accessToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
@@ -106,52 +114,104 @@ export default function CmsCategorias() {
 
   function openEdit(category: AdminCategoria) {
     setEditingCategory(category);
-    setForm({ nombre: category.nombre, descripcion: category.descripcion, icono: category.icono ?? '' });
+    const existingChannelIds = (category.channelCategories ?? []).map((cc) => cc.channel.id);
+    setForm({
+      nombre: category.nombre,
+      descripcion: category.descripcion,
+      icono: category.icono ?? '',
+      accentColor: category.accentColor ?? '#FFB800',
+      displayOrder: category.displayOrder ?? 99,
+    });
+    setSelectedChannelIds(existingChannelIds);
     setFormError('');
   }
 
   function openCreate() {
     setIsCreating(true);
-    setForm({ nombre: '', descripcion: '', icono: '' });
+    setForm({ nombre: '', descripcion: '', icono: '', accentColor: '#FFB800', displayOrder: 99 });
+    setSelectedChannelIds([]);
     setFormError('');
   }
 
   function closeEdit() {
     setEditingCategory(null);
     setIsCreating(false);
-    setForm({ nombre: '', descripcion: '', icono: '' });
+    setForm({ nombre: '', descripcion: '', icono: '', accentColor: '#FFB800', displayOrder: 99 });
+    setSelectedChannelIds([]);
     setFormError('');
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     const nombre = form.nombre.trim();
     if (!nombre) { setFormError('El nombre es requerido.'); return; }
+    if (form.accentColor && !/^#[0-9A-Fa-f]{6}$/.test(form.accentColor)) {
+      setFormError('El color debe ser un hex válido (ej: #FFB800)');
+      return;
+    }
+    if (!accessToken) { setFormError('Sesión expirada. Recarga la página.'); return; }
     setFormError('');
+    setIsSaving(true);
     try {
       if (isCreating) {
-        const created = storeAdd({ nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
+        const created = await storeAdd(accessToken, {
+          nombre,
+          descripcion: form.descripcion.trim(),
+          icono: form.icono.trim(),
+          accentColor: form.accentColor,
+          displayOrder: form.displayOrder,
+          channelIds: selectedChannelIds,
+        });
         setSelectedId(created.id);
       } else if (editingCategory) {
-        storeUpdate(editingCategory.id, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
+        await storeUpdate(accessToken, editingCategory.id, {
+          nombre,
+          descripcion: form.descripcion.trim(),
+          icono: form.icono.trim(),
+          accentColor: form.accentColor,
+          displayOrder: form.displayOrder,
+          channelIds: selectedChannelIds,
+        } as any);
       }
       closeEdit();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'No se pudo guardar la categoría.');
+    } finally {
+      setIsSaving(false);
     }
   }
 
-  function toggleCategory(categoryId: string) {
-    storeToggle(categoryId);
+  async function toggleCategory(categoryId: string) {
+    if (!accessToken) return;
+    await storeToggle(accessToken, categoryId);
   }
 
-  function deleteCategory(categoryId: string, nombre: string) {
+  async function deleteCategory(categoryId: string, nombre: string) {
     if (!window.confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
-    storeRemove(categoryId);
-    if (selectedId === categoryId) setSelectedId(null);
+    if (!accessToken) return;
+    try {
+      await storeRemove(accessToken, categoryId);
+      if (selectedId === categoryId) setSelectedId(null);
+    } catch (err: unknown) {
+      window.alert(err instanceof Error ? err.message : 'No se pudo eliminar la categoría.');
+    }
   }
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Categorías' }]}>
+      {isLoading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={C.accent} size="large" />
+          <Text style={{ color: C.textDim, fontSize: 13, marginTop: 12 }}>Cargando categorías...</Text>
+        </View>
+      ) : storeError ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <FontAwesome name="exclamation-triangle" size={32} color={C.rose} />
+          <Text style={{ color: C.rose, fontSize: 14, marginTop: 12, textAlign: 'center' }}>{storeError}</Text>
+          <TouchableOpacity onPress={() => accessToken && fetchFromApi(accessToken)} style={{ marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}>
+            <Text style={{ color: 'white', fontWeight: '700' }}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 18 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 16, flexWrap: 'wrap' }}>
           <View>
@@ -352,6 +412,7 @@ export default function CmsCategorias() {
           </>
         )}
       </ScrollView>
+      )}
 
       <Modal visible={Boolean(previewCategory)} transparent animationType="fade" onRequestClose={() => setPreviewCategory(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -379,7 +440,7 @@ export default function CmsCategorias() {
                       </View>
                     ))
                   ) : (
-                    <Text style={{ color: C.textDim, fontSize: 12 }}>Aún no hay canales directamente asociados en el mock del CMS.</Text>
+                    <Text style={{ color: C.textDim, fontSize: 12 }}>Aún no hay canales directamente asociados.</Text>
                   )}
                 </View>
 
@@ -407,6 +468,7 @@ export default function CmsCategorias() {
                 </TouchableOpacity>
               </View>
 
+              <ScrollView style={{ maxHeight: 520 }}>
               <View style={{ padding: 20, gap: 12 }}>
                 <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>NOMBRE <Text style={{ color: C.rose }}>*</Text></Text>
                 <TextInput
@@ -434,21 +496,87 @@ export default function CmsCategorias() {
                   placeholderTextColor={C.muted}
                   style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
                 />
+
+                {/* Color de acento */}
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>COLOR DE ACENTO</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(form.accentColor) ? form.accentColor : '#FFB800', borderWidth: 1, borderColor: C.border }} />
+                  <TextInput
+                    value={form.accentColor}
+                    onChangeText={(value) => setForm((current) => ({ ...current, accentColor: value }))}
+                    placeholder="#FFB800"
+                    placeholderTextColor={C.muted}
+                    style={{ flex: 1, backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
+                  />
+                </View>
+
+                {/* Orden de display */}
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>ORDEN DE VISUALIZACIÓN</Text>
+                <TextInput
+                  value={String(form.displayOrder)}
+                  onChangeText={(value) => setForm((current) => ({ ...current, displayOrder: parseInt(value, 10) || 99 }))}
+                  placeholder="99"
+                  placeholderTextColor={C.muted}
+                  keyboardType="numeric"
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
+                />
+
+                {/* Channel Selector */}
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700', marginTop: 4 }}>CANALES ASOCIADOS</Text>
+                <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Selecciona los canales que pertenecen a esta categoría.</Text>
+                <View style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, maxHeight: 180, overflow: 'hidden' }}>
+                  <ScrollView nestedScrollEnabled>
+                    {(canales as AdminCanal[]).length === 0 ? (
+                      <Text style={{ color: C.muted, fontSize: 12, padding: 12 }}>No hay canales disponibles.</Text>
+                    ) : (
+                      (canales as AdminCanal[]).map((canal) => {
+                        const isSelected = selectedChannelIds.includes(canal.id);
+                        return (
+                          <TouchableOpacity
+                            key={canal.id}
+                            onPress={() => setSelectedChannelIds((prev) =>
+                              isSelected ? prev.filter((id) => id !== canal.id) : [...prev, canal.id]
+                            )}
+                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.border, gap: 10 }}
+                          >
+                            <View style={{
+                              width: 18, height: 18, borderRadius: 4, borderWidth: 2,
+                              borderColor: isSelected ? C.accent : C.border,
+                              backgroundColor: isSelected ? C.accent : 'transparent',
+                              alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              {isSelected ? <FontAwesome name="check" size={10} color="white" /> : null}
+                            </View>
+                            <Text style={{ color: isSelected ? C.text : C.textDim, fontSize: 12, flex: 1 }} numberOfLines={1}>{canal.nombre}</Text>
+                            <Text style={{ color: C.muted, fontSize: 10 }}>{canal.status}</Text>
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
+                  </ScrollView>
+                </View>
+                {selectedChannelIds.length > 0 && (
+                  <Text style={{ color: C.accent, fontSize: 11, fontWeight: '700' }}>{selectedChannelIds.length} canal(es) seleccionado(s)</Text>
+                )}
+
                 {formError ? (
                   <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>{formError}</Text>
                 ) : null}
               </View>
+              </ScrollView>
 
               <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-                <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeEdit}>
+                <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeEdit} disabled={isSaving}>
                   <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: isSaving ? C.muted : C.accent, flexDirection: 'row', alignItems: 'center', gap: 6 }}
                   onPress={saveEdit}
+                  disabled={isSaving}
                 >
+                  {isSaving ? <ActivityIndicator size={12} color="white" /> : null}
                   <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>
-                    {isCreating ? 'Crear categoría' : 'Guardar cambios'}
+                    {isSaving ? 'Guardando…' : isCreating ? 'Crear categoría' : 'Guardar cambios'}
                   </Text>
                 </TouchableOpacity>
               </View>

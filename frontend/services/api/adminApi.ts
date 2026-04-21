@@ -182,9 +182,15 @@ export type AdminCanalPayload = {
 export interface AdminCategoria {
   id: string;
   nombre: string;
+  slug: string;
   descripcion: string;
   icono: string;
+  accentColor: string;
+  displayOrder: number;
   activo: boolean;
+  channelCategories?: Array<{ channel: { id: string; nombre: string; status: string } }>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AdminBlogPost {
@@ -647,6 +653,39 @@ export async function adminDeleteCategoria(accessToken: string, id: string): Pro
     const index = mockCategorias.findIndex((c) => c.id === id);
     if (index !== -1) mockCategorias.splice(index, 1);
   }
+}
+
+export async function adminGetCategoria(accessToken: string, id: string): Promise<AdminCategoria> {
+  return apiFetch<AdminCategoria>(`/admin/categorias/${id}`, accessToken);
+}
+
+export async function adminAssociateCategoriaChannels(
+  accessToken: string,
+  categoryId: string,
+  channelIds: string[],
+): Promise<void> {
+  await apiFetch<void>(`/admin/categorias/${categoryId}/canales`, accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ channelIds }),
+  });
+}
+
+export async function adminRemoveCategoriaChannel(
+  accessToken: string,
+  categoryId: string,
+  channelId: string,
+): Promise<void> {
+  await apiFetch<void>(`/admin/categorias/${categoryId}/canales/${channelId}`, accessToken, { method: 'DELETE' });
+}
+
+export async function adminBulkReorderCategorias(
+  accessToken: string,
+  items: { id: string; displayOrder: number }[],
+): Promise<void> {
+  await apiFetch<void>(`/admin/categorias/reorder/bulk`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify({ items }),
+  });
 }
 
 // ---------------------------------------------------------------------------

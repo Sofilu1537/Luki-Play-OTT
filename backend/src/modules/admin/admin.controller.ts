@@ -223,7 +223,16 @@ export class AdminController {
   @ApiOperation({ summary: 'List all categories' })
   @Permissions('cms:content:read')
   @Get('categorias')
-  getCategorias() { return this.adminService.getCategorias(); }
+  getCategorias(@Query('active') active?: string, @Query('search') search?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
+    return this.adminService.getCategorias({ active, search, limit, offset });
+  }
+
+  @ApiOperation({ summary: 'Get single category by ID' })
+  @Permissions('cms:content:read')
+  @Get('categorias/:id')
+  getCategoriaById(@Param('id') id: string) {
+    return this.adminService.getCategoriaById(id);
+  }
 
   @ApiOperation({ summary: 'Create a category' })
   @Permissions('cms:content:write')
@@ -247,7 +256,31 @@ export class AdminController {
     return this.adminService.toggleCategoria(id);
   }
 
-  @ApiOperation({ summary: 'Delete a category' })
+  @ApiOperation({ summary: 'Sync channels for a category' })
+  @Permissions('cms:content:write')
+  @Post('categorias/:id/canales')
+  @HttpCode(HttpStatus.OK)
+  syncCategoriaCanales(@Param('id') id: string, @Body() body: { channelIds: string[] }) {
+    return this.adminService.syncCategoryChannels(id, body.channelIds ?? []);
+  }
+
+  @ApiOperation({ summary: 'Remove a channel from a category' })
+  @Permissions('cms:content:write')
+  @Delete('categorias/:id/canales/:channelId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeCategoriaCanal(@Param('id') id: string, @Param('channelId') channelId: string) {
+    return this.adminService.removeCategoryChannel(id, channelId);
+  }
+
+  @ApiOperation({ summary: 'Bulk reorder categories' })
+  @Permissions('cms:content:write')
+  @Patch('categorias/reorder/bulk')
+  @HttpCode(HttpStatus.OK)
+  bulkReorderCategorias(@Body() body: { items: { id: string; displayOrder: number }[] }) {
+    return this.adminService.bulkReorderCategorias(body.items ?? []);
+  }
+
+  @ApiOperation({ summary: 'Delete a category (soft delete)' })
   @Permissions('cms:content:write')
   @Delete('categorias/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
