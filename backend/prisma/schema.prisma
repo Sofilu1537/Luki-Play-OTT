@@ -266,8 +266,9 @@ model Category {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  channels          Channel[]
-  channelCategories ChannelCategory[]
+  channels            Channel[]
+  channelCategories   ChannelCategory[]
+  componentCategories ComponentCategory[]
 
   @@index([activo])
   @@index([displayOrder])
@@ -336,4 +337,36 @@ model Channel {
   @@index([status])
   @@index([isLive])
   @@map("channels")
+}
+
+model Component {
+  id          String   @id
+  nombre      String   @unique
+  descripcion String   @default("")
+  icono       String   @default("")
+  tipo        String
+  activo      Boolean  @default(true)
+  orden       Int      @default(99)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  componentCategories ComponentCategory[]
+
+  @@index([activo])
+  @@index([orden])
+  @@map("components")
+}
+
+model ComponentCategory {
+  componentId String
+  categoryId  String
+  assignedAt  DateTime @default(now())
+
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  category  Category  @relation(fields: [categoryId],  references: [id], onDelete: Cascade)
+
+  @@id([componentId, categoryId])
+  @@index([componentId])
+  @@index([categoryId])
+  @@map("component_categories")
 }

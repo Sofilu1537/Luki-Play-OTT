@@ -7,14 +7,16 @@ import {
   ActivityIndicator,
   TextInput,
   Platform,
-  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import {
   adminListComponentes,
   adminToggleComponente,
+  adminSyncComponenteCategorias,
+  adminListCategorias,
   AdminComponente,
+  AdminCategoria,
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
@@ -40,6 +42,12 @@ export default function CmsComponentes() {
   const [toggling, setToggling] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
+  // Category management state
+  const [allCategorias, setAllCategorias] = useState<AdminCategoria[]>([]);
+  const [managingId, setManagingId] = useState<string | null>(null);
+  const [managingCategories, setManagingCategories] = useState<string[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,10 +55,45 @@ export default function CmsComponentes() {
 
   useEffect(() => {
     if (!accessToken) return;
-    adminListComponentes(accessToken)
-      .then(setComponentes)
-      .finally(() => setLoading(false));
+    Promise.all([
+      adminListComponentes(accessToken),
+      adminListCategorias(accessToken),
+    ]).then(([comps, cats]) => {
+      setComponentes(comps);
+      setAllCategorias(cats);
+    }).finally(() => setLoading(false));
   }, [accessToken]);
+
+  const openCategoryManager = (comp: AdminComponente) => {
+    setManagingId(comp.id);
+    setManagingCategories((comp.categories ?? []).map((c) => c.id));
+  };
+
+  const toggleCategory = (catId: string) => {
+    setManagingCategories((prev) =>
+      prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId],
+    );
+  };
+
+  const saveCategories = async () => {
+    if (!accessToken || !managingId) return;
+    setIsSyncing(true);
+    try {
+      await adminSyncComponenteCategorias(accessToken, managingId, managingCategories);
+      setComponentes((prev) =>
+        prev.map((c) =>
+          c.id === managingId
+            ? { ...c, categories: allCategorias.filter((cat) => managingCategories.includes(cat.id)) }
+            : c,
+        ),
+      );
+      setManagingId(null);
+    } catch (e) {
+      console.error('Sync categories failed', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleToggle = async (id: string) => {
     if (!accessToken || toggling) return;
@@ -97,14 +140,12 @@ export default function CmsComponentes() {
             marginBottom: 24,
           }}
         >
-          <View>
-            <Text
-              style={{ color: C.text, fontSize: 22, fontWeight: '800' }}
-            >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="puzzle-piece" size={18} color={C.cyan} />
+            </View>
+            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>
               Componentes
-            </Text>
-            <Text style={{ color: C.muted, fontSize: 13, marginTop: 2 }}>
-              Activa o desactiva los tipos de contenido visibles para los abonados
             </Text>
           </View>
         </View>
@@ -499,6 +540,102 @@ export default function CmsComponentes() {
                       </Text>
                     </View>
                   </View>
+
+                  {/* Category manager button */}
+                  <TouchableOpacity
+                    onPress={() => managingId === comp.id ? setManagingId(null) : openCategoryManager(comp)}
+                    style={{
+                      marginTop: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      alignSelf: 'flex-start',
+                      backgroundColor: C.cyanSoft,
+                      borderRadius: 6,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderWidth: 1,
+                      borderColor: 'rgba(34,211,238,0.2)',
+                    }}
+                  >
+                    <FontAwesome name="tags" size={11} color={C.cyan} />
+                    <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>
+                      Categorías {(comp.categories?.length ?? 0) > 0 ? `(${comp.categories!.length})` : ''}
+                    </Text>
+                    <FontAwesome name={managingId === comp.id ? 'chevron-up' : 'chevron-down'} size={9} color={C.cyan} />
+                  </TouchableOpacity>
+
+                  {/* Inline category panel */}
+                  {managingId === comp.id && (
+                    <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 12 }}>
+                      <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 10 }}>
+                        CATEGORÍAS ASIGNADAS
+                      </Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                        {allCategorias.map((cat) => {
+                          const selected = managingCategories.includes(cat.id);
+                          return (
+                            <TouchableOpacity
+                              key={cat.id}
+                              onPress={() => toggleCategory(cat.id)}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                                borderRadius: 6,
+                                borderWidth: 1,
+                                backgroundColor: selected ? `${color}18` : C.surface,
+                                borderColor: selected ? `${color}50` : C.border,
+                              }}
+                            >
+                              <FontAwesome
+                                name={selected ? 'check-square' : 'square-o'}
+                                size={13}
+                                color={selected ? color : C.muted}
+                              />
+                              <Text style={{ color: selected ? C.text : C.muted, fontSize: 12, fontWeight: selected ? '700' : '400' }}>
+                                {cat.nombre}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          onPress={saveCategories}
+                          disabled={isSyncing}
+                          style={{
+                            flex: 1,
+                            backgroundColor: color,
+                            borderRadius: 8,
+                            paddingVertical: 9,
+                            alignItems: 'center',
+                            opacity: isSyncing ? 0.6 : 1,
+                          }}
+                        >
+                          {isSyncing
+                            ? <ActivityIndicator color="#fff" size="small" />
+                            : <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Guardar</Text>
+                          }
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setManagingId(null)}
+                          style={{
+                            paddingHorizontal: 16,
+                            borderRadius: 8,
+                            paddingVertical: 9,
+                            borderWidth: 1,
+                            borderColor: C.border,
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ color: C.muted, fontSize: 13 }}>Cancelar</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
                 </View>
               );
             })}

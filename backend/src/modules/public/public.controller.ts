@@ -7,12 +7,15 @@ import { AdminService } from '../admin/admin.service';
 export class PublicController {
   constructor(private readonly adminService: AdminService) {}
 
-  @ApiOperation({ summary: 'Get active OTT components (public, no auth)' })
+  @ApiOperation({ summary: 'Get active OTT components with their categories (public, no auth)' })
   @Get('componentes')
-  getActiveComponentes() {
-    return this.adminService
-      .getComponentes()
+  async getActiveComponentes() {
+    const all = await this.adminService.getComponentes();
+    return all
       .filter((c) => c.activo)
-      .map(({ id, nombre, tipo, icono, orden }) => ({ id, nombre, tipo, icono, orden }));
+      .map(({ id, nombre, tipo, icono, orden, categories }) => ({
+        id, nombre, tipo, icono, orden,
+        categories: (categories ?? []).filter((cat) => cat.activo),
+      }));
   }
 }

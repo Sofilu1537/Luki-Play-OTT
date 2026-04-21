@@ -314,6 +314,21 @@ export class AdminController {
     return this.adminService.reorderComponentes(body.ids);
   }
 
+  @ApiOperation({ summary: 'Get categories assigned to a component' })
+  @Permissions('cms:content:read')
+  @Get('componentes/:id/categorias')
+  getComponenteCategorias(@Param('id') id: string) {
+    return this.adminService.getComponenteById(id);
+  }
+
+  @ApiOperation({ summary: 'Sync categories for a component' })
+  @Permissions('cms:content:write')
+  @Post('componentes/:id/categorias')
+  @HttpCode(HttpStatus.OK)
+  syncComponenteCategorias(@Param('id') id: string, @Body() body: { categoryIds: string[] }) {
+    return this.adminService.syncComponentCategories(id, body.categoryIds ?? []);
+  }
+
   // ---- Componentes: public endpoint (no auth required) --------------------
 
   // ─── Registration Requests (Flujo 3) ─────────────────────────────────────

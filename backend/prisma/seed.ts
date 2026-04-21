@@ -178,12 +178,35 @@ async function main() {
 
     console.log('✅ 6 default categories created');
 
-    // ─── 4. Create subscribers with contracts ───────────────
+    // ─── 4. Create default OTT components ───────────────────
+    const defaultComponents = [
+      { id: 'comp-001', nombre: 'VOD',        tipo: 'VOD',        icono: 'film',        activo: true,  orden: 1,  descripcion: 'Video bajo demanda — películas y series disponibles en cualquier momento' },
+      { id: 'comp-002', nombre: 'Destacados', tipo: 'DESTACADOS', icono: 'star',        activo: true,  orden: 2,  descripcion: 'Contenido destacado y recomendado que aparece en el banner principal' },
+      { id: 'comp-003', nombre: 'Live',       tipo: 'LIVE',       icono: 'circle',      activo: true,  orden: 3,  descripcion: 'Canales en vivo — transmisión en tiempo real de televisión y eventos' },
+      { id: 'comp-004', nombre: 'Series',     tipo: 'SERIES',     icono: 'list',        activo: true,  orden: 4,  descripcion: 'Catálogo de series organizadas por temporadas y episodios' },
+      { id: 'comp-005', nombre: 'Radio',      tipo: 'RADIO',      icono: 'headphones',  activo: false, orden: 5,  descripcion: 'Estaciones de radio en línea con streaming de audio continuo' },
+      { id: 'comp-006', nombre: 'PPV',        tipo: 'PPV',        icono: 'ticket',      activo: false, orden: 6,  descripcion: 'Pay Per View — eventos y contenido premium de pago individual' },
+      { id: 'comp-007', nombre: 'Kids',       tipo: 'KIDS',       icono: 'child',       activo: true,  orden: 7,  descripcion: 'Contenido infantil con controles parentales integrados' },
+      { id: 'comp-008', nombre: 'Deportes',   tipo: 'DEPORTES',   icono: 'futbol-o',    activo: true,  orden: 8,  descripcion: 'Canales y eventos deportivos en vivo y bajo demanda' },
+      { id: 'comp-009', nombre: 'Música',     tipo: 'MUSICA',     icono: 'music',       activo: false, orden: 9,  descripcion: 'Canales de música, videoclips y conciertos en streaming' },
+      { id: 'comp-010', nombre: 'Noticias',   tipo: 'NOTICIAS',   icono: 'newspaper-o', activo: true,  orden: 10, descripcion: 'Canales de noticias nacionales e internacionales 24/7' },
+    ];
+
+    for (const comp of defaultComponents) {
+      await tx.component.upsert({ where: { id: comp.id }, update: {}, create: comp });
+    }
+
+    console.log('✅ 10 OTT components seeded');
+
+    // ─── 5. Create subscribers with contracts ───────────────
     for (const sub of subscribers) {
       const isIspEmail = sub.email === 'facturacion@luki.ec';
       const hasNoEmail = sub.email === '';
       const customerEmail = isIspEmail || hasNoEmail ? null : sub.email;
       const ispEmail = isIspEmail ? 'facturacion@luki.ec' : null;
+
+      const existingContract = await tx.contract.findUnique({ where: { contractNumber: sub.contrato } });
+      if (existingContract) continue;
 
       const customer = await tx.customer.create({
         data: {

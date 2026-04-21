@@ -40,9 +40,10 @@ export interface OttComponent {
   nombre: string;
   descripcion: string;
   icono: string;
-  tipo: string;        // VOD | LIVE | DESTACADOS | SERIES | RADIO | PPV
+  tipo: string;
   activo: boolean;
   orden: number;
+  categories?: Array<{ id: string; nombre: string; icono: string; activo: boolean }>;
 }
 
 export interface OttPlan {
@@ -174,40 +175,71 @@ export class AdminService {
     private readonly createCmsUserUseCase: CreateCmsUserUseCase,
   ) {}
 
-  // ---- In-memory components store ------------------------------------------
-
-  private componentes: OttComponent[] = [
-    { id: 'comp-001', nombre: 'VOD',            descripcion: 'Video bajo demanda — películas y series disponibles en cualquier momento',                  icono: 'film',        tipo: 'VOD',        activo: true,  orden: 1 },
-    { id: 'comp-002', nombre: 'Destacados',     descripcion: 'Contenido destacado y recomendado que aparece en el banner principal',                       icono: 'star',        tipo: 'DESTACADOS', activo: true,  orden: 2 },
-    { id: 'comp-003', nombre: 'Live',           descripcion: 'Canales en vivo — transmisión en tiempo real de televisión y eventos',                       icono: 'circle',      tipo: 'LIVE',       activo: true,  orden: 3 },
-    { id: 'comp-004', nombre: 'Series',         descripcion: 'Catálogo de series organizadas por temporadas y episodios',                                  icono: 'list',        tipo: 'SERIES',     activo: true,  orden: 4 },
-    { id: 'comp-005', nombre: 'Radio',          descripcion: 'Estaciones de radio en línea con streaming de audio continuo',                               icono: 'headphones',  tipo: 'RADIO',      activo: false, orden: 5 },
-    { id: 'comp-006', nombre: 'PPV',            descripcion: 'Pay Per View — eventos y contenido premium de pago individual',                              icono: 'ticket',      tipo: 'PPV',        activo: false, orden: 6 },
-    { id: 'comp-007', nombre: 'Kids',           descripcion: 'Contenido infantil con controles parentales integrados',                                     icono: 'child',       tipo: 'KIDS',       activo: true,  orden: 7 },
-    { id: 'comp-008', nombre: 'Deportes',       descripcion: 'Canales y eventos deportivos en vivo y bajo demanda',                                        icono: 'futbol-o',    tipo: 'DEPORTES',   activo: true,  orden: 8 },
-    { id: 'comp-009', nombre: 'Música',         descripcion: 'Canales de música, videoclips y conciertos en streaming',                                    icono: 'music',       tipo: 'MUSICA',     activo: false, orden: 9 },
-    { id: 'comp-010', nombre: 'Noticias',       descripcion: 'Canales de noticias nacionales e internacionales 24/7',                                      icono: 'newspaper-o', tipo: 'NOTICIAS',   activo: true,  orden: 10 },
-  ];
-
   // ---- Componentes ---------------------------------------------------------
 
-  getComponentes(): OttComponent[] {
-    return [...this.componentes].sort((a, b) => a.orden - b.orden);
-  }
-
-  toggleComponente(id: string): OttComponent {
-    const comp = this.componentes.find((c) => c.id === id);
-    if (!comp) throw new NotFoundException(`Component ${id} not found`);
-    comp.activo = !comp.activo;
-    return { ...comp };
-  }
-
-  reorderComponentes(ids: string[]): OttComponent[] {
-    ids.forEach((id, index) => {
-      const comp = this.componentes.find((c) => c.id === id);
-      if (comp) comp.orden = index + 1;
+  async getComponentes(): Promise<OttComponent[]> {
+    const rows = await this.prisma.component.findMany({
+      orderBy: { orden: 'asc' },
+      include: {
+        componentCategories: {
+          include: { category: { select: { id: true, nombre: true, icono: true, activo: true } } },
+        },
+      },
     });
+    return rows.map((r) => ({
+      id: r.id, nombre: r.nombre, descripcion: r.descripcion,
+      icono: r.icono, tipo: r.tipo, activo: r.activo, orden: r.orden,
+      categories: r.componentCategories.map((cc) => cc.category),
+    }));
+  }
+
+  async getComponenteById(id: string): Promise<OttComponent> {
+    const comp = await this.prisma.component.findUnique({
+      where: { id },
+      include: {
+        componentCategories: {
+          include: { category: { select: { id: true, nombre: true, icono: true, activo: true } } },
+        },
+      },
+    });
+    if (!comp) throw new NotFoundException(`Component ${id} not found`);
+    return {
+      id: comp.id, nombre: comp.nombre, descripcion: comp.descripcion,
+      icono: comp.icono, tipo: comp.tipo, activo: comp.activo, orden: comp.orden,
+      categories: comp.componentCategories.map((cc) => cc.category),
+    };
+  }
+
+  async toggleComponente(id: string): Promise<OttComponent> {
+    const comp = await this.prisma.component.findUnique({ where: { id } });
+    if (!comp) throw new NotFoundException(`Component ${id} not found`);
+    const updated = await this.prisma.component.update({ where: { id }, data: { activo: !comp.activo } });
+    return { id: updated.id, nombre: updated.nombre, descripcion: updated.descripcion,
+             icono: updated.icono, tipo: updated.tipo, activo: updated.activo, orden: updated.orden, categories: [] };
+  }
+
+  async reorderComponentes(ids: string[]): Promise<OttComponent[]> {
+    await this.prisma.$transaction(
+      ids.map((id, index) => this.prisma.component.update({ where: { id }, data: { orden: index + 1 } })),
+    );
     return this.getComponentes();
+  }
+
+  async syncComponentCategories(componentId: string, categoryIds: string[]): Promise<void> {
+    const comp = await this.prisma.component.findUnique({ where: { id: componentId } });
+    if (!comp) throw new NotFoundException(`Component ${componentId} not found`);
+    await this.prisma.componentCategory.deleteMany({ where: { componentId } });
+    if (!categoryIds.length) return;
+    const valid = await this.prisma.category.findMany({
+      where: { id: { in: categoryIds }, deletedAt: null },
+      select: { id: true },
+    });
+    if (valid.length) {
+      await this.prisma.componentCategory.createMany({
+        data: valid.map((c) => ({ componentId, categoryId: c.id })),
+        skipDuplicates: true,
+      });
+    }
   }
 
   // ---- Users ---------------------------------------------------------------
@@ -1103,8 +1135,11 @@ export class AdminService {
   // ---- Helpers -------------------------------------------------------------
 
   private async validatePlanReferences(componentIds: string[], categoryIds: string[]): Promise<void> {
-    const validComponentIds = new Set(this.componentes.map((item) => item.id));
-    const categorias = await this.prisma.category.findMany();
+    const [components, categorias] = await Promise.all([
+      this.prisma.component.findMany({ select: { id: true } }),
+      this.prisma.category.findMany({ select: { id: true } }),
+    ]);
+    const validComponentIds = new Set(components.map((item) => item.id));
     const validCategoryIds = new Set(categorias.map((item) => item.id));
 
     const invalidComponents = componentIds.filter((id) => !validComponentIds.has(id));

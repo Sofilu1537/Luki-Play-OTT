@@ -182,11 +182,11 @@ export type AdminCanalPayload = {
 export interface AdminCategoria {
   id: string;
   nombre: string;
-  slug: string;
+  slug?: string;
   descripcion: string;
   icono: string;
-  accentColor: string;
-  displayOrder: number;
+  accentColor?: string;
+  displayOrder?: number;
   activo: boolean;
   channelCategories?: Array<{ channel: { id: string; nombre: string; status: string } }>;
   createdAt?: string;
@@ -739,6 +739,7 @@ export interface AdminComponente {
   tipo: string;
   activo: boolean;
   orden: number;
+  categories?: Array<{ id: string; nombre: string; icono: string; activo: boolean }>;
 }
 
 const mockComponentes: AdminComponente[] = [
@@ -767,6 +768,17 @@ export async function adminToggleComponente(accessToken: string, id: string): Pr
     if (comp) comp.activo = !comp.activo;
     return comp ? { ...comp } : mockComponentes[0];
   }
+}
+
+export async function adminSyncComponenteCategorias(
+  accessToken: string,
+  componentId: string,
+  categoryIds: string[],
+): Promise<void> {
+  await apiFetch<void>(`/admin/componentes/${componentId}/categorias`, accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ categoryIds }),
+  });
 }
 
 export async function publicListActiveComponentes(): Promise<AdminComponente[]> {
