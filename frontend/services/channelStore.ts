@@ -1,10 +1,21 @@
 /**
  * channelStore — Single source of truth for CMS channels.
  *
- * Syncs from the backend API (Prisma) and caches locally.
- * Optimistic updates: updates local state immediately, API persists in background.
+ * Strategy:
+ *  - localStorage is used as a fast startup cache (shows data instantly on load)
+ *  - The backend (Prisma/PostgreSQL) is the authoritative source of truth
+ *  - On mount: loadChannels() fetches from API and overwrites the cache
+ *  - On mutations: API call first → on success, update store + cache
+ *  - On API failure: error is thrown to the caller for UI feedback
  */
 import { create } from 'zustand';
+import {
+  adminListCanales,
+  adminCreateCanal,
+  adminUpdateCanal,
+  adminToggleCanal,
+  adminDeleteCanal,
+} from './api/adminApi';
 import type { AdminCanal, AdminCanalPayload } from './api/adminApi';
 
 export const CHANNEL_STORAGE_KEY = 'luki_channels';
@@ -32,25 +43,25 @@ function persist(list: AdminCanal[]): AdminCanal[] {
   return list;
 }
 
-function genId() {
-  return `ch-local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-function autoSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface ChannelState {
   channels: AdminCanal[];
+  isLoading: boolean;
+
+  // ── API-backed actions (persist to PostgreSQL via NestJS) ──────────────
+  loadChannels: (accessToken: string) => Promise<void>;
+  createChannelApi: (accessToken: string, payload: AdminCanalPayload) => Promise<AdminCanal>;
+  updateChannelApi: (accessToken: string, id: string, patch: Partial<AdminCanalPayload>) => Promise<void>;
+  deleteChannelApi: (accessToken: string, id: string) => Promise<void>;
+  toggleChannelStatusApi: (accessToken: string, id: string) => Promise<void>;
+
+  // ── Sync helper (used by categoriasStore cascade) ──────────────────────
   syncFromApi: (data: AdminCanal[]) => void;
-  createChannel: (payload: AdminCanalPayload) => AdminCanal;
-  updateChannel: (id: string, patch: Partial<AdminCanalPayload>) => void;
-  toggleChannelStatus: (id: string) => void;
-  deleteChannel: (id: string) => void;
+
+  // ── Category cascade helpers (called from categoriasStore) ────────────
   updateCategoryName: (categoryId: string, newName: string) => void;
   deassignCategory: (categoryId: string) => void;
 }
@@ -61,97 +72,65 @@ export interface ChannelState {
 
 export const useChannelStore = create<ChannelState>((set, get) => ({
   channels: load(),
+  isLoading: false,
 
+  // ── Load all channels from the backend and refresh the local cache ──────
+  async loadChannels(accessToken) {
+    set({ isLoading: true });
+    try {
+      const data = await adminListCanales(accessToken);
+      if (Array.isArray(data) && data.length > 0) {
+        set({ channels: persist(data) });
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // ── Create a channel in the DB; replace the local cache entry on success ─
+  async createChannelApi(accessToken, payload) {
+    const record = await adminCreateCanal(accessToken, payload);
+    set({ channels: persist([record, ...get().channels]) });
+    return record;
+  },
+
+  // ── Update a channel in the DB; merge the response into local cache ──────
+  async updateChannelApi(accessToken, id, patch) {
+    const updated = await adminUpdateCanal(accessToken, id, patch);
+    const next = get().channels.map((c) => (c.id === id ? updated : c));
+    set({ channels: persist(next) });
+  },
+
+  // ── Delete a channel (soft-delete on the DB); remove from local cache ───
+  async deleteChannelApi(accessToken, id) {
+    await adminDeleteCanal(accessToken, id);
+    set({ channels: persist(get().channels.filter((c) => c.id !== id)) });
+  },
+
+  // ── Toggle channel status in the DB; update local cache with response ───
+  async toggleChannelStatusApi(accessToken, id) {
+    const updated = await adminToggleCanal(accessToken, id);
+    const next = get().channels.map((c) => (c.id === id ? updated : c));
+    set({ channels: persist(next) });
+  },
+
+  // ── Sync helper (overwrites cache from an external data source) ──────────
   syncFromApi(data) {
     if (!Array.isArray(data) || data.length === 0) return;
     set({ channels: persist(data) });
   },
 
-  createChannel(payload) {
-    const current = get().channels;
-    const nombre = payload.nombre.trim();
-    if (!nombre) throw new Error('El nombre del canal es requerido.');
-    const dup = current.find((c) => c.nombre.toLowerCase() === nombre.toLowerCase());
-    if (dup) throw new Error(`Ya existe un canal con el nombre "${nombre}".`);
-    if (!payload.categoryId?.trim()) throw new Error('Debes seleccionar una categoría para el canal.');
-    const now = new Date().toISOString();
-    const record: AdminCanal = {
-      id: genId(),
-      nombre,
-      slug: payload.slug || autoSlug(nombre),
-      streamUrl: payload.streamUrl?.trim() ?? '',
-      backupUrl: payload.backupUrl?.trim(),
-      logoUrl: payload.logoUrl?.trim(),
-      categoryId: payload.categoryId.trim(),
-      epgSourceId: payload.epgSourceId,
-      status: payload.status ?? 'ACTIVE',
-      isLive: false,
-      healthStatus: 'OFFLINE',
-      uptimePercent: 0,
-      streamProtocol: payload.streamProtocol ?? 'HLS',
-      resolution: payload.resolution ?? '1080p',
-      bitrateKbps: payload.bitrateKbps ?? 5000,
-      isDrmProtected: payload.isDrmProtected ?? false,
-      geoRestriction: payload.geoRestriction,
-      sortOrder: payload.sortOrder ?? 99,
-      planIds: payload.planIds ?? [],
-      requiereControlParental: payload.requiereControlParental ?? false,
-      viewerCount: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-    set({ channels: persist([record, ...current]) });
-    return record;
-  },
-
-  updateChannel(id, patch) {
-    const current = get().channels;
-    if (patch.nombre !== undefined) {
-      const nombre = patch.nombre.trim();
-      const dup = current.find((c) => c.id !== id && c.nombre.toLowerCase() === nombre.toLowerCase());
-      if (dup) throw new Error(`Ya existe un canal con el nombre "${nombre}".`);
-    }
-    const next = current.map((c) =>
-      c.id === id
-        ? {
-            ...c,
-            ...patch,
-            nombre: patch.nombre?.trim() ?? c.nombre,
-            streamUrl: patch.streamUrl?.trim() ?? c.streamUrl,
-            categoryId: patch.categoryId?.trim() || c.categoryId,
-            updatedAt: new Date().toISOString(),
-          }
-        : c,
-    );
-    set({ channels: persist(next) });
-  },
-
-  toggleChannelStatus(id) {
-    const next = get().channels.map((c) =>
-      c.id === id
-        ? {
-            ...c,
-            status: c.status === 'ACTIVE' ? ('INACTIVE' as const) : ('ACTIVE' as const),
-            updatedAt: new Date().toISOString(),
-          }
-        : c,
-    );
-    set({ channels: persist(next) });
-  },
-
-  deleteChannel(id) {
-    set({ channels: persist(get().channels.filter((c) => c.id !== id)) });
-  },
-
+  // ── Cascade: called by categoriasStore when a category is renamed ────────
   updateCategoryName(categoryId, newName) {
     const next = get().channels.map((c) =>
       c.categoryId === categoryId
-        ? { ...c, updatedAt: new Date().toISOString() }
+        ? { ...c, category: c.category ? { ...c.category, nombre: newName } : c.category, updatedAt: new Date().toISOString() }
         : c,
     );
     set({ channels: persist(next) });
   },
 
+  // ── Cascade: called by categoriasStore when a category is deleted ─────────
   deassignCategory(categoryId) {
     const next = get().channels.map((c) =>
       c.categoryId === categoryId

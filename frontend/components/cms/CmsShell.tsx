@@ -846,6 +846,27 @@ function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
     <View
       style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bodyBg, overflow: 'hidden' }}
     >
+      {/* Purple gradient background (dark mode) */}
+      {isDark && (
+        <LinearGradient
+          colors={[
+            'rgba(36,0,70,0.4)',    // Dark purple top-left
+            'rgba(96,38,158,0.25)', // Purple mid
+            'rgba(115,3,192,0.12)', // Purple-blue bottom
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+          }}
+        />
+      )}
+
       {/* Yellow radial orbs — dark mode only */}
       {isDark && (
         <>
@@ -858,6 +879,7 @@ function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
               height:          500,
               borderRadius:    250,
               backgroundColor: 'rgba(255,198,41,0.08)',
+              zIndex: 1,
             }}
             pointerEvents="none"
           />
@@ -870,6 +892,7 @@ function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
               height:          320,
               borderRadius:    160,
               backgroundColor: 'rgba(255,213,77,0.04)',
+              zIndex: 1,
             }}
             pointerEvents="none"
           />
@@ -878,14 +901,16 @@ function CmsShellInner({ breadcrumbs, children }: CmsShellProps) {
 
       {/* Sidebar — always dark, hide below 640px */}
       {width >= 640 && (
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((c) => !c)}
-        />
+        <View style={{ position: 'relative', zIndex: 2 }}>
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed((c) => !c)}
+          />
+        </View>
       )}
 
       {/* Main content */}
-      <View style={{ flex: 1, overflow: 'hidden', zIndex: 1 }}>
+      <View style={{ flex: 1, overflow: 'hidden', zIndex: 2 }}>
         <TopBar
           breadcrumbs={breadcrumbs}
           onLogout={handleLogout}
