@@ -138,6 +138,13 @@ export class CreatePlanDto {
   @IsString({ each: true })
   allowedCategoryIds?: string[];
 
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  allowedChannelIds?: string[];
+
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()

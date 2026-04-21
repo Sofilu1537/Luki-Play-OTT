@@ -107,6 +107,7 @@ export interface AdminPlan {
   entitlements: Array<'live-tv' | 'vod-basic' | 'vod-premium' | 'series' | 'kids' | 'sports' | 'radio' | '4k' | 'downloads' | 'ppv'>;
   allowedComponentIds: string[];
   allowedCategoryIds: string[];
+  allowedChannelIds: string[];
 }
 
 export type AdminPlanPayload = Omit<AdminPlan, 'id'>;
@@ -374,29 +375,61 @@ export async function adminUpdateCmsUserPermissions(
 // ---------------------------------------------------------------------------
 
 export async function adminListPlans(accessToken: string): Promise<AdminPlan[]> {
-  return apiFetch<AdminPlan[]>('/admin/planes', accessToken);
+  try {
+    return await apiFetch<AdminPlan[]>('/admin/planes', accessToken);
+  } catch {
+    // Local store is the source of truth when API is unreachable
+    const { usePlanesStore } = require('../planesStore');
+    return usePlanesStore.getState().planes;
+  }
 }
 
 export async function adminCreatePlan(accessToken: string, data: AdminPlanPayload): Promise<AdminPlan> {
-  return apiFetch<AdminPlan>('/admin/planes', accessToken, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  try {
+    return await apiFetch<AdminPlan>('/admin/planes', accessToken, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const { usePlanesStore } = require('../planesStore');
+    return usePlanesStore.getState().add(data);
+  }
 }
 
 export async function adminUpdatePlan(accessToken: string, id: string, data: Partial<AdminPlanPayload>): Promise<AdminPlan> {
-  return apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  try {
+    return await apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const { usePlanesStore } = require('../planesStore');
+    usePlanesStore.getState().update(id, data);
+    const updated = usePlanesStore.getState().planes.find((p: AdminPlan) => p.id === id);
+    if (!updated) throw new Error('Plan no encontrado');
+    return updated;
+  }
 }
 
 export async function adminTogglePlan(accessToken: string, id: string): Promise<AdminPlan> {
-  return apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
+  try {
+    return await apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
+  } catch {
+    const { usePlanesStore } = require('../planesStore');
+    usePlanesStore.getState().toggle(id);
+    const updated = usePlanesStore.getState().planes.find((p: AdminPlan) => p.id === id);
+    if (!updated) throw new Error('Plan no encontrado');
+    return updated;
+  }
 }
 
 export async function adminDeletePlan(accessToken: string, id: string): Promise<void> {
-  await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
+  try {
+    await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
+  } catch {
+    const { usePlanesStore } = require('../planesStore');
+    usePlanesStore.getState().remove(id);
+  }
 }
 
 // ---------------------------------------------------------------------------

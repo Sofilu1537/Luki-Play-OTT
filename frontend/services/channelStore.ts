@@ -64,6 +64,9 @@ export interface ChannelState {
   // ── Category cascade helpers (called from categoriasStore) ────────────
   updateCategoryName: (categoryId: string, newName: string) => void;
   deassignCategory: (categoryId: string) => void;
+
+  // ── Plan cascade helpers (called from planesStore) ────────────────────
+  syncPlanChannels: (planId: string, removedIds: string[], addedIds: string[]) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +140,23 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
         ? { ...c, categoryId: '', updatedAt: new Date().toISOString() }
         : c,
     );
+    set({ channels: persist(next) });
+  },
+
+  // ── Cascade: called by planesStore when a plan's channel list changes ─────
+  syncPlanChannels(planId, removedIds, addedIds) {
+    const toRemove = new Set(removedIds.filter((id) => !addedIds.includes(id)));
+    const toAdd = new Set(addedIds.filter((id) => !removedIds.includes(id)));
+
+    const next = get().channels.map((c) => {
+      if (toRemove.has(c.id)) {
+        return { ...c, planIds: c.planIds.filter((pid) => pid !== planId) };
+      }
+      if (toAdd.has(c.id) && !c.planIds.includes(planId)) {
+        return { ...c, planIds: [...c.planIds, planId] };
+      }
+      return c;
+    });
     set({ channels: persist(next) });
   },
 }));

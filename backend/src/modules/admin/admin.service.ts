@@ -641,10 +641,14 @@ export class AdminService {
   async createPlan(dto: CreatePlanDto) {
     await this.validatePlanReferences(dto.allowedComponentIds, dto.allowedCategoryIds ?? []);
 
-    return this.prisma.plan.create({
+    const plan = await this.prisma.plan.create({
       data: {
         nombre: dto.nombre,
         descripcion: dto.descripcion,
+        grupoUsuarios: dto.grupoUsuarios,
+        precio: dto.precio,
+        moneda: dto.moneda ?? 'USD',
+        duracionDias: dto.duracionDias,
         activo: dto.activo ?? true,
         maxDevices: dto.maxDevices,
         maxConcurrentStreams: dto.maxConcurrentStreams,
@@ -653,11 +657,20 @@ export class AdminService {
         allowDownloads: dto.allowDownloads ?? false,
         allowCasting: dto.allowCasting ?? true,
         hasAds: dto.hasAds ?? false,
+        trialDays: dto.trialDays ?? 0,
+        gracePeriodDays: dto.gracePeriodDays ?? 0,
         entitlements: dto.entitlements as string[],
         allowedComponentIds: dto.allowedComponentIds,
         allowedCategoryIds: (dto.allowedCategoryIds ?? []) as string[],
+        allowedChannelIds: (dto.allowedChannelIds ?? []) as string[],
       },
     });
+
+    if (dto.allowedChannelIds && dto.allowedChannelIds.length > 0) {
+      await this.syncChannelPlanIds(plan.id, [], dto.allowedChannelIds);
+    }
+
+    return plan;
   }
 
   async updatePlan(id: string, dto: UpdatePlanDto) {
@@ -668,11 +681,18 @@ export class AdminService {
     const nextCategoryIds = dto.allowedCategoryIds ?? (existing.allowedCategoryIds as string[]);
     await this.validatePlanReferences(nextComponentIds, nextCategoryIds);
 
-    return this.prisma.plan.update({
+    const previousChannelIds = (existing.allowedChannelIds as string[]) ?? [];
+    const nextChannelIds = dto.allowedChannelIds ?? previousChannelIds;
+
+    const plan = await this.prisma.plan.update({
       where: { id },
       data: {
         ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
         ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
+        ...(dto.grupoUsuarios !== undefined ? { grupoUsuarios: dto.grupoUsuarios } : {}),
+        ...(dto.precio !== undefined ? { precio: dto.precio } : {}),
+        ...(dto.moneda !== undefined ? { moneda: dto.moneda } : {}),
+        ...(dto.duracionDias !== undefined ? { duracionDias: dto.duracionDias } : {}),
         ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
         ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
         ...(dto.maxConcurrentStreams !== undefined ? { maxConcurrentStreams: dto.maxConcurrentStreams } : {}),
@@ -681,11 +701,20 @@ export class AdminService {
         ...(dto.allowDownloads !== undefined ? { allowDownloads: dto.allowDownloads } : {}),
         ...(dto.allowCasting !== undefined ? { allowCasting: dto.allowCasting } : {}),
         ...(dto.hasAds !== undefined ? { hasAds: dto.hasAds } : {}),
+        ...(dto.trialDays !== undefined ? { trialDays: dto.trialDays } : {}),
+        ...(dto.gracePeriodDays !== undefined ? { gracePeriodDays: dto.gracePeriodDays } : {}),
         ...(dto.entitlements ? { entitlements: dto.entitlements as string[] } : {}),
         allowedComponentIds: nextComponentIds,
         allowedCategoryIds: nextCategoryIds,
+        allowedChannelIds: nextChannelIds,
       },
     });
+
+    if (dto.allowedChannelIds !== undefined) {
+      await this.syncChannelPlanIds(id, previousChannelIds, nextChannelIds);
+    }
+
+    return plan;
   }
 
   async togglePlan(id: string) {
@@ -697,7 +726,35 @@ export class AdminService {
   async deletePlan(id: string) {
     const plan = await this.prisma.plan.findUnique({ where: { id } });
     if (!plan) throw new NotFoundException(`Plan ${id} not found`);
+
+    // Remove this plan from all channels before deleting
+    const channelIds = (plan.allowedChannelIds as string[]) ?? [];
+    if (channelIds.length > 0) {
+      await this.syncChannelPlanIds(plan.id, channelIds, []);
+    }
+
     await this.prisma.plan.delete({ where: { id } });
+  }
+
+  private async syncChannelPlanIds(planId: string, removed: string[], added: string[]): Promise<void> {
+    const toRemove = removed.filter((id) => !added.includes(id));
+    const toAdd = added.filter((id) => !removed.includes(id));
+
+    for (const channelId of toRemove) {
+      const ch = await this.prisma.channel.findUnique({ where: { id: channelId, deletedAt: null } });
+      if (!ch) continue;
+      const next = (ch.planIds as string[]).filter((pid) => pid !== planId);
+      await this.prisma.channel.update({ where: { id: channelId }, data: { planIds: next } });
+    }
+
+    for (const channelId of toAdd) {
+      const ch = await this.prisma.channel.findUnique({ where: { id: channelId, deletedAt: null } });
+      if (!ch) continue;
+      const current = ch.planIds as string[];
+      if (!current.includes(planId)) {
+        await this.prisma.channel.update({ where: { id: channelId }, data: { planIds: [...current, planId] } });
+      }
+    }
   }
 
   getSliders() {
