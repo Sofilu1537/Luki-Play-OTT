@@ -28,21 +28,41 @@ export class ActivateAppUseCase2 {
     }
 
     if (customer.isAccountActivated) {
-      throw new BadRequestException('La cuenta ya fue activada');
+      throw new BadRequestException('La cuenta ya fue activada. Use su contrato y contraseña para iniciar sesión.');
+    }
+
+    // Validar código de activación
+    const activation = await this.prisma.activationCode.findFirst({
+      where: {
+        customerId: dto.customerId,
+        code: dto.code.toUpperCase(),
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!activation) {
+      throw new BadRequestException('Código de activación inválido o expirado');
     }
 
     const passwordHash = await this.hashService.hash(dto.password);
 
-    await this.prisma.customer.update({
-      where: { id: customer.id },
-      data: {
-        passwordHash,
-        isAccountActivated: true,
-        status: 'ACTIVE',
-        lastLoginAt: new Date(),
-        ...(dto.email ? { email: dto.email } : {}),
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          passwordHash,
+          isAccountActivated: true,
+          status: 'ACTIVE',
+          lastLoginAt: new Date(),
+          ...(dto.email ? { email: dto.email } : {}),
+        },
+      }),
+      this.prisma.activationCode.update({
+        where: { id: activation.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
 
     const contract = customer.contracts[0];
     if (!contract) {

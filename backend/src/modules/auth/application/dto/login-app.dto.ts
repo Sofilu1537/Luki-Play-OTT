@@ -7,8 +7,8 @@ export class LoginAppDto {
     description: 'User email address',
   })
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @ApiProperty({
     example: 'CONTRACT-001',

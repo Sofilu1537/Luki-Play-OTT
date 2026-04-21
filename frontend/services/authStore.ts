@@ -7,9 +7,6 @@ const API_BASE_URL =
 
 const DEV_DEVICE_ID = 'luki-web-dev-device-001';
 
-/**
- * Represents an authenticated user.
- */
 export interface User {
     id: string;
     name: string;
@@ -18,77 +15,60 @@ export interface User {
     plan: string;
 }
 
-/**
- * Pending activation state after first-access verification.
- */
 interface PendingActivation {
     customerId: string;
     contractNumber: string;
     nombre: string;
 }
 
-/**
- * Shape of the authentication Zustand store.
- *
- * Contract-based auth flow (no OTP):
- *   1. firstAccess(contractNumber, idNumber) → pendingActivation
- *   2. activate(password, email?) → user + tokens
- *   -- OR --
- *   1. login(contractNumber, password) → user + tokens
- */
+interface RegistrationRequestPayload {
+    nombres: string;
+    apellidos: string;
+    idNumber: string;
+    telefono: string;
+    email?: string;
+    direccion?: string;
+}
+
 interface AuthState {
     user: User | null;
     isLoading: boolean;
     accessToken: string | null;
     refreshToken: string | null;
     pendingActivation: PendingActivation | null;
+    codeVerified: boolean;
+
     login: (contractNumber: string, password: string) => Promise<void>;
     firstAccess: (contractNumber: string, idNumber: string) => Promise<void>;
-    activate: (password: string, email?: string) => Promise<void>;
+    requestActivationCode: (customerId: string, email?: string) => Promise<{ sent: boolean; needsSupportCode?: boolean }>;
+    verifyActivationCode: (customerId: string, code: string) => Promise<void>;
+    activate: (customerId: string, code: string, password: string, email?: string) => Promise<void>;
     resetPassword: (contractNumber: string, idNumber: string, newPassword: string) => Promise<void>;
+    submitRegistrationRequest: (data: RegistrationRequestPayload) => Promise<void>;
     logout: () => void;
     restoreSession: () => Promise<void>;
 }
 
-/**
- * Global authentication store (Zustand).
- *
- * Implements contract-based authentication:
- *   Login   — POST /auth/app/contract-login → JWT tokens directly
- *   First   — POST /auth/app/first-access   → verify identity
- *   Activate— POST /auth/app/activate        → set password + JWT
- *   Reset   — POST /auth/app/reset-password  → new password via cédula
- */
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     isLoading: false,
     accessToken: null,
     refreshToken: null,
     pendingActivation: null,
+    codeVerified: false,
 
-    restoreSession: async () => {
-        // No persistent session in this version — nothing to restore
-    },
+    restoreSession: async () => {},
 
-    /**
-     * Login with contract number + password.
-     * Returns JWT tokens directly (no OTP step).
-     */
-    login: async (contractNumber: string, password: string) => {
+    login: async (contractNumber, password) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/contract-login`, {
+            const res = await fetch(`${API_BASE_URL}/auth/app/contract-login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contractNumber, password, deviceId: DEV_DEVICE_ID }),
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Credenciales inválidas');
-            }
-
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Credenciales inválidas');
             set({
                 isLoading: false,
                 accessToken: data.accessToken,
@@ -100,6 +80,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     plan: data.user?.plan ?? 'lukiplay',
                 },
                 pendingActivation: null,
+                codeVerified: false,
             });
         } catch (e) {
             set({ isLoading: false });
@@ -107,25 +88,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    /**
-     * First-access: verify contract + cédula.
-     * Sets pendingActivation if identity is confirmed.
-     */
-    firstAccess: async (contractNumber: string, idNumber: string) => {
+    firstAccess: async (contractNumber, idNumber) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/first-access`, {
+            const res = await fetch(`${API_BASE_URL}/auth/app/first-access`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contractNumber, idNumber }),
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'No se pudo verificar el contrato');
-            }
-
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'No se pudo verificar el contrato');
             set({
                 isLoading: false,
                 pendingActivation: {
@@ -133,6 +105,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     contractNumber: data.contractNumber,
                     nombre: data.nombre,
                 },
+                codeVerified: false,
             });
         } catch (e) {
             set({ isLoading: false });
@@ -140,45 +113,68 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    /**
-     * Activate account: set password after first-access verification.
-     * Optionally set email for marketing/notifications.
-     */
-    activate: async (password: string, email?: string) => {
-        const { pendingActivation } = get();
-        if (!pendingActivation) {
-            throw new Error('No hay activación pendiente. Verifica tu contrato primero.');
-        }
-
+    requestActivationCode: async (customerId, email) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/activate`, {
+            const res = await fetch(`${API_BASE_URL}/auth/app/request-activation-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customerId, ...(email ? { email } : {}) }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Error al solicitar el código');
+            set({ isLoading: false });
+            return { sent: data.sent ?? false, needsSupportCode: data.needsSupportCode };
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
+    verifyActivationCode: async (customerId, code) => {
+        set({ isLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/app/verify-activation-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customerId, code: code.toUpperCase() }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Código inválido o expirado');
+            set({ isLoading: false, codeVerified: true });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
+    activate: async (customerId, code, password, email) => {
+        set({ isLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/app/activate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    customerId: pendingActivation.customerId,
+                    customerId,
+                    code: code.toUpperCase(),
                     password,
                     ...(email ? { email } : {}),
                 }),
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'No se pudo activar la cuenta');
-            }
-
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'No se pudo activar la cuenta');
             set({
                 isLoading: false,
                 accessToken: data.accessToken,
                 refreshToken: data.refreshToken,
                 user: {
                     id: data.user?.id ?? 'unknown',
-                    name: data.user?.name ?? pendingActivation.nombre,
+                    name: data.user?.name ?? '',
                     email: data.user?.email ?? email ?? '',
                     plan: data.user?.plan ?? 'lukiplay',
                 },
                 pendingActivation: null,
+                codeVerified: false,
             });
         } catch (e) {
             set({ isLoading: false });
@@ -186,24 +182,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    /**
-     * Reset password using contract number + cédula verification.
-     */
-    resetPassword: async (contractNumber: string, idNumber: string, newPassword: string) => {
+    resetPassword: async (contractNumber, idNumber, newPassword) => {
         set({ isLoading: true });
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/app/reset-password`, {
+            const res = await fetch(`${API_BASE_URL}/auth/app/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contractNumber, idNumber, newPassword }),
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'No se pudo restablecer la contraseña');
-            }
-
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'No se pudo restablecer la contraseña');
             set({ isLoading: false });
         } catch (e) {
             set({ isLoading: false });
@@ -211,9 +199,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    /**
-     * Logs out the current user: calls the logout endpoint and clears all state.
-     */
+    submitRegistrationRequest: async (payload) => {
+        set({ isLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/app/registration-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'No se pudo enviar la solicitud');
+            set({ isLoading: false });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
     logout: () => {
         const { accessToken } = get();
         if (accessToken) {
@@ -222,11 +224,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 headers: { Authorization: `Bearer ${accessToken}` },
             }).catch(() => {});
         }
-        set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            pendingActivation: null,
-        });
+        set({ user: null, accessToken: null, refreshToken: null, pendingActivation: null, codeVerified: false });
     },
 }));

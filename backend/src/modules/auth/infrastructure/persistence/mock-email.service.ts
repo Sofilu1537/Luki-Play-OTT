@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailService } from '../../domain/interfaces/email.service';
+import { EmailService, RegistrationRequestData } from '../../domain/interfaces/email.service';
 
 @Injectable()
 export class MockEmailService implements EmailService {
@@ -35,5 +35,10 @@ export class MockEmailService implements EmailService {
     this.logger.log(`[MOCK EMAIL] Activation code sent to ${to}`);
     this.logger.log(`[MOCK EMAIL] Tu código de activación es: ${code}`);
     this.logger.log(`[MOCK EMAIL] Válido por 24 horas. Un solo uso.`);
+  }
+
+  async sendRegistrationRequest(data: RegistrationRequestData): Promise<void> {
+    this.logger.log(`[MOCK EMAIL] Registration request notification → noreply@luki.ec`);
+    this.logger.log(`[MOCK EMAIL] Solicitante: ${data.nombres} ${data.apellidos} | Cédula: ${data.idNumber} | ID: ${data.requestId}`);
   }
 }

@@ -6,9 +6,11 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -281,4 +283,53 @@ export class AdminController {
 
   // ---- Componentes: public endpoint (no auth required) --------------------
 
+  // ─── Registration Requests (Flujo 3) ─────────────────────────────────────
+
+  @ApiOperation({ summary: 'Listar solicitudes de registro (no-ISP)' })
+  @Permissions('cms:users:read')
+  @Get('registration-requests')
+  listRegistrationRequests(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.listRegistrationRequests(
+      status,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+  @ApiOperation({ summary: 'Detalle de solicitud de registro' })
+  @Permissions('cms:users:read')
+  @Get('registration-requests/:id')
+  getRegistrationRequest(@Param('id') id: string) {
+    return this.adminService.getRegistrationRequest(id);
+  }
+
+  @ApiOperation({ summary: 'Aprobar solicitud: crea customer + contract + código de activación' })
+  @Permissions('cms:users:write')
+  @Post('registration-requests/:id/approve')
+  @HttpCode(HttpStatus.OK)
+  approveRegistrationRequest(
+    @Param('id') id: string,
+    @Body() body: { contractNumber: string; maxDevices?: number },
+    @Request() req: any,
+  ) {
+    const actorId = req.user?.sub ?? 'system';
+    return this.adminService.approveRegistrationRequest(id, body.contractNumber, body.maxDevices, actorId);
+  }
+
+  @ApiOperation({ summary: 'Rechazar solicitud de registro' })
+  @Permissions('cms:users:write')
+  @Post('registration-requests/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  rejectRegistrationRequest(
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+    @Request() req: any,
+  ) {
+    const actorId = req.user?.sub ?? 'system';
+    return this.adminService.rejectRegistrationRequest(id, body.reason, actorId);
+  }
 }

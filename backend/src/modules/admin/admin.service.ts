@@ -1137,4 +1137,107 @@ export class AdminService {
     if (!policy) return PrismaSessionLimitPolicy.BLOCK_NEW;
     return policy.toUpperCase() as PrismaSessionLimitPolicy;
   }
+
+  // ─── Registration Requests (Flujo 3) ──────────────────────
+
+  async listRegistrationRequests(status?: string, page = 1, limit = 20) {
+    const where = status ? { status: status.toUpperCase() as any } : {};
+    const [items, total] = await Promise.all([
+      this.prisma.registrationRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.registrationRequest.count({ where }),
+    ]);
+    return { items, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  async getRegistrationRequest(id: string) {
+    const req = await this.prisma.registrationRequest.findUnique({ where: { id } });
+    if (!req) throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    return req;
+  }
+
+  async approveRegistrationRequest(id: string, contractNumber: string, maxDevices = 2, actorId: string) {
+    const req = await this.prisma.registrationRequest.findUnique({ where: { id } });
+    if (!req) throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    if (req.status !== 'PENDING') throw new BadRequestException('La solicitud ya fue procesada');
+
+    // Verificar que no exista ya un cliente con esa cédula
+    const existing = await this.prisma.customer.findUnique({ where: { idNumber: req.idNumber } });
+    if (existing) throw new ConflictException('Ya existe un cliente con esa cédula');
+
+    // Verificar contractNumber único
+    const existingContract = await this.prisma.contract.findUnique({ where: { contractNumber } });
+    if (existingContract) throw new ConflictException('El número de contrato ya está en uso');
+
+    const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let activationCode = '';
+    for (let i = 0; i < 6; i++) activationCode += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+
+    const [customer, contract] = await this.prisma.$transaction(async (tx) => {
+      const newCustomer = await tx.customer.create({
+        data: {
+          id: require('crypto').randomUUID(),
+          nombre: `${req.nombres} ${req.apellidos}`.trim(),
+          firstName: req.nombres,
+          lastName: req.apellidos,
+          idNumber: req.idNumber,
+          telefono: req.telefono,
+          email: req.email ?? null,
+          role: 'CLIENTE',
+          status: 'PENDING',
+          isSubscriber: true,
+          isCmsUser: false,
+          isAccountActivated: false,
+        },
+      });
+
+      const contract = await tx.contract.create({
+        data: {
+          id: require('crypto').randomUUID(),
+          customerId: newCustomer.id,
+          contractNumber,
+          planName: 'LUKI PLAY',
+          maxDevices,
+        },
+      });
+
+      await tx.activationCode.create({
+        data: {
+          id: require('crypto').randomUUID(),
+          customerId: newCustomer.id,
+          code: activationCode,
+          generatedBy: actorId,
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        },
+      });
+
+      await tx.registrationRequest.update({
+        where: { id },
+        data: { status: 'APPROVED', reviewedBy: actorId, reviewedAt: new Date() },
+      });
+
+      return [newCustomer, contract];
+    });
+
+    this.logger.log(`Registration request ${id} approved by ${actorId} — customer ${customer.id}`);
+    return { customer: toAdminUser({ ...customer, contracts: [contract] }), activationCode, contractNumber: contract.contractNumber };
+  }
+
+  async rejectRegistrationRequest(id: string, reason: string, actorId: string) {
+    const req = await this.prisma.registrationRequest.findUnique({ where: { id } });
+    if (!req) throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    if (req.status !== 'PENDING') throw new BadRequestException('La solicitud ya fue procesada');
+
+    await this.prisma.registrationRequest.update({
+      where: { id },
+      data: { status: 'REJECTED', reviewedBy: actorId, reviewedAt: new Date(), reviewNotes: reason },
+    });
+
+    this.logger.log(`Registration request ${id} rejected by ${actorId}`);
+    return { message: 'Solicitud rechazada correctamente' };
+  }
 }

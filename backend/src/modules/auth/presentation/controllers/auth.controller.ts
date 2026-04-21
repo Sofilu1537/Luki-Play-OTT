@@ -41,12 +41,18 @@ import { FirstAccessAppUseCase } from '../../application/use-cases/first-access-
 import { ActivateAppUseCase2 } from '../../application/use-cases/activate-app.use-case.js';
 import { SwitchContractUseCase } from '../../application/use-cases/switch-contract.use-case.js';
 import { ContractResetPasswordUseCase } from '../../application/use-cases/contract-reset-password.use-case.js';
+import { RequestActivationCodeUseCase } from '../../application/use-cases/request-activation-code.use-case.js';
+import { VerifyActivationCodeUseCase } from '../../application/use-cases/verify-activation-code.use-case.js';
+import { SubmitRegistrationRequestUseCase } from '../../application/use-cases/submit-registration-request.use-case.js';
 import { RegisterAppDto } from '../../application/dto/register-app.dto';
 import { ContractLoginDto } from '../../application/dto/contract-login.dto.js';
 import { FirstAccessAppDto } from '../../application/dto/first-access-app.dto.js';
 import { ActivateAppDto } from '../../application/dto/activate-app.dto.js';
 import { SwitchContractDto } from '../../application/dto/switch-contract.dto.js';
 import { ContractResetPasswordDto } from '../../application/dto/contract-reset-password.dto.js';
+import { RequestActivationCodeDto } from '../../application/dto/request-activation-code.dto.js';
+import { VerifyActivationCodeDto } from '../../application/dto/verify-activation-code.dto.js';
+import { SubmitRegistrationRequestDto } from '../../application/dto/submit-registration-request.dto.js';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -121,6 +127,9 @@ export class AuthController {
     private readonly activateAppUseCase: ActivateAppUseCase2,
     private readonly switchContractUseCase: SwitchContractUseCase,
     private readonly contractResetPasswordUseCase: ContractResetPasswordUseCase,
+    private readonly requestActivationCodeUseCase: RequestActivationCodeUseCase,
+    private readonly verifyActivationCodeUseCase: VerifyActivationCodeUseCase,
+    private readonly submitRegistrationRequestUseCase: SubmitRegistrationRequestUseCase,
   ) {}
 
   @Post('app/register')
@@ -354,5 +363,26 @@ export class AuthController {
   @ApiOperation({ summary: 'Reset password via contrato + cédula' })
   async contractResetPassword(@Body() dto: ContractResetPasswordDto) {
     return this.contractResetPasswordUseCase.execute(dto);
+  }
+
+  @Post('app/request-activation-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Solicitar código de activación (con o sin email)' })
+  async requestActivationCode(@Body() dto: RequestActivationCodeDto) {
+    return this.requestActivationCodeUseCase.execute(dto);
+  }
+
+  @Post('app/verify-activation-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verificar código de activación antes de crear contraseña' })
+  async verifyActivationCode(@Body() dto: VerifyActivationCodeDto) {
+    return this.verifyActivationCodeUseCase.execute(dto);
+  }
+
+  @Post('app/registration-request')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Solicitar registro para cliente no-ISP (Flujo 3)' })
+  async submitRegistrationRequest(@Body() dto: SubmitRegistrationRequestDto) {
+    return this.submitRegistrationRequestUseCase.execute(dto);
   }
 }

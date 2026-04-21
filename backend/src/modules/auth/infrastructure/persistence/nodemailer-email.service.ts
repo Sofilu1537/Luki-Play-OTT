@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import { EmailService } from '../../domain/interfaces/email.service';
+import { EmailService, RegistrationRequestData } from '../../domain/interfaces/email.service';
 
 @Injectable()
 export class NodemailerEmailService implements EmailService {
@@ -205,6 +205,48 @@ export class NodemailerEmailService implements EmailService {
       </div>
     `;
     await this.send(to, 'Código de activación — luki net', this.buildLukiEmail(greetingName, content, true));
+  }
+
+  async sendRegistrationRequest(data: RegistrationRequestData): Promise<void> {
+    const INTERNAL = 'noreply@luki.ec';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #333; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #4f0fc4 0%, #240046 100%); padding: 28px 30px;">
+          <span style="font-weight: 900; font-size: 32px; color: #fff;">luki</span>
+          <span style="font-weight: bold; font-size: 22px; background: #ffb800; color: #240046; padding: 3px 10px; border-radius: 6px; margin-left: 4px;">play</span>
+          <p style="color: #e0d0ff; margin: 12px 0 0; font-size: 18px; font-weight: 600;">Nueva solicitud de alta</p>
+        </div>
+        <div style="padding: 30px; background: #fff;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+            <tr style="border-bottom: 1px solid #f0f0f0;">
+              <td style="padding: 10px 8px; color: #666; width: 140px;">Nombres</td>
+              <td style="padding: 10px 8px; font-weight: 600;">${data.nombres} ${data.apellidos}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f0f0f0;">
+              <td style="padding: 10px 8px; color: #666;">Cédula</td>
+              <td style="padding: 10px 8px; font-weight: 600;">${data.idNumber}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f0f0f0;">
+              <td style="padding: 10px 8px; color: #666;">Teléfono</td>
+              <td style="padding: 10px 8px;">${data.telefono}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f0f0f0;">
+              <td style="padding: 10px 8px; color: #666;">Correo</td>
+              <td style="padding: 10px 8px;">${data.email ?? '—'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 8px; color: #666;">Dirección</td>
+              <td style="padding: 10px 8px;">${data.direccion ?? '—'}</td>
+            </tr>
+          </table>
+          <p style="margin-top: 24px; font-size: 13px; color: #888;">ID solicitud: <code>${data.requestId}</code></p>
+        </div>
+        <div style="background: #1a0033; padding: 16px 20px; text-align: center; color: #a3a3a3; font-size: 12px;">
+          © ${new Date().getFullYear()} Luki Play — Gestión interna
+        </div>
+      </div>
+    `;
+    await this.send(INTERNAL, `Nueva solicitud de alta — ${data.nombres} ${data.apellidos}`, html);
   }
 
   private async send(to: string, subject: string, html: string): Promise<void> {

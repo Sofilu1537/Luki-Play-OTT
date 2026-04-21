@@ -28,6 +28,12 @@ enum SessionLimitPolicy {
   REPLACE_OLDEST
 }
 
+enum RegistrationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ChannelStatus {
   ACTIVE
   SCHEDULED
@@ -76,8 +82,9 @@ model Customer {
   updatedAt          DateTime   @updatedAt
   deletedAt          DateTime?
 
-  contracts Contract[]
-  sessions  Session[]
+  contracts       Contract[]
+  sessions        Session[]
+  activationCodes ActivationCode[]
 
   @@map("customers")
 }
@@ -191,6 +198,43 @@ model Plan {
   updatedAt           DateTime @updatedAt
 
   @@map("plans")
+}
+
+model ActivationCode {
+  id          String    @id @default(uuid())
+  customerId  String
+  code        String    // "A1B2C3" — alfanumérico 6 chars, en texto plano (corta vida)
+  generatedBy String?   // NULL = autoservicio, userId = generado por soporte CMS
+  sentToEmail String?   // Email al que se envió el código (NULL si fue por soporte)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([code])
+  @@index([customerId])
+  @@map("activation_codes")
+}
+
+model RegistrationRequest {
+  id          String                    @id @default(uuid())
+  nombres     String
+  apellidos   String
+  idNumber    String
+  telefono    String
+  email       String?
+  direccion   String?
+  status      RegistrationRequestStatus @default(PENDING)
+  reviewedBy  String?   // ID del usuario CMS que aprobó/rechazó
+  reviewedAt  DateTime?
+  reviewNotes String?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  @@index([status])
+  @@index([idNumber])
+  @@map("registration_requests")
 }
 
 model SyncLog {

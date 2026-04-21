@@ -63,6 +63,9 @@ import { FirstAccessAppUseCase } from './application/use-cases/first-access-app.
 import { ActivateAppUseCase2 } from './application/use-cases/activate-app.use-case.js';
 import { SwitchContractUseCase } from './application/use-cases/switch-contract.use-case.js';
 import { ContractResetPasswordUseCase } from './application/use-cases/contract-reset-password.use-case.js';
+import { RequestActivationCodeUseCase } from './application/use-cases/request-activation-code.use-case.js';
+import { VerifyActivationCodeUseCase } from './application/use-cases/verify-activation-code.use-case.js';
+import { SubmitRegistrationRequestUseCase } from './application/use-cases/submit-registration-request.use-case.js';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -145,6 +148,9 @@ import { CrmModule } from '../crm/crm.module';
     ActivateAppUseCase2,
     SwitchContractUseCase,
     ContractResetPasswordUseCase,
+    RequestActivationCodeUseCase,
+    VerifyActivationCodeUseCase,
+    SubmitRegistrationRequestUseCase,
   ],
   exports: [
     TOKEN_SERVICE,
