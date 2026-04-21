@@ -1,4 +1,4 @@
-import { Injectable, Inject, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, ConflictException, NotFoundException, Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -165,6 +165,8 @@ export interface AdminCategoryRecord {
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
@@ -481,7 +483,11 @@ export class AdminService {
 
     const targetEmail = emailStr || customer.email || customer.ispEmail;
     if (targetEmail) {
-      await this.emailService.sendRecoveryCode(targetEmail, code, displayName);
+      try {
+        await this.emailService.sendRecoveryCode(targetEmail, code, displayName);
+      } catch {
+        this.logger.warn(`Email delivery failed for ${targetEmail} — code still valid`);
+      }
     }
     return { message: `Código enviado a ${targetEmail || 'correo no registrado'}`, code };
   }

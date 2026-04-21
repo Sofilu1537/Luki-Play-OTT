@@ -1423,111 +1423,27 @@ export default function CmsUsers() {
 
   const exportExcel = () => {
     if (Platform.OS !== 'web') return;
-    import('exceljs').then(async (ExcelJS) => {
-      const today     = new Date();
-      const dateStr   = today.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const period    = today.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
-      const periodCap = period.charAt(0).toUpperCase() + period.slice(1);
+    import('xlsx').then((XLSX) => {
+      const today       = new Date();
+      const dateStr     = today.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const period      = today.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+      const periodCap   = period.charAt(0).toUpperCase() + period.slice(1);
       const tipoLabel   = tipoFilter === 'abonado' ? 'Abonados' : tipoFilter === 'cliente' ? 'Clientes' : 'Abonados y Clientes';
       const estadoLabel = statusFilter === 'all' ? 'Todos' : statusFilter === 'active' ? 'Activos' : statusFilter === 'suspended' ? 'Suspendidos' : 'Inactivos';
-
-      // Usa exactamente los mismos filtros activos en pantalla
       const exportUsers = filteredUsers;
 
-      // Colores de marca Luki Play (ARGB) — solo encabezado
-      const VIOLET  = 'FF240046';
-      const PURPLE  = 'FF60269E';
-      const YELLOW  = 'FFFFB800';
-      const CREAM   = 'FFFAF6E7';
-      const DARK    = 'FF1A1A2E';
-      const PURPLE2 = 'FF2A0055';
-
-      const COLS = 11;
-      const lastCol = 'K';
-
-      const wb = new ExcelJS.Workbook();
-      wb.creator = 'Luki Play CMS';
-      wb.created = today;
-
-      const ws = wb.addWorksheet('Facturación', { views: [{ showGridLines: false }] });
-      ws.columns = [
-        { width: 5  }, { width: 16 }, { width: 28 }, { width: 14 },
-        { width: 32 }, { width: 16 }, { width: 12 }, { width: 12 },
-        { width: 18 }, { width: 10 }, { width: 18 },
-      ];
-
-      const fill = (argb: string) => ({ type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb } });
-
-      // ── Fila 1: Título principal ──────────────────────────────────────
-      ws.addRow(['LUKI PLAY — Reporte de Usuarios para Facturación Mensual']);
-      ws.mergeCells(`A1:${lastCol}1`);
-      ws.getRow(1).height = 34;
-      const c1 = ws.getCell('A1');
-      c1.value = 'LUKI PLAY — Reporte de Usuarios para Facturación Mensual';
-      c1.fill  = fill(VIOLET);
-      c1.font  = { bold: true, size: 14, color: { argb: YELLOW }, name: 'Arial' };
-      c1.alignment = { horizontal: 'center', vertical: 'middle' };
-
-      // ── Fila 2: Subtítulo ─────────────────────────────────────────────
-      ws.addRow(['Luki Internet S.A.']);
-      ws.mergeCells(`A2:${lastCol}2`);
-      ws.getRow(2).height = 20;
-      const c2 = ws.getCell('A2');
-      c2.value = 'Luki Internet S.A.';
-      c2.fill  = fill(PURPLE);
-      c2.font  = { size: 10, color: { argb: CREAM }, name: 'Arial' };
-      c2.alignment = { horizontal: 'center', vertical: 'middle' };
-
-      // ── Separador ─────────────────────────────────────────────────────
-      const sep1 = ws.addRow([]);
-      sep1.height = 6;
-      for (let c = 1; c <= COLS; c++) sep1.getCell(c).fill = fill('FF1A0035');
-
-      // ── Filas de info ─────────────────────────────────────────────────
-      const infoRows: [string, string][] = [
-        ['Período',          periodCap],
-        ['Estado',           estadoLabel],
-        ['Tipo de reporte',  tipoLabel],
-        ['Total registros',  `${exportUsers.length} usuarios`],
-        ['Generado',         dateStr],
-      ];
-      infoRows.forEach(([label, value], i) => {
-        const r = ws.addRow([label, value]);
-        r.height = 19;
-        const lc = r.getCell(1);
-        lc.fill  = fill(PURPLE2);
-        lc.font  = { bold: true, size: 10, color: { argb: YELLOW } };
-        lc.alignment = { horizontal: 'right', vertical: 'middle' };
-        lc.border = { right: { style: 'thin', color: { argb: PURPLE } } };
-        const vc = r.getCell(2);
-        vc.fill  = fill(PURPLE2);
-        vc.font  = { size: 10, color: { argb: CREAM } };
-        vc.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-        for (let c = 3; c <= COLS; c++) r.getCell(c).fill = fill(PURPLE2);
-        if (i === infoRows.length - 1) {
-          for (let c = 1; c <= COLS; c++)
-            r.getCell(c).border = { ...r.getCell(c).border, bottom: { style: 'thin', color: { argb: PURPLE } } };
-        }
-      });
-
-      // ── Separador ─────────────────────────────────────────────────────
-      const sep2 = ws.addRow([]);
-      sep2.height = 6;
-      for (let c = 1; c <= COLS; c++) sep2.getCell(c).fill = fill('FF1A0035');
-
-      // ── Encabezados de columna ────────────────────────────────────────
-      const hr = ws.addRow(['N°', 'Contrato', 'Nombre', 'Cédula', 'Email', 'Teléfono', 'Tipo', 'Estado', 'Plan', 'Sesiones', 'Fecha registro']);
-      hr.height = 22;
-      hr.eachCell((cell) => {
-        cell.fill      = fill(YELLOW);
-        cell.font      = { bold: true, size: 10, color: { argb: DARK } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border    = { bottom: { style: 'medium', color: { argb: 'FFCC9200' } } };
-      });
-
-      // ── Filas de datos ────────────────────────────────────────────────
-      exportUsers.forEach((user, i) => {
-        const dr = ws.addRow([
+      const rows: (string | number)[][] = [
+        ['LUKI PLAY — Reporte de Usuarios para Facturación Mensual'],
+        ['Luki Internet S.A.'],
+        [],
+        ['Período',         periodCap],
+        ['Estado',          estadoLabel],
+        ['Tipo de reporte', tipoLabel],
+        ['Total registros', `${exportUsers.length} usuarios`],
+        ['Generado',        dateStr],
+        [],
+        ['N°', 'Contrato', 'Nombre', 'Cédula', 'Email', 'Teléfono', 'Tipo', 'Estado', 'Plan', 'Sesiones', 'Fecha registro'],
+        ...exportUsers.map((user, i) => [
           i + 1,
           user.contrato ?? '—',
           user.nombre,
@@ -1539,33 +1455,22 @@ export default function CmsUsers() {
           user.plan ?? '—',
           `${user.sesiones}/${user.maxDevices}`,
           fmtDate(user.createdAt),
-        ]);
-        dr.height = 17;
-        dr.getCell(1).alignment  = { horizontal: 'center', vertical: 'middle' };
-        dr.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
-      });
+        ]),
+        [],
+        [`Luki Play CMS · ${dateStr} · Documento confidencial de uso interno`],
+      ];
 
-      // ── Footer ────────────────────────────────────────────────────────
-      const fr = ws.addRow([`Luki Play CMS · ${dateStr} · Documento confidencial de uso interno`]);
-      ws.mergeCells(`A${fr.number}:${lastCol}${fr.number}`);
-      fr.height = 16;
-      const fc = fr.getCell(1);
-      fc.fill      = fill(VIOLET);
-      fc.font      = { italic: true, size: 9, color: { argb: 'FF7B3BBB' } };
-      fc.alignment = { horizontal: 'center', vertical: 'middle' };
+      const ws   = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [
+        { wch: 5 }, { wch: 16 }, { wch: 28 }, { wch: 14 },
+        { wch: 32 }, { wch: 16 }, { wch: 12 }, { wch: 12 },
+        { wch: 18 }, { wch: 10 }, { wch: 18 },
+      ];
+      const wb   = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Facturación');
 
-      // ── Descarga ──────────────────────────────────────────────────────
-      const buffer   = await wb.xlsx.writeBuffer();
-      const blob     = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url      = URL.createObjectURL(blob);
-      const a        = document.createElement('a');
       const filename = `luki-play-facturacion-${tipoFilter !== 'all' ? tipoFilter + '-' : ''}${today.toISOString().slice(0, 7)}.xlsx`;
-      a.href         = url;
-      a.download     = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      XLSX.writeFile(wb, filename);
     });
   };
 
@@ -1960,7 +1865,7 @@ export default function CmsUsers() {
       />
 
       {confirmState ? <ConfirmModal state={confirmState} onClose={closeConfirm} /> : null}
-      {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken ?? ''} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={updateUserInList} /> : null}
+      {recoveryUser ? <RecoveryModal user={recoveryUser} accessToken={accessToken ?? ''} onClose={() => setRecoveryUser(null)} onFeedback={(fb) => { setFeedback(fb); }} onUserUpdated={(u) => { updateUserInList(u); setRecoveryUser(u); }} /> : null}
     </CmsShell>
   );
 }
