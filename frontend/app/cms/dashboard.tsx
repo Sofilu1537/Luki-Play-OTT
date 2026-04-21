@@ -142,7 +142,7 @@ function DashboardContent({ roleLabel, email }: { roleLabel: string; email: stri
             fontSize:     14,
             lineHeight:   22,
             marginBottom: 12,
-            fontFamily:  'Manrope',
+            fontFamily:  'Montserrat',
           }}
         >
           Sprint 1 activo · Auth, roles y CMS base completados. Infraestructura AWS en configuración.
@@ -152,7 +152,7 @@ function DashboardContent({ roleLabel, email }: { roleLabel: string; email: stri
             color:      'rgba(250,246,231,0.40)',
             fontSize:    12,
             fontWeight: '500',
-            fontFamily: 'Manrope',
+            fontFamily: 'Montserrat',
           }}
         >
           {email} · {roleLabel}

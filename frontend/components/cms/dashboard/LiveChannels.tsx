@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import StatusBadge from '../ui/StatusBadge';
-import { useTheme } from '../../../hooks/useTheme';
 import { FONT_FAMILY } from '../../../styles/typography';
+import { C } from '../CmsShell';
 
 interface Channel {
   id: string;
@@ -21,16 +21,15 @@ const MOCK_CHANNELS: Channel[] = [
 ];
 
 export default function LiveChannels() {
-  const { theme } = useTheme();
   const liveCount = MOCK_CHANNELS.filter((c) => c.status === 'live').length;
 
   return (
     <View
       style={{
-        backgroundColor: theme.cardBg,
-        borderRadius: 16,
+        backgroundColor: C.surface,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: C.border,
         overflow: 'hidden',
       }}
     >
@@ -40,15 +39,15 @@ export default function LiveChannels() {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingHorizontal: 20,
-          paddingVertical: 16,
+          paddingHorizontal: 18,
+          paddingVertical: 14,
           borderBottomWidth: 1,
-          borderBottomColor: theme.border,
+          borderBottomColor: C.border,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <FontAwesome name="tv" size={13} color={theme.textMuted} />
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+          <FontAwesome name="tv" size={13} color={C.muted} />
+          <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Canales en vivo
           </Text>
         </View>
@@ -61,7 +60,7 @@ export default function LiveChannels() {
           const dotColor =
             channel.status === 'live' ? '#17D1C6'
             : channel.status === 'scheduled' ? '#FFB800'
-            : 'rgba(255,255,255,0.18)';
+            : C.border;
 
           return (
             <View
@@ -70,9 +69,9 @@ export default function LiveChannels() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 paddingHorizontal: 8,
-                paddingVertical: 13,
+                paddingVertical: 12,
                 borderBottomWidth: index < MOCK_CHANNELS.length - 1 ? 1 : 0,
-                borderBottomColor: theme.border,
+                borderBottomColor: C.border,
               }}
             >
               {/* Status dot */}
@@ -84,8 +83,8 @@ export default function LiveChannels() {
                   backgroundColor: dotColor,
                   marginRight: 12,
                   shadowColor: channel.status === 'live' ? dotColor : 'transparent',
-                  shadowOpacity: 0.9,
-                  shadowRadius: 5,
+                  shadowOpacity: 0.6,
+                  shadowRadius: 3,
                   shadowOffset: { width: 0, height: 0 },
                 }}
               />
@@ -93,13 +92,13 @@ export default function LiveChannels() {
               {/* Name + quality */}
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text
-                  style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
+                  style={{ color: C.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
                   numberOfLines={1}
                 >
                   {channel.name}
                 </Text>
                 <Text
-                  style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', marginTop: 2, fontFamily: FONT_FAMILY.bodySemiBold }}
+                  style={{ color: C.muted, fontSize: 10, fontWeight: '500', marginTop: 2, fontFamily: FONT_FAMILY.bodySemiBold }}
                 >
                   {channel.quality}
                 </Text>
@@ -110,8 +109,8 @@ export default function LiveChannels() {
                 <View
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 10 }}
                 >
-                  <FontAwesome name="eye" size={9} color={theme.textMuted} />
-                  <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                  <FontAwesome name="eye" size={9} color={C.muted} />
+                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '500', fontFamily: FONT_FAMILY.bodySemiBold }}>
                     {channel.viewers.toLocaleString()}
                   </Text>
                 </View>
@@ -125,9 +124,9 @@ export default function LiveChannels() {
                   : 'inactive'
                 }
                 label={
-                  channel.status === 'live' ? 'En vivo'
-                  : channel.status === 'scheduled' ? 'Prog.'
-                  : 'Offline'
+                  channel.status === 'live' ? 'EN VIVO'
+                  : channel.status === 'scheduled' ? 'PROG.'
+                  : 'OFFLINE'
                 }
               />
             </View>

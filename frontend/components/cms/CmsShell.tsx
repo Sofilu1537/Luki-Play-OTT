@@ -22,37 +22,67 @@ import { FONT_FAMILY } from '../../styles/typography';
 // Backward-compatible C export — pages still importing C get dark theme values
 // ---------------------------------------------------------------------------
 export const C = {
-  bg:          '#090909',
-  panel:       'rgba(18,18,18,0.92)',
-  sidebar:     'rgba(17,17,17,0.97)',
-  surface:     'rgba(24,24,24,0.86)',
-  surfaceAlt:  'rgba(30,30,30,0.90)',
+  // Dark backgrounds (from .jsx COLORS.dark)
+  bg:          '#0A0A12',
+  bgSecondary: '#111122',
+  bgTertiary:  '#1A1A2E',
+
+  // Surfaces & panels (with violet tint)
+  panel:       'rgba(20,20,36,0.92)',
+  sidebar:     'rgba(17,17,30,0.96)',
+  surface:     'rgba(26,26,46,0.85)',
+  surfaceAlt:  'rgba(30,30,50,0.90)',
   surfaceSoft: 'transparent',
-  lift:        'rgba(34,34,34,0.96)',
-  tableHead:   'rgba(34,34,34,0.96)',
-  border:      'rgba(255,255,255,0.08)',
-  borderMid:   'rgba(255,184,0,0.28)',
+  lift:        'rgba(34,34,54,0.96)',
+  tableHead:   'rgba(34,34,54,0.96)',
+
+  // Borders (purple/violet tint)
+  border:      'rgba(96,38,158,0.20)',
+  borderMid:   'rgba(96,38,158,0.45)',
+  borderHover: 'rgba(96,38,158,0.45)',
+
+  // Accent (yellow - primary action)
   accent:      '#FFB800',
   accentLight: '#FFDA6B',
   accentSoft:  'rgba(255,184,0,0.12)',
   accentBorder:'rgba(255,184,0,0.30)',
-  accentGlow:  'rgba(255,184,0,0.22)',
+  accentGlow:  'rgba(255,184,0,0.04)',
   accentFaint: 'rgba(255,184,0,0.10)',
+
+  // Purple & Violet palette
+  purple:      '#60269E',
+  purpleDeep:  '#240046',
+  purpleLight: '#7303C0',
+  violet:      '#B07CC6',
+
+  // Status colors
   cyan:        '#17D1C6',
-  cyanSoft:    'rgba(23,209,198,0.14)',
+  cyanSoft:    'rgba(23,209,198,0.12)',
   green:       '#17D1C6',
   greenSoft:   'rgba(23,209,198,0.14)',
   amber:       '#FFB800',
+  amberSoft:   'rgba(255,121,0,0.12)',
   rose:        '#D1105A',
   roseSoft:    'rgba(209,16,90,0.14)',
   success:     '#17D1C6',
   danger:      '#D1105A',
-  muted:       'rgba(250,246,231,0.38)',
+  warning:     '#FF7900',
+  info:        '#1E96FC',
+
+  // Text
   text:        '#FAF6E7',
   textSec:     'rgba(250,246,231,0.65)',
   textDim:     'rgba(250,246,231,0.50)',
+  muted:       'rgba(250,246,231,0.40)',
+
+  // Sidebar active states
+  sidebarActive: 'linear-gradient(135deg, rgba(255,184,0,0.14), rgba(255,184,0,0.03))',
+  sidebarHover: 'rgba(255,184,0,0.06)',
+
+  // Special
   void:        '#060606',
   dimmed:      '#030303',
+  cardGlow:    'rgba(255,184,0,0.04)',
 };
 
 // ---------------------------------------------------------------------------

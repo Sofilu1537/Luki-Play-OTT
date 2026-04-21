@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import StatusBadge from '../ui/StatusBadge';
-import { useTheme } from '../../../hooks/useTheme';
 import { FONT_FAMILY } from '../../../styles/typography';
+import { C } from '../CmsShell';
 
 interface ContentItem {
   id: string;
@@ -22,15 +22,13 @@ const MOCK_CONTENT: ContentItem[] = [
 ];
 
 export default function RecentContent() {
-  const { theme } = useTheme();
-
   return (
     <View
       style={{
-        backgroundColor: theme.cardBg,
-        borderRadius: 16,
+        backgroundColor: C.surface,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: C.border,
         overflow: 'hidden',
       }}
     >
@@ -40,20 +38,20 @@ export default function RecentContent() {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingHorizontal: 20,
-          paddingVertical: 16,
+          paddingHorizontal: 18,
+          paddingVertical: 14,
           borderBottomWidth: 1,
-          borderBottomColor: theme.border,
+          borderBottomColor: C.border,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <FontAwesome name="play-circle" size={13} color={theme.textMuted} />
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+          <FontAwesome name="play-circle" size={13} color={C.muted} />
+          <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Contenido reciente
           </Text>
         </View>
         <TouchableOpacity activeOpacity={0.7}>
-          <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+          <Text style={{ color: C.accent, fontSize: 11, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Ver todo
           </Text>
         </TouchableOpacity>
@@ -68,15 +66,15 @@ export default function RecentContent() {
               paddingHorizontal: 8,
               paddingVertical: 11,
               borderBottomWidth: index < MOCK_CONTENT.length - 1 ? 1 : 0,
-              borderBottomColor: theme.border,
+              borderBottomColor: C.border,
             }}
           >
             <Text
               style={{
-                color: theme.text,
-                fontSize: 13,
+                color: C.text,
+                fontSize: 12,
                 fontWeight: '600',
-                marginBottom: 5,
+                marginBottom: 6,
                 fontFamily: FONT_FAMILY.bodySemiBold,
               }}
               numberOfLines={1}
@@ -90,13 +88,13 @@ export default function RecentContent() {
                   label={item.type.toUpperCase()}
                 />
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                  <FontAwesome name="eye" size={9} color={theme.textMuted} />
-                  <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                  <FontAwesome name="eye" size={9} color={C.muted} />
+                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '500', fontFamily: FONT_FAMILY.bodySemiBold }}>
                     {item.views.toLocaleString()}
                   </Text>
                 </View>
               </View>
-              <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '500', fontFamily: FONT_FAMILY.bodySemiBold }}>
                 {item.addedAt}
               </Text>
             </View>

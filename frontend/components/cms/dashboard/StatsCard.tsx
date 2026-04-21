@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MiniChart from '../ui/MiniChart';
-import { useTheme } from '../../../hooks/useTheme';
 import { FONT_FAMILY } from '../../../styles/typography';
+import { C } from '../CmsShell';
 
 interface StatsCardProps {
   label: string;
@@ -24,7 +24,6 @@ export default function StatsCard({
   color,
   data,
 }: StatsCardProps) {
-  const { theme } = useTheme();
   const trendColor = trendPositive ? '#17D1C6' : '#D1105A';
 
   return (
@@ -32,12 +31,12 @@ export default function StatsCard({
       style={{
         flex: 1,
         minWidth: 200,
-        backgroundColor: theme.cardBg,
-        borderRadius: 16,
-        padding: 20,
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        padding: 16,
         margin: 6,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: C.border,
       }}
     >
       {/* Top row */}
@@ -46,15 +45,15 @@ export default function StatsCard({
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: 16,
+          marginBottom: 12,
         }}
       >
         <Text
           style={{
-            color: theme.textMuted,
-            fontSize: 10,
+            color: C.muted,
+            fontSize: 9,
             fontWeight: '700',
-            letterSpacing: 1.2,
+            letterSpacing: 0.8,
             textTransform: 'uppercase',
             flex: 1,
             marginRight: 8,
@@ -65,26 +64,26 @@ export default function StatsCard({
         </Text>
         <View
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: `${color}22`,
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            backgroundColor: `${color}18`,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <FontAwesome name={icon} size={15} color={color} />
+          <FontAwesome name={icon} size={14} color={color} />
         </View>
       </View>
 
       {/* Value */}
       <Text
         style={{
-          color: theme.text,
-          fontSize: 26,
-          fontWeight: '700',
+          color: C.text,
+          fontSize: 24,
+          fontWeight: '800',
           marginBottom: 10,
-          letterSpacing: -0.5,
+          letterSpacing: -0.3,
           fontFamily: FONT_FAMILY.bodyBold,
         }}
       >
@@ -97,19 +96,21 @@ export default function StatsCard({
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
+          gap: 8,
         }}
       >
         <Text
           style={{
             color: trendColor,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: '700',
             fontFamily: FONT_FAMILY.bodySemiBold,
+            flex: 1,
           }}
         >
           {trend}
         </Text>
-        <MiniChart data={data} color={color} height={28} width={68} />
+        <MiniChart data={data} color={color} height={24} width={60} />
       </View>
     </View>
   );

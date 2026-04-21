@@ -88,9 +88,9 @@ function initials(name: string) {
     .slice(0, 2);
 }
 
-// Avatar uses consistent brand gradient (Selective Yellow)
-const AVATAR_BG = 'rgba(255,184,0,0.22)';
-const AVATAR_TEXT = '#FFB800';
+// Avatar uses C tokens from design system
+const AVATAR_BG = C.accentSoft;
+const AVATAR_TEXT = C.accent;
 
 function hasPermission(permissions: string[] | undefined, permission: string) {
   if (!permissions) return false;
@@ -115,10 +115,10 @@ function getRoleMeta(role: AdminUser['role']) {
 }
 
 function getStatusMeta(status: AdminUser['status']) {
-  if (status === 'active')    return { label: 'Activo',     color: '#17D1C6', bg: 'rgba(23,209,198,0.12)'  };
-  if (status === 'suspended') return { label: 'Suspendido', color: '#D1105A', bg: 'rgba(209,16,90,0.12)'   };
-  if (status === 'pending')   return { label: 'Pendiente',  color: '#FF7900', bg: 'rgba(255,121,0,0.12)'   };
-  return                             { label: 'Inactivo',   color: '#FF7900', bg: 'rgba(255,121,0,0.12)'   };
+  if (status === 'active')    return { label: 'Activo',     color: C.cyan,    bg: C.cyanSoft       };
+  if (status === 'suspended') return { label: 'Suspendido', color: C.rose,    bg: C.roseSoft       };
+  if (status === 'pending')   return { label: 'Pendiente',  color: C.amber,   bg: C.amberSoft      };
+  return                             { label: 'Inactivo',   color: C.amber,   bg: C.amberSoft      };
 }
 
 function getDeviceCount(sessions: AdminUserSession[]) {
@@ -327,7 +327,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>DATOS PERSONALES</Text>
               {!editing ? (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => setEditing(true)}>
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.cyanSoft, borderWidth: 1, borderColor: `${C.cyan}40` }} onPress={() => setEditing(true)}>
                   <FontAwesome name="pencil" size={10} color={C.cyan} />
                   <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>Editar</Text>
                 </TouchableOpacity>
@@ -376,14 +376,14 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
           </View>
 
           {generatedCode ? (
-            <View style={{ backgroundColor: 'rgba(180,144,255,0.08)', borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(180,144,255,0.25)' }}>
+            <View style={{ backgroundColor: C.cyanSoft, borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: `${C.cyan}40` }}>
               <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 6 }}>CÓDIGO DE RECUPERACIÓN</Text>
-              <Text style={{ color: C.accentLight, fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{generatedCode}</Text>
+              <Text style={{ color: C.cyan, fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{generatedCode}</Text>
               <Text style={{ color: C.textDim, fontSize: 11, marginTop: 6, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
             </View>
           ) : codeSent ? (
-            <View style={{ backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }}>
-              <Text style={{ color: '#22c55e', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
+            <View style={{ backgroundColor: C.greenSoft, borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: `${C.green}40` }}>
+              <Text style={{ color: C.green, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
             </View>
           ) : null}
 
@@ -726,7 +726,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                       ) : null}
                     </>
                   ) : (
-                    <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)', padding: 12, marginBottom: 12 }}>
+                    <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, borderWidth: 1, borderColor: `${C.rose}40`, padding: 12, marginBottom: 12 }}>
                       <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
                     </View>
                   )}
@@ -926,7 +926,7 @@ function UserDetailModal({
             ) : user ? (
               <>
                 {feedback ? (
-                  <View style={{ borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(16,185,129,0.24)' : 'rgba(244,63,94,0.24)' }}>
+                  <View style={{ borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
                     <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 13, fontWeight: '700' }}>{feedback.message}</Text>
                   </View>
                 ) : null}
@@ -934,7 +934,7 @@ function UserDetailModal({
                 <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
                   <View style={{ flex: 1, minWidth: 260, backgroundColor: C.lift, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16 }}>
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                      <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+                      <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: `${C.accent}40` }}>
                         <Text style={{ color: AVATAR_TEXT, fontSize: 13, fontWeight: '800' }}>{initials(user.nombre)}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
@@ -967,13 +967,13 @@ function UserDetailModal({
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       {canWrite ? (
                         <>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.greenSoft, borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)' }} onPress={() => askStatusChange('active')}>
+                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.greenSoft, borderWidth: 1, borderColor: `${C.green}40` }} onPress={() => askStatusChange('active')}>
                             <Text style={{ color: C.green, fontSize: 12, fontWeight: '700' }}>Activar</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }} onPress={() => askStatusChange('suspended')}>
+                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }} onPress={() => askStatusChange('suspended')}>
                             <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Suspender</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: 'rgba(245,158,11,0.16)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.24)' }} onPress={() => askStatusChange('inactive')}>
+                          <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.amberSoft, borderWidth: 1, borderColor: `${C.amber}40` }} onPress={() => askStatusChange('inactive')}>
                             <Text style={{ color: C.amber, fontSize: 12, fontWeight: '700' }}>Desactivar</Text>
                           </TouchableOpacity>
                           <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: C.accent, borderWidth: 1, borderColor: C.accent }} onPress={askPasswordReset}>
@@ -1037,7 +1037,7 @@ function UserDetailModal({
                         <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Duración: {user.sessionDurationDays} días · Política: {user.sessionLimitPolicy === 'replace_oldest' ? 'Cerrar la más antigua' : 'Bloquear nuevo acceso'}</Text>
                       </View>
                       {canWrite ? (
-                        <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }} onPress={askRevokeAllSessions}>
+                        <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }} onPress={askRevokeAllSessions}>
                           <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Cerrar todas</Text>
                         </TouchableOpacity>
                       ) : null}
@@ -1053,7 +1053,7 @@ function UserDetailModal({
                             <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Canal: {session.audience} · Inicio: {fmtDate(session.createdAt)} · Expira: {fmtDate(session.expiresAt)}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: session.status === 'active' ? C.greenSoft : session.status === 'revoked' ? C.roseSoft : 'rgba(245,158,11,0.16)' }}>
+                            <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: session.status === 'active' ? C.greenSoft : session.status === 'revoked' ? C.roseSoft : C.amberSoft }}>
                               <Text style={{ color: session.status === 'active' ? C.green : session.status === 'revoked' ? C.rose : C.amber, fontSize: 11, fontWeight: '700' }}>{session.status}</Text>
                             </View>
                             {canWrite ? (
@@ -1332,21 +1332,21 @@ export default function CmsUsers() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            {/* Exportar — outline amarillo */}
+            {/* Exportar — outline C.accent */}
             <TouchableOpacity
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 8,
                 backgroundColor: 'transparent',
                 borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
-                borderWidth: 1, borderColor: 'rgba(255,184,0,0.40)',
+                borderWidth: 1, borderColor: `${C.accent}66`,
               }}
               onPress={exportCSV}
             >
-              <FontAwesome name="download" size={13} color="#FFB800" />
-              <Text style={{ color: '#FFB800', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
+              <FontAwesome name="download" size={13} color={C.accent} />
+              <Text style={{ color: C.accent, fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
             </TouchableOpacity>
             {canWrite ? (
-              /* Crear usuario — CTA gradiente amarillo/naranja */
+              /* Crear usuario — accent color */
               <TouchableOpacity
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -1357,42 +1357,42 @@ export default function CmsUsers() {
               >
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
                   {/* Gradient via border-color trick since LinearGradient needs separate import */}
-                  <View style={{ flex: 1, backgroundColor: '#FFB800' }} />
+                  <View style={{ flex: 1, backgroundColor: C.accent }} />
                 </View>
-                <FontAwesome name="plus" size={13} color="#240046" />
-                <Text style={{ color: '#240046', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Crear usuario</Text>
+                <FontAwesome name="plus" size={13} color="#1A1A2E" />
+                <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Crear usuario</Text>
               </TouchableOpacity>
             ) : null}
           </View>
         </View>
 
         {feedback ? (
-          <View style={{ marginBottom: 16, borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(16,185,129,0.24)' : 'rgba(244,63,94,0.24)' }}>
+          <View style={{ marginBottom: 16, borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
             <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 13, fontWeight: '700' }}>{feedback.message}</Text>
           </View>
         ) : null}
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Total',       value: stats.total,       icon: 'users',                color: '#FFB800', bg: 'rgba(255,184,0,0.12)',   warn: false },
-            { label: 'Abonados',    value: stats.subscribers, icon: 'play-circle',          color: '#17D1C6', bg: 'rgba(23,209,198,0.12)',  warn: false },
-            { label: 'Suspendidos', value: stats.suspended,   icon: 'exclamation-triangle', color: '#D1105A', bg: 'rgba(209,16,90,0.12)',   warn: stats.suspended > stats.total * 0.3 },
+            { label: 'Total',       value: stats.total,       icon: 'users',                color: C.accent,  bg: C.accentSoft,   warn: false },
+            { label: 'Abonados',    value: stats.subscribers, icon: 'play-circle',          color: C.cyan,    bg: C.cyanSoft,    warn: false },
+            { label: 'Suspendidos', value: stats.suspended,   icon: 'exclamation-triangle', color: C.rose,    bg: C.roseSoft,    warn: stats.suspended > stats.total * 0.3 },
           ].map((card) => (
             <View key={card.label} style={{
               flex: 1, minWidth: 180,
-              backgroundColor: 'rgba(26,26,46,0.85)',
+              backgroundColor: C.surface,
               borderRadius: 14, padding: 16,
               borderWidth: 1,
-              borderColor: 'rgba(96,38,158,0.20)',
+              borderColor: C.border,
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={card.icon as never} size={16} color={card.color} />
                 </View>
                 {card.warn ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(209,16,90,0.12)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <FontAwesome name="warning" size={10} color="#D1105A" />
-                    <Text style={{ color: '#D1105A', fontSize: 10, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.roseSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <FontAwesome name="warning" size={10} color={C.rose} />
+                    <Text style={{ color: C.rose, fontSize: 10, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
                   </View>
                 ) : null}
               </View>
@@ -1405,12 +1405,12 @@ export default function CmsUsers() {
         <View style={{ backgroundColor: C.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: C.border, marginBottom: 16, zIndex: 50, elevation: 50 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {/* Search */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(96,38,158,0.20)', paddingHorizontal: 12, flex: 1, minWidth: 240 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, flex: 1, minWidth: 240 }}>
               <FontAwesome name="search" size={12} color={C.muted} />
               <TextInput
                 style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, fontFamily: 'Montserrat-SemiBold', ...webInput }}
                 placeholder="Buscar nombre, email, rol, plan..."
-                placeholderTextColor="rgba(250,246,231,0.35)"
+                placeholderTextColor={C.muted}
                 value={search}
                 onChangeText={setSearch}
               />
@@ -1443,13 +1443,13 @@ export default function CmsUsers() {
                     paddingHorizontal: 10,
                     paddingVertical:    6,
                     borderRadius:       6,
-                    backgroundColor:   pageSize === size ? '#FFB800' : 'transparent',
+                    backgroundColor:   pageSize === size ? C.accent : 'transparent',
                     borderWidth:        pageSize === size ? 0 : 1,
-                    borderColor:       'rgba(96,38,158,0.20)',
+                    borderColor:       C.border,
                   }}
                   onPress={() => setPageSize(size)}
                 >
-                  <Text style={{ color: pageSize === size ? '#240046' : 'rgba(250,246,231,0.55)', fontSize: 12, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
+                  <Text style={{ color: pageSize === size ? '#1A1A2E' : C.textDim, fontSize: 12, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1457,7 +1457,7 @@ export default function CmsUsers() {
             {/* Active filter count + clear */}
             {(statusFilter !== 'all' || search) ? (
               <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.24)' }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }}
                 onPress={() => { setSearch(''); setStatusFilter('all'); }}
               >
                 <FontAwesome name="times" size={10} color={C.rose} />
@@ -1481,7 +1481,7 @@ export default function CmsUsers() {
         ) : (
           <>
             {/* Table header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
               {[
                 { label: 'CONTRATO', flex: 1.2 },
                 { label: 'NOMBRE',   flex: 2   },
@@ -1494,7 +1494,7 @@ export default function CmsUsers() {
               ].map((col) => (
                 <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
                   <Text style={{
-                    color: 'rgba(250,246,231,0.40)',
+                    color: C.muted,
                     fontSize: 10, fontWeight: '800',
                     letterSpacing: 1.2,
                     textTransform: 'uppercase',
@@ -1518,7 +1518,7 @@ export default function CmsUsers() {
                   backgroundColor: C.surface,
                   borderRadius: 8, marginBottom: 3,
                   borderBottomWidth: 1,
-                  borderBottomColor: 'rgba(96,38,158,0.12)',
+                  borderBottomColor: C.border,
                 }}>
                   {/* CONTRATO */}
                   <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
@@ -1527,7 +1527,7 @@ export default function CmsUsers() {
 
                   {/* NOMBRE — avatar consistente + name */}
                   <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: `${C.accent}40` }}>
                       <Text style={{ color: AVATAR_TEXT, fontSize: 11, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{initials(user.nombre)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
@@ -1550,10 +1550,10 @@ export default function CmsUsers() {
                     </View>
                   </View>
 
-                  {/* PLAN — gradiente amarillo/naranja (marca Luki Play) */}
+                  {/* PLAN — accent color */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <View style={{ backgroundColor: '#FFB800', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: '#240046', fontSize: 10, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
+                    <View style={{ backgroundColor: C.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+                      <Text style={{ color: '#1A1A2E', fontSize: 10, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
                     </View>
                   </View>
 
@@ -1635,7 +1635,7 @@ export default function CmsUsers() {
           { icon: 'eye', label: 'Ver detalle', color: C.accentLight, action: () => { setDetailUserId(menuUser.id); setShowDetailModal(true); } },
           ...(canWrite ? [
             { icon: 'pencil', label: 'Editar', color: C.cyan, action: () => { setEditingUser(menuUser); setShowFormModal(true); } },
-            { icon: 'lock', label: 'Recuperar contraseña', color: '#fbbf24', action: () => setRecoveryUser(menuUser) },
+            { icon: 'lock', label: 'Recuperar contraseña', color: C.amber, action: () => setRecoveryUser(menuUser) },
             { icon: isActive ? 'ban' : 'check-circle', label: isActive ? 'Suspender' : 'Activar', color: isActive ? C.rose : C.cyan, action: () => handleDeactivate(menuUser) },
           ] : []),
         ];
