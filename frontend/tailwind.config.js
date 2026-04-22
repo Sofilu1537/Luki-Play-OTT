@@ -16,14 +16,14 @@ module.exports = {
     extend: {
       colors: {
         luki: {
-          purple: '#4A148C',
-          lightPurple: '#7c43bd',
-          accent: '#FFC107', // Yellow dots from logo
-          background: '#050B17', // Nebula Dark bg
-          dark: '#070E1D', // Deep background
-          surface: '#0C1829', // Cards surface
-          white: '#ffffff',
-          gray: '#94A3B8', // textSec
+          purple: '#240046', // Russian Violet
+          lightPurple: '#60269E', // Rebecca Purple 
+          accent: '#FFB800', // Selective Yellow
+          background: '#0D001A', // Deep background
+          dark: '#140026', // Dark background
+          surface: '#1A0033', // Cards surface
+          white: '#FAF6E7', // Cosmic Latte
+          gray: '#B07CC6', // African Violet
           gold: '#FFB800', // Selective Yellow
         }
       }

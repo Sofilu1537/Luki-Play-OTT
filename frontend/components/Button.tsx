@@ -28,9 +28,9 @@ export const Button = ({ onPress, title, isLoading }: ButtonProps) => (
         disabled={isLoading}
     >
         {isLoading ? (
-            <ActivityIndicator color="#4A148C" />
+            <ActivityIndicator color="#140026" />
         ) : (
-            <Text className="text-luki-purple font-bold text-lg uppercase tracking-wider">
+            <Text className="text-luki-dark font-bold text-lg uppercase tracking-wider">
                 {title}
             </Text>
         )}
