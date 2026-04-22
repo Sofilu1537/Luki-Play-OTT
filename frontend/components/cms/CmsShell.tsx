@@ -70,10 +70,10 @@ export const C = {
   info:        '#1E96FC',
 
   // Text
-  text:        '#FAF6E7',
-  textSec:     'rgba(250,246,231,0.65)',
-  textDim:     'rgba(250,246,231,0.50)',
-  muted:       'rgba(250,246,231,0.40)',
+  text:        '#FFFFFF',
+  textSec:     'rgba(255,255,255,0.88)',
+  textDim:     'rgba(255,255,255,0.75)',
+  muted:       'rgba(255,255,255,0.60)',
 
   // Sidebar active states
   sidebarActive: 'linear-gradient(135deg, rgba(255,184,0,0.14), rgba(255,184,0,0.03))',
@@ -384,17 +384,17 @@ function TopBar({
             width:           38,
             height:          38,
             borderRadius:    10,
-            backgroundColor: theme.surfaceBg,
+            backgroundColor: isDark ? 'rgba(255,184,0,0.25)' : 'rgba(96,38,158,0.25)',
             borderWidth:     1,
-            borderColor:     theme.border,
+            borderColor:     isDark ? 'rgba(255,184,0,0.60)' : 'rgba(96,38,158,0.60)',
             alignItems:      'center',
             justifyContent:  'center',
           }}
         >
           <FontAwesome
             name={isDark ? 'sun-o' : 'moon-o'}
-            size={15}
-            color={isDark ? theme.accent : theme.textMuted}
+            size={16}
+            color={theme.accent}
           />
         </TouchableOpacity>
 
@@ -427,11 +427,11 @@ function TopBar({
                 borderColor:     theme.accentBorder,
               }}
             >
-              <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '800' }}>
+              <Text style={{ color: isDark ? theme.accent : theme.text, fontSize: 11, fontWeight: '800' }}>
                 {initials}
               </Text>
             </View>
-            <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              <Text style={{ color: '#FAF6E7', fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
               {firstName}
             </Text>
             <FontAwesome
@@ -448,7 +448,7 @@ function TopBar({
                 top:             46,
                 right:           0,
                 minWidth:        160,
-                backgroundColor: theme.cardBg,
+                backgroundColor: isDark ? '#1E0A3C' : theme.cardBg,
                 borderRadius:    12,
                 borderWidth:     1,
                 borderColor:     theme.border,
@@ -456,7 +456,7 @@ function TopBar({
                 zIndex:    60,
                 elevation: 60,
                 shadowColor:   '#000',
-                shadowOpacity: 0.25,
+                shadowOpacity: 0.35,
                 shadowRadius:  16,
                 shadowOffset:  { width: 0, height: 8 },
               }}
@@ -784,58 +784,60 @@ function CmsShellInner({ breadcrumbs, pageIcon, children }: CmsShellProps) {
     <View
       style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bodyBg, overflow: 'hidden' }}
     >
-      {/* Purple gradient background (dark mode) */}
-      {isDark && (
-        <LinearGradient
-          colors={[
-            'rgba(36,0,70,0.4)',    // Dark purple top-left
-            'rgba(96,38,158,0.25)', // Purple mid
-            'rgba(115,3,192,0.12)', // Purple-blue bottom
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 0,
-          }}
-        />
-      )}
+      {/* Decorative background behind cards */}
+      <LinearGradient
+        colors={isDark
+          ? [
+              'rgba(36,0,70,0.4)',
+              'rgba(96,38,158,0.25)',
+              'rgba(115,3,192,0.12)',
+            ]
+          : [
+              'rgba(255,255,255,1)',
+              'rgba(255,255,255,0.98)',
+              'rgba(255,255,255,1)',
+            ]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 0,
+        }}
+      />
 
-      {/* Yellow radial orbs — dark mode only */}
-      {isDark && (
-        <>
-          <View
-            style={{
-              position:        'absolute',
-              top:             -140,
-              left:            -140,
-              width:           500,
-              height:          500,
-              borderRadius:    250,
-              backgroundColor: 'rgba(255,198,41,0.08)',
-              zIndex: 1,
-            }}
-            pointerEvents="none"
-          />
-          <View
-            style={{
-              position:        'absolute',
-              top:             -80,
-              right:           '4%',
-              width:           320,
-              height:          320,
-              borderRadius:    160,
-              backgroundColor: 'rgba(255,213,77,0.04)',
-              zIndex: 1,
-            }}
-            pointerEvents="none"
-          />
-        </>
-      )}
+      {/* Radial orbs */}
+      <>
+        <View
+          style={{
+            position:        'absolute',
+            top:             -140,
+            left:            -140,
+            width:           500,
+            height:          500,
+            borderRadius:    250,
+            backgroundColor: isDark ? 'rgba(255,198,41,0.08)' : 'rgba(120,120,120,0.10)',
+            zIndex: 1,
+          }}
+          pointerEvents="none"
+        />
+        <View
+          style={{
+            position:        'absolute',
+            top:             -80,
+            right:           '4%',
+            width:           320,
+            height:          320,
+            borderRadius:    160,
+            backgroundColor: isDark ? 'rgba(255,213,77,0.04)' : 'rgba(120,120,120,0.06)',
+            zIndex: 1,
+          }}
+          pointerEvents="none"
+        />
+      </>
 
       {/* Sidebar — always dark, hide below 640px */}
       {width >= 640 && (

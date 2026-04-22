@@ -158,6 +158,7 @@ export interface AdminCanal {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  lastHealthCheckAt?: string | null;
 }
 
 export type AdminCanalPayload = {

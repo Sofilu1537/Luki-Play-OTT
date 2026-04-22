@@ -33,6 +33,7 @@ import {
   AdminUserSession,
 } from '../../services/api/adminApi';
 import { useCmsStore } from '../../services/cmsStore';
+import { useTheme } from '../../hooks/useTheme';
 
 type UserType = 'system' | 'subscriber';
 type StatusFilter = 'all' | AdminUser['status'];
@@ -151,7 +152,7 @@ function fieldBase(webInput: object) {
     color: C.text,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 17,
     ...webInput,
   };
 }
@@ -159,8 +160,8 @@ function fieldBase(webInput: object) {
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <View style={{ backgroundColor: C.lift, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 16 }}>
-      <Text style={{ color: C.text, fontSize: 14, fontWeight: '800' }}>{title}</Text>
-      {subtitle ? <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4, marginBottom: 12 }}>{subtitle}</Text> : <View style={{ height: 12 }} />}
+      <Text style={{ color: C.text, fontSize: 17, fontWeight: '800' }}>{title}</Text>
+      {subtitle ? <Text style={{ color: C.textDim, fontSize: 15, marginTop: 4, marginBottom: 12 }}>{subtitle}</Text> : <View style={{ height: 12 }} />}
       {children}
     </View>
   );
@@ -183,7 +184,7 @@ function FilterChip({ active, label, onPress, tone = 'accent' }: { active: boole
       }}
       onPress={onPress}
     >
-      <Text style={{ color: active ? activeColor : C.textDim, fontSize: 12, fontWeight: '700' }}>{label}</Text>
+      <Text style={{ color: active ? activeColor : C.textDim, fontSize: 15, fontWeight: '700' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -214,8 +215,8 @@ function DropdownFilter({ label, value, options, onSelect }: {
           borderColor: isFiltered ? C.accentBorder : C.border,
         }}
       >
-        <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700' }}>{label}:</Text>
-        <Text style={{ color: isFiltered ? C.accent : C.text, fontSize: 12, fontWeight: '700' }}>{selectedLabel}</Text>
+        <Text style={{ color: C.muted, fontSize: 13, fontWeight: '700' }}>{label}:</Text>
+        <Text style={{ color: isFiltered ? C.accent : C.text, fontSize: 15, fontWeight: '700' }}>{selectedLabel}</Text>
         <FontAwesome name={open ? 'chevron-up' : 'chevron-down'} size={9} color={C.muted} />
       </TouchableOpacity>
 
@@ -256,7 +257,7 @@ function DropdownFilter({ label, value, options, onSelect }: {
                   borderBottomColor: C.border,
                 }}
               >
-                <Text style={{ color: value === option.value ? C.accent : C.textDim, fontSize: 12, fontWeight: value === option.value ? '800' : '600' }}>{option.label}</Text>
+                <Text style={{ color: value === option.value ? C.accent : C.textDim, fontSize: 15, fontWeight: value === option.value ? '800' : '600' }}>{option.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -276,7 +277,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
-  const inputStyle = { backgroundColor: C.surface, borderRadius: 8, borderWidth: 1, borderColor: C.accent, color: C.text, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, ...webInput };
+  const inputStyle = { backgroundColor: C.surface, borderRadius: 8, borderWidth: 1, borderColor: C.accent, color: C.text, paddingHorizontal: 10, paddingVertical: 8, fontSize: 16, ...webInput };
   const hasChanges = nombre !== user.nombre || email.trim() !== user.email || telefono !== (user.telefono ?? '');
 
   const handleSavePersonalData = async () => {
@@ -338,7 +339,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
               <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: 'rgba(255,121,0,0.12)', borderWidth: 1, borderColor: 'rgba(255,121,0,0.25)', alignItems: 'center', justifyContent: 'center' }}>
                 <FontAwesome name="lock" size={15} color="#FF7900" />
               </View>
-              <Text style={{ color: '#FAF6E7', fontSize: 15, fontWeight: '800' }}>Recuperación de contraseña</Text>
+              <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800' }}>Recuperación de contraseña</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={{ width: 26, height: 26, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', backgroundColor: 'rgba(250,246,231,0.05)', alignItems: 'center', justifyContent: 'center' }}>
               <FontAwesome name="times" size={12} color="rgba(250,246,231,0.4)" />
@@ -350,11 +351,11 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
             {/* Datos personales card */}
             <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: 'rgba(96,38,158,0.18)' }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Datos personales</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Datos personales</Text>
                 {!editing ? (
                   <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)' }} onPress={() => setEditing(true)}>
                     <FontAwesome name="pencil" size={10} color="#FFB800" />
-                    <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>Editar</Text>
+                    <Text style={{ color: '#FFB800', fontSize: 13, fontWeight: '600' }}>Editar</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -362,39 +363,39 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
               {editing ? (
                 <View style={{ gap: 10 }}>
                   <View>
-                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Nombre</Text>
+                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Nombre</Text>
                     <TextInput style={inputStyle} value={nombre} onChangeText={setNombre} autoFocus />
                   </View>
                   <View>
-                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Email</Text>
+                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Email</Text>
                     <TextInput style={inputStyle} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
                   </View>
                   <View>
-                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Teléfono</Text>
+                    <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 4 }}>Teléfono</Text>
                     <TextInput style={inputStyle} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                     <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', alignItems: 'center' }} onPress={() => { setNombre(user.nombre); setEmail(user.email); setTelefono(user.telefono ?? ''); setEditing(false); }}>
-                      <Text style={{ color: 'rgba(250,246,231,0.5)', fontSize: 12, fontWeight: '600' }}>Cancelar</Text>
+                      <Text style={{ color: 'rgba(250,246,231,0.5)', fontSize: 15, fontWeight: '600' }}>Cancelar</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 6, backgroundColor: hasChanges ? '#FFB800' : 'rgba(255,184,0,0.15)', alignItems: 'center', opacity: saving ? 0.6 : 1 }} onPress={handleSavePersonalData} disabled={saving || !hasChanges}>
-                      {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: hasChanges ? '#000' : 'rgba(255,184,0,0.5)', fontSize: 12, fontWeight: '700' }}>Guardar cambios</Text>}
+                      {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: hasChanges ? '#000' : 'rgba(255,184,0,0.5)', fontSize: 15, fontWeight: '700' }}>Guardar cambios</Text>}
                     </TouchableOpacity>
                   </View>
                 </View>
               ) : (
                 <View style={{ gap: 8 }}>
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline' }}>
-                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 12, width: 68 }}>Nombre</Text>
-                    <Text style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '700', flex: 1 }}>{user.nombre.toUpperCase()}</Text>
+                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 15, width: 68 }}>Nombre</Text>
+                    <Text style={{ color: '#FAF6E7', fontSize: 16, fontWeight: '700', flex: 1 }}>{user.nombre.toUpperCase()}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline' }}>
-                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 12, width: 68 }}>Email</Text>
-                    <Text style={{ color: '#FFB800', fontSize: 13, fontWeight: '600', flex: 1 }}>{user.email}</Text>
+                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 15, width: 68 }}>Email</Text>
+                    <Text style={{ color: '#FFB800', fontSize: 16, fontWeight: '600', flex: 1 }}>{user.email}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline' }}>
-                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 12, width: 68 }}>Teléfono</Text>
-                    <Text style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', flex: 1 }}>{user.telefono || '—'}</Text>
+                    <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 15, width: 68 }}>Teléfono</Text>
+                    <Text style={{ color: '#FAF6E7', fontSize: 16, fontWeight: '600', flex: 1 }}>{user.telefono || '—'}</Text>
                   </View>
                 </View>
               )}
@@ -403,20 +404,20 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
             {/* Código generado */}
             {generatedCode ? (
               <View style={{ backgroundColor: 'rgba(23,209,198,0.07)', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
-                <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Código de recuperación</Text>
-                <Text style={{ color: '#17D1C6', fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' }}>{generatedCode}</Text>
-                <Text style={{ color: 'rgba(250,246,231,0.35)', fontSize: 11, marginTop: 8, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Código de recuperación</Text>
+                <Text style={{ color: '#17D1C6', fontSize: 30, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' }}>{generatedCode}</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.35)', fontSize: 13, marginTop: 8, textAlign: 'center' }}>Comparte este código con el usuario de forma segura.</Text>
               </View>
             ) : codeSent ? (
               <View style={{ backgroundColor: 'rgba(23,209,198,0.07)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
-                <Text style={{ color: '#17D1C6', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
+                <Text style={{ color: '#17D1C6', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Código enviado correctamente a {email.trim()}</Text>
               </View>
             ) : null}
 
             {/* Footer buttons */}
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(250,246,231,0.1)', alignItems: 'center' }} onPress={onClose}>
-                <Text style={{ color: 'rgba(250,246,231,0.55)', fontSize: 13, fontWeight: '600' }}>Cerrar</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.55)', fontSize: 16, fontWeight: '600' }}>Cerrar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: codeSent ? 'rgba(255,184,0,0.15)' : '#FFB800', alignItems: 'center', opacity: (sending || editing) ? 0.6 : 1 }}
@@ -426,7 +427,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
                 {sending ? (
                   <ActivityIndicator size="small" color={codeSent ? '#FFB800' : '#000'} />
                 ) : (
-                  <Text style={{ color: codeSent ? '#FFB800' : '#000', fontSize: 13, fontWeight: '700' }}>
+                  <Text style={{ color: codeSent ? '#FFB800' : '#000', fontSize: 16, fontWeight: '700' }}>
                     {codeSent ? 'Generar nuevo código' : 'Generar clave temporal'}
                   </Text>
                 )}
@@ -456,18 +457,18 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
     <Modal visible={state.visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         <View style={{ width: '100%', maxWidth: 400, backgroundColor: '#0e0e1f', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(96,38,158,0.3)', padding: 24 }}>
-          <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800', marginBottom: 10 }}>{state.title}</Text>
-          <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 13, lineHeight: 20, marginBottom: 24 }}>{state.message}</Text>
+          <Text style={{ color: '#FAF6E7', fontSize: 20, fontWeight: '800', marginBottom: 10 }}>{state.title}</Text>
+          <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 16, lineHeight: 20, marginBottom: 24 }}>{state.message}</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' }} onPress={onClose} disabled={loading}>
-              <Text style={{ color: 'rgba(250,246,231,0.55)', fontSize: 13, fontWeight: '600' }}>Cancelar</Text>
+              <Text style={{ color: 'rgba(250,246,231,0.55)', fontSize: 16, fontWeight: '600' }}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: state.tone === 'danger' ? '#D1105A' : '#FFB800', opacity: loading ? 0.7 : 1 }}
               onPress={handleConfirm}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>{state.confirmLabel}</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>{state.confirmLabel}</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -577,7 +578,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
         <View style={{ width: '100%', maxWidth: 860, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
           <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
+              <Text style={{ color: C.text, fontSize: 20, fontWeight: '800' }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
             </View>
             <TouchableOpacity onPress={onClose}>
               <FontAwesome name="times" size={18} color={C.muted} />
@@ -588,20 +589,20 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
             <SectionCard title="Datos de Registro">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>NOMBRE COMPLETO</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>NOMBRE COMPLETO</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="Ej: Juan Pérez" placeholderTextColor={C.muted} value={nombre} onChangeText={setNombre} />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>EMAIL</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>EMAIL</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="usuario@email.com" placeholderTextColor={C.muted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>TELÉFONO</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>TELÉFONO</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="+593 999 999 999" placeholderTextColor={C.muted} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
                 </View>
                 {isAbonado ? (
                   <View style={{ flex: 1, minWidth: 220 }}>
-                    <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>CÉDULA DE IDENTIDAD</Text>
+                    <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>CÉDULA DE IDENTIDAD</Text>
                     <TextInput
                       style={{ ...baseInput, marginBottom: 0 }}
                       placeholder="Ej: 1712345678"
@@ -615,7 +616,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                 ) : (
                   <View style={{ flex: 1, minWidth: 220, justifyContent: 'flex-end' }}>
                     <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: C.border, padding: 10 }}>
-                      <Text style={{ color: C.textDim, fontSize: 11 }}>Los clientes completan su registro desde la app Luki Play.</Text>
+                      <Text style={{ color: C.textDim, fontSize: 13 }}>Los clientes completan su registro desde la app Luki Play.</Text>
                     </View>
                   </View>
                 )}
@@ -625,16 +626,16 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
             <SectionCard title="Sesiones" subtitle="Control de simultaneidad y dispositivos permitidos.">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>SESIONES SIMULTÁNEAS</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>SESIONES SIMULTÁNEAS</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3" placeholderTextColor={C.muted} value={maxDevices} onChangeText={setMaxDevices} keyboardType="number-pad" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="30" placeholderTextColor={C.muted} value={sessionDurationDays} onChangeText={setSessionDurationDays} keyboardType="number-pad" />
                 </View>
               </View>
 
-              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 12, marginBottom: 6 }}>AL EXCEDER EL LÍMITE</Text>
+              <Text style={{ color: C.textDim, fontSize: 15, marginTop: 12, marginBottom: 6 }}>AL EXCEDER EL LÍMITE</Text>
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                 {([
                   { value: 'block_new'       as const, label: 'Bloquear nuevo acceso' },
@@ -649,14 +650,14 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                     }}
                     onPress={() => setSessionLimitPolicy(option.value)}
                   >
-                    <Text style={{ color: sessionLimitPolicy === option.value ? C.cyan : C.textDim, fontSize: 12, fontWeight: '700' }}>{option.label}</Text>
+                    <Text style={{ color: sessionLimitPolicy === option.value ? C.cyan : C.textDim, fontSize: 15, fontWeight: '700' }}>{option.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </SectionCard>
 
             <SectionCard title="Plan y servicio" subtitle={isAbonado ? 'Suscripción mensual ISP. Genera contrato.' : 'Acceso one-shot OTT. Sin contrato.'}>
-              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 10 }}>PLAN DESDE CATÁLOGO</Text>
+              <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 10 }}>PLAN DESDE CATÁLOGO</Text>
 
               {activePlans.length > 0 ? (
                 <>
@@ -672,8 +673,8 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                         }}
                         onPress={() => setPlanId(plan.id)}
                       >
-                        <Text style={{ color: planId === plan.id ? C.cyan : C.text, fontSize: 12, fontWeight: '800' }}>{plan.nombre}</Text>
-                        <Text style={{ color: planId === plan.id ? C.cyan : C.textDim, fontSize: 11, marginTop: 4 }}>
+                        <Text style={{ color: planId === plan.id ? C.cyan : C.text, fontSize: 15, fontWeight: '800' }}>{plan.nombre}</Text>
+                        <Text style={{ color: planId === plan.id ? C.cyan : C.textDim, fontSize: 13, marginTop: 4 }}>
                           {plan.maxDevices} disp. · {plan.videoQuality} · {plan.moneda} {plan.precio}
                         </Text>
                       </TouchableOpacity>
@@ -682,21 +683,21 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
 
                   {selectedCatalogPlan ? (
                     <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 12 }}>
-                      <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
-                      <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{selectedCatalogPlan.descripcion}</Text>
+                      <Text style={{ color: C.text, fontSize: 15, fontWeight: '800' }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
+                      <Text style={{ color: C.textDim, fontSize: 15, marginTop: 4 }}>{selectedCatalogPlan.descripcion}</Text>
                     </View>
                   ) : null}
                 </>
               ) : (
                 <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, borderWidth: 1, borderColor: `${C.rose}40`, padding: 12, marginBottom: 12 }}>
-                  <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
+                  <Text style={{ color: C.rose, fontSize: 15, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
                 </View>
               )}
 
               {/* Contrato — solo para Abonados */}
               {isAbonado ? (
                 <>
-                  <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>CONTRATO / CÓDIGO</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15, marginBottom: 4 }}>CONTRATO / CÓDIGO</Text>
                   <TextInput
                     style={{ ...baseInput, opacity: contractLocked ? 0.6 : 1 }}
                     placeholder="Ej: CONTRACT-001"
@@ -707,17 +708,17 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                     autoCapitalize="characters"
                   />
                   {contractLocked ? (
-                    <Text style={{ color: C.amber, fontSize: 12, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
+                    <Text style={{ color: C.amber, fontSize: 15, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
                   ) : null}
                 </>
               ) : (
                 <View style={{ backgroundColor: C.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: C.border, padding: 10 }}>
-                  <Text style={{ color: C.textDim, fontSize: 12 }}>Los clientes one-shot no generan número de contrato.</Text>
+                  <Text style={{ color: C.textDim, fontSize: 15 }}>Los clientes one-shot no generan número de contrato.</Text>
                 </View>
               )}
             </SectionCard>
 
-            {error ? <Text style={{ color: C.rose, fontSize: 13 }}>{error}</Text> : null}
+            {error ? <Text style={{ color: C.rose, fontSize: 16 }}>{error}</Text> : null}
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center' }} onPress={onClose}>
@@ -750,9 +751,9 @@ function FieldCard({
       borderWidth: 1, borderColor: 'rgba(96,38,158,0.14)',
       borderRadius: 9, paddingHorizontal: 13, paddingVertical: 10,
     }, style]}>
-      <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(250,246,231,0.3)', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 3 }}>{label}</Text>
+      <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(250,246,231,0.3)', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 3 }}>{label}</Text>
       <Text style={{
-        fontSize: 12.5, fontWeight: isEmpty ? '400' : '600',
+        fontSize: 15.5, fontWeight: isEmpty ? '400' : '600',
         color: isEmpty ? 'rgba(250,246,231,0.25)' : accent ? '#FFB800' : error ? '#D1105A' : '#FAF6E7',
         fontStyle: isEmpty ? 'italic' : 'normal',
         fontFamily: mono ? (Platform.OS === 'web' ? 'monospace' : 'Courier') : undefined,
@@ -765,7 +766,7 @@ function FieldCard({
 function SectionLabel({ children }: { children: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-      <Text style={{ fontSize: 9.5, fontWeight: '700', color: 'rgba(250,246,231,0.25)', textTransform: 'uppercase', letterSpacing: 1.1 }}>{children}</Text>
+      <Text style={{ fontSize: 10.5, fontWeight: '700', color: 'rgba(250,246,231,0.25)', textTransform: 'uppercase', letterSpacing: 1.1 }}>{children}</Text>
       <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(250,246,231,0.05)' }} />
     </View>
   );
@@ -793,7 +794,7 @@ function UserDetailModal({
   const [activeTab, setActiveTab] = useState<DetailTab>('perfil');
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
-  const baseInput = { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 9, color: C.text, fontSize: 14, paddingHorizontal: 14, paddingVertical: 11, marginBottom: 16, ...webInput };
+  const baseInput = { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 9, color: C.text, fontSize: 17, paddingHorizontal: 14, paddingVertical: 11, marginBottom: 16, ...webInput };
 
   const [editPayload, setEditPayload] = useState<Partial<AdminUserPayload>>({});
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -980,21 +981,21 @@ function UserDetailModal({
             {/* Avatar + name + tags */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13, marginBottom: 16 }}>
               <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: 'rgba(255,184,0,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,184,0,0.35)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Text style={{ color: '#FFB800', fontSize: 15, fontWeight: '800', letterSpacing: -0.5 }}>{user ? initials(user.nombre) : '?'}</Text>
+                <Text style={{ color: '#FFB800', fontSize: 18, fontWeight: '800', letterSpacing: -0.5 }}>{user ? initials(user.nombre) : '?'}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#FAF6E7', fontSize: 16, fontWeight: '800', letterSpacing: -0.3, marginBottom: 3 }}>{user?.nombre ?? '—'}</Text>
-                <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 11.5, fontWeight: '500' }}>{user?.email ?? '—'}</Text>
+                <Text style={{ color: '#FAF6E7', fontSize: 20, fontWeight: '800', letterSpacing: -0.3, marginBottom: 3 }}>{user?.nombre ?? '—'}</Text>
+                <Text style={{ color: 'rgba(250,246,231,0.4)', fontSize: 13.5, fontWeight: '500' }}>{user?.email ?? '—'}</Text>
                 <View style={{ flexDirection: 'row', gap: 6, marginTop: 5 }}>
                   {userTypeMeta && (
                     <View style={{ backgroundColor: user?.isSubscriber ? 'rgba(255,184,0,0.1)' : 'rgba(255,184,0,0.08)', borderWidth: 1, borderColor: user?.isSubscriber ? 'rgba(255,184,0,0.2)' : 'rgba(255,184,0,0.15)', borderRadius: 5, paddingHorizontal: 8, paddingVertical: 2 }}>
-                      <Text style={{ color: '#FFB800', fontSize: 9.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>{userTypeMeta.label}</Text>
+                      <Text style={{ color: '#FFB800', fontSize: 10.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>{userTypeMeta.label}</Text>
                     </View>
                   )}
                   {statusMeta && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${statusMeta.color}18`, borderWidth: 1, borderColor: `${statusMeta.color}30`, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 2 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusMeta.color }} />
-                      <Text style={{ color: statusMeta.color, fontSize: 9.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>{statusMeta.label}</Text>
+                      <Text style={{ color: statusMeta.color, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>{statusMeta.label}</Text>
                     </View>
                   )}
                 </View>
@@ -1009,7 +1010,7 @@ function UserDetailModal({
                 { id: 'comercial' as const, label: 'Plan / contrato' },
               ] as const).map(tab => (
                 <TouchableOpacity key={tab.id} onPress={() => setActiveTab(tab.id)} style={{ paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: activeTab === tab.id ? '#FFB800' : 'transparent', marginBottom: -1 }}>
-                  <Text style={{ color: activeTab === tab.id ? '#FFB800' : 'rgba(250,246,231,0.4)', fontSize: 11.5, fontWeight: '600', whiteSpace: 'nowrap' } as any}>{tab.label}</Text>
+                  <Text style={{ color: activeTab === tab.id ? '#FFB800' : 'rgba(250,246,231,0.4)', fontSize: 13.5, fontWeight: '600', whiteSpace: 'nowrap' } as any}>{tab.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1026,7 +1027,7 @@ function UserDetailModal({
               <>
                 {feedback ? (
                   <View style={{ borderRadius: 10, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
-                    <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 13, fontWeight: '700' }}>{feedback.message}</Text>
+                    <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 16, fontWeight: '700' }}>{feedback.message}</Text>
                   </View>
                 ) : null}
 
@@ -1035,43 +1036,43 @@ function UserDetailModal({
                     {/* Section header */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                       <View>
-                        <Text style={{ color: '#FAF6E7', fontSize: 12.5, fontWeight: '700', marginBottom: 2 }}>Perfil personal e identidad</Text>
+                        <Text style={{ color: '#FAF6E7', fontSize: 15.5, fontWeight: '700', marginBottom: 2 }}>Perfil personal e identidad</Text>
                       </View>
                       {canWrite && !isEditingProfile && (
                         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)' }} onPress={() => setIsEditingProfile(true)}>
                           <FontAwesome name="pencil" size={11} color="#FFB800" />
-                          <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>Editar</Text>
+                          <Text style={{ color: '#FFB800', fontSize: 13, fontWeight: '600' }}>Editar</Text>
                         </TouchableOpacity>
                       )}
                     </View>
                       {isEditingProfile ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>NOMBRES Y APELLIDOS *</Text>
+                          <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>NOMBRES Y APELLIDOS *</Text>
                           <TextInput style={baseInput} value={editPayload.nombre} onChangeText={v => setEditPayload({ ...editPayload, nombre: v })} />
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>CÉDULA DE IDENTIDAD</Text>
+                            <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>CÉDULA DE IDENTIDAD</Text>
                             <TextInput style={baseInput} value={editPayload.idNumber} onChangeText={v => setEditPayload({ ...editPayload, idNumber: v })} />
                           </View>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>CORREO ELECTRÓNICO *</Text>
+                            <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>CORREO ELECTRÓNICO *</Text>
                             <TextInput style={baseInput} value={editPayload.email} onChangeText={v => setEditPayload({ ...editPayload, email: v })} keyboardType="email-address" autoCapitalize="none" />
                           </View>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>TELÉFONO CELULAR</Text>
+                            <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>TELÉFONO CELULAR</Text>
                             <TextInput style={baseInput} value={editPayload.telefono} onChangeText={v => setEditPayload({ ...editPayload, telefono: v })} keyboardType="phone-pad" />
                           </View>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>DIRECCIÓN</Text>
+                            <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>DIRECCIÓN</Text>
                             <TextInput style={baseInput} value={editPayload.address} onChangeText={v => setEditPayload({ ...editPayload, address: v })} />
                           </View>
                         </View>
 
-                        <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginTop: 10 }}>ESTADO</Text>
+                        <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700', marginTop: 10 }}>ESTADO</Text>
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           {(['active', 'suspended', 'inactive'] as const).map(estado => (
                             <TouchableOpacity
@@ -1084,17 +1085,17 @@ function UserDetailModal({
                               }}
                               onPress={() => setEditPayload({ ...editPayload, status: estado })}
                             >
-                              <Text style={{ color: editPayload.status === estado ? C.accentLight : C.text, fontSize: 12 }}>{estado === 'active' ? 'Activo' : estado === 'suspended' ? 'Suspendido' : 'Inactivo'}</Text>
+                              <Text style={{ color: editPayload.status === estado ? C.accentLight : C.text, fontSize: 15 }}>{estado === 'active' ? 'Activo' : estado === 'suspended' ? 'Suspendido' : 'Inactivo'}</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
 
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
                           <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border }} onPress={() => setIsEditingProfile(false)}>
-                            <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+                            <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>Cancelar</Text>
                           </TouchableOpacity>
                           <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent, opacity: isSaving ? 0.7 : 1 }} onPress={handleSaveProfile}>
-                            <Text style={{ color: '#000', fontSize: 12, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Perfil'}</Text>
+                            <Text style={{ color: '#000', fontSize: 15, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Perfil'}</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1128,14 +1129,14 @@ function UserDetailModal({
                 {activeTab === 'seguridad' ? (
                   <SectionCard title="Seguridad" subtitle="Role/Permission y eventos críticos del acceso.">
                     <View style={{ gap: 8 }}>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Rol actual: <Text style={{ color: C.text }}>Usuario</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>MFA: <Text style={{ color: C.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Bloqueo: <Text style={{ color: C.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 12 }}>Cambio obligatorio de contraseña: <Text style={{ color: C.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
+                      <Text style={{ color: C.textDim, fontSize: 15 }}>Rol actual: <Text style={{ color: C.text }}>Usuario</Text></Text>
+                      <Text style={{ color: C.textDim, fontSize: 15 }}>MFA: <Text style={{ color: C.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
+                      <Text style={{ color: C.textDim, fontSize: 15 }}>Bloqueo: <Text style={{ color: C.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
+                      <Text style={{ color: C.textDim, fontSize: 15 }}>Cambio obligatorio de contraseña: <Text style={{ color: C.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
                     </View>
                     {canWrite ? (
                       <TouchableOpacity style={{ marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent }} onPress={askPasswordReset}>
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Generar reset seguro</Text>
+                        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Generar reset seguro</Text>
                       </TouchableOpacity>
                     ) : null}
                   </SectionCard>
@@ -1146,13 +1147,13 @@ function UserDetailModal({
                     {/* Section header */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <View>
-                        <Text style={{ color: '#FAF6E7', fontSize: 12.5, fontWeight: '700', marginBottom: 2 }}>Dispositivos y sesiones</Text>
-                        <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10.5, fontWeight: '500' }}>Dominio Session/Device — actividad y cierres controlados</Text>
+                        <Text style={{ color: '#FAF6E7', fontSize: 15.5, fontWeight: '700', marginBottom: 2 }}>Dispositivos y sesiones</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 11.5, fontWeight: '500' }}>Dominio Session/Device — actividad y cierres controlados</Text>
                       </View>
                       {canWrite ? (
                         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(209,16,90,0.3)', backgroundColor: 'rgba(209,16,90,0.08)' }} onPress={askRevokeAllSessions}>
                           <FontAwesome name="times" size={11} color={C.rose} />
-                          <Text style={{ color: C.rose, fontSize: 11, fontWeight: '600' }}>Cerrar todas</Text>
+                          <Text style={{ color: C.rose, fontSize: 13, fontWeight: '600' }}>Cerrar todas</Text>
                         </TouchableOpacity>
                       ) : null}
                     </View>
@@ -1160,34 +1161,34 @@ function UserDetailModal({
                     {/* Info box */}
                     <View style={{ backgroundColor: 'rgba(255,184,0,0.04)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.1)', borderRadius: 9, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12, gap: 4 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 11.5 }}>Sesiones simultáneas permitidas</Text>
-                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 11.5, fontWeight: '600' }}>{user.maxDevices}</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 13.5 }}>Sesiones simultáneas permitidas</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 13.5, fontWeight: '600' }}>{user.maxDevices}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 11.5 }}>Duración de sesión</Text>
-                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 11.5, fontWeight: '600' }}>{user.sessionDurationDays} días</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 13.5 }}>Duración de sesión</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 13.5, fontWeight: '600' }}>{user.sessionDurationDays} días</Text>
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 11.5 }}>Política</Text>
-                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 11.5, fontWeight: '600' }}>{user.sessionLimitPolicy === 'replace_oldest' ? 'Cerrar la más antigua' : 'Bloquear nuevo acceso'}</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.45)', fontSize: 13.5 }}>Política</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.7)', fontSize: 13.5, fontWeight: '600' }}>{user.sessionLimitPolicy === 'replace_oldest' ? 'Cerrar la más antigua' : 'Bloquear nuevo acceso'}</Text>
                       </View>
                     </View>
 
                     {sessions.length === 0 ? (
                       <View style={{ alignItems: 'center', paddingVertical: 28, paddingBottom: 10 }}>
                         <FontAwesome name="television" size={38} color="rgba(250,246,231,0.12)" />
-                        <Text style={{ color: 'rgba(250,246,231,0.25)', fontSize: 12, marginTop: 8 }}>0 dispositivos activos para este usuario</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.25)', fontSize: 15, marginTop: 8 }}>0 dispositivos activos para este usuario</Text>
                       </View>
                     ) : (
                       sessions.map((session) => (
                         <View key={session.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.border }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }}>{session.deviceId}</Text>
-                            <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Canal: {session.audience} · Inicio: {fmtDate(session.createdAt)} · Expira: {fmtDate(session.expiresAt)}</Text>
+                            <Text style={{ color: C.text, fontSize: 16, fontWeight: '700' }}>{session.deviceId}</Text>
+                            <Text style={{ color: C.textDim, fontSize: 15, marginTop: 4 }}>Canal: {session.audience} · Inicio: {fmtDate(session.createdAt)} · Expira: {fmtDate(session.expiresAt)}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: session.status === 'active' ? C.greenSoft : session.status === 'revoked' ? C.roseSoft : C.amberSoft }}>
-                              <Text style={{ color: session.status === 'active' ? C.green : session.status === 'revoked' ? C.rose : C.amber, fontSize: 11, fontWeight: '700' }}>{session.status}</Text>
+                              <Text style={{ color: session.status === 'active' ? C.green : session.status === 'revoked' ? C.rose : C.amber, fontSize: 13, fontWeight: '700' }}>{session.status}</Text>
                             </View>
                             {canWrite ? (
                               <TouchableOpacity style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border, opacity: session.status === 'active' ? 1 : 0.5 }} disabled={session.status !== 'active'} onPress={() => askRevokeSession(session)}>
@@ -1206,18 +1207,18 @@ function UserDetailModal({
                     {/* Section header */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <View>
-                        <Text style={{ color: '#FAF6E7', fontSize: 12.5, fontWeight: '700', marginBottom: 2 }}>Plan y contrato</Text>
-                        <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10.5, fontWeight: '500' }}>Dominio Account/Subscription — catálogo, contrato y capacidad</Text>
+                        <Text style={{ color: '#FAF6E7', fontSize: 15.5, fontWeight: '700', marginBottom: 2 }}>Plan y contrato</Text>
+                        <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 11.5, fontWeight: '500' }}>Dominio Account/Subscription — catálogo, contrato y capacidad</Text>
                       </View>
                     </View>
 
                     {isEditingPlan ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700' }}>CÓDIGO DE CONTRATO</Text>
+                          <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>CÓDIGO DE CONTRATO</Text>
                           <TextInput style={baseInput} value={editPayload.contrato} onChangeText={v => setEditPayload({ ...editPayload, contrato: v })} />
                         </View>
-                        <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
+                        <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
                         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                           {plans.map(p => (
                             <TouchableOpacity
@@ -1229,17 +1230,17 @@ function UserDetailModal({
                               }}
                               onPress={() => setEditPayload({ ...editPayload, planId: p.id })}
                             >
-                              <Text style={{ color: editPayload.planId === p.id ? C.accentLight : C.text, fontSize: 12, fontWeight: '700' }}>{p.nombre}</Text>
-                              <Text style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>Dispositivos: {p.maxDevices} máx.</Text>
+                              <Text style={{ color: editPayload.planId === p.id ? C.accentLight : C.text, fontSize: 15, fontWeight: '700' }}>{p.nombre}</Text>
+                              <Text style={{ color: C.textDim, fontSize: 13, marginTop: 4 }}>Dispositivos: {p.maxDevices} máx.</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
                           <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border }} onPress={() => setIsEditingPlan(false)}>
-                            <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+                            <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>Cancelar</Text>
                           </TouchableOpacity>
                           <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent, opacity: isSaving ? 0.7 : 1 }} onPress={handleSavePlan}>
-                            <Text style={{ color: '#000', fontSize: 12, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Plan'}</Text>
+                            <Text style={{ color: '#000', fontSize: 15, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Plan'}</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1247,8 +1248,8 @@ function UserDetailModal({
                       <View>
                         {/* Plan card */}
                         <View style={{ background: undefined, backgroundColor: 'rgba(96,38,158,0.15)', borderWidth: 1, borderColor: 'rgba(96,38,158,0.25)', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 12 }}>
-                          <Text style={{ color: '#FAF6E7', fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginBottom: 2 }}>{plan?.nombre ?? 'LUKI PLAY'}</Text>
-                          <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier', letterSpacing: 0.5, marginBottom: 12 }}>Contrato #{user.contrato ?? '—'}</Text>
+                          <Text style={{ color: '#FAF6E7', fontSize: 18, fontWeight: '800', letterSpacing: -0.2, marginBottom: 2 }}>{plan?.nombre ?? 'LUKI PLAY'}</Text>
+                          <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier', letterSpacing: 0.5, marginBottom: 12 }}>Contrato #{user.contrato ?? '—'}</Text>
                           {plan ? (
                             <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                               {[
@@ -1258,8 +1259,8 @@ function UserDetailModal({
                                 { label: 'Calidad', value: plan.videoQuality },
                               ].map(item => (
                                 <View key={item.label} style={{ flex: 1, minWidth: 100, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(96,38,158,0.12)', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8 }}>
-                                  <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(250,246,231,0.28)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 }}>{item.label}</Text>
-                                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FAF6E7' }}>{item.value}</Text>
+                                  <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(250,246,231,0.28)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 }}>{item.label}</Text>
+                                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#FAF6E7' }}>{item.value}</Text>
                                 </View>
                               ))}
                             </View>
@@ -1270,7 +1271,7 @@ function UserDetailModal({
                         {!selectedCatalogPlan && (
                           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: 'rgba(255,121,0,0.07)', borderWidth: 1, borderColor: 'rgba(255,121,0,0.2)', borderRadius: 9, paddingHorizontal: 13, paddingVertical: 10, marginBottom: 12 }}>
                             <FontAwesome name="exclamation-circle" size={15} color="#FF7900" style={{ marginTop: 1 }} />
-                            <Text style={{ flex: 1, color: 'rgba(250,246,231,0.5)', fontSize: 11, lineHeight: 17 }}>
+                            <Text style={{ flex: 1, color: 'rgba(250,246,231,0.5)', fontSize: 13, lineHeight: 17 }}>
                               Plan asignado desde catálogo: <Text style={{ color: '#FF7900', fontWeight: '700' }}>Sin coincidencia</Text> — el plan en sistema no coincide con ningún producto del catálogo actual.
                             </Text>
                           </View>
@@ -1280,10 +1281,10 @@ function UserDetailModal({
                         {canWrite && (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
                             <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)', alignItems: 'center' }} onPress={() => setIsEditingPlan(true)}>
-                              <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '600' }}>Cambiar plan</Text>
+                              <Text style={{ color: '#FFB800', fontSize: 13, fontWeight: '600' }}>Cambiar plan</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(209,16,90,0.25)', backgroundColor: 'rgba(209,16,90,0.06)', alignItems: 'center' }}>
-                              <Text style={{ color: C.rose, fontSize: 11, fontWeight: '600' }}>Cancelar suscripción</Text>
+                              <Text style={{ color: C.rose, fontSize: 13, fontWeight: '600' }}>Cancelar suscripción</Text>
                             </TouchableOpacity>
                           </View>
                         )}
@@ -1306,6 +1307,7 @@ function UserDetailModal({
 
 export default function CmsUsers() {
   const { profile, accessToken } = useCmsStore();
+  const { isDark, theme } = useTheme();
   const router = useRouter();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -1565,7 +1567,7 @@ export default function CmsUsers() {
               onPress={exportExcel}
             >
               <FontAwesome name="download" size={13} color={C.accent} />
-              <Text style={{ color: C.accent, fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
+              <Text style={{ color: C.accent, fontWeight: '700', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
             </TouchableOpacity>
             {canWrite ? (
               /* Crear usuario — accent color */
@@ -1581,14 +1583,14 @@ export default function CmsUsers() {
                   <View style={{ flex: 1, backgroundColor: C.accent }} />
                 </View>
                 <FontAwesome name="plus" size={13} color="#1A1A2E" />
-                <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Crear usuario</Text>
+                <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>Crear usuario</Text>
               </TouchableOpacity>
             ) : null}
         </View>
 
         {feedback ? (
           <View style={{ marginBottom: 16, borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
-            <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 13, fontWeight: '700' }}>{feedback.message}</Text>
+            <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 16, fontWeight: '700' }}>{feedback.message}</Text>
           </View>
         ) : null}
 
@@ -1600,45 +1602,74 @@ export default function CmsUsers() {
           ].map((card) => (
             <View key={card.label} style={{
               flex: 1, minWidth: 180,
-              backgroundColor: C.surface,
+              backgroundColor: isDark ? C.surface : 'rgba(120,120,120,0.36)',
               borderRadius: 14, padding: 16,
-              borderWidth: 1, borderColor: C.border,
+              borderWidth: 1, borderColor: isDark ? C.border : 'rgba(120,120,120,0.16)',
               flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              shadowColor: '#240046',
+              shadowOpacity: isDark ? 0 : 0.08,
+              shadowRadius: isDark ? 0 : 20,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: isDark ? 0 : 2,
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={card.icon as never} size={16} color={card.color} />
                 </View>
-                <Text style={{ color: C.textDim, fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
+                <Text style={{ color: isDark ? C.textDim : theme.textMuted, fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {card.warn ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.roseSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
                     <FontAwesome name="warning" size={10} color={C.rose} />
-                    <Text style={{ color: C.rose, fontSize: 10, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
+                    <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
                   </View>
                 ) : null}
-                <Text style={{ color: C.text, fontSize: 24, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
+                <Text style={{ color: isDark ? C.text : theme.text, fontSize: 30, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
               </View>
             </View>
           ))}
         </View>
 
-        <View style={{ backgroundColor: C.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: C.border, marginBottom: 16, zIndex: 50, elevation: 50 }}>
+        <View style={{
+          backgroundColor: isDark ? C.surface : 'rgba(120,120,120,0.36)',
+          borderRadius: 14,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          borderWidth: 1,
+          borderColor: isDark ? C.border : 'rgba(120,120,120,0.16)',
+          marginBottom: 16,
+          zIndex: 50,
+          elevation: 50,
+          shadowColor: '#240046',
+          shadowOpacity: isDark ? 0 : 0.08,
+          shadowRadius: isDark ? 0 : 20,
+          shadowOffset: { width: 0, height: 6 },
+        }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {/* Search */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, flex: 1, minWidth: 240 }}>
-              <FontAwesome name="search" size={12} color={C.muted} />
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: isDark ? C.lift : 'rgba(120,120,120,0.28)',
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: isDark ? C.border : 'rgba(120,120,120,0.16)',
+              paddingHorizontal: 12,
+              flex: 1,
+              minWidth: 240,
+            }}>
+              <FontAwesome name="search" size={12} color={isDark ? C.muted : theme.textMuted} />
               <TextInput
-                style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 13, fontFamily: 'Montserrat-SemiBold', ...webInput }}
+                style={{ flex: 1, color: isDark ? C.text : theme.text, paddingVertical: 10, paddingHorizontal: 10, fontSize: 16, fontFamily: 'Montserrat-SemiBold', ...webInput }}
                 placeholder="Buscar nombre, email, plan..."
-                placeholderTextColor={C.muted}
+                placeholderTextColor={isDark ? C.muted : theme.textMuted}
                 value={search}
                 onChangeText={setSearch}
               />
               {search ? (
                 <TouchableOpacity onPress={() => setSearch('')}>
-                  <FontAwesome name="times-circle" size={14} color={C.muted} />
+                  <FontAwesome name="times-circle" size={14} color={isDark ? C.muted : theme.textMuted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -1678,11 +1709,11 @@ export default function CmsUsers() {
                     borderRadius:       6,
                     backgroundColor:   pageSize === size ? C.accent : 'transparent',
                     borderWidth:        pageSize === size ? 0 : 1,
-                    borderColor:       C.border,
+                    borderColor:       isDark ? C.border : 'rgba(120,120,120,0.16)',
                   }}
                   onPress={() => setPageSize(size)}
                 >
-                  <Text style={{ color: pageSize === size ? '#1A1A2E' : C.textDim, fontSize: 12, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
+                  <Text style={{ color: pageSize === size ? '#1A1A2E' : (isDark ? C.textDim : theme.textMuted), fontSize: 15, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1694,7 +1725,7 @@ export default function CmsUsers() {
                 onPress={() => { setSearch(''); setStatusFilter('all'); setTipoFilter('all'); }}
               >
                 <FontAwesome name="times" size={10} color={C.rose} />
-                <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700' }}>Limpiar</Text>
+                <Text style={{ color: C.rose, fontSize: 13, fontWeight: '700' }}>Limpiar</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1703,18 +1734,18 @@ export default function CmsUsers() {
         {loading ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
             <ActivityIndicator color={C.accent} size="large" />
-            <Text style={{ color: C.muted, marginTop: 14, fontSize: 14 }}>Cargando usuarios…</Text>
+            <Text style={{ color: C.muted, marginTop: 14, fontSize: 17 }}>Cargando usuarios…</Text>
           </View>
         ) : filteredUsers.length === 0 ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
             <FontAwesome name="user-times" size={36} color={C.muted} />
-            <Text style={{ color: C.muted, fontSize: 14, marginTop: 12 }}>Sin resultados</Text>
-            <Text style={{ color: C.textDim, fontSize: 12, marginTop: 6 }}>Ajusta filtros o crea un nuevo usuario si tienes permisos.</Text>
+            <Text style={{ color: C.muted, fontSize: 17, marginTop: 12 }}>Sin resultados</Text>
+            <Text style={{ color: C.textDim, fontSize: 15, marginTop: 6 }}>Ajusta filtros o crea un nuevo usuario si tienes permisos.</Text>
           </View>
         ) : (
           <>
             {/* Table header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.lift, borderRadius: 8, marginBottom: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: isDark ? C.lift : 'rgba(120,120,120,0.28)', borderRadius: 8, marginBottom: 4, borderWidth: isDark ? 0 : 1, borderColor: isDark ? 'transparent' : 'rgba(120,120,120,0.16)' }}>
               {[
                 { label: 'CONTRATO', flex: 1.2 },
                 { label: 'NOMBRE',   flex: 2   },
@@ -1727,8 +1758,8 @@ export default function CmsUsers() {
               ].map((col) => (
                 <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
                   <Text style={{
-                    color: C.muted,
-                    fontSize: 10, fontWeight: '800',
+                    color: isDark ? C.muted : theme.textMuted,
+                    fontSize: 11, fontWeight: '800',
                     letterSpacing: 1.2,
                     textTransform: 'uppercase',
                     fontFamily: 'Montserrat-SemiBold',
@@ -1748,24 +1779,24 @@ export default function CmsUsers() {
               return (
                 <View key={user.id} style={{
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
-                  backgroundColor: C.surface,
+                  backgroundColor: isDark ? C.surface : 'rgba(120,120,120,0.36)',
                   borderRadius: 8, marginBottom: 3,
                   borderBottomWidth: 1,
-                  borderBottomColor: C.border,
+                  borderBottomColor: isDark ? C.border : 'rgba(120,120,120,0.10)',
                 }}>
                   {/* CONTRATO */}
                   <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
-                    <Text style={{ color: user.contrato ? C.text : C.muted, fontSize: 12, fontWeight: user.contrato ? '600' : '400', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.contrato || '—'}</Text>
+                    <Text style={{ color: user.contrato ? (isDark ? C.text : theme.text) : (isDark ? C.muted : theme.textMuted), fontSize: 15, fontWeight: user.contrato ? '600' : '400', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.contrato || '—'}</Text>
                   </View>
 
                   {/* NOMBRE — avatar consistente + name */}
                   <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
                     <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: `${C.accent}40` }}>
-                      <Text style={{ color: AVATAR_TEXT, fontSize: 11, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{initials(user.nombre)}</Text>
+                      <Text style={{ color: AVATAR_TEXT, fontSize: 13, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{initials(user.nombre)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.nombre}</Text>
-                      <Text style={{ color: C.muted, fontSize: 10, marginTop: 2, fontFamily: 'Montserrat-SemiBold' }}>{getUserTypeMeta(user).label}</Text>
+                      <Text style={{ color: isDark ? C.text : theme.text, fontSize: 16, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.nombre}</Text>
+                      <Text style={{ color: isDark ? C.muted : theme.textMuted, fontSize: 11, marginTop: 2, fontFamily: 'Montserrat-SemiBold' }}>{getUserTypeMeta(user).label}</Text>
                     </View>
                   </View>
 
@@ -1773,7 +1804,7 @@ export default function CmsUsers() {
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
                     {(() => { const t = getTipoMeta(user); return (
                       <View style={{ backgroundColor: t.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                        <Text style={{ color: t.color, fontSize: 11, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{t.label}</Text>
+                        <Text style={{ color: t.color, fontSize: 13, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{t.label}</Text>
                       </View>
                     ); })()}
                   </View>
@@ -1781,25 +1812,25 @@ export default function CmsUsers() {
                   {/* ESTADO */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
                     <View style={{ backgroundColor: statusMeta.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: statusMeta.color, fontSize: 11, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{statusMeta.label}</Text>
+                      <Text style={{ color: statusMeta.color, fontSize: 13, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{statusMeta.label}</Text>
                     </View>
                   </View>
 
                   {/* PLAN — accent color */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
                     <View style={{ backgroundColor: C.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
-                      <Text style={{ color: '#1A1A2E', fontSize: 10, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
+                      <Text style={{ color: '#1A1A2E', fontSize: 11, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
                     </View>
                   </View>
 
                   {/* SESIONES */}
                   <View style={{ flex: 0.7, paddingHorizontal: 4 }}>
-                    <Text style={{ color: C.text, fontSize: 12, fontWeight: '700' }}>{user.sesiones}/{user.maxDevices}</Text>
+                    <Text style={{ color: isDark ? C.text : theme.text, fontSize: 15, fontWeight: '700' }}>{user.sesiones}/{user.maxDevices}</Text>
                   </View>
 
                   {/* EMAIL */}
                   <View style={{ flex: 1.5, paddingHorizontal: 4 }}>
-                    <Text style={{ color: C.textDim, fontSize: 11 }} numberOfLines={1}>{user.email}</Text>
+                    <Text style={{ color: isDark ? C.textDim : theme.textSec, fontSize: 13 }} numberOfLines={1}>{user.email}</Text>
                   </View>
 
                   {/* Inline Actions */}
@@ -1837,7 +1868,7 @@ export default function CmsUsers() {
         )}
 
         {!loading && filteredUsers.length > 0 ? (
-          <Text style={{ color: C.muted, fontSize: 12, marginTop: 12, textAlign: 'center' }}>
+          <Text style={{ color: isDark ? C.muted : theme.textMuted, fontSize: 15, marginTop: 12, textAlign: 'center' }}>
             Mostrando {Math.min(visibleUsers.length, filteredUsers.length)} de {filteredUsers.length} usuarios
           </Text>
         ) : null}

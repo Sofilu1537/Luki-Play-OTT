@@ -52,9 +52,9 @@ export const darkTheme: ThemeTokens = {
   headerBg:     '#240046',                    // Russian Violet sólido — navbar y headers
   border:       'rgba(255,255,255,0.08)',
   borderAccent: 'rgba(255,184,0,0.28)',
-  text:         '#FAF6E7',                    // Cosmic Latte — texto primario
-  textSec:      'rgba(250,246,231,0.65)',
-  textMuted:    'rgba(250,246,231,0.45)',      // subido de 0.38 → 0.45 para pasar contraste AA
+  text:         '#FFFFFF',
+  textSec:      'rgba(255,255,255,0.88)',
+  textMuted:    'rgba(255,255,255,0.65)',
   accent:       '#FFB800',                    // Selective Yellow — acción principal
   accentSoft:   'rgba(255,184,0,0.12)',
   accentBorder: 'rgba(255,184,0,0.30)',
@@ -72,13 +72,13 @@ export const darkTheme: ThemeTokens = {
 };
 
 export const lightTheme: ThemeTokens = {
-  // Backgrounds — brand palette: Cosmic Latte base, Rebecca Purple tint para superficies
-  bodyBg:       '#FAF6E7',                    // Cosmic Latte — fondo base de pantalla
-  cardBg:       '#FFFFFF',                    // Blanco puro — tarjetas principales
-  surfaceBg:    'rgba(96, 38, 158, 0.06)',    // Rebecca Purple 6% tint — superficies secundarias
-  liftBg:       'rgba(96, 38, 158, 0.10)',    // Rebecca Purple 10% tint — elementos elevados
-  headerBg:     'rgba(250, 246, 231, 0.96)',  // Cosmic Latte semitransparente — navbar con blur
-  border:       'rgba(96, 38, 158, 0.12)',    // Borde con tinte de marca (antes era negro neutro)
+  // Backgrounds — light neutral palette: white base + transparent gray surfaces
+  bodyBg:       '#FFFFFF',                    // Blanco puro — fondo base de pantalla
+  cardBg:       'rgba(120,120,120,0.36)',    // Gris suave más visible — tarjetas
+  surfaceBg:    'rgba(120,120,120,0.28)',    // Gris suave — superficies secundarias
+  liftBg:       'rgba(120,120,120,0.40)',    // Gris translúcido más sólido — elementos elevados
+  headerBg:     'rgba(255,255,255,0.96)',    // Blanco semitransparente — navbar con blur
+  border:       'rgba(120,120,120,0.16)',    // Borde gris suave
   borderAccent: 'rgba(255,184,0,0.40)',
   text:         '#240046',                    // Russian Violet — texto primario (más on-brand que azul noche)
   textSec:      'rgba(36, 0, 70, 0.62)',

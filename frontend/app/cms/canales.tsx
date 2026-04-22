@@ -10,6 +10,7 @@ import { useCategoriasStore } from '../../services/categoriasStore';
 import type { AdminCanal, AdminCanalPayload } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 // ─── Types ────────────────────────────────────────────────────
 type ChannelStatus = AdminCanal['status'];
@@ -593,8 +594,11 @@ export default function CmsCanales() {
     }
   }
 
+  const { isDark } = useTheme();
+
   return (
     <CmsShell breadcrumbs={[{ label: 'Canales' }]}>
+      <View style={{ flex: 1, backgroundColor: isDark ? 'transparent' : '#240046' }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
 
         {/* ── Header Section ── */}
@@ -856,6 +860,7 @@ export default function CmsCanales() {
           categories={activeCategories}
         />
       )}
+      </View>
     </CmsShell>
   );
 }
