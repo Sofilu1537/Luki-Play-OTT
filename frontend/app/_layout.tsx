@@ -3,26 +3,15 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import SplashIntro from '../components/SplashIntro';
 
 SplashScreen.preventAutoHideAsync();
 
-/**
- * Root layout component for the entire application.
- *
- * Responsible for:
- * - Importing global NativeWind CSS.
- * - Preventing the splash screen from hiding automatically.
- * - Hiding the splash screen after a 500 ms grace period.
- * - Defining the root `Stack` navigator with all top-level route groups.
- *
- * Route groups registered:
- * - `index`  — auth redirect gate
- * - `(auth)` — unauthenticated flows (login)
- * - `(app)`  — authenticated main tab area
- * - `admin`  — administration panel
- * - `player` — fullscreen video player
- */
+// Module-level flag: splash shows exactly once per session
+let _splashPlayed = false;
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Heavitas: require('../assets/fonts/Heavitas.ttf'),
@@ -30,19 +19,22 @@ export default function RootLayout() {
     'Montserrat-SemiBold': require('../assets/fonts/Montserrat-SemiBold.ttf'),
     'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
   });
+  const [showSplash, setShowSplash] = useState(!_splashPlayed);
 
   useEffect(() => {
     if (!fontsLoaded) return;
-    const timer = setTimeout(() => {
-      SplashScreen.hideAsync();
-    }, 500);
-    return () => clearTimeout(timer);
+    SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
 
+  function handleSplashDone() {
+    _splashPlayed = true;
+    setShowSplash(false);
+  }
+
   return (
-    <>
+    <View style={styles.root}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -52,6 +44,13 @@ export default function RootLayout() {
         <Stack.Screen name="player" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
-    </>
+      {showSplash && <SplashIntro onFinish={handleSplashDone} />}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});

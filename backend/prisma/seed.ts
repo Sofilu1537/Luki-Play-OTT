@@ -38,6 +38,65 @@ interface SubscriberData {
   fechaFin: string;
 }
 
+interface ChannelSeedData {
+  nombre: string;
+  slug: string;
+  streamUrl: string;
+  logoUrl?: string;
+  categoryName: string;
+  resolution: string;
+  bitrateKbps: number;
+  sortOrder: number;
+}
+
+const defaultChannels: ChannelSeedData[] = [
+  {
+    nombre: 'Canal 1 HD',
+    slug: 'canal-1-hd',
+    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+    categoryName: 'Noticias',
+    resolution: '1080p',
+    bitrateKbps: 5000,
+    sortOrder: 1,
+  },
+  {
+    nombre: 'Gama TV',
+    slug: 'gama-tv',
+    streamUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8',
+    categoryName: 'General',
+    resolution: '1080p',
+    bitrateKbps: 5000,
+    sortOrder: 2,
+  },
+  {
+    nombre: 'TC Televisión',
+    slug: 'tc-television',
+    streamUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+    categoryName: 'General',
+    resolution: '1080p',
+    bitrateKbps: 4500,
+    sortOrder: 3,
+  },
+  {
+    nombre: 'Ecuador TV',
+    slug: 'ecuador-tv',
+    streamUrl: 'https://demo.unified-streaming.com/k8s/live/scte35.isml/.m3u8',
+    categoryName: 'Noticias',
+    resolution: '720p',
+    bitrateKbps: 3500,
+    sortOrder: 4,
+  },
+  {
+    nombre: 'Teleamazonas',
+    slug: 'teleamazonas',
+    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+    categoryName: 'Noticias',
+    resolution: '1080p',
+    bitrateKbps: 5000,
+    sortOrder: 5,
+  },
+];
+
 const subscribers: SubscriberData[] = [
   { nombre: 'CASTRO DANIEL', firstName: 'CASTRO', lastName: 'DANIEL', email: '', telefono: '0987284494', contrato: '000000000', plan: 'PLAN BASICO', maxDevices: 2, status: 'ANULADO', fechaInicio: '2020-09-14', fechaFin: '' },
   { nombre: 'DOICELA NEGRETE JEFFERSON XAVIER', firstName: 'DOICELA', lastName: 'NEGRETE', email: 'facturacion@luki.ec', telefono: '0939246460', contrato: '000000002', plan: 'PLAN BASICO', maxDevices: 2, status: 'SUSPENDIDO', fechaInicio: '2020-08-27', fechaFin: '2022-12-01' },
@@ -153,6 +212,65 @@ async function main() {
 
     console.log('✅ 2 CMS users created (admin + soporte)');
 
+    // ─── 2.1 Permanent QA contract login user (dev/staging smoke test) ───
+    const qaCustomer = await tx.customer.upsert({
+      where: { email: 'contract.test@lukiplay.com' },
+      update: {
+        passwordHash: defaultPasswordHash,
+        role: 'CLIENTE',
+        status: 'ACTIVE',
+        mustChangePassword: false,
+        isCmsUser: false,
+        isSubscriber: true,
+        isAccountActivated: true,
+        deletedAt: null,
+      },
+      create: {
+        nombre: 'Contrato Test Luki',
+        firstName: 'Contrato',
+        lastName: 'Test',
+        email: 'contract.test@lukiplay.com',
+        telefono: '0990000000',
+        passwordHash: defaultPasswordHash,
+        role: 'CLIENTE',
+        status: 'ACTIVE',
+        mustChangePassword: false,
+        isCmsUser: false,
+        isSubscriber: true,
+        isAccountActivated: true,
+      },
+    });
+
+    await tx.contract.upsert({
+      where: { contractNumber: '999000001' },
+      update: {
+        customerId: qaCustomer.id,
+        planName: 'LUKI PLAY',
+        ispPlanName: 'PLAN QA',
+        maxDevices: 2,
+        maxConcurrentStreams: 1,
+        sessionDurationDays: 30,
+        sessionLimitPolicy: 'BLOCK_NEW',
+        fechaInicio: new Date('2026-01-01'),
+        fechaFin: new Date('2035-01-01'),
+        deletedAt: null,
+      },
+      create: {
+        customerId: qaCustomer.id,
+        contractNumber: '999000001',
+        planName: 'LUKI PLAY',
+        ispPlanName: 'PLAN QA',
+        maxDevices: 2,
+        maxConcurrentStreams: 1,
+        sessionDurationDays: 30,
+        sessionLimitPolicy: 'BLOCK_NEW',
+        fechaInicio: new Date('2026-01-01'),
+        fechaFin: new Date('2035-01-01'),
+      },
+    });
+
+    console.log('✅ Permanent QA contract user seeded (999000001 / contract.test@lukiplay.com)');
+
     // ─── 3. Create default categories ───────────────────────
     const defaultCategories = [
       { nombre: 'Noticias', descripcion: 'Canales informativos nacionales e internacionales', icono: 'newspaper-o' },
@@ -177,6 +295,53 @@ async function main() {
     }
 
     console.log('✅ 6 default categories created');
+
+    // ─── 3.1 Create default live channels ──────────────────
+    const categories = await tx.category.findMany({
+      where: { deletedAt: null },
+      select: { id: true, nombre: true },
+    });
+    const categoryByName = new Map(categories.map((c) => [c.nombre, c.id]));
+
+    for (const channel of defaultChannels) {
+      const categoryId = categoryByName.get(channel.categoryName);
+      if (!categoryId) continue;
+
+      await tx.channel.upsert({
+        where: { slug: channel.slug },
+        update: {
+          nombre: channel.nombre,
+          streamUrl: channel.streamUrl,
+          logoUrl: channel.logoUrl ?? null,
+          categoryId,
+          status: 'ACTIVE',
+          isLive: true,
+          healthStatus: 'HEALTHY',
+          streamProtocol: 'HLS',
+          resolution: channel.resolution,
+          bitrateKbps: channel.bitrateKbps,
+          sortOrder: channel.sortOrder,
+          viewerCount: 0,
+        },
+        create: {
+          nombre: channel.nombre,
+          slug: channel.slug,
+          streamUrl: channel.streamUrl,
+          logoUrl: channel.logoUrl ?? null,
+          categoryId,
+          status: 'ACTIVE',
+          isLive: true,
+          healthStatus: 'HEALTHY',
+          streamProtocol: 'HLS',
+          resolution: channel.resolution,
+          bitrateKbps: channel.bitrateKbps,
+          sortOrder: channel.sortOrder,
+          viewerCount: 0,
+        },
+      });
+    }
+
+    console.log(`✅ ${defaultChannels.length} default live channels seeded`);
 
     // ─── 4. Create default OTT components ───────────────────
     const defaultComponents = [

@@ -3,17 +3,6 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../services/authStore';
 import { useEffect, useState } from 'react';
 
-/**
- * Application entry-point / auth-redirect gate.
- *
- * On mount it calls {@link useAuthStore.restoreSession} to rehydrate any
- * persisted session (tokens in localStorage / memory fallback). Once the
- * restore attempt completes it redirects to the appropriate route:
- * - Authenticated user (has accessToken) → `/(app)/home`
- * - Unauthenticated user → `/(auth)/login`
- *
- * Shows an activity indicator while the session is being restored.
- */
 export default function Index() {
     const accessToken = useAuthStore((state) => state.accessToken);
     const restoreSession = useAuthStore((state) => state.restoreSession);
