@@ -131,8 +131,10 @@ y canales en vivo. El sistema incluye:
 
 3. GESTIÓN
    └─ Módulos: Usuarios, Componentes, Canales, Planes,
-      Sliders, Categorías, Blog, Monitor, Impuestos
+      Sliders, Categorías, Blog, Monitor, Impuestos,
+      Solicitudes de Registro, Roles
       └─ CRUD completo con interfaz Nebula Dark
+      └─ Persistencia 100% en PostgreSQL (sin localStorage)
 ```
 
 ---
@@ -182,22 +184,61 @@ y canales en vivo. El sistema incluye:
 
 ### Enumeraciones
 
-| Enum                | Valores                                         |
-|---------------------|-------------------------------------------------|
-| UserRole            | SUPERADMIN, SOPORTE, CLIENTE                    |
-| UserStatus          | ACTIVE, INACTIVE, SUSPENDED, PENDING, TRIAL     |
-| SessionLimitPolicy  | BLOCK_NEW, REPLACE_OLDEST                       |
-| Audience (lógico)   | app, cms                                        |
+| Enum                       | Valores                                                        |
+|----------------------------|----------------------------------------------------------------|
+| UserRole                   | SUPERADMIN, ADMIN, SOPORTE, CLIENTE                            |
+| UserStatus                 | ACTIVE, INACTIVE, SUSPENDED, PENDING, TRIAL                    |
+| SessionLimitPolicy         | BLOCK_NEW, REPLACE_OLDEST                                      |
+| ChannelStatus              | ACTIVE, SCHEDULED, MAINTENANCE, INACTIVE                       |
+| StreamProtocol             | HLS, DASH, HLS_DASH                                            |
+| ChannelHealthStatus        | HEALTHY, DEGRADED, OFFLINE, MAINTENANCE                        |
+| RegistrationRequestStatus  | PENDING, APPROVED, REJECTED                                    |
+| Audience (lógico)          | app, cms                                                       |
 
-### Componentes OTT
+### Modelos extendidos — Canales, Categorías y Componentes
 
-| ID        | Nombre     | Tipo       | Descripción                               |
-|-----------|------------|------------|-------------------------------------------|
-| comp-001  | VOD        | VOD        | Video bajo demanda                        |
-| comp-002  | Destacados | DESTACADOS | Contenido principal del banner hero       |
-| comp-003  | Live       | LIVE       | Canales en vivo                           |
-| comp-004  | Series     | SERIES     | Catálogo de series por temporadas         |
-| comp-005  | Radio      | RADIO      | Estaciones de radio en línea              |
+```
+┌─────────────────┐        ┌──────────────────────┐        ┌─────────────────┐
+│    Category     │        │   ChannelCategory     │        │    Channel      │
+├─────────────────┤        ├──────────────────────┤        ├─────────────────┤
+│ id (uuid)       │◀───────│ categoryId           │───────▶│ id (uuid)       │
+│ nombre (unique) │        │ channelId            │        │ nombre (unique) │
+│ slug?           │        │ assignedAt           │        │ slug (unique)   │
+│ descripcion     │        └──────────────────────┘        │ streamUrl       │
+│ icono           │                                         │ categoryId ─────┼──▶ Category
+│ accentColor     │        ┌──────────────────────┐        │ status          │
+│ displayOrder    │        │  ComponentCategory   │        │ healthStatus    │
+│ activo          │◀───────│ categoryId           │        │ streamProtocol  │
+│ deletedAt?      │        │ componentId          │        │ deletedAt?      │
+└─────────────────┘        └──────────┬───────────┘        └─────────────────┘
+                                      │
+                           ┌──────────▼───────────┐
+                           │      Component       │
+                           ├──────────────────────┤
+                           │ id (uuid)            │
+                           │ nombre (unique)      │
+                           │ descripcion          │
+                           │ icono                │
+                           │ tipo                 │
+                           │ activo               │
+                           │ orden                │
+                           └──────────────────────┘
+```
+
+> **Nota**: `Channel` tiene una FK directa a `Category` (categoría principal) y además
+> una relación M:M via `ChannelCategory` para asignaciones adicionales desde el CMS.
+> `Category` tiene `deletedAt` para soft-delete; categorías con `displayOrder <= 5`
+> están protegidas contra eliminación.
+
+### Componentes OTT (persistidos en BD)
+
+| Tipo       | Descripción                               |
+|------------|-------------------------------------------|
+| VOD        | Video bajo demanda                        |
+| DESTACADOS | Contenido principal del banner hero       |
+| LIVE       | Canales en vivo                           |
+| SERIES     | Catálogo de series por temporadas         |
+| RADIO      | Estaciones de radio en línea              |
 | comp-006  | PPV        | PPV        | Pay Per View — eventos premium            |
 | comp-007  | Kids       | KIDS       | Contenido infantil                        |
 | comp-008  | Deportes   | DEPORTES   | Canales y eventos deportivos              |
@@ -213,7 +254,7 @@ y canales en vivo. El sistema incluye:
 | Billing Gateway      | billing/     | Mock    | Valida contratos ISP y suscripciones      |
 | CRM Gateway          | crm/         | Mock    | Consulta datos de clientes por contrato   |
 | Servicio OTP (Email) | auth/        | Mock    | Envío de códigos OTP por correo           |
-| PostgreSQL 15        | prisma/      | **Activo** | Persistencia de usuarios, contratos, sesiones, planes |
+| PostgreSQL 15        | prisma/      | **Activo** | Persistencia completa: usuarios, contratos, sesiones, planes, canales, categorías, componentes |
 | Redis 7              | —            | Config  | Definido en .env, preparado para caché/sesiones |
 | TMDB                 | frontend     | URLs    | Imágenes de referencia (sin API key)      |
 | CDN de Video         | frontend     | Demo    | URL de stream HLS de demostración         |
@@ -269,6 +310,40 @@ y canales en vivo. El sistema incluye:
 - **Primer acceso**: Requiere número de contrato + cédula para activar cuenta
 - **Suspensión por contrato**: Solo afecta el contrato específico, no otros del mismo cliente
 - **CMS**: Acceso directo con email + contraseña (sin contrato)
+
+---
+
+## Endpoints REST — Módulos Recientes
+
+### Categorías (`/admin/categorias`)
+
+| Método | Ruta                                      | Descripción                              |
+|--------|-------------------------------------------|------------------------------------------|
+| GET    | `/admin/categorias`                       | Listar (filtros: active, search, limit)  |
+| GET    | `/admin/categorias/:id`                   | Obtener categoría por ID                 |
+| POST   | `/admin/categorias`                       | Crear categoría                          |
+| PATCH  | `/admin/categorias/:id`                   | Actualizar categoría                     |
+| POST   | `/admin/categorias/:id/toggle`            | Activar/desactivar                       |
+| DELETE | `/admin/categorias/:id`                   | Soft-delete                              |
+| POST   | `/admin/categorias/:id/canales`           | Sincronizar canales asociados (M:M)      |
+| DELETE | `/admin/categorias/:id/canales/:channelId`| Eliminar canal de categoría              |
+| PATCH  | `/admin/categorias/reorder/bulk`          | Reordenar categorías en bloque           |
+
+### Componentes (`/admin/componentes`)
+
+| Método | Ruta                                      | Descripción                              |
+|--------|-------------------------------------------|------------------------------------------|
+| GET    | `/admin/componentes`                      | Listar componentes con categorías        |
+| POST   | `/admin/componentes/:id/toggle`           | Activar/desactivar componente            |
+| POST   | `/admin/componentes/reorder`              | Reordenar por array de IDs               |
+| GET    | `/admin/componentes/:id/categorias`       | Obtener categorías de un componente      |
+| POST   | `/admin/componentes/:id/categorias`       | Sincronizar categorías (M:M)             |
+
+### Endpoint público (sin auth)
+
+| Método | Ruta                    | Descripción                              |
+|--------|-------------------------|------------------------------------------|
+| GET    | `/public/componentes`   | Componentes activos para la app OTT      |
 
 ---
 

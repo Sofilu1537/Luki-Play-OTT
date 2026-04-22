@@ -14,8 +14,8 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 |---------------------|---------------------------------------------------------------|
 | **Nombre**          | LUKI Play OTT                                                 |
 | **Propósito**       | Plataforma OTT de streaming y contenido bajo demanda          |
-| **Estado**          | v0.2.0-beta — Sprint 3 en progreso (persistencia PostgreSQL) |
-| **Autor**           | Marco Logacho — Director de Desarrollo Digital e IA, DataCom S.A. |
+| **Estado**          | v0.3.0-beta — Sprint 1 completado (Modulos de autenticación y roles y persistencia en base de datos) |
+| **Autor**           | Sofia Soria  — Product Designer , DataCom S.A. |
 | **Repositorio**     | https://github.com/Sofilu1537/Luki-Play-OTT                  |
 | **Zona horaria**    | America/Guayaquil (UTC-5)                                     |
 
@@ -66,6 +66,19 @@ npx prisma migrate dev      # Aplica migraciones a la BD
 npx prisma db seed           # Carga datos de prueba (49 usuarios)
 npm run start:dev
 ```
+
+> **⚠️ Configuración de correo requerida**: el proyecto ya usa Titan Email para el envío
+> de claves temporales y correos transaccionales. En el `.env` se debe completar
+> `SMTP_PASS` para la cuenta `noreply@luki.ec`. Los valores de referencia son:
+>
+> `SMTP_HOST=smtp.titan.email`
+> `SMTP_PORT=465`
+> `SMTP_SECURE=true`
+> `SMTP_USER=noreply@luki.ec`
+> `SMTP_FROM=noreply@luki.ec`
+>
+> Sin `SMTP_PASS`, el envío de OTP, códigos de activación y recuperación de contraseña
+> no funcionará.
 
 El backend queda disponible en `http://localhost:3000`.
 Swagger: `http://localhost:3000/api/docs`
@@ -133,7 +146,7 @@ Todos tienen `mustChangePassword: true` hasta completar primer acceso.
 Luki-Play-OTT/
 ├── backend/                        # API NestJS
 │   ├── prisma/
-│   │   ├── schema.prisma           # Modelos de datos (7 modelos, 3 enums)
+│   │   ├── schema.prisma           # Modelos de datos (11 modelos, 5 enums)
 │   │   ├── seed.ts                 # Seed: 47 suscriptores + 2 CMS + plan
 │   │   └── migrations/             # Migraciones SQL de PostgreSQL
 │   ├── prisma.config.ts            # Configuración Prisma 7 (datasource + seed)
@@ -197,20 +210,21 @@ La plataforma sigue una arquitectura **frontend/backend separados**:
 
 ## Módulos del CMS
 
-| Módulo               | Ruta               | Estado        |
-|----------------------|--------------------|---------------|
-| Dashboard            | /cms/dashboard     | Activo        |
-| Usuarios             | /cms/users         | Activo        |
-| Contratos            | /cms/accounts      | Activo        |
-| Sesiones             | /cms/sessions      | Activo        |
-| Componentes          | /cms/componentes   | Activo        |
-| Planes               | /cms/planes        | Activo        |
-| Sliders              | /cms/sliders       | Activo        |
-| Canales              | /cms/canales       | Activo        |
-| Categorías           | /cms/categorias    | Activo        |
-| Blog                 | /cms/blog          | Activo        |
-| Monitor              | /cms/monitor       | Activo        |
-| Impuestos            | /cms/impuestos     | Activo        |
+| Módulo                  | Ruta                            | Estado        |
+|-------------------------|---------------------------------|---------------|
+| Dashboard               | /cms/dashboard                  | Activo        |
+| Usuarios                | /cms/users                      | Activo        |
+| Componentes             | /cms/componentes                | Activo        |
+| Planes                  | /cms/planes                     | Activo        |
+| Canales                 | /cms/canales                    | Activo        |
+| Categorías              | /cms/categorias                 | Activo        |
+| Sliders                 | /cms/sliders                    | Activo        |
+| Monitor                 | /cms/monitor                    | Activo        |
+| Notificaciones Admin    | /cms/notificaciones-admin       | Activo        |
+| Analítica               | /cms/analitica                  | Activo        |
+| Propaganda              | /cms/propaganda                 | Activo        |
+| Notificaciones Abonado  | /cms/notificaciones-abonado     | Activo        |
+| Roles                   | /cms/roles                      | Activo        |
 
 ---
 
@@ -221,7 +235,9 @@ La plataforma sigue una arquitectura **frontend/backend separados**:
 | 1      | Autenticación (login, OTP, JWT, roles)                    | ✅ Completado |
 | 1.5    | Panel CMS base (diseño, estructura, módulos activos)      | ✅ Completado |
 | 2      | Módulos CMS avanzados (componentes, autenticación segura) | ✅ Completado |
-| 3      | Persistencia PostgreSQL + Prisma + auth por contrato      | 🔄 En progreso |
+| 3      | Persistencia PostgreSQL + Prisma + auth por contrato      | ✅ Completado |
+| 3.5    | Módulo Categorías con campos extendidos y M:M canales     | ✅ Completado |
+| 3.6    | Módulo Componentes con M:M categorías y persistencia BD   | ✅ Completado |
 | 4      | Integración billing/CRM real                              | ⏳ Pendiente  |
 
 ---
