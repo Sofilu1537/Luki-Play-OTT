@@ -29,7 +29,7 @@ function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
       paddingVertical: 10,
       gap:             12,
       borderBottomWidth: 1,
-      borderBottomColor: isDark ? C.border : 'rgba(120,120,120,0.10)',
+      borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.16)',
     }}>
       <View style={{
         width:           38,
@@ -45,7 +45,7 @@ function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{
-          color:      isDark ? C.muted : theme.textMuted,
+          color:      isDark ? C.muted : '#240046',
           fontSize:   10.5,
           fontWeight: '700',
           letterSpacing: 0.6,
@@ -55,7 +55,7 @@ function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
           {label}
         </Text>
         {sublabel ? (
-          <Text style={{ color: isDark ? C.muted : theme.textSec, fontSize: 9, fontFamily: FONT_FAMILY.body, opacity: 0.8 }}>
+          <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 9, fontFamily: FONT_FAMILY.body, opacity: 0.8 }}>
             {sublabel}
           </Text>
         ) : null}
@@ -90,10 +90,10 @@ export default function ChannelsWidget({ channels, isLoading }: ChannelsWidgetPr
   return (
     <View style={{
       flex:            1,
-      backgroundColor: isDark ? C.bg : 'rgba(120,120,120,0.36)',
+      backgroundColor: isDark ? C.bg : 'rgba(255,255,255,0.92)',
       borderRadius:    16,
       borderWidth:     1,
-      borderColor:     isDark ? C.borderMid : 'rgba(120,120,120,0.16)',
+      borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
       overflow:        'hidden',
       shadowColor:     '#240046',
       shadowOpacity:   isDark ? 0 : 0.08,
@@ -108,7 +108,7 @@ export default function ChannelsWidget({ channels, isLoading }: ChannelsWidgetPr
         paddingHorizontal: 18,
         paddingVertical:  14,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? C.border : 'rgba(120,120,120,0.10)',
+        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
         gap:              8,
       }}>
         <FontAwesome name="tv" size={14} color={isDark ? C.muted : theme.textMuted} />
