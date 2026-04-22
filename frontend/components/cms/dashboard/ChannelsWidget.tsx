@@ -21,8 +21,6 @@ interface StatRowProps {
 
 function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
   const { isDark, theme } = useTheme();
-  const cardTextColor = isDark ? C.text : theme.text;
-  const iconBorderColor = `${color}30`;
 
   return (
     <View style={{
@@ -41,13 +39,13 @@ function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
         alignItems:      'center',
         justifyContent:  'center',
         borderWidth:     1,
-        borderColor:     iconBorderColor,
+        borderColor:     `${color}30`,
       }}>
         <FontAwesome name={icon} size={15} color={color} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{
-          color:      cardTextColor,
+          color:      isDark ? C.muted : theme.textMuted,
           fontSize:   10.5,
           fontWeight: '700',
           letterSpacing: 0.6,
@@ -57,7 +55,7 @@ function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
           {label}
         </Text>
         {sublabel ? (
-          <Text style={{ color: cardTextColor, fontSize: 9, fontFamily: FONT_FAMILY.body, opacity: 0.8 }}>
+          <Text style={{ color: isDark ? C.muted : theme.textSec, fontSize: 9, fontFamily: FONT_FAMILY.body, opacity: 0.8 }}>
             {sublabel}
           </Text>
         ) : null}
@@ -76,7 +74,6 @@ function StatRow({ label, value, color, icon, sublabel }: StatRowProps) {
 
 export default function ChannelsWidget({ channels, isLoading }: ChannelsWidgetProps) {
   const { isDark, theme } = useTheme();
-  const warningColor = '#FFB800';
   const total   = channels.length;
 
   // EN VIVO AHORA: isLive=true + viewerCount > 0
@@ -93,10 +90,10 @@ export default function ChannelsWidget({ channels, isLoading }: ChannelsWidgetPr
   return (
     <View style={{
       flex:            1,
-      backgroundColor: isDark ? C.bg : 'rgba(255,255,255,0.92)',
+      backgroundColor: isDark ? C.bg : 'rgba(120,120,120,0.36)',
       borderRadius:    16,
       borderWidth:     1,
-      borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
+      borderColor:     isDark ? C.borderMid : 'rgba(120,120,120,0.16)',
       overflow:        'hidden',
       shadowColor:     '#240046',
       shadowOpacity:   isDark ? 0 : 0.08,
@@ -111,7 +108,7 @@ export default function ChannelsWidget({ channels, isLoading }: ChannelsWidgetPr
         paddingHorizontal: 18,
         paddingVertical:  14,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
+        borderBottomColor: isDark ? C.border : 'rgba(120,120,120,0.10)',
         gap:              8,
       }}>
         <FontAwesome name="tv" size={14} color={isDark ? C.muted : theme.textMuted} />
@@ -155,7 +152,7 @@ export default function ChannelsWidget({ channels, isLoading }: ChannelsWidgetPr
         <StatRow
           label="Sin señal"
           icon="exclamation-triangle"
-          color={warningColor}
+          color="#FFB800"
           value={isLoading ? '—' : sinSenal}
         />
       </View>
