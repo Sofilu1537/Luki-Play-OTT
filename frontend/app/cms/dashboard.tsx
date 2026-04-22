@@ -2,10 +2,7 @@ import React, { useEffect } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { LinearGradient } from 'expo-linear-gradient';
 import CmsShell from '../../components/cms/CmsShell';
-import { useTheme } from '../../hooks/useTheme';
 import StatsCard from '../../components/cms/dashboard/StatsCard';
 import LiveChannels from '../../components/cms/dashboard/LiveChannels';
 import RecentContent from '../../components/cms/dashboard/RecentContent';
@@ -52,127 +49,61 @@ const STAT_CARDS = [
 
 // Inner component — rendered inside CmsShell's ThemeProvider
 function DashboardContent({ roleLabel, email }: { roleLabel: string; email: string }) {
-  const { theme } = useTheme();
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Buenos días';
+    if (h < 18) return 'Buenas tardes';
+    return 'Buenas noches';
+  })();
+
+  const displayName = email.split('@')[0];
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: '#FAF6E7' }}
-      contentContainerStyle={{ padding: 24, gap: 24 }}
+      contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero banner */}
-      <LinearGradient
-        colors={['#240046', '#60269E']}
-        locations={[0, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: 20, padding: 28, overflow: 'hidden' }}
-      >
-        {/* Decorative orbs */}
-        <View
+      {/* Encabezado contextual */}
+      <View style={{ marginBottom: 28 }}>
+        <Text
           style={{
-            position:        'absolute',
-            top:             -50,
-            right:           -50,
-            width:           200,
-            height:          200,
-            borderRadius:    100,
-            backgroundColor: 'rgba(255,255,255,0.06)',
+            color: '#240046',
+            fontSize: 22,
+            fontWeight: '700',
+            fontFamily: 'Montserrat-SemiBold',
+            marginBottom: 4,
           }}
-        />
-        <View
-          style={{
-            position:        'absolute',
-            bottom:          -30,
-            right:           80,
-            width:           120,
-            height:          120,
-            borderRadius:    60,
-            backgroundColor: 'rgba(255,255,255,0.04)',
-          }}
-        />
-
-        {/* FIFA badge */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-          <View
-            style={{
-              backgroundColor: 'rgba(255,184,0,0.22)',
-              borderRadius:    8,
-              paddingHorizontal: 10,
-              paddingVertical:   4,
-              flexDirection:   'row',
-              alignItems:      'center',
-              gap:             6,
-              borderWidth:     1,
-              borderColor:     'rgba(255,184,0,0.35)',
-              alignSelf:       'flex-start',
-            }}
-          >
-            <FontAwesome name="bolt" size={9} color="#FFB800" />
-            <Text
-              style={{
-                color:         '#FFB800',
-                fontSize:       9,
-                fontWeight:    '800',
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                fontFamily:    'Montserrat-SemiBold',
-              }}
-            >
-              FIFA WORLD CUP 2026
+        >
+          {greeting}, {displayName}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ color: 'rgba(36,0,70,0.45)', fontSize: 13, fontFamily: 'Montserrat-Regular' }}>
+            {roleLabel}
+          </Text>
+          <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(36,0,70,0.25)' }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#17D1C6' }} />
+            <Text style={{ color: 'rgba(36,0,70,0.55)', fontSize: 13, fontFamily: 'Montserrat-Regular' }}>
+              Plataforma activa
             </Text>
           </View>
         </View>
+      </View>
 
+      {/* Métricas */}
+      <View style={{ marginBottom: 28 }}>
         <Text
           style={{
-            color:         '#FAF6E7',
-            fontSize:       26,
-            fontWeight:    '700',
-            letterSpacing: -0.5,
-            marginBottom:   8,
-            fontFamily:    'Heavitas',
+            color: 'rgba(36,0,70,0.55)',
+            fontSize: 12,
+            fontWeight: '600',
+            marginBottom: 14,
+            fontFamily: 'Montserrat-SemiBold',
           }}
         >
-          Plataforma en preparación
-        </Text>
-        <Text
-          style={{
-            color:       'rgba(250,246,231,0.65)',
-            fontSize:     14,
-            lineHeight:   22,
-            marginBottom: 12,
-            fontFamily:  'Montserrat',
-          }}
-        >
-          Sprint 1 activo · Auth, roles y CMS base completados. Infraestructura AWS en configuración.
-        </Text>
-        <Text
-          style={{
-            color:      'rgba(250,246,231,0.40)',
-            fontSize:    12,
-            fontWeight: '500',
-            fontFamily: 'Montserrat',
-          }}
-        >
-          {email} · {roleLabel}
-        </Text>
-      </LinearGradient>
-
-      {/* Stats grid */}
-      <View>
-        <Text
-          style={{
-            color:         theme.textMuted,
-            fontSize:       10,
-            fontWeight:    '800',
-            letterSpacing: 1.5,
-            textTransform: 'uppercase',
-            marginBottom:  12,
-            fontFamily:    'Montserrat-SemiBold',
-          }}
-        >
-          MÉTRICAS CLAVE
+          Resumen del mes
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }}>
           {STAT_CARDS.map((card) => (
@@ -181,20 +112,18 @@ function DashboardContent({ roleLabel, email }: { roleLabel: string; email: stri
         </View>
       </View>
 
-      {/* Live channels + recent content */}
-      <View>
+      {/* En tiempo real */}
+      <View style={{ marginBottom: 28 }}>
         <Text
           style={{
-            color:         theme.textMuted,
-            fontSize:       10,
-            fontWeight:    '800',
-            letterSpacing: 1.5,
-            textTransform: 'uppercase',
-            marginBottom:  12,
-            fontFamily:    'Montserrat-SemiBold',
+            color: 'rgba(36,0,70,0.55)',
+            fontSize: 12,
+            fontWeight: '600',
+            marginBottom: 14,
+            fontFamily: 'Montserrat-SemiBold',
           }}
         >
-          ACTIVIDAD EN TIEMPO REAL
+          Actividad reciente
         </Text>
         <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
           <View style={{ flex: 1.4, minWidth: 280 }}>
@@ -206,20 +135,18 @@ function DashboardContent({ roleLabel, email }: { roleLabel: string; email: stri
         </View>
       </View>
 
-      {/* Quick actions */}
+      {/* Accesos directos */}
       <View style={{ marginBottom: 8 }}>
         <Text
           style={{
-            color:         theme.textMuted,
-            fontSize:       10,
-            fontWeight:    '800',
-            letterSpacing: 1.5,
-            textTransform: 'uppercase',
-            marginBottom:  12,
-            fontFamily:    'Montserrat-SemiBold',
+            color: 'rgba(36,0,70,0.55)',
+            fontSize: 12,
+            fontWeight: '600',
+            marginBottom: 14,
+            fontFamily: 'Montserrat-SemiBold',
           }}
         >
-          ACCIONES RÁPIDAS
+          Accesos directos
         </Text>
         <QuickActions />
       </View>

@@ -55,14 +55,12 @@ export default function StatsCard({
       >
         <Text
           style={{
-            color: '#60269E',
-            fontSize: 9,
-            fontWeight: '700',
-            letterSpacing: 0.8,
-            textTransform: 'uppercase',
+            color: 'rgba(36,0,70,0.50)',
+            fontSize: 12,
+            fontWeight: '500',
             flex: 1,
             marginRight: 8,
-            fontFamily: FONT_FAMILY.bodyBold,
+            fontFamily: FONT_FAMILY.body,
           }}
         >
           {label}

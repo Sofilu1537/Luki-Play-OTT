@@ -1118,7 +1118,7 @@ function UserDetailModal({
                           <FieldCard label="Estado" value={statusMeta?.label} error={user.status !== 'active'} style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Tipo" value={userTypeMeta?.label} style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Rol" value="Usuario" style={{ flex: 1, minWidth: 200 }} />
-                          <FieldCard label="Creado" value={fmtDate(user.createdAt)} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Creado" value={(user as any).createdAt ? fmtDate((user as any).createdAt) : '—'} style={{ flex: 1, minWidth: 200 }} />
                         </View>
                       </>
                     )}
@@ -1246,7 +1246,7 @@ function UserDetailModal({
                     ) : (
                       <View>
                         {/* Plan card */}
-                        <View style={{ background: undefined, backgroundColor: 'rgba(96,38,158,0.15)', borderWidth: 1, borderColor: 'rgba(96,38,158,0.25)', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 12 }}>
+                        <View style={{ backgroundColor: 'rgba(96,38,158,0.15)', borderWidth: 1, borderColor: 'rgba(96,38,158,0.25)', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 12 }}>
                           <Text style={{ color: '#FAF6E7', fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginBottom: 2 }}>{plan?.nombre ?? 'LUKI PLAY'}</Text>
                           <Text style={{ color: 'rgba(250,246,231,0.3)', fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier', letterSpacing: 0.5, marginBottom: 12 }}>Contrato #{user.contrato ?? '—'}</Text>
                           {plan ? (
@@ -1423,7 +1423,8 @@ export default function CmsUsers() {
 
   const exportExcel = () => {
     if (Platform.OS !== 'web') return;
-    import('xlsx').then((XLSX) => {
+    // @ts-ignore
+    Promise.resolve().then(() => require('xlsx')).then((XLSX) => {
       const today       = new Date();
       const dateStr     = today.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const period      = today.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
@@ -1454,7 +1455,7 @@ export default function CmsUsers() {
           getStatusMeta(user.status).label,
           user.plan ?? '—',
           `${user.sesiones}/${user.maxDevices}`,
-          fmtDate(user.createdAt),
+          (user as any).createdAt ? fmtDate((user as any).createdAt) : '—',
         ]),
         [],
         [`Luki Play CMS · ${dateStr} · Documento confidencial de uso interno`],
@@ -1807,7 +1808,6 @@ export default function CmsUsers() {
                     <TouchableOpacity
                       style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)', alignItems: 'center', justifyContent: 'center' }}
                       onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}
-                      title="Ver y Editar"
                     >
                       <FontAwesome name="eye" size={12} color="#FFB800" />
                     </TouchableOpacity>
@@ -1816,14 +1816,12 @@ export default function CmsUsers() {
                         <TouchableOpacity
                           style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,121,0,0.3)', backgroundColor: 'rgba(255,121,0,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => setRecoveryUser(user)}
-                          title="Recuperar contraseña"
                         >
                           <FontAwesome name="lock" size={12} color="#FF7900" />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: user.status === 'active' ? 'rgba(209,16,90,0.3)' : 'rgba(23,209,198,0.3)', backgroundColor: user.status === 'active' ? 'rgba(209,16,90,0.08)' : 'rgba(23,209,198,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => handleDeactivate(user)}
-                          title={user.status === 'active' ? 'Suspender' : 'Activar'}
                         >
                           <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? '#D1105A' : '#17D1C6'} />
                         </TouchableOpacity>

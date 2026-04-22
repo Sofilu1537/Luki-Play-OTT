@@ -186,17 +186,6 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
             >
               LUKI PLAY
             </Text>
-            <Text
-              style={{
-                color: SIDEBAR.textMuted,
-                fontSize: 8,
-                fontWeight: '800',
-                letterSpacing: 2.2,
-                textTransform: 'uppercase',
-              }}
-            >
-              CONTROL CENTER
-            </Text>
           </View>
         )}
         {!collapsed && (
@@ -204,22 +193,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         )}
       </TouchableOpacity>
 
-      {/* Section label */}
       {!collapsed && (
-        <Text
-          style={{
-            color: SIDEBAR.sectionLabel,
-            fontSize: 9,
-            fontWeight: '800',
-            letterSpacing: 2.2,
-            marginHorizontal: 18,
-            marginBottom: 6,
-            textTransform: 'uppercase',
-            fontFamily: FONT_FAMILY.bodySemiBold,
-          }}
-        >
-          NAVEGACIÓN
-        </Text>
+        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 16, marginBottom: 8 }} />
       )}
 
       {/* Nav items */}

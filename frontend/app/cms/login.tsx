@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import { cmsSendRecoveryCode, cmsResetWithCode } from '../../services/api/cmsApi';
@@ -19,20 +18,20 @@ import LukiPlayLogo from '../../components/LukiPlayLogo';
 type Screen = 'login' | 'forgot';
 
 // ---------------------------------------------------------------------------
-// Design tokens — Nebula Dark + Luki Play gold
+// Design tokens — limpio, dark only
 // ---------------------------------------------------------------------------
 const T = {
-  bg: ['#1a0040', '#2e0a6e', '#4a18a0', '#2e0a6e'] as const,
-  card: 'rgba(42, 14, 90, 0.88)',
-  cardBorder: 'rgba(255,255,255,0.10)',
-  input: 'rgba(70, 28, 130, 0.92)',
+  bg: '#160030',
+  card: 'rgba(30, 10, 60, 0.96)',
+  cardBorder: 'rgba(255,255,255,0.09)',
+  input: 'rgba(50, 18, 100, 0.80)',
   inputBorder: 'rgba(255,255,255,0.10)',
-  inputFocus: 'rgba(255,184,0,0.4)',
+  inputFocus: 'rgba(255,184,0,0.35)',
   accent: '#FFB800',
   accentSoft: 'rgba(255,184,0,0.12)',
   text: '#FFFFFF',
-  textSec: '#D0C4E8',
-  muted: '#8B72B2',
+  textSec: '#C9B8E0',
+  muted: '#7A60A0',
   error: '#F43F5E',
   errorBg: 'rgba(244,63,94,0.12)',
   success: '#10B981',
@@ -195,14 +194,10 @@ function CmsPrimaryButton({
     <TouchableOpacity
       style={{
         backgroundColor: T.accent,
-        borderRadius: 16,
-        paddingVertical: 15,
+        borderRadius: 12,
+        paddingVertical: 14,
         alignItems: 'center',
-        opacity: isLoading || disabled ? 0.7 : 1,
-        shadowColor: T.accent,
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        shadowOffset: { width: 0, height: 6 },
+        opacity: isLoading || disabled ? 0.65 : 1,
         marginTop: 4,
       }}
       onPress={onPress}
@@ -695,48 +690,7 @@ export default function CmsLogin() {
   const [screen, setScreen] = useState<Screen>('login');
 
   return (
-    <LinearGradient
-      colors={T.bg}
-      locations={[0, 0.4, 0.7, 1]}
-      start={{ x: 0.2, y: 0 }}
-      end={{ x: 0.8, y: 1 }}
-      style={{ flex: 1 }}
-    >
-      {/* Bokeh orbs */}
-      <View
-        style={{
-          position: 'absolute',
-          top: -80,
-          right: -60,
-          width: 400,
-          height: 400,
-          borderRadius: 200,
-          backgroundColor: 'rgba(123,47,190,0.25)',
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          bottom: -40,
-          left: -80,
-          width: 300,
-          height: 300,
-          borderRadius: 150,
-          backgroundColor: 'rgba(90,30,158,0.20)',
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          top: '40%',
-          left: '10%',
-          width: 200,
-          height: 200,
-          borderRadius: 100,
-          backgroundColor: 'rgba(255,184,0,0.06)',
-        }}
-      />
-
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         style={{ flex: 1 }}
@@ -753,20 +707,19 @@ export default function CmsLogin() {
           }}
         >
           {/* Logo */}
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <LukiPlayLogo variant="full" size={100} />
+          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+            <LukiPlayLogo variant="full" size={90} />
             <Text
               style={{
                 color: T.text,
-                fontSize: 26,
-                fontWeight: '800',
-                letterSpacing: -0.5,
-                marginTop: 16,
+                fontSize: 22,
+                fontWeight: '700',
+                marginTop: 14,
               }}
             >
               Luki Play CMS
             </Text>
-            <Text style={{ color: T.muted, fontSize: 13, marginTop: 6 }}>
+            <Text style={{ color: T.muted, fontSize: 13, marginTop: 5 }}>
               Panel de administración interna
             </Text>
           </View>
@@ -777,14 +730,10 @@ export default function CmsLogin() {
               width: '100%',
               maxWidth: 420,
               backgroundColor: T.card,
-              borderRadius: 24,
+              borderRadius: 18,
               padding: 28,
               borderWidth: 1,
               borderColor: T.cardBorder,
-              shadowColor: '#0D0020',
-              shadowOpacity: 0.5,
-              shadowRadius: 40,
-              shadowOffset: { width: 0, height: 20 },
             }}
           >
             {screen === 'login' ? <LoginForm onSwitch={setScreen} /> : null}
@@ -797,14 +746,14 @@ export default function CmsLogin() {
               color: T.muted,
               fontSize: 11,
               textAlign: 'center',
-              marginTop: 24,
-              opacity: 0.6,
+              marginTop: 20,
+              opacity: 0.55,
             }}
           >
-            Versión v1.0.0
+            v1.0.0
           </Text>
         </KeyboardAvoidingView>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
