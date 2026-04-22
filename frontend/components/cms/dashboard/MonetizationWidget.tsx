@@ -33,23 +33,24 @@ function MetricTile({
   color:     string;
 }) {
   const { isDark, theme } = useTheme();
+  const cardTextColor = isDark ? C.text : theme.text;
 
   return (
     <View style={{
       flex:            1,
-      backgroundColor: isDark ? C.bgSecondary : 'rgba(120,120,120,0.36)',
+      backgroundColor: isDark ? C.bgSecondary : 'rgba(255,255,255,0.92)',
       borderRadius:    14,
       paddingVertical: 12,
       paddingHorizontal: 8,
       borderWidth:     1,
-      borderColor:     isDark ? C.borderMid : 'rgba(120,120,120,0.16)',
+      borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
       alignItems:      'center',
     }}>
       <Text style={{ color, fontSize: 20, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>
         {value}
       </Text>
       <Text style={{
-        color:         isDark ? C.muted : theme.textMuted,
+        color:         cardTextColor,
         fontSize:      10,
         fontWeight:    '700',
         letterSpacing: 0.7,
@@ -61,7 +62,7 @@ function MetricTile({
         {label}
       </Text>
       {sublabel ? (
-        <Text style={{ color: isDark ? C.textDim : theme.textSec, fontSize: 10, fontFamily: FONT_FAMILY.body, marginTop: 1, textAlign: 'center' }}>
+        <Text style={{ color: cardTextColor, fontSize: 10, fontFamily: FONT_FAMILY.body, marginTop: 1, textAlign: 'center' }}>
           {sublabel}
         </Text>
       ) : null}
@@ -77,6 +78,11 @@ function fmtUSD(v: number): string {
 
 export default function MonetizationWidget({ stats, isLoading }: MonetizationWidgetProps) {
   const { isDark, theme } = useTheme();
+  const cardTextColor = isDark ? C.text : theme.text;
+  const accentColor = '#FFB800';
+  const accentSoft = 'rgba(255,184,0,0.18)';
+  const accentGradient = ['rgba(255,184,0,0.16)', 'rgba(255,184,0,0.06)'] as const;
+  const accentBorder = 'rgba(255,184,0,0.28)';
   const mrr           = stats?.mrr               ?? 0;
   const arr           = mrr * 12;
   const active        = stats?.activeSubscribers  ?? 0;
@@ -85,10 +91,10 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
 
   return (
     <View style={{
-      backgroundColor: isDark ? C.bg : 'rgba(120,120,120,0.36)',
+      backgroundColor: isDark ? C.bg : 'rgba(255,255,255,0.92)',
       borderRadius:    16,
       borderWidth:     1,
-      borderColor:     isDark ? C.borderMid : 'rgba(120,120,120,0.16)',
+      borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
       overflow:        'hidden',
       shadowColor:     '#240046',
       shadowOpacity:   isDark ? 0 : 0.08,
@@ -115,14 +121,14 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
       <View style={{ padding: 14, gap: 10 }}>
         {/* MRR hero */}
         <LinearGradient
-          colors={isDark ? ['rgba(255,184,0,0.16)', 'rgba(255,184,0,0.06)'] : ['rgba(255,183,173,0.24)', 'rgba(255,183,173,0.10)']}
+          colors={accentGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
             borderRadius: 12,
             padding:      16,
             borderWidth:  1,
-            borderColor:  isDark ? 'rgba(255,184,0,0.28)' : 'rgba(120,120,120,0.16)',
+            borderColor:  accentBorder,
             flexDirection: 'row',
             alignItems:   'center',
             justifyContent: 'space-between',
@@ -130,7 +136,7 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
         >
           <View>
             <Text style={{
-              color:         isDark ? C.muted : theme.textMuted,
+              color:         cardTextColor,
               fontSize:      10,
               fontWeight:    '800',
               letterSpacing: 1.2,
@@ -140,10 +146,10 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
             }}>
               MRR Actual
             </Text>
-            <Text style={{ color: '#FFB800', fontSize: 34, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold, letterSpacing: -0.5 }}>
+            <Text style={{ color: accentColor, fontSize: 34, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold, letterSpacing: -0.5 }}>
               {isLoading ? '—' : fmtUSD(mrr)}
             </Text>
-            <Text style={{ color: isDark ? C.muted : theme.textSec, fontSize: 12, fontFamily: FONT_FAMILY.body, marginTop: 2 }}>
+            <Text style={{ color: cardTextColor, fontSize: 12, fontFamily: FONT_FAMILY.body, marginTop: 2 }}>
               {isLoading ? '' : `${active} abonados × $${PLAN_PRICE}/mes`}
             </Text>
           </View>
@@ -151,11 +157,13 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
             width:           52,
             height:          52,
             borderRadius:    14,
-            backgroundColor: 'rgba(255,184,0,0.18)',
+            backgroundColor: accentSoft,
             alignItems:      'center',
             justifyContent:  'center',
+            borderWidth:     0,
+            borderColor:     'transparent',
           }}>
-            <FontAwesome name="dollar" size={22} color="#FFB800" />
+            <FontAwesome name="dollar" size={22} color={accentColor} />
           </View>
         </LinearGradient>
 

@@ -38,7 +38,7 @@ const ACTIONS: QuickAction[] = [
   },
   {
     icon:        'play-circle',
-    title:       'Subir contenido',
+    title:       'Añadir componente',
     description: 'Agrega VOD o contenido destacado',
     path:        '/cms/componentes',
     accentColor: '#FFB800',
@@ -59,11 +59,11 @@ export default function QuickActions() {
           style={{
             flex:            1,
             minWidth:        160,
-            backgroundColor: isDark ? C.bgTertiary : 'rgba(120,120,120,0.36)',
+            backgroundColor: isDark ? C.bgTertiary : 'rgba(255,255,255,0.92)',
             borderRadius:    14,
             padding:         16,
             borderWidth:     1,
-            borderColor:     isDark ? C.borderMid : 'rgba(120,120,120,0.16)',
+            borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
             flexDirection:   'row',
             alignItems:      'center',
             gap:             12,

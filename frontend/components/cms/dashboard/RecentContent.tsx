@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { FONT_FAMILY } from '../../../styles/typography';
 import { C } from '../CmsShell';
+import { useTheme } from '../../../hooks/useTheme';
 
 interface StatsSnapshot {
   totalUsers:        number;
@@ -30,12 +31,14 @@ interface Row {
 }
 
 export default function RecentContent({ stats, isLoading }: UserBehaviorProps) {
+  const { isDark } = useTheme();
+  const warningColor = '#FFB800';
   const totalForPct = stats?.totalUsers ?? 0;
 
   const rows: Row[] = [
     { label: 'Activos',     value: stats?.byStatus.active    ?? 0, color: '#17D1C6', icon: 'check-circle' },
     { label: 'Suscritos',   value: stats?.totalSubscribers   ?? 0, color: '#1E96FC', icon: 'star'         },
-    { label: 'DAU hoy',     value: stats?.dau                ?? 0, color: '#FFB800', icon: 'bolt'         },
+    { label: 'DAU hoy',     value: stats?.dau                ?? 0, color: warningColor, icon: 'bolt'      },
     { label: 'Suspendidos', value: stats?.byStatus.suspended ?? 0, color: '#FF7900', icon: 'ban'          },
     { label: 'Inactivos',   value: stats?.byStatus.inactive  ?? 0, color: '#D1105A', icon: 'times-circle' },
     { label: 'Pendientes',  value: stats?.byStatus.pending   ?? 0, color: '#B07CC6', icon: 'clock-o'      },

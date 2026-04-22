@@ -30,19 +30,20 @@ export default function StatsCard({
   labelColor,
 }: StatsCardProps) {
   const { isDark, theme } = useTheme();
-  const trendColor = trendPositive ? theme.success : theme.danger;
+  const cardTextColor = isDark ? C.text : theme.text;
+  const iconBorderColor = `${color}35`;
 
   return (
     <View
       style={{
         flex:            1,
         minWidth:        200,
-        backgroundColor: isDark ? C.bgTertiary : 'rgba(120,120,120,0.36)',
+        backgroundColor: isDark ? C.bgTertiary : 'rgba(255,255,255,0.92)',
         borderRadius:    14,
         padding:         18,
         margin:          5,
         borderWidth:     1,
-        borderColor:     isDark ? C.borderMid : 'rgba(120,120,120,0.16)',
+        borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
         shadowColor:     '#240046',
         shadowOpacity:   isDark ? 0 : 0.08,
         shadowRadius:    isDark ? 0 : 20,
@@ -53,7 +54,7 @@ export default function StatsCard({
       {/* Label + icon */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <Text style={{
-          color:         labelColor ?? (isDark ? C.text : theme.text),
+          color:         labelColor ?? cardTextColor,
           fontSize:      10.5,
           fontWeight:    '700',
           letterSpacing: 1.0,
@@ -72,7 +73,7 @@ export default function StatsCard({
           alignItems:      'center',
           justifyContent:  'center',
           borderWidth:     1,
-          borderColor:     `${color}35`,
+          borderColor:     iconBorderColor,
         }}>
           <FontAwesome name={icon} size={16} color={color} />
         </View>
@@ -80,7 +81,7 @@ export default function StatsCard({
 
       {/* Value */}
       <Text style={{
-        color:         isDark ? C.text : theme.text,
+        color:         cardTextColor,
         fontSize:      32,
         fontWeight:    '800',
         letterSpacing: -0.5,
@@ -93,7 +94,7 @@ export default function StatsCard({
       {/* Subtitle */}
       {subtitle ? (
         <Text style={{
-          color:        isDark ? C.muted : theme.textSec,
+          color:        cardTextColor,
           fontSize:     12,
           marginBottom: 10,
           fontFamily:   FONT_FAMILY.body,
@@ -105,7 +106,7 @@ export default function StatsCard({
       {/* Trend + sparkline */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8 }}>
         <Text style={{
-          color:      trendColor,
+          color:      cardTextColor,
           fontSize:   12,
           fontWeight: '700',
           fontFamily: FONT_FAMILY.bodySemiBold,

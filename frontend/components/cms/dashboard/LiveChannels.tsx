@@ -4,6 +4,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useChannelStore } from '../../../services/channelStore';
 import { FONT_FAMILY } from '../../../styles/typography';
 import { C } from '../CmsShell';
+import { useTheme } from '../../../hooks/useTheme';
 
 type HealthStatus = 'HEALTHY' | 'DEGRADED' | 'OFFLINE' | 'MAINTENANCE';
 
@@ -15,7 +16,11 @@ const HEALTH_CONFIG: Record<HealthStatus, { color: string; label: string; glow: 
 };
 
 function StatusPill({ status }: { status: HealthStatus }) {
-  const cfg = HEALTH_CONFIG[status] ?? HEALTH_CONFIG.OFFLINE;
+  const { isDark } = useTheme();
+  const cfg = {
+    ...(HEALTH_CONFIG[status] ?? HEALTH_CONFIG.OFFLINE),
+    color: (HEALTH_CONFIG[status] ?? HEALTH_CONFIG.OFFLINE).color,
+  };
   return (
     <View style={{
       backgroundColor: `${cfg.color}18`,
@@ -34,6 +39,8 @@ function StatusPill({ status }: { status: HealthStatus }) {
 
 export default function LiveChannels() {
   const { channels } = useChannelStore();
+  const { isDark } = useTheme();
+  const warningColor = '#FFB800';
 
   const healthy     = channels.filter(c => c.healthStatus === 'HEALTHY').length;
   const degraded    = channels.filter(c => c.healthStatus === 'DEGRADED').length;
@@ -46,10 +53,15 @@ export default function LiveChannels() {
 
   const SUMMARY = [
     { count: healthy,     color: '#17D1C6', label: 'Activos'    },
-    { count: degraded,    color: '#FFB800', label: 'Degradados' },
+    { count: degraded,    color: warningColor, label: 'Degradados' },
     { count: offline,     color: '#D1105A', label: 'Offline'    },
     { count: maintenance, color: '#B07CC6', label: 'Mant.'      },
   ];
+
+  const healthConfig: Record<HealthStatus, { color: string; label: string; glow: boolean }> = {
+    ...HEALTH_CONFIG,
+    DEGRADED: { ...HEALTH_CONFIG.DEGRADED, color: warningColor },
+  };
 
   return (
     <View style={{
@@ -122,7 +134,7 @@ export default function LiveChannels() {
       ) : (
         <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
           {topChannels.map((ch, i) => {
-            const cfg = HEALTH_CONFIG[ch.healthStatus as HealthStatus] ?? HEALTH_CONFIG.OFFLINE;
+            const cfg = healthConfig[ch.healthStatus as HealthStatus] ?? healthConfig.OFFLINE;
             return (
               <View key={ch.id} style={{
                 flexDirection:     'row',

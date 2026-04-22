@@ -97,6 +97,10 @@ function DashboardContent({
   isLoading: boolean;
 }) {
   const { channels, isLoading: isLoadingChannels } = useChannelStore();
+  const { isDark } = useTheme();
+  const accentColor = '#FFB800';
+  const accentSoft = 'rgba(255,184,0,0.16)';
+  const accentBorder = 'rgba(255,184,0,0.40)';
 
   const fmtMRR = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v}`;
 
@@ -119,7 +123,7 @@ function DashboardContent({
       trend:        isLoading ? '' : `${stats?.activeSubscribers ?? 0} × $${PLAN_PRICE_USD}`,
       trendPositive: (stats?.mrr ?? 0) > 0,
       icon:         'dollar'      as const,
-      color:        '#FFB800',
+      color:        accentColor,
       data:         [70, 68, 75, 80, 85, 78, 90, 88, 92, 100],
     },
     {
@@ -155,7 +159,7 @@ function DashboardContent({
       {/* ── FIFA badge ──────────────────────────────────────── */}
       <View style={{ alignItems: 'flex-end' }}>
         <View style={{
-          backgroundColor:   'rgba(255,184,0,0.16)',
+          backgroundColor:   accentSoft,
           borderRadius:      10,
           paddingHorizontal: 16,
           paddingVertical:   10,
@@ -163,10 +167,10 @@ function DashboardContent({
           alignItems:        'center',
           gap:               8,
           borderWidth:       1,
-          borderColor:       'rgba(255,184,0,0.40)',
+          borderColor:       accentBorder,
         }}>
-          <FontAwesome name="bolt" size={16} color="#FFB800" />
-          <Text style={{ color: '#FFB800', fontSize: 15, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: FONT_FAMILY.bodyBold }}>
+          <FontAwesome name="bolt" size={16} color={accentColor} />
+          <Text style={{ color: accentColor, fontSize: 15, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: FONT_FAMILY.bodyBold }}>
             FIFA WORLD CUP 2026
           </Text>
         </View>
