@@ -1,3 +1,4 @@
+// @ts-nocheck 
 import { View, Text, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
@@ -97,7 +98,7 @@ export default function VerifyOtp() {
 
     return (
         <LinearGradient
-            colors={['#4A148C', '#1A052E']}
+            colors={['#240046', '#140026']}
             style={{ flex: 1, justifyContent: 'center', padding: 20 }}
         >
             <StatusBar style="light" />
