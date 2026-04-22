@@ -10,6 +10,7 @@ import {
   Min,
   Max,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 
 export enum CanalStatusDto {
@@ -50,7 +51,7 @@ export class CreateCanalDto {
     description: 'Fallback stream URL, used if primary fails',
   })
   @IsOptional()
-  @IsString()
+  @ValidateIf((o) => o.backupUrl !== undefined && o.backupUrl !== null && o.backupUrl !== '')
   @IsUrl({ require_protocol: true })
   backupUrl?: string;
 
@@ -59,7 +60,7 @@ export class CreateCanalDto {
     description: 'Channel logo URL, PNG transparent recommended (200x100px)',
   })
   @IsOptional()
-  @IsString()
+  @ValidateIf((o) => o.logoUrl !== undefined && o.logoUrl !== null && o.logoUrl !== '')
   @IsUrl({ require_protocol: true })
   logoUrl?: string;
 
