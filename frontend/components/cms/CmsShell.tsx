@@ -132,6 +132,14 @@ function hasPermission(permissions: string[] | undefined, key: string): boolean 
   return permissions.includes('cms:*') || permissions.includes(key);
 }
 
+function getActiveNavItem(pathname: string | null | undefined): NavItem | undefined {
+  if (!pathname) return undefined;
+
+  return NAV_ITEMS.find(
+    (item) => pathname === item.path || pathname.startsWith(`${item.path}/`),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Sidebar — always dark, collapsible
 // ---------------------------------------------------------------------------
@@ -321,19 +329,15 @@ function TopBar({
 }) {
   const { profile } = useCmsStore();
   const { isDark, theme, toggleTheme } = useTheme();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
 
   const firstName = profile?.email?.split('@')[0] ?? 'admin';
   const initials  = firstName.slice(0, 2).toUpperCase();
-  const pageTitle = breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
-
-  const fecha = new Date().toLocaleDateString('es-EC', {
-    weekday: 'long',
-    day:     'numeric',
-    month:   'long',
-    year:    'numeric',
-  });
+  const activeNavItem = getActiveNavItem(pathname);
+  const pageTitle = activeNavItem?.labelFull ?? breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
+  const activePageIcon = activeNavItem?.icon ?? pageIcon;
 
   return (
     <View
@@ -352,8 +356,8 @@ function TopBar({
       {/* Left: page title + date */}
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {pageIcon ? (
-            <FontAwesome name={pageIcon as any} size={16} color="#FFFFFF" />
+          {activePageIcon ? (
+            <FontAwesome name={activePageIcon as any} size={16} color="#FFFFFF" />
           ) : null}
           <Text
             style={{
@@ -367,18 +371,6 @@ function TopBar({
             {pageTitle}
           </Text>
         </View>
-        <Text
-          style={{
-            color:     theme.textMuted,
-            fontSize:  11,
-            fontWeight:'500',
-            marginTop: 1,
-            textTransform: 'capitalize',
-            fontFamily: FONT_FAMILY.body,
-          }}
-        >
-          {fecha}
-        </Text>
       </View>
 
       {/* Right: theme toggle + avatar */}

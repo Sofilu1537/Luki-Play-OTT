@@ -265,19 +265,16 @@ export default function CmsSliders() {
   return (
     <CmsShell breadcrumbs={[{ label: 'Sliders' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 18 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <View>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Sliders / Banners</Text>
-            <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
-              Curaduría visual del hero del player con enfoque OTT y control editorial.
-            </Text>
-          </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
             onPress={openCreateModal}
           >
-            <FontAwesome name="plus" size={13} color="white" />
-            <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Nuevo Slider</Text>
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+              <View style={{ flex: 1, backgroundColor: C.accent }} />
+            </View>
+            <FontAwesome name="plus" size={13} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nuevo Slider</Text>
           </TouchableOpacity>
         </View>
 
@@ -288,25 +285,21 @@ export default function CmsSliders() {
         ) : null}
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-          <View style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>TOTAL BANNERS</Text>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '900' }}>{stats.total}</Text>
-          </View>
-          <View style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>PUBLICADOS</Text>
-            <Text style={{ color: C.green, fontSize: 22, fontWeight: '900' }}>{stats.activos}</Text>
-          </View>
-          <View style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>BORRADORES</Text>
-            <Text style={{ color: C.amber, fontSize: 22, fontWeight: '900' }}>{stats.draft}</Text>
-          </View>
-        </View>
-
-        <View style={{ backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, padding: 16 }}>
-          <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 }}>Vista editorial</Text>
-          <Text style={{ color: C.textDim, fontSize: 12, lineHeight: 18 }}>
-            Reordena banners arrastrando las cards en web. El título y subtítulo se renderizan sobre la imagen para simular la experiencia del hero en una plataforma de streaming.
-          </Text>
+          {[
+            { label: 'Total banners', value: stats.total,   icon: 'image'        as const, color: C.text,  bg: `${C.text}18`  },
+            { label: 'Publicados',    value: stats.activos, icon: 'check-circle' as const, color: C.green, bg: C.greenSoft    },
+            { label: 'Borradores',    value: stats.draft,   icon: 'pencil'       as const, color: C.amber, bg: C.accentFaint  },
+          ].map((item) => (
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={item.icon} size={16} color={item.color} />
+                </View>
+                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+              </View>
+              <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
+            </View>
+          ))}
         </View>
 
         {loading ? (

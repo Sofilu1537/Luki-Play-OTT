@@ -11,7 +11,15 @@ import {
   HttpCode,
   HttpStatus,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/presentation/guards/permissions.guard';
@@ -189,6 +197,33 @@ export class AdminController {
   @Permissions('cms:content:read')
   @Get('canales')
   getCanales() { return this.adminService.getCanales(); }
+
+  @ApiOperation({ summary: 'Upload a channel logo image' })
+  @Permissions('cms:content:write')
+  @Post('canales/upload-logo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const dir = join(process.cwd(), 'uploads', 'logos');
+          fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, `${uuidv4()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new BadRequestException('Only image files are allowed'), false);
+      },
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  uploadChannelLogo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return { url: `/uploads/logos/${file.filename}` };
+  }
 
   @ApiOperation({ summary: 'Create a channel' })
   @Permissions('cms:content:write')

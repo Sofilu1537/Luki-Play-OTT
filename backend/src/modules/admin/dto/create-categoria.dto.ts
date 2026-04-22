@@ -52,6 +52,11 @@ export class CreateCategoriaDto {
   @IsBoolean()
   activo?: boolean;
 
+  @ApiPropertyOptional({ default: false, description: 'Mark category as adult content (enables parental control)' })
+  @IsOptional()
+  @IsBoolean()
+  esContenidoAdulto?: boolean;
+
   @ApiPropertyOptional({ example: ['uuid-1', 'uuid-2'], description: 'Channel IDs to associate' })
   @IsOptional()
   @IsString({ each: true })

@@ -431,31 +431,35 @@ export default function CmsPlanes() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
-          <View>
-            <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', marginBottom: 4 }}>Planes OTT</Text>
-            <Text style={{ color: C.textDim, fontSize: 13 }}>Configura acceso, canales, categorías y dispositivos por plan.</Text>
-          </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 20 }}>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
             onPress={openCreateModal}
           >
-            <FontAwesome name="plus" size={13} color="white" />
-            <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Nuevo plan</Text>
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+              <View style={{ flex: 1, backgroundColor: C.accent }} />
+            </View>
+            <FontAwesome name="plus" size={13} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Agregar Plan</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Stats ──────────────────────────────────────────────────────── */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
           {[
-            { label: 'Planes totales',    value: String(plans.length),        color: C.accent },
-            { label: 'Activos',           value: String(activePlans),          color: C.green  },
-            { label: 'Planes ISP Bundle', value: String(ispPlans),             color: C.green  },
-            { label: 'Canales asignados', value: String(totalChannelSlots),    color: C.cyan   },
+            { label: 'Planes totales',    value: String(plans.length),     icon: 'star'          as const, color: C.accent, bg: C.accentSoft },
+            { label: 'Activos',           value: String(activePlans),       icon: 'check-circle'  as const, color: C.green,  bg: C.greenSoft  },
+            { label: 'Planes ISP Bundle', value: String(ispPlans),          icon: 'wifi'          as const, color: C.green,  bg: C.greenSoft  },
+            { label: 'Canales asignados', value: String(totalChannelSlots), icon: 'television'    as const, color: C.cyan,   bg: C.cyanSoft   },
           ].map((item) => (
-            <View key={item.label} style={{ minWidth: 150, flex: 1, backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 18 }}>
-              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>{item.label}</Text>
-              <Text style={{ color: item.color, fontSize: 28, fontWeight: '900' }}>{item.value}</Text>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={item.icon} size={16} color={item.color} />
+                </View>
+                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+              </View>
+              <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
           ))}
         </View>

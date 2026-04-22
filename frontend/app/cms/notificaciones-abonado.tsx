@@ -26,13 +26,6 @@ export default function NotificacionesAbonadoPage() {
         }}>
           <FontAwesome name="comment" size={26} color={C.green} />
         </View>
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginBottom: 10 }}>
-          Notificaciones al Abonado
-        </Text>
-        <Text style={{ color: C.textSec, fontSize: 14, textAlign: 'center', maxWidth: 420, lineHeight: 22, marginBottom: 32 }}>
-          Crea y envía notificaciones segmentadas por plan, canal, categoría o estado de cuenta.
-        </Text>
-
         <View style={{ width: '100%', maxWidth: 480, marginBottom: 24 }}>
           <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 14 }}>
             EJEMPLOS DE NOTIFICACIONES

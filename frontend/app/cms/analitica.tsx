@@ -26,14 +26,8 @@ export default function AnaliticaPage() {
         }}>
           <FontAwesome name="line-chart" size={26} color={C.cyan} />
         </View>
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginBottom: 10 }}>
-          Analítica
-        </Text>
-        <Text style={{ color: C.textSec, fontSize: 14, textAlign: 'center', maxWidth: 400, lineHeight: 22, marginBottom: 36 }}>
-          Dashboard de métricas con visualizaciones interactivas de comportamiento de usuarios y contenido.
-        </Text>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', maxWidth: 560 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', maxWidth: 560, marginBottom: 36 }}>
           {metrics.map((m) => (
             <View key={m.label} style={{
               backgroundColor: C.surface,

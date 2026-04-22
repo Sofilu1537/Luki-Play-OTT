@@ -262,6 +262,7 @@ model Category {
   accentColor   String    @default("#FFB800")
   displayOrder  Int       @default(99)
   activo        Boolean   @default(true)
+  esContenidoAdulto Boolean @default(false)
   deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

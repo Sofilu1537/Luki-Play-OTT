@@ -836,7 +836,7 @@ export class AdminService {
     const slug = dto.slug || this.autoSlug(dto.nombre);
     const status = this.mapStatusToDb(dto.status);
 
-    return this.prisma.channel.create({
+    const channel = await this.prisma.channel.create({
       data: {
         nombre: dto.nombre,
         slug,
@@ -857,6 +857,15 @@ export class AdminService {
       },
       include: { category: true },
     });
+
+    // Ensure ChannelCategory junction row exists for the primary category
+    await this.prisma.channelCategory.upsert({
+      where: { channelId_categoryId: { channelId: channel.id, categoryId: dto.categoryId } },
+      update: {},
+      create: { channelId: channel.id, categoryId: dto.categoryId },
+    });
+
+    return channel;
   }
 
   async updateCanal(id: string, dto: UpdateCanalDto) {
@@ -920,6 +929,15 @@ export class AdminService {
       where: { id },
       data: updateData,
       include: { category: true },
+    }).then(async (updated) => {
+      // Sync ChannelCategory junction: if categoryId changed, upsert the new junction row
+      const resolvedCategoryId = dto.categoryId ?? updated.categoryId;
+      await this.prisma.channelCategory.upsert({
+        where: { channelId_categoryId: { channelId: id, categoryId: resolvedCategoryId } },
+        update: {},
+        create: { channelId: id, categoryId: resolvedCategoryId },
+      });
+      return updated;
     });
   }
 
@@ -997,6 +1015,7 @@ export class AdminService {
         accentColor: dto.accentColor ?? '#FFB800',
         displayOrder: dto.displayOrder ?? 99,
         activo: dto.activo !== false,
+        esContenidoAdulto: dto.esContenidoAdulto ?? false,
       },
     });
 
@@ -1029,6 +1048,7 @@ export class AdminService {
     if (dto.accentColor !== undefined) updateData.accentColor = dto.accentColor;
     if (dto.displayOrder !== undefined) updateData.displayOrder = dto.displayOrder;
     if (dto.activo !== undefined) updateData.activo = dto.activo;
+    if (dto.esContenidoAdulto !== undefined) updateData.esContenidoAdulto = dto.esContenidoAdulto;
 
     await this.prisma.category.update({ where: { id }, data: updateData });
 

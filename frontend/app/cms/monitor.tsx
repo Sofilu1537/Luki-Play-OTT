@@ -158,14 +158,14 @@ function WebMonitorPreview({ url, onPlaybackOk, onPlaybackError }: { url: string
 
 function SummaryCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 160, backgroundColor: C.surface, borderRadius: 14, padding: 20, borderWidth: 1, borderColor: C.border, gap: 12 }}>
-      <View style={{ width: 40, height: 40, backgroundColor: `${color}22`, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
-        <FontAwesome name={icon} size={18} color={color} />
+    <View style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 38, height: 38, backgroundColor: `${color}22`, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+          <FontAwesome name={icon} size={16} color={color} />
+        </View>
+        <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{label}</Text>
       </View>
-      <View>
-        <Text style={{ color: 'white', fontSize: 28, fontWeight: '900' }}>{value}</Text>
-        <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{label}</Text>
-      </View>
+      <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>{value}</Text>
     </View>
   );
 }
@@ -337,13 +337,6 @@ export default function CmsMonitor() {
   return (
     <CmsShell breadcrumbs={[{ label: 'Monitor' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <View style={{ flex: 1, paddingRight: 18 }}>
-            <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>Videowall de canales</Text>
-            <Text style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>Monitor 4x4 con validación operativa: URL inválida o señal fallida se marca como de baja.</Text>
-          </View>
-        </View>
-
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 22 }}>
           <SummaryCard label="Canales activos" value={canales.length} icon="television" color="#5B5BD6" />
           <SummaryCard label="Operativos" value={activos} icon="play-circle" color="#10B981" />

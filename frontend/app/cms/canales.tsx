@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, TextInput,
   Platform, Modal, Pressable,
@@ -65,14 +65,14 @@ function emptyForm(): AdminCanalPayload {
 // ─── StatCard Component ──────────────────────────────────────
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 140, backgroundColor: C.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
-      <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center' }}>
-        <FontAwesome name={icon as any} size={18} color={color} />
+    <View style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center' }}>
+          <FontAwesome name={icon as any} size={16} color={color} />
+        </View>
+        <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{label}</Text>
       </View>
-      <View>
-        <Text style={{ color: C.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginTop: 2 }}>{value}</Text>
-      </View>
+      <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>{value}</Text>
     </View>
   );
 }
@@ -248,11 +248,12 @@ function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
 }
 
 // ─── Create/Edit Modal ────────────────────────────────────────
-function ChannelFormModal({ channel, onSave, onClose, categories }: {
+function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }: {
   channel: AdminCanal | null;
   onSave: (form: AdminCanalPayload) => void;
   onClose: () => void;
-  categories: { id: string; nombre: string }[];
+  categories: { id: string; nombre: string; esContenidoAdulto?: boolean }[];
+  accessToken: string;
 }) {
   const isEdit = !!channel;
   const [form, setForm] = useState<AdminCanalPayload>(() =>
@@ -263,8 +264,24 @@ function ChannelFormModal({ channel, onSave, onClose, categories }: {
       geoRestriction: channel.geoRestriction ?? '', sortOrder: channel.sortOrder, planIds: channel.planIds, requiereControlParental: channel.requiereControlParental,
     } : emptyForm()
   );
-  const [activeTab, setActiveTab] = useState<ActiveTab>('general');
   const [formError, setFormError] = useState('');
+  const [urlStatus, setUrlStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const urlDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-validate stream URL with debounce — transparent to user
+  useEffect(() => {
+    if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current);
+    if (!form.streamUrl) { setUrlStatus('idle'); return; }
+    if (!isValidUrl(form.streamUrl)) { setUrlStatus('fail'); upd('status', 'INACTIVE'); return; }
+    setUrlStatus('checking');
+    urlDebounceRef.current = setTimeout(() => {
+      fetch(form.streamUrl, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(5000) })
+        .then(() => { setUrlStatus('ok'); upd('status', 'ACTIVE'); })
+        .catch(() => { setUrlStatus('fail'); upd('status', 'INACTIVE'); });
+    }, 1200);
+    return () => { if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current); };
+  }, [form.streamUrl]);
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const inputStyle = {
@@ -280,32 +297,43 @@ function ChannelFormModal({ channel, onSave, onClose, categories }: {
     });
   }
 
+  const selectedCategory = categories.find((c) => c.id === form.categoryId);
+
+
+  function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    import('../../services/api/adminApi').then(({ adminUploadChannelLogo }) =>
+      adminUploadChannelLogo(accessToken, file)
+    ).then((url) => {
+      upd('logoUrl', url);
+      setLogoUploading(false);
+    }).catch(() => {
+      setLogoUploading(false);
+      setFormError('Error al subir el logo. Intenta de nuevo.');
+    });
+  }
+
   function validate(): boolean {
     if (!form.nombre.trim()) { setFormError('El nombre es requerido.'); return false; }
     if (!form.streamUrl.trim() || !isValidUrl(form.streamUrl)) { setFormError('URL del stream inválida (requiere http/https).'); return false; }
     if (!form.categoryId) { setFormError('Debes seleccionar una categoría.'); return false; }
-    if (form.backupUrl && !isValidUrl(form.backupUrl)) { setFormError('URL de respaldo inválida.'); return false; }
     setFormError('');
     return true;
   }
 
-  const tabs: { id: ActiveTab; label: string; icon: string }[] = [
-    { id: 'general', label: 'General', icon: 'television' },
-    { id: 'stream', label: 'Stream', icon: 'globe' },
-    { id: 'access', label: 'Acceso', icon: 'lock' },
-  ];
-
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(5,5,12,0.82)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-        <View style={{ width: '100%', maxWidth: 680, maxHeight: '92%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+        <View style={{ width: '100%', maxWidth: 520, maxHeight: '92%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
 
           {/* Header */}
           <View style={{ paddingHorizontal: 22, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={{ color: C.text, fontSize: 17, fontWeight: '800' }}>{isEdit ? 'Editar canal' : 'Nuevo canal'}</Text>
               <Text style={{ color: C.muted, fontSize: 12, marginTop: 3 }}>
-                {isEdit ? `Editando: ${channel!.nombre}` : 'Configura el canal HLS/DASH'}
+                {isEdit ? `Editando: ${channel!.nombre}` : 'Configura el nuevo canal'}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
@@ -313,156 +341,140 @@ function ChannelFormModal({ channel, onSave, onClose, categories }: {
             </TouchableOpacity>
           </View>
 
-          {/* Tabs */}
-          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 22 }}>
-            {tabs.map((tab) => {
-              const active = activeTab === tab.id;
-              return (
-                <TouchableOpacity key={tab.id} onPress={() => setActiveTab(tab.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 2, borderBottomColor: active ? C.accent : 'transparent' }}>
-                  <FontAwesome name={tab.icon as any} size={12} color={active ? C.accent : C.muted} />
-                  <Text style={{ color: active ? C.accent : C.muted, fontSize: 12, fontWeight: '700' }}>{tab.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
           {/* Body */}
-          <ScrollView contentContainerStyle={{ padding: 22 }}>
+          <ScrollView contentContainerStyle={{ padding: 22, gap: 18 }}>
 
-            {/* TAB: General */}
-            {activeTab === 'general' && (
-              <>
-                <View style={{ flexDirection: 'row', gap: 14 }}>
-                  <View style={{ flex: 2 }}>
-                    <FormField label="Nombre del canal" required>
-                      <TextInput style={inputStyle} value={form.nombre} onChangeText={(v) => upd('nombre', v)} placeholder="ESPN Ecuador" placeholderTextColor={C.muted} />
-                    </FormField>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <FormField label="Slug (URL)" hint="Auto-generado">
-                      <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.slug} onChangeText={(v) => upd('slug', v)} placeholder="espn-ecuador" placeholderTextColor={C.muted} />
-                    </FormField>
-                  </View>
+            {/* Nombre */}
+            <FormField label="Nombre del canal" required>
+              <TextInput
+                style={inputStyle}
+                value={form.nombre}
+                onChangeText={(v) => upd('nombre', v)}
+                placeholder="ESPN Ecuador"
+                placeholderTextColor={C.muted}
+              />
+            </FormField>
+
+            {/* Logo */}
+            <FormField label="Logo del canal" hint="PNG o JPG, máx. 2 MB">
+              <View style={{ gap: 10 }}>
+                {form.logoUrl ? (
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore – web-only img element
+                  <img src={form.logoUrl} alt="Logo preview" style={{ height: 64, objectFit: 'contain', borderRadius: 8, background: '#1A1A2E', padding: 6 }} />
+                ) : null}
+                <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                  {Platform.OS === 'web' ? (
+                    <View>
+                      {/* @ts-ignore */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="logo-upload"
+                        style={{ display: 'none' }}
+                        onChange={handleLogoFileChange}
+                      />
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (typeof document !== 'undefined') {
+                            (document.getElementById('logo-upload') as HTMLInputElement | null)?.click();
+                          }
+                        }}
+                        style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: C.accent, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                      >
+                        {logoUploading
+                          ? <FontAwesome name="spinner" size={12} color={C.accent} />
+                          : <FontAwesome name="upload" size={12} color={C.accent} />}
+                        <Text style={{ color: C.accent, fontSize: 12, fontWeight: '700' }}>
+                          {logoUploading ? 'Subiendo...' : 'Seleccionar imagen'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                  {form.logoUrl ? (
+                    <TouchableOpacity onPress={() => upd('logoUrl', '')} style={{ paddingHorizontal: 10, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: C.border }}>
+                      <Text style={{ color: C.muted, fontSize: 12 }}>Quitar</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
+              </View>
+            </FormField>
 
-                <View style={{ flexDirection: 'row', gap: 14 }}>
-                  <View style={{ flex: 1 }}>
-                    <FormField label="Categoría" required>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
-                        {categories.map((cat) => {
-                          const sel = form.categoryId === cat.id;
-                          return (
-                            <TouchableOpacity key={cat.id} onPress={() => upd('categoryId', cat.id)} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: sel ? C.accent : C.border, backgroundColor: sel ? C.accentSoft : C.lift }}>
-                              <Text style={{ color: sel ? C.accent : C.textDim, fontSize: 12, fontWeight: '700' }}>{cat.nombre}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </ScrollView>
-                    </FormField>
+            {/* Stream URL + Validate */}
+            <FormField label="URL del stream" required hint="HLS (.m3u8) o DASH (.mpd)">
+              <View style={{ gap: 8 }}>
+                <TextInput
+                  style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}
+                  value={form.streamUrl}
+                onChangeText={(v) => upd('streamUrl', v)}
+                  placeholder="https://cdn.example.com/stream/playlist.m3u8"
+                  placeholderTextColor={C.muted}
+                  autoCapitalize="none"
+                />
+                {urlStatus === 'checking' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <FontAwesome name="circle-o-notch" size={11} color={C.muted} />
+                    <Text style={{ color: C.muted, fontSize: 11 }}>Verificando...</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <FormField label="Estado">
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        {(Object.keys(STATUS_CONFIG) as ChannelStatus[]).map((s) => {
-                          const sel = form.status === s;
-                          const cfg = STATUS_CONFIG[s];
-                          return (
-                            <TouchableOpacity key={s} onPress={() => upd('status', s)} style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: sel ? cfg.color : C.border, backgroundColor: sel ? cfg.bg : C.lift }}>
-                              <Text style={{ color: sel ? cfg.color : C.textDim, fontSize: 11, fontWeight: '700' }}>{cfg.label}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </FormField>
+                )}
+                {urlStatus === 'ok' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, backgroundColor: '#0D3B26' }}>
+                      <Text style={{ color: '#4ADE80', fontSize: 11, fontWeight: '800' }}>ACTIVO</Text>
+                    </View>
+                    <Text style={{ color: '#4ADE80', fontSize: 11 }}>El stream responde correctamente</Text>
                   </View>
-                </View>
+                )}
+                {urlStatus === 'fail' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, backgroundColor: '#3B0D0D' }}>
+                      <Text style={{ color: '#F87171', fontSize: 11, fontWeight: '800' }}>INACTIVO</Text>
+                    </View>
+                    <Text style={{ color: '#F87171', fontSize: 11 }}>El stream no responde</Text>
+                  </View>
+                )}
+              </View>
+            </FormField>
 
-                <View style={{ flexDirection: 'row', gap: 14 }}>
-                  <View style={{ flex: 2 }}>
-                    <FormField label="Logo URL" hint="PNG transparente, 200×100px recomendado">
-                      <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.logoUrl} onChangeText={(v) => upd('logoUrl', v)} placeholder="https://..." placeholderTextColor={C.muted} autoCapitalize="none" />
-                    </FormField>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <FormField label="Orden">
-                      <TextInput style={inputStyle} value={String(form.sortOrder)} onChangeText={(v) => upd('sortOrder', parseInt(v) || 99)} keyboardType="number-pad" placeholderTextColor={C.muted} />
-                    </FormField>
-                  </View>
-                </View>
+            {/* Categoría */}
+            <FormField label="Categoría" required>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+                {categories.map((cat) => {
+                  const sel = form.categoryId === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      onPress={() => {
+                        upd('categoryId', cat.id);
+                        // If new category is not adult, disable parental control
+                        if (!cat.esContenidoAdulto) upd('requiereControlParental', false);
+                      }}
+                      style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: sel ? C.accent : C.border, backgroundColor: sel ? C.accentSoft : C.lift }}
+                    >
+                      <Text style={{ color: sel ? C.accent : C.textDim, fontSize: 12, fontWeight: '700' }}>{cat.nombre}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </FormField>
 
-                <FormField label="Fuente EPG" hint="ID del proveedor XMLTV (ej: epg_espn_ec)">
-                  <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.epgSourceId} onChangeText={(v) => upd('epgSourceId', v)} placeholder="epg_espn_ec" placeholderTextColor={C.muted} autoCapitalize="none" />
-                </FormField>
-
-                <TouchableOpacity onPress={() => upd('requiereControlParental', !form.requiereControlParental)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: form.requiereControlParental ? C.accentBorder : C.border, backgroundColor: form.requiereControlParental ? C.accentSoft : C.lift }}>
-                  <FontAwesome name={form.requiereControlParental ? 'lock' : 'unlock'} size={13} color={form.requiereControlParental ? C.accent : C.textDim} />
+            {/* Control Parental — only when category is adult content */}
+            {selectedCategory?.esContenidoAdulto === true && (
+              <TouchableOpacity
+                onPress={() => upd('requiereControlParental', !form.requiereControlParental)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: form.requiereControlParental ? C.accentBorder : C.border, backgroundColor: form.requiereControlParental ? C.accentSoft : C.lift }}
+              >
+                <FontAwesome name={form.requiereControlParental ? 'lock' : 'unlock'} size={13} color={form.requiereControlParental ? C.accent : C.textDim} />
+                <View style={{ flex: 1 }}>
                   <Text style={{ color: form.requiereControlParental ? C.accent : C.textDim, fontSize: 12, fontWeight: '700' }}>Control parental</Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {/* TAB: Stream */}
-            {activeTab === 'stream' && (
-              <>
-                <FormField label="URL del stream (principal)" required hint="URL HLS (.m3u8) o DASH (.mpd) del CDN">
-                  <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.streamUrl} onChangeText={(v) => upd('streamUrl', v)} placeholder="https://cdn.example.com/.../playlist.m3u8" placeholderTextColor={C.muted} autoCapitalize="none" />
-                </FormField>
-                <FormField label="URL de respaldo (failover)" hint="Se usa si el stream principal falla">
-                  <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.backupUrl} onChangeText={(v) => upd('backupUrl', v)} placeholder="https://backup-cdn.example.com/.../playlist.m3u8" placeholderTextColor={C.muted} autoCapitalize="none" />
-                </FormField>
-
-                <View style={{ flexDirection: 'row', gap: 14 }}>
-                  <View style={{ flex: 1 }}>
-                    <FormField label="Protocolo">
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {PROTOCOLS.map((p) => {
-                          const sel = form.streamProtocol === p;
-                          return (
-                            <TouchableOpacity key={p} onPress={() => upd('streamProtocol', p)} style={{ flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: sel ? C.accent : C.border, backgroundColor: sel ? C.accentSoft : C.lift, alignItems: 'center' }}>
-                              <Text style={{ color: sel ? C.accent : C.textDim, fontSize: 11, fontWeight: '700' }}>{p}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </FormField>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <FormField label="Resolución">
-                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                        {RESOLUTIONS.map((r) => {
-                          const sel = form.resolution === r;
-                          return (
-                            <TouchableOpacity key={r} onPress={() => upd('resolution', r)} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: sel ? C.accent : C.border, backgroundColor: sel ? C.accentSoft : C.lift }}>
-                              <Text style={{ color: sel ? C.accent : C.textDim, fontSize: 11, fontWeight: '700' }}>{r}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </FormField>
-                  </View>
+                  <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>
+                    Esta categoría contiene contenido adulto. Habilita el control parental para acceder desde Luki Play.
+                  </Text>
                 </View>
-
-                <FormField label="Bitrate (kbps)">
-                  <TextInput style={inputStyle} value={String(form.bitrateKbps)} onChangeText={(v) => upd('bitrateKbps', parseInt(v) || 5000)} keyboardType="number-pad" placeholderTextColor={C.muted} />
-                </FormField>
-
-                <TouchableOpacity onPress={() => upd('isDrmProtected', !form.isDrmProtected)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: form.isDrmProtected ? C.accentBorder : C.border, backgroundColor: form.isDrmProtected ? C.accentSoft : C.lift }}>
-                  <FontAwesome name="shield" size={13} color={form.isDrmProtected ? C.accent : C.textDim} />
-                  <Text style={{ color: form.isDrmProtected ? C.accent : C.textDim, fontSize: 12, fontWeight: '700' }}>Protección DRM (Widevine/FairPlay)</Text>
-                </TouchableOpacity>
-              </>
+              </TouchableOpacity>
             )}
 
-            {/* TAB: Access */}
-            {activeTab === 'access' && (
-              <>
-                <FormField label="Restricción geográfica" hint="Códigos ISO 3166-1 separados por coma (ej: EC,CO,PE). Vacío = sin restricción.">
-                  <TextInput style={{ ...inputStyle, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} value={form.geoRestriction} onChangeText={(v) => upd('geoRestriction', v.toUpperCase())} placeholder="EC" placeholderTextColor={C.muted} autoCapitalize="characters" />
-                </FormField>
-              </>
-            )}
-
-            {formError ? <Text style={{ color: '#D1105A', fontSize: 12, fontWeight: '700', marginTop: 8 }}>{formError}</Text> : null}
+            {formError ? <Text style={{ color: '#D1105A', fontSize: 12, fontWeight: '700' }}>{formError}</Text> : null}
           </ScrollView>
 
           {/* Footer */}
@@ -492,6 +504,7 @@ export default function CmsCanales() {
     loadChannels, createChannelApi, updateChannelApi, deleteChannelApi, toggleChannelStatusApi,
   } = useChannelStore();
   const categorias = useCategoriasStore((s) => s.categorias);
+  const fetchCategorias = useCategoriasStore((s) => s.fetchFromApi);
   const activeCategories = useMemo(() => categorias.filter((c) => c.activo), [categorias]);
 
   const [search, setSearch] = useState('');
@@ -512,7 +525,11 @@ export default function CmsCanales() {
 
   // Fetch channels from the backend on mount (keeps localStorage as startup cache)
   useEffect(() => {
-    if (accessToken) loadChannels(accessToken);
+    if (accessToken) {
+      loadChannels(accessToken);
+      // Load all categories (including inactive) so they're available in the channel form
+      if (categorias.length === 0) fetchCategorias(accessToken);
+    }
   }, [accessToken]);
 
   // Derived data
@@ -581,19 +598,16 @@ export default function CmsCanales() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
 
         {/* ── Header Section ── */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <FontAwesome name="television" size={20} color={C.accent} />
-              <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', letterSpacing: -0.3 }}>Canales</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24 }}>
+          <TouchableOpacity
+            onPress={openCreate}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
+          >
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+              <View style={{ flex: 1, backgroundColor: C.accent }} />
             </View>
-            <Text style={{ color: C.muted, fontSize: 13 }}>
-              {isLoading ? 'Sincronizando con el servidor...' : `Gestión de streams HLS/DASH en vivo · ${channels.length} canales registrados`}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={openCreate} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}>
-            <FontAwesome name="plus" size={14} color="#1A1A2E" />
-            <Text style={{ color: '#1A1A2E', fontWeight: '800', fontSize: 13 }}>Nuevo canal</Text>
+            <FontAwesome name="plus" size={13} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nuevo canal</Text>
           </TouchableOpacity>
         </View>
 
@@ -828,7 +842,8 @@ export default function CmsCanales() {
           channel={editingChannel}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditingChannel(null); }}
-          categories={activeCategories}
+          categories={categorias.map((c) => ({ id: c.id, nombre: c.nombre, esContenidoAdulto: c.esContenidoAdulto }))}
+          accessToken={accessToken ?? ''}
         />
       )}
 

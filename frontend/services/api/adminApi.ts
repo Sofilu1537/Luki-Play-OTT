@@ -188,6 +188,7 @@ export interface AdminCategoria {
   accentColor?: string;
   displayOrder?: number;
   activo: boolean;
+  esContenidoAdulto?: boolean;
   channelCategories?: Array<{ channel: { id: string; nombre: string; status: string } }>;
   createdAt?: string;
   updatedAt?: string;
@@ -541,9 +542,13 @@ export async function adminListCanales(accessToken: string): Promise<AdminCanal[
 }
 
 export async function adminCreateCanal(accessToken: string, data: AdminCanalPayload): Promise<AdminCanal> {
+  // Strip empty optional URL fields so backend @IsUrl validation is not triggered
+  const payload = { ...data };
+  if (!payload.backupUrl) delete (payload as Partial<AdminCanalPayload>).backupUrl;
+  if (!payload.logoUrl) delete (payload as Partial<AdminCanalPayload>).logoUrl;
   return apiFetch<AdminCanal>('/admin/canales', accessToken, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -560,6 +565,22 @@ export async function adminToggleCanal(accessToken: string, id: string): Promise
 
 export async function adminDeleteCanal(accessToken: string, id: string): Promise<void> {
   return apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
+}
+
+export async function adminUploadChannelLogo(accessToken: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE_URL}/admin/canales/upload-logo`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message ?? `Upload failed (${res.status})`);
+  }
+  const data = await res.json() as { url: string };
+  return `${API_BASE_URL}${data.url}`;
 }
 
 // ---------------------------------------------------------------------------

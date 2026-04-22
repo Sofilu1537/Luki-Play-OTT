@@ -131,171 +131,23 @@ export default function CmsComponentes() {
   return (
     <CmsShell breadcrumbs={[{ label: 'Componentes' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 24,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="puzzle-piece" size={18} color={C.cyan} />
-            </View>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>
-              Componentes
-            </Text>
-          </View>
-        </View>
-
         {/* Stats cards */}
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 12,
-            marginBottom: 24,
-            flexWrap: 'wrap',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: C.surface,
-              borderRadius: 12,
-              padding: 18,
-              flex: 1,
-              minWidth: 140,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                marginBottom: 8,
-              }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  backgroundColor: C.greenSoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <FontAwesome name="check-circle" size={18} color={C.green} />
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Componentes Activos',   value: activeCount,        icon: 'check-circle' as const, color: C.green, bg: C.greenSoft },
+            { label: 'Componentes Inactivos', value: inactiveCount,      icon: 'times-circle' as const, color: C.rose,  bg: C.roseSoft  },
+            { label: 'Total Componentes',     value: componentes.length, icon: 'th-large'     as const, color: C.cyan,  bg: C.cyanSoft  },
+          ].map((item) => (
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={item.icon} size={16} color={item.color} />
+                </View>
+                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
-              <Text
-                style={{
-                  color: C.green,
-                  fontSize: 28,
-                  fontWeight: '900',
-                }}
-              >
-                {activeCount}
-              </Text>
+              <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
-            <Text style={{ color: C.muted, fontSize: 12, fontWeight: '600' }}>
-              Componentes Activos
-            </Text>
-          </View>
-
-          <View
-            style={{
-              backgroundColor: C.surface,
-              borderRadius: 12,
-              padding: 18,
-              flex: 1,
-              minWidth: 140,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                marginBottom: 8,
-              }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  backgroundColor: C.roseSoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <FontAwesome name="times-circle" size={18} color={C.rose} />
-              </View>
-              <Text
-                style={{
-                  color: C.rose,
-                  fontSize: 28,
-                  fontWeight: '900',
-                }}
-              >
-                {inactiveCount}
-              </Text>
-            </View>
-            <Text style={{ color: C.muted, fontSize: 12, fontWeight: '600' }}>
-              Componentes Inactivos
-            </Text>
-          </View>
-
-          <View
-            style={{
-              backgroundColor: C.surface,
-              borderRadius: 12,
-              padding: 18,
-              flex: 1,
-              minWidth: 140,
-              borderWidth: 1,
-              borderColor: C.border,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                marginBottom: 8,
-              }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  backgroundColor: C.cyanSoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <FontAwesome name="th-large" size={18} color={C.cyan} />
-              </View>
-              <Text
-                style={{
-                  color: C.cyan,
-                  fontSize: 28,
-                  fontWeight: '900',
-                }}
-              >
-                {componentes.length}
-              </Text>
-            </View>
-            <Text style={{ color: C.muted, fontSize: 12, fontWeight: '600' }}>
-              Total Componentes
-            </Text>
-          </View>
+          ))}
         </View>
 
         {/* Search */}

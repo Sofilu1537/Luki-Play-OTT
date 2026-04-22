@@ -28,14 +28,8 @@ export default function NotificacionesAdminPage() {
         }}>
           <FontAwesome name="bell" size={28} color={C.amber} />
         </View>
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginBottom: 10 }}>
-          Notificaciones al Administrador
-        </Text>
-        <Text style={{ color: C.textSec, fontSize: 14, textAlign: 'center', maxWidth: 420, lineHeight: 22, marginBottom: 32 }}>
-          Centro de alertas internas y monitoreo de eventos críticos del sistema.
-        </Text>
 
-        <View style={{ width: '100%', maxWidth: 480 }}>
+        <View style={{ width: '100%', maxWidth: 480, marginBottom: 32 }}>
           {features.map((f, i) => (
             <View key={i} style={{
               flexDirection: 'row',

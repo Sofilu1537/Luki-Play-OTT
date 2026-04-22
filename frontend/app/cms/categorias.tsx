@@ -213,48 +213,37 @@ export default function CmsCategorias() {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 18 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 16, flexWrap: 'wrap' }}>
-          <View>
-            <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>Categorías</Text>
-            <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
-              Clasificación principal del contenido que el admin publica para la experiencia del player.
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-            <TouchableOpacity
-              onPress={openCreate}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, backgroundColor: C.accent }}
-            >
-              <FontAwesome name="plus" size={12} color="white" />
-              <Text style={{ color: 'white', fontSize: 13, fontWeight: '800' }}>Nueva categoría</Text>
-            </TouchableOpacity>
-            <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
-              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>ACTIVAS</Text>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{activeCount}</Text>
+        {/* ── Button row ── */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
+          <TouchableOpacity
+            onPress={openCreate}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
+          >
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+              <View style={{ flex: 1, backgroundColor: C.accent }} />
             </View>
-            <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
-              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>DESTACADAS</Text>
-              <Text style={{ color: C.accentLight, fontSize: 18, fontWeight: '900' }}>{featuredCount}</Text>
-            </View>
-            <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
-              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CON SEÑAL</Text>
-              <Text style={{ color: C.cyan, fontSize: 18, fontWeight: '900' }}>{withLiveSignals}</Text>
-            </View>
-          </View>
+            <FontAwesome name="plus" size={13} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nueva categoría</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 18, padding: 18 }}>
-          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-            <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="tags" size={16} color={C.accentLight} />
+        {/* ── Stat cards ── */}
+        <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
+          {[
+            { label: 'Activas',    value: activeCount,      icon: 'check-circle' as const, color: C.text,        bg: `${C.text}14`  },
+            { label: 'Destacadas', value: featuredCount,    icon: 'star'         as const, color: C.accentLight,  bg: C.accentFaint  },
+            { label: 'Con señal',  value: withLiveSignals,  icon: 'wifi'         as const, color: C.cyan,         bg: C.cyanSoft     },
+          ].map((item) => (
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={item.icon} size={16} color={item.color} />
+                </View>
+                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+              </View>
+              <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 }}>Propósito del módulo</Text>
-              <Text style={{ color: C.textDim, fontSize: 12, lineHeight: 18 }}>
-                Aquí se define el tipo de categoría al que pertenece cada contenido. Esta clasificación organiza filas, navegación y descubrimiento dentro del player.
-              </Text>
-            </View>
-          </View>
+          ))}
         </View>
 
         {cats.length === 0 ? null : (
@@ -295,8 +284,15 @@ export default function CmsCategorias() {
                       <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
                       <Text style={{ color: C.cyan, fontSize: 20, fontWeight: '900' }}>{selectedCategory.channelCount}</Text>
                     </View>
-                    <TouchableOpacity style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }} onPress={() => router.push('/cms/canales' as never)}>
-                      <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>Ver contenido asociado</Text>
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, minWidth: 150, overflow: 'hidden' }}
+                      onPress={() => router.push('/cms/canales' as never)}
+                    >
+                      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16, overflow: 'hidden' }}>
+                        <View style={{ flex: 1, backgroundColor: C.accent }} />
+                      </View>
+                      <FontAwesome name="arrow-right" size={12} color="#1A1A2E" />
+                      <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 12, fontFamily: 'Montserrat-SemiBold' }}>Ver contenido asociado</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -444,8 +440,15 @@ export default function CmsCategorias() {
                   )}
                 </View>
 
-                <TouchableOpacity style={{ alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, backgroundColor: C.accent }} onPress={() => { setPreviewCategory(null); router.push('/cms/canales' as never); }}>
-                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>Ir al contenido asociado</Text>
+                <TouchableOpacity
+                  style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
+                  onPress={() => { setPreviewCategory(null); router.push('/cms/canales' as never); }}
+                >
+                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+                    <View style={{ flex: 1, backgroundColor: C.accent }} />
+                  </View>
+                  <FontAwesome name="arrow-right" size={13} color="#1A1A2E" />
+                  <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Ir al contenido asociado</Text>
                 </TouchableOpacity>
               </View>
             </View>
