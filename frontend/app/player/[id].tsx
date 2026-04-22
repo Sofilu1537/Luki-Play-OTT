@@ -24,6 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChannels, getCurrentProgram, getProgressPercent } from '../../services/useChannels';
 import { HlsVideoPlayer } from '../../components/HlsVideoPlayer';
 import type { Channel } from '../../services/channelTypes';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'react-native';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -44,6 +46,16 @@ function Icon({ name, size = 20, color = '#fff' }: { name: string; size?: number
   return <Text style={{ fontSize: size, color, lineHeight: size + 4 }}>{icons[name] ?? name}</Text>;
 }
 
+function ChannelLogo({ logo, size = 20, style }: { logo: string; size?: number; style?: any }) {
+  if (!logo || logo === '📺') {
+    return <Ionicons name="tv-outline" size={size} color="#fff" style={style} />;
+  }
+  if (logo.startsWith('http')) {
+    return <Image source={{ uri: logo }} style={[{ width: size, height: size, resizeMode: 'contain' }, style]} />;
+  }
+  return <Text style={[style, { fontSize: size, lineHeight: size + 4, color: '#fff' }]}>{logo}</Text>;
+}
+
 // ─────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────
@@ -57,13 +69,9 @@ function TopBar({
         <Icon name="back" size={22} />
       </TouchableOpacity>
       <View style={styles.topRight}>
-        <TouchableOpacity style={styles.iconBtn}><Icon name="cast" size={20} /></TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn}><Icon name="airplay" size={20} /></TouchableOpacity>
         <TouchableOpacity style={styles.iconBtn} onPress={onLock}>
           <Icon name={isLocked ? 'lock' : 'unlock'} size={19} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn}><Icon name="grid" size={18} /></TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn}><Icon name="settings" size={20} /></TouchableOpacity>
       </View>
     </Animated.View>
   );
@@ -80,7 +88,7 @@ function BottomInfoBar({
           <Icon name="heartFill" size={20} color={isFavorite ? '#E53935' : 'rgba(255,255,255,0.5)'} />
         </TouchableOpacity>
         <View style={styles.channelTag}>
-          <Text style={styles.channelLogo}>{channel.logo}</Text>
+          <ChannelLogo logo={channel.logo} size={18} />
           <Text style={styles.channelName}>{channel.name}</Text>
         </View>
       </View>
@@ -88,7 +96,6 @@ function BottomInfoBar({
         <Text style={styles.programName} numberOfLines={1}>{program.title}</Text>
         <View style={styles.liveDot} />
       </View>
-      <TouchableOpacity style={styles.iconBtn}><Icon name="pip" size={20} /></TouchableOpacity>
     </Animated.View>
   );
 }
@@ -103,14 +110,12 @@ function LiveProgressBar({ channel, opacity }: { channel: Channel; opacity: Anim
   }, [channel]);
   return (
     <Animated.View style={[styles.progressSection, { opacity }]}>
-      <TouchableOpacity style={styles.iconBtn}><Icon name="back10" size={22} /></TouchableOpacity>
       <Text style={styles.timeLabel}>{program.startTime}</Text>
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${pct}%` }]} />
         <View style={[styles.progressThumb, { left: `${pct}%` as unknown as number }]} />
       </View>
       <Text style={styles.timeLabel}>{program.endTime}</Text>
-      <TouchableOpacity style={styles.iconBtn}><Icon name="channelList" size={20} /></TouchableOpacity>
     </Animated.View>
   );
 }
@@ -128,9 +133,6 @@ function ChannelListOverlay({
         <TouchableOpacity style={styles.railClose} onPress={onClose}>
           <Icon name="close" size={18} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn}><Icon name="grid" size={20} /></TouchableOpacity>
-        <Icon name="heartFill" size={20} color="#E53935" />
-        <Icon name="fire" size={20} />
         <FlatList
           data={channels}
           keyExtractor={c => c.id}
@@ -142,7 +144,7 @@ function ChannelListOverlay({
               style={[styles.railItem, item.id === hoveredId && styles.railItemActive]}
             >
               <Text style={styles.railNumber}>{item.number}</Text>
-              <Text style={styles.railLogo}>{item.logo}</Text>
+              <ChannelLogo logo={item.logo} size={24} style={{ marginVertical: 4 }} />
               <Text style={styles.railNameSmall} numberOfLines={1}>{item.name}</Text>
             </TouchableOpacity>
           )}
@@ -150,12 +152,12 @@ function ChannelListOverlay({
       </View>
       <View style={styles.programCard}>
         <View style={styles.programThumb}>
-          <Text style={{ fontSize: 48 }}>{hovered.logo}</Text>
+          <ChannelLogo logo={hovered.logo} size={48} />
           <View style={styles.thumbPlayBtn}><Icon name="play" size={24} /></View>
           <View style={styles.nowBadge}><Text style={styles.nowBadgeText}>AHORA</Text></View>
         </View>
         <View style={[styles.programThumb, { marginTop: 8, opacity: 0.6 }]}>
-          <Text style={{ fontSize: 32 }}>{hovered.logo}</Text>
+          <ChannelLogo logo={hovered.logo} size={32} />
         </View>
       </View>
       <View style={styles.programInfo}>
@@ -199,7 +201,7 @@ function NowPlayingPanel({ channel, visible }: { channel: Channel; visible: bool
       <Text style={styles.nowPlayingTitle}>{program.title}</Text>
       <Text style={styles.nowPlayingTime}>{program.startTime} a {program.endTime} hrs.</Text>
       <View style={styles.nowPlayingThumb}>
-        <Text style={{ fontSize: 48 }}>{channel.logo}</Text>
+        <ChannelLogo logo={channel.logo} size={48} />
       </View>
     </View>
   );
@@ -271,7 +273,7 @@ export default function LivePlayer() {
     return (
       <View style={[styles.player, { alignItems: 'center', justifyContent: 'center' }]}>
         <StatusBar hidden />
-        <Text style={{ color: '#FFB800', fontSize: 18, fontWeight: '800' }}>▶ LUKI PLAY</Text>
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>▶ LUKI PLAY</Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>Cargando canales…</Text>
       </View>
     );
@@ -289,7 +291,7 @@ export default function LivePlayer() {
           style={{ marginTop: 24, backgroundColor: '#FFB800', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12 }}
           onPress={() => router.back()}
         >
-          <Text style={{ color: '#000', fontWeight: '700' }}>Volver</Text>
+          <Text style={{ color: '#000', fontWeight: '800' }}>Volver</Text>
         </TouchableOpacity>
       </View>
     );
@@ -357,10 +359,10 @@ export default function LivePlayer() {
 // Styles
 // ─────────────────────────────────────────────
 const S = {
-  accent: '#E53935',
+  accent: '#17D1C6',
   gold: '#FFB800',
-  muted: 'rgba(255,255,255,0.55)',
-  card: 'rgba(30,10,60,0.92)',
+  muted: '#B07CC6',
+  card: 'rgba(36, 0, 70, 0.92)',
 };
 
 const styles = StyleSheet.create({
@@ -418,7 +420,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, width: '100%',
   },
-  railItemActive: { backgroundColor: 'rgba(255,184,0,0.18)', borderWidth: 1, borderColor: S.gold },
+  railItemActive: { backgroundColor: 'rgba(255,184,0,0.15)', borderWidth: 1, borderColor: S.gold },
   railNumber: { color: S.muted, fontSize: 11, width: 16 },
   railLogo: { fontSize: 16 },
   railNameSmall: { color: '#fff', fontSize: 10, flex: 1 },
@@ -428,7 +430,7 @@ const styles = StyleSheet.create({
   },
   programThumb: {
     width: 160, height: 90, borderRadius: 14,
-    backgroundColor: 'rgba(80,30,120,0.6)',
+    backgroundColor: 'rgba(25,25,25,0.6)',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
@@ -470,7 +472,7 @@ const styles = StyleSheet.create({
   nowPlayingTime: { color: S.muted, fontSize: 13, marginBottom: 14 },
   nowPlayingThumb: {
     width: '100%', height: 90, borderRadius: 12,
-    backgroundColor: 'rgba(80,30,120,0.6)',
+    backgroundColor: 'rgba(50,50,50,0.6)',
     alignItems: 'center', justifyContent: 'center',
   },
   channelToast: {

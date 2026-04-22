@@ -1,4 +1,5 @@
-import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, FlatList, Dimensions, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useContentStore, Movie } from '../../services/contentStore';
@@ -24,11 +25,11 @@ const { width } = Dimensions.get('window');
 // ─────────────────────────────────────────────
 function LiveHeroBanner({ onWatchLive }: { onWatchLive: () => void }) {
     return (
-        <View style={{ width: '100%', height: width * 0.48, backgroundColor: '#0D001A', overflow: 'hidden' }}>
-            <View style={{ ...{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, backgroundColor: '#200040' }} />
+        <View style={{ width: '100%', height: width * 0.48, backgroundColor: '#140026', overflow: 'hidden' }}>
+            <View style={{ ...{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, backgroundColor: '#240046' }} />
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: 24, paddingTop: 40, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.22)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(229,57,53,0.4)' }}>
-                    <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#E53935' }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.15)', borderRadius: 9999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)' }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#E53935' }} />
                     <Text style={{ color: '#E53935', fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>EN VIVO</Text>
                 </View>
                 <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', marginBottom: 6 }}>TV en Vivo</Text>
@@ -36,11 +37,13 @@ function LiveHeroBanner({ onWatchLive }: { onWatchLive: () => void }) {
                     Canales de Ecuador en alta calidad — sin interrupciones
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <TouchableOpacity style={{ backgroundColor: '#FFB800', borderRadius: 10, paddingHorizontal: 22, paddingVertical: 11 }} onPress={onWatchLive}>
-                        <Text style={{ color: '#000', fontWeight: '900', fontSize: 14 }}>▶  Ver ahora</Text>
+                    <TouchableOpacity style={{ backgroundColor: '#FFB800', borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' }} onPress={onWatchLive}>
+                        <Ionicons name="play" size={18} color="#140026" />
+                        <Text style={{ color: '#140026', fontWeight: '800', fontSize: 13 }}>Reproducir</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 11, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}>
-                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>ℹ  Guía EPG</Text>
+                    <TouchableOpacity style={{ backgroundColor: 'rgba(96,38,158,0.5)', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                        <Ionicons name="list" size={18} color="#FAF6E7" />
+                        <Text style={{ color: '#FAF6E7', fontWeight: '700', fontSize: 13 }}>Guía EPG</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -55,8 +58,16 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
     return (
         <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>📺 Canales en Vivo</Text>
-                <Text style={{ color: '#FFB800', fontSize: 13, fontWeight: '700' }}>Ver todos →</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ backgroundColor: 'transparent', borderRadius: 0, padding: 0 }}>
+                        <Ionicons name="tv-outline" size={20} color="#fff" />
+                    </View>
+                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>Canales en Vivo</Text>
+                </View>
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600' }}>Ver todos</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#aaa" />
+                </TouchableOpacity>
             </View>
             <FlatList
                 horizontal
@@ -71,13 +82,20 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
                             style={{ width: 150, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}
                             onPress={() => onSelectChannel(item)}
                         >
-                            <View style={{ height: 84, backgroundColor: '#200040', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                                <Text style={{ fontSize: 32 }}>{item.logo}</Text>
+                            <View style={{ height: 84, backgroundColor: '#240046', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                {(!item.logo || item.logo === '📺') ? (
+                                    <Ionicons name="tv-outline" size={36} color="rgba(255,255,255,0.8)" />
+                                ) : item.logo.startsWith('http') ? (
+                                    <Image source={{ uri: item.logo }} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+                                ) : (
+                                    <Text style={{ fontSize: 32 }}>{item.logo}</Text>
+                                )}
                                 <View style={{ position: 'absolute', width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Text style={{ color: '#fff', fontSize: 16 }}>▶</Text>
+                                    <Ionicons name="play" size={14} color="#fff" style={{ marginLeft: 2 }} />
                                 </View>
-                                <View style={{ position: 'absolute', top: 7, right: 7, backgroundColor: '#E53935', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 }}>
-                                    <Text style={{ color: '#fff', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 }}>LIVE</Text>
+                                <View style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(229,57,53,0.15)', borderRadius: 9999, paddingHorizontal: 6, paddingVertical: 2, flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)' }}>
+                                    <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: '#E53935' }} />
+                                    <Text style={{ color: '#E53935', fontSize: 8, fontWeight: '800', letterSpacing: 1 }}>EN VIVO</Text>
                                 </View>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8 }}>
@@ -86,7 +104,7 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
                                     <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{item.name}</Text>
                                     <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 }} numberOfLines={1}>{prog.title}</Text>
                                 </View>
-                                {item.isFavorite && <Text style={{ color: '#E53935', fontSize: 14 }}>♥</Text>}
+                                {item.isFavorite && <Ionicons name="heart" size={14} color="#E53935" />}
                             </View>
                         </TouchableOpacity>
                     );
@@ -270,7 +288,7 @@ export default function Home() {
             <ScrollView
                 className="flex-1"
                 refreshControl={
-                    <RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor="#FFC107" />
+                    <RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor="#fff" />
                 }
             >
                 {featured && <Hero movie={featured} onPlay={handlePlay} />}
