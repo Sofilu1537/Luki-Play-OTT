@@ -12,6 +12,7 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Channel, STATIC_CHANNELS, getCurrentProgram, getProgressPercent } from './channelTypes';
+import { API_BASE_URL } from './api/config';
 
 export type { Channel };
 export { getCurrentProgram, getProgressPercent };
@@ -29,11 +30,10 @@ interface BackendCanal {
   detalle?: string;
 }
 
-// CMS backend is always at port 3000
-const BACKEND_BASE =
-  Platform.OS === 'web' ? 'http://localhost:3000' : 'http://127.0.0.1:3000';
+// Use unified config
+const BACKEND_BASE = API_BASE_URL;
 
-function toChannel(c: BackendCanal, index: number): Channel {
+function toChannel(c: BackendCanal, index: number, prevFavs: Set<string>): Channel {
   return {
     id: c.id,
     number: index + 1,
@@ -41,7 +41,7 @@ function toChannel(c: BackendCanal, index: number): Channel {
     logo: c.logo || '📺',
     streamUrl: c.streamUrl,
     category: c.categoria || 'General',
-    isFavorite: false,
+    isFavorite: prevFavs.has(c.id),
     epg: [],
   };
 }
@@ -78,9 +78,11 @@ async function fetchChannels() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: BackendCanal[] = await res.json();
+    const oldFavs = new Set(_store.channels.filter(ch => ch.isFavorite).map(ch => ch.id));
+
     if (data.length > 0) {
       _store = {
-        channels: data.map(toChannel),
+        channels: data.map((c, idx) => toChannel(c, idx, oldFavs)),
         loading: false,
         error: null,
         isFromBackend: true,
@@ -94,7 +96,8 @@ async function fetchChannels() {
         isFromBackend: false,
       };
     }
-  } catch {
+  } catch (error) {
+    console.error("fetchChannels failed:", error);
     _store = {
       channels: STATIC_CHANNELS,
       loading: false,
@@ -130,10 +133,12 @@ export function useChannels() {
     notify();
   };
 
-  const reload = () => {
+  const reload = (silent = false) => {
     _fetched = false;
-    _store = { channels: [], loading: true, error: null, isFromBackend: false };
-    notify();
+    if (!silent) {
+      _store = { channels: [], loading: true, error: null, isFromBackend: false };
+      notify();
+    }
     fetchChannels();
   };
 

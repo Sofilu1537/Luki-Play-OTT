@@ -179,7 +179,7 @@ export default function Home() {
     const logout = authState.logout;
     const canAccessOtt = authState.canAccessOtt ?? true;
     const restrictionMessage = authState.restrictionMessage ?? null;
-    const { channels: liveChannels } = useChannels();
+    const { channels: liveChannels, reload: reloadChannels } = useChannels();
     const router = useRouter();
 
     // Load channels from IndexedDB once on mount
@@ -191,6 +191,7 @@ export default function Home() {
     useFocusEffect(
         useCallback(() => {
             fetchContent();
+            reloadChannels(true); // Silent reload to keep UI fresh without flash
         }, [])
     );
 
