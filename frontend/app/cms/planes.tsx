@@ -453,17 +453,6 @@ export default function CmsPlanes() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Stats ──────────────────────────────────────────────────────── */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
-          {[
-            { label: 'Planes totales',    value: String(plans.length),     icon: 'star'          as const, color: theme.accent,   bg: theme.accentSoft  },
-            { label: 'Activos',           value: String(activePlans),       icon: 'check-circle'  as const, color: theme.success,  bg: theme.successSoft },
-            { label: 'Canales asignados', value: String(totalChannelSlots), icon: 'television'    as const, color: theme.info,     bg: theme.infoSoft    },
-          ].map((item) => (
-            <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} color={item.color} bg={item.bg} />
-          ))}
-        </View>
-
         {/* ── Plan cards ─────────────────────────────────────────────────── */}
         {loading ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
@@ -482,88 +471,141 @@ export default function CmsPlanes() {
               const chCount = plan.allowedChannelIds?.length ?? 0;
               const catCount = plan.allowedCategoryIds?.length ?? 0;
 
+              // Quality label helper
+              const qualityLabel = (q: AdminPlan['videoQuality']) =>
+                q === 'SD' ? 'SD (480p)' : q === 'HD' ? 'HD (720p)' : q === 'FHD' ? 'FHD (1080p)' : '4K (2160p)';
+
+              // Feature pills derived from plan flags
+              const featurePills: Array<{ icon: React.ComponentProps<typeof FontAwesome>['name']; label: string }> = [
+                ...(plan.allowDownloads ? [{ icon: 'download' as const, label: 'Descargas' }] : []),
+                ...(!plan.hasAds       ? [{ icon: 'ban'      as const, label: 'Sin Anuncios' }] : []),
+                ...(plan.entitlements?.includes('vod-premium') ? [{ icon: 'star'  as const, label: 'Premium' }] : []),
+                ...(plan.entitlements?.includes('kids')        ? [{ icon: 'child' as const, label: 'Parental' }] : []),
+                ...(plan.allowCasting  ? [{ icon: 'wifi'      as const, label: 'Casting' }] : []),
+              ];
+
+              // Entitlement labels for checklist
+              const entitlementLabels = (plan.entitlements ?? [])
+                .map((e) => ENTITLEMENT_OPTIONS.find((o) => o.value === e)?.label ?? e)
+                .slice(0, 4);
+
               return (
                 <View
                   key={plan.id}
                   style={{
-                    backgroundColor: isDark ? theme.cardBg : '#f4f5f7',
-                    borderRadius: 18, padding: 24,
+                    backgroundColor: theme.cardBg,
+                    borderRadius: 18,
                     borderWidth: 1,
-                    borderColor: isDark ? theme.border : 'rgba(200,204,216,0.9)',
+                    borderColor: theme.border,
                     minWidth: 280, flex: 1, maxWidth: 380,
+                    overflow: 'hidden',
                     ...(Platform.OS === 'web' ? {
                       boxShadow: isDark
-                        ? '6px 6px 14px rgba(0,0,0,0.32), -4px -4px 10px rgba(80,80,100,0.08)'
-                        : '6px 6px 14px rgba(180,185,200,0.45), -6px -6px 14px rgba(255,255,255,0.95)',
+                        ? '0 4px 24px rgba(0,0,0,0.38)'
+                        : '0 4px 18px rgba(0,0,0,0.10)',
                     } as any : {
-                      shadowColor: isDark ? '#000' : '#b4b9c8',
-                      shadowOpacity: isDark ? 0.32 : 0.35,
-                      shadowRadius: isDark ? 8 : 10,
-                      shadowOffset: { width: 4, height: 4 },
-                      elevation: 4,
+                      shadowColor: '#000',
+                      shadowOpacity: isDark ? 0.35 : 0.12,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 4 },
+                      elevation: 5,
                     }),
                   }}
                 >
-                  {/* Card header */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 8 }}>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 }}>
-                      <View style={{ backgroundColor: plan.activo ? theme.accentSoft : theme.liftBg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: plan.activo ? theme.accentBorder : theme.border }}>
-                        <Text style={{ color: plan.activo ? theme.accentLight : theme.textMuted, fontSize: 10, fontWeight: '700' }}>
+                  {/* Card body */}
+                  <View style={{ padding: 20 }}>
+
+                    {/* Header: status badge | group label */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                      <TouchableOpacity
+                        onPress={() => handleToggle(plan)}
+                        style={{ backgroundColor: plan.activo ? theme.accentSoft : theme.liftBg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: plan.activo ? theme.accentBorder : theme.border }}
+                      >
+                        <Text style={{ color: plan.activo ? theme.accentLight : theme.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
                           {plan.activo ? 'ACTIVO' : 'INACTIVO'}
                         </Text>
+                      </TouchableOpacity>
+                      <Text style={{ color: gc.text, fontSize: 12, fontWeight: '600' }}>{groupLabel(plan.grupoUsuarios)}</Text>
+                    </View>
+
+                    {/* Name & description */}
+                    <Text style={{ color: theme.text, fontSize: 22, fontWeight: '900', marginBottom: 3 }}>{plan.nombre}</Text>
+                    <Text style={{ color: theme.textSec, fontSize: 12, lineHeight: 18, marginBottom: 14 }} numberOfLines={2}>{plan.descripcion}</Text>
+
+                    {/* Price */}
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginBottom: 16, justifyContent: 'flex-end' }}>
+                      <Text style={{ color: theme.accent, fontSize: 30, fontWeight: '900' }}>
+                        {(plan.precio ?? 0) > 0 ? `$${plan.precio.toFixed(2)}` : 'Incluido'}
+                      </Text>
+                      {(plan.precio ?? 0) > 0 ? (
+                        <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'}/mensual</Text>
+                      ) : (
+                        <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '600' }}>{isIsp ? 'ISP Bundle' : 'Gratis'}</Text>
+                      )}
+                    </View>
+
+                    {/* Metrics row */}
+                    <View style={{ flexDirection: 'row', gap: 14, marginBottom: 10 }}>
+                      {[
+                        { icon: 'mobile'      as const, text: `${plan.maxDevices} disp.`            },
+                        { icon: 'users'       as const, text: `${plan.maxProfiles} perfiles`         },
+                        { icon: 'play-circle' as const, text: `${plan.maxConcurrentStreams} simult.` },
+                      ].map((item) => (
+                        <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <FontAwesome name={item.icon} size={10} color={theme.textMuted} />
+                          <Text style={{ color: theme.textSec, fontSize: 12 }}>{item.text}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Quality badge */}
+                    <View style={{ flexDirection: 'row', marginBottom: 14 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.liftBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: theme.border, alignSelf: 'flex-start' }}>
+                        <FontAwesome name="signal" size={11} color={theme.accentLight} />
+                        <Text style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>{qualityLabel(plan.videoQuality)}</Text>
                       </View>
                     </View>
+
+                    {/* Feature pills */}
+                    {featurePills.length > 0 && (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                        {featurePills.map((fp) => (
+                          <View key={fp.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.liftBg }}>
+                            <FontAwesome name={fp.icon} size={9} color={theme.textMuted} />
+                            <Text style={{ color: theme.textSec, fontSize: 11 }}>{fp.label}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Entitlements checklist */}
+                    {entitlementLabels.length > 0 && (
+                      <View style={{ gap: 5, marginBottom: 6 }}>
+                        {entitlementLabels.map((label) => (
+                          <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <FontAwesome name="check" size={10} color={theme.success} />
+                            <Text style={{ color: theme.textSec, fontSize: 12 }}>{label}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Footer */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <FontAwesome name="calendar" size={11} color={theme.textMuted} />
+                      <Text style={{ color: theme.textMuted, fontSize: 12, fontWeight: '600' }}>{plan.duracionDias} días</Text>
+                    </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: theme.infoSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(plan)}>
+                      <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: theme.infoSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(plan)}>
                         <FontAwesome name="pencil" size={12} color={theme.info} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: theme.dangerSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(plan)}>
+                      <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: theme.dangerSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(plan)}>
                         <FontAwesome name="trash" size={12} color={theme.danger} />
                       </TouchableOpacity>
                     </View>
                   </View>
-
-                  {/* Name & description */}
-                  <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800', marginBottom: 4 }}>{plan.nombre}</Text>
-                  <Text style={{ color: theme.textSec, fontSize: 12, lineHeight: 18, marginBottom: 16 }} numberOfLines={3}>{plan.descripcion}</Text>
-
-                  {/* Price */}
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 14 }}>
-                    <Text style={{ color: theme.accent, fontSize: 28, fontWeight: '900' }}>
-                      {isIsp || !(plan.precio ?? 0) ? 'Incluido' : `$${(plan.precio ?? 0).toFixed(2)}`}
-                    </Text>
-                    {!isIsp && (plan.precio ?? 0) > 0 && (
-                      <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'} / {plan.duracionDias ?? 30} días</Text>
-                    )}
-                  </View>
-
-                  {/* Metrics */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                    {[
-                      { icon: 'mobile'      as const, text: `${plan.maxDevices} disp.`         },
-                      { icon: 'play-circle' as const, text: `${plan.maxConcurrentStreams} streams` },
-                      { icon: 'users'       as const, text: `${plan.maxProfiles} perfiles`      },
-                      { icon: 'tv'          as const, text: `${chCount} canales`                },
-                      { icon: 'tag'         as const, text: `${catCount} categorías`            },
-                    ].map((item) => (
-                      <View
-                        key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.liftBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: theme.border }}
-                      >
-                        <FontAwesome name={item.icon} size={10} color={theme.accentLight} />
-                        <Text style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>{item.text}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {/* Toggle button */}
-                  <TouchableOpacity
-                    style={{ backgroundColor: plan.activo ? theme.successSoft : theme.accentSoft, borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: plan.activo ? 'rgba(16,185,129,0.28)' : theme.accentBorder }}
-                    onPress={() => handleToggle(plan)}
-                  >
-                    <Text style={{ color: plan.activo ? theme.success : theme.accentLight, fontWeight: '800', fontSize: 12 }}>
-                      {plan.activo ? 'Desactivar plan' : 'Activar plan'}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               );
             })}
@@ -630,19 +672,23 @@ export default function CmsPlanes() {
                         style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
                       />
                     </View>
-                    {form.grupoUsuarios !== 'ISP_BUNDLE' && (
-                      <View style={{ width: 130 }}>
-                        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Precio</Text>
+                    <View style={{ width: 160 }}>
+                      <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>
+                        Precio (USD){form.grupoUsuarios === 'ISP_BUNDLE' ? <Text style={{ color: theme.textMuted, fontWeight: '400' }}> — incluido</Text> : null}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
+                        <Text style={{ color: theme.textMuted, fontSize: 14, paddingLeft: 12, paddingRight: 4 }}>$</Text>
                         <TextInput
                           value={String(form.precio)}
                           onChangeText={(v) => updateNumberField('precio', v)}
-                          keyboardType="numeric"
+                          keyboardType="decimal-pad"
                           placeholder="0.00"
                           placeholderTextColor={theme.textMuted}
-                          style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
+                          style={{ flex: 1, color: theme.text, paddingHorizontal: 4, paddingVertical: 12, fontSize: 14, ...webInput }}
                         />
+                        <Text style={{ color: theme.textMuted, fontSize: 11, paddingRight: 10 }}>USD</Text>
                       </View>
-                    )}
+                    </View>
                   </View>
 
                   {/* Description */}
