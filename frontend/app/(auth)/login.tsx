@@ -452,7 +452,7 @@ export default function Login() {
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
                 <View style={{ alignItems: 'center', marginBottom: 32 }}>
-                    <LukiPlayLogo variant="full" size={120} />
+                    <LukiPlayLogo variant="icon" size={120} />
                     <Text style={{ color: P.muted, fontSize: 13, letterSpacing: 3, marginTop: 12, textTransform: 'uppercase', fontWeight: '600' }}>tu hogar digital</Text>
                 </View>
                 <View style={{ backgroundColor: P.card, borderRadius: 20, borderWidth: 1, borderColor: P.cardBorder, padding: 28, maxWidth: 420, width: '100%', alignSelf: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 12 } }}>

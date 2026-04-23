@@ -858,7 +858,7 @@ export default function CmsLogin() {
         >
           {/* Logo */}
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <LukiPlayLogo variant="full" size={100} />
+            <LukiPlayLogo variant="icon" size={120} />
             <Text
               style={{
                 color: T.text,
@@ -868,10 +868,10 @@ export default function CmsLogin() {
                 marginTop: 16,
               }}
             >
-              Luki Play CMS
+              LUKIPLAY CMS
             </Text>
             <Text style={{ color: T.muted, fontSize: 13, marginTop: 6 }}>
-              Panel de administración interna
+              Sistema de Administración de Contenido
             </Text>
           </View>
 
