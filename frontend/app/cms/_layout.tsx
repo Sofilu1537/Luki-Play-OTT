@@ -36,7 +36,13 @@ export default function CmsLayout() {
     return <Redirect href="/cms/login" />;
   }
 
-  if (profile && (pathname === '/cms/login' || pathname === '/cms')) {
+  // Force password change: if logged in but mustChangePassword, send back to login
+  // The login screen detects this and shows the change-password form.
+  if (profile && profile.mustChangePassword && pathname !== '/cms/login') {
+    return <Redirect href="/cms/login" />;
+  }
+
+  if (profile && !profile.mustChangePassword && (pathname === '/cms/login' || pathname === '/cms')) {
     return <Redirect href="/cms/dashboard" />;
   }
 

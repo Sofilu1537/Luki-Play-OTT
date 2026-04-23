@@ -43,6 +43,7 @@ export interface CmsUserProfile {
   lastLoginAt: string | null;
   permissions: string[];
   entitlements: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface CmsSession {
@@ -332,6 +333,42 @@ export async function cmsResetWithCode(
       data && typeof data === 'object' && 'message' in data
         ? String((data as Record<string, unknown>).message)
         : 'No se pudo restablecer la contraseña';
+    throw new Error(msg);
+  }
+
+  return data as { message: string };
+}
+
+// ---------------------------------------------------------------------------
+// Forced Password Change
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /auth/change-password
+ * Changes the current user's password. Requires the current password.
+ * On success, all active sessions are revoked by the backend.
+ */
+export async function cmsChangePassword(
+  accessToken: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const msg =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as Record<string, unknown>).message)
+        : 'No se pudo cambiar la contraseña';
     throw new Error(msg);
   }
 

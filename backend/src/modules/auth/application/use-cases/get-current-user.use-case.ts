@@ -67,6 +67,7 @@ export class GetCurrentUserUseCase {
       canAccessOtt,
       restrictionMessage,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      mustChangePassword: user.mustChangePassword,
       permissions,
       entitlements,
     };

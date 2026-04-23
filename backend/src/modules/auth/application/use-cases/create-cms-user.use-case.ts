@@ -44,8 +44,9 @@ export class CreateCmsUserUseCase {
       throw new ConflictException('Ya existe un usuario con ese correo electrónico.');
     }
 
-    // Placeholder hash — user will set real password on first access
-    const placeholderHash = await this.hashService.hash(randomBytes(32).toString('hex'));
+    // Set a well-known initial password. User is required to change it on first login.
+    const INITIAL_CMS_PASSWORD = 'password123';
+    const placeholderHash = await this.hashService.hash(INITIAL_CMS_PASSWORD);
 
     const user = new User({
       id: `usr-${randomUUID().slice(0, 8)}`,
@@ -79,10 +80,7 @@ export class CreateCmsUserUseCase {
 
     await this.tokenRepo.save(accessToken);
 
-    const cmsUrl = this.configService.get<string>('CMS_URL', 'http://localhost:3001');
-    const link = `${cmsUrl}/first-access?token=${rawToken}`;
-
-    await this.emailService.sendFirstAccess(user.email, link, user.displayName());
+    await this.emailService.sendGeneratedPassword(user.email, INITIAL_CMS_PASSWORD, user.displayName());
 
     await this.auditRepo.save(new AuditLog({
       id: randomUUID(),

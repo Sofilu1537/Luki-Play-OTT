@@ -12,7 +12,7 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
-import { ROLE_META, buildToggleItems, buildContentPermItems, TOGGLEABLE_MODULES, SOPORTE_DEFAULT_PERMISSIONS } from './types';
+import { ROLE_META, buildToggleItems, buildContentPermItems, TOGGLEABLE_MODULES, SOPORTE_DEFAULT_PERMISSIONS, CONTENT_PERM_DEFS } from './types';
 import type { AdminUser } from '../../../services/api/adminApi';
 
 type CmsRole = 'admin' | 'soporte';
@@ -77,7 +77,10 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
     if (role === 'soporte') {
       setPermissions(SOPORTE_DEFAULT_PERMISSIONS);
     } else if (!initialData || initialData.role === 'soporte') {
-      setPermissions([]);
+      // Admin: default to all modules + all content permissions (SuperAdmin can toggle off as needed)
+      const allModuleKeys = TOGGLEABLE_MODULES.map((m) => m.key);
+      const allContentKeys = CONTENT_PERM_DEFS.map((d) => d.key);
+      setPermissions([...allModuleKeys, ...allContentKeys]);
     }
   }, [role]);
 

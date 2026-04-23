@@ -82,6 +82,9 @@ export class UserProfileResponse {
   @ApiPropertyOptional()
   lastLoginAt: string | null;
 
+  @ApiPropertyOptional()
+  mustChangePassword: boolean;
+
   @ApiProperty({ type: [String] })
   permissions: string[];
 

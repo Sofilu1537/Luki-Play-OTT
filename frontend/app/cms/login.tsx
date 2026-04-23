@@ -12,11 +12,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import { cmsSendRecoveryCode, cmsResetWithCode } from '../../services/api/cmsApi';
+import { cmsSendRecoveryCode, cmsResetWithCode, cmsChangePassword } from '../../services/api/cmsApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../../components/LukiPlayLogo';
 
-type Screen = 'login' | 'forgot';
+type Screen = 'login' | 'forgot' | 'change-password';
 
 // ---------------------------------------------------------------------------
 // Design tokens — Nebula Dark + Luki Play gold
@@ -264,6 +264,10 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     }
     try {
       await login({ email: email.trim().toLowerCase(), password });
+      // Check if user must change password on first login
+      if (useCmsStore.getState().profile?.mustChangePassword) {
+        onSwitch('change-password');
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Credenciales inválidas');
     }
@@ -328,6 +332,106 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
           Acceso restringido a personal autorizado
         </Text>
       </View>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ForceChangePasswordForm — shown on first login when mustChangePassword=true
+// ---------------------------------------------------------------------------
+function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const { accessToken, logout } = useCmsStore();
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!currentPassword) { setError('Ingresa tu contraseña actual (password123)'); return; }
+    if (!newPassword) { setError('Ingresa tu nueva contraseña'); return; }
+    if (newPassword.length < 8) { setError('La nueva contraseña debe tener al menos 8 caracteres'); return; }
+    if (newPassword === currentPassword) { setError('La nueva contraseña debe ser diferente a la actual'); return; }
+    if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
+
+    setLoading(true);
+    try {
+      await cmsChangePassword(accessToken!, currentPassword, newPassword);
+      setDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo cambiar la contraseña');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <>
+        <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
+          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: T.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+            <FontAwesome name="check" size={24} color={T.success} />
+          </View>
+          <Text style={{ color: T.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>
+            ¡Contraseña actualizada!
+          </Text>
+          <Text style={{ color: T.muted, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+            Tu contraseña ha sido cambiada. Inicia sesión con tu nueva contraseña.
+          </Text>
+        </View>
+        <CmsPrimaryButton
+          title="Ir al inicio de sesión"
+          onPress={() => { logout(); onSwitch('login'); }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,184,0,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+          <FontAwesome name="lock" size={20} color={T.accent} />
+        </View>
+        <Text style={{ color: T.text, fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
+          Cambio de contraseña requerido
+        </Text>
+        <Text style={{ color: T.muted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+          Tu cuenta fue creada con una contraseña temporal. Debes establecer una contraseña personal antes de continuar.
+        </Text>
+      </View>
+
+      <ErrorBanner message={error} />
+
+      <CmsInput
+        label="CONTRASEÑA ACTUAL"
+        placeholder="password123"
+        value={currentPassword}
+        onChangeText={(t) => { setCurrentPassword(t); setError(''); }}
+        secure
+        errorHighlight={!!error && !currentPassword}
+      />
+      <CmsInput
+        label="NUEVA CONTRASEÑA"
+        placeholder="••••••••"
+        value={newPassword}
+        onChangeText={(t) => { setNewPassword(t); setError(''); }}
+        secure
+        errorHighlight={!!error && !newPassword}
+      />
+      <PasswordStrength password={newPassword} />
+      <CmsInput
+        label="CONFIRMAR NUEVA CONTRASEÑA"
+        placeholder="••••••••"
+        value={confirmPassword}
+        onChangeText={(t) => { setConfirmPassword(t); setError(''); }}
+        secure
+        errorHighlight={!!error && newPassword !== confirmPassword}
+      />
+
+      <CmsPrimaryButton title="Cambiar contraseña" onPress={handleSubmit} isLoading={loading} />
     </>
   );
 }
@@ -789,6 +893,7 @@ export default function CmsLogin() {
           >
             {screen === 'login' ? <LoginForm onSwitch={setScreen} /> : null}
             {screen === 'forgot' ? <ForgotPasswordForm onSwitch={setScreen} /> : null}
+            {screen === 'change-password' ? <ForceChangePasswordForm onSwitch={setScreen} /> : null}
           </View>
 
           {/* Version footer */}
