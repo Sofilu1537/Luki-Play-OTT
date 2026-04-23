@@ -66,14 +66,12 @@ export default function StatsCard({
       {/* Label + icon */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <Text style={{
-          color:         labelColor ?? cardTextColor,
-          fontSize:      isTv ? 11.5 : 10.5,
+          color:         labelColor ?? (isDark ? theme.textSec : '#240046'),
+          fontSize:      isTv ? 13 : 15,
           fontWeight:    '700',
-          letterSpacing: 1.0,
-          textTransform: 'uppercase',
           flex:          1,
           marginRight:   8,
-          fontFamily:    FONT_FAMILY.bodyBold,
+          fontFamily:    FONT_FAMILY.bodySemiBold,
         }}>
           {label}
         </Text>

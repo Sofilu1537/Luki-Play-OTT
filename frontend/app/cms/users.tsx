@@ -12,6 +12,7 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import CmsShell from '../../components/cms/CmsShell';
+import { StatCard } from '../../components/cms/CmsComponents';
 import type { ThemeTokens } from '../../styles/theme';
 import {
   adminCreateUser,
@@ -1643,29 +1644,7 @@ export default function CmsUsers() {
             { label: 'Abonados',  value: stats.subscribers, icon: 'play-circle'  as const, color: theme.info   },
             { label: 'Clientes',  value: stats.clients,     icon: 'shopping-bag' as const, color: theme.accent },
           ].map((card) => (
-            <View key={card.label} style={{
-              flex: 1, minWidth: 180,
-              backgroundColor: theme.cardBg,
-              borderRadius: 14, padding: 16,
-              borderWidth: 1,
-              borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-              shadowColor: theme.cardShadow,
-              shadowOpacity: isDark ? 0.34 : 0.18,
-              shadowRadius: isDark ? 16 : 12,
-              shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
-              elevation: isDark ? 10 : 6,
-              ...(Platform.OS === 'web' && !isDark ? { boxShadow: theme.softUiShadow } as any : {}),
-              ...(Platform.OS === 'web' &&  isDark ? { boxShadow: theme.softUiShadowDark } as any : {}),
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? `${card.color}35` : theme.iconBorderSoft }}>
-                  <FontAwesome name={card.icon} size={16} color={card.color} />
-                </View>
-                <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{card.label}</Text>
-              </View>
-              <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
-            </View>
+            <StatCard key={card.label} label={card.label} value={card.value} icon={card.icon} color={card.color} />
           ))}
         </View>
 

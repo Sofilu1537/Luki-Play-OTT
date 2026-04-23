@@ -7,6 +7,7 @@ import { useCategoriasStore } from '../../services/categoriasStore';
 import { useChannelStore } from '../../services/channelStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell from '../../components/cms/CmsShell';
+import { StatCard } from '../../components/cms/CmsComponents';
 import { useTheme } from '../../hooks/useTheme';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -234,15 +235,7 @@ export default function CmsCategorias() {
             { label: 'Destacadas', value: featuredCount,    icon: 'star'         as const, color: theme.accentLight,  bg: theme.accentFaint  },
             { label: 'Con señal',  value: withLiveSignals,  icon: 'wifi'         as const, color: theme.info,         bg: theme.infoSoft     },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: theme.cardBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: theme.cardShadow, shadowOpacity: isDark ? 0.34 : 0.18, shadowRadius: isDark ? 16 : 12, shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 }, elevation: isDark ? 10 : 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
-                  <FontAwesome name={item.icon} size={16} color={item.color} />
-                </View>
-                <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
-              </View>
-              <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
-            </View>
+            <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} color={item.color} bg={item.bg} />
           ))}
         </View>
 

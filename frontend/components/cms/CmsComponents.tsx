@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '../../hooks/useTheme';
+import { FONT_FAMILY } from '../../styles/typography';
 
 // ─── StatCard ───────────────────────────────────────────────
 /**
@@ -26,63 +27,38 @@ export function StatCard({
   value,
   icon,
   color,
+  bg,
 }: {
   label: string;
   value: string | number;
   icon: string;
   color: string;
+  bg?: string;
 }) {
-  const { theme } = useTheme();
+  const { isDark, theme } = useTheme();
   return (
-    <View
-      style={{
-        flex: 1,
-        minWidth: 140,
-        backgroundColor: theme.cardBg,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: theme.border,
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: 8,
-      }}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          backgroundColor: `${color}18`,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <FontAwesome name={icon as any} size={18} color={color} />
+    <View style={{
+      flex: 1, minWidth: 180,
+      backgroundColor: theme.cardBg,
+      borderRadius: 14, padding: 16,
+      borderWidth: 1,
+      borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      shadowColor: theme.cardShadow,
+      shadowOpacity: isDark ? 0.34 : 0.18,
+      shadowRadius: isDark ? 16 : 12,
+      shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
+      elevation: isDark ? 10 : 6,
+      ...(Platform.OS === 'web' && !isDark ? { boxShadow: theme.softUiShadow } as any : {}),
+      ...(Platform.OS === 'web' &&  isDark ? { boxShadow: theme.softUiShadowDark } as any : {}),
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: bg ?? `${color}18`, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? `${color}35` : theme.iconBorderSoft }}>
+          <FontAwesome name={icon as any} size={16} color={color} />
+        </View>
+        <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{label}</Text>
       </View>
-      <View>
-        <Text
-          style={{
-            color: theme.textMuted,
-            fontSize: 10,
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}
-        >
-          {label}
-        </Text>
-        <Text
-          style={{
-            color: theme.text,
-            fontSize: 22,
-            fontWeight: '800',
-            marginTop: 2,
-          }}
-        >
-          {value}
-        </Text>
-      </View>
+      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{value}</Text>
     </View>
   );
 }

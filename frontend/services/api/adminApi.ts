@@ -792,6 +792,61 @@ export async function adminToggleComponente(accessToken: string, id: string): Pr
   }
 }
 
+export async function adminReorderComponentes(
+  accessToken: string,
+  ids: string[],
+): Promise<AdminComponente[]> {
+  try {
+    return await apiFetch<AdminComponente[]>('/admin/componentes/reorder', accessToken, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  } catch {
+    // optimistic: return mock sorted by provided order
+    return ids.map((id, i) => {
+      const comp = mockComponentes.find((c) => c.id === id) ?? mockComponentes[0];
+      return { ...comp, orden: i + 1 };
+    });
+  }
+}
+
+export interface CreateComponentePayload {
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  tipo: string;
+  activo?: boolean;
+  orden?: number;
+}
+
+export async function adminCreateComponente(
+  accessToken: string,
+  data: CreateComponentePayload,
+): Promise<AdminComponente> {
+  return apiFetch<AdminComponente>('/admin/componentes', accessToken, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateComponente(
+  accessToken: string,
+  id: string,
+  data: Partial<CreateComponentePayload>,
+): Promise<AdminComponente> {
+  return apiFetch<AdminComponente>(`/admin/componentes/${id}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteComponente(
+  accessToken: string,
+  id: string,
+): Promise<void> {
+  await apiFetch<void>(`/admin/componentes/${id}`, accessToken, { method: 'DELETE' });
+}
+
 export async function adminSyncComponenteCategorias(
   accessToken: string,
   componentId: string,

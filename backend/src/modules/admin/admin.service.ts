@@ -225,6 +225,63 @@ export class AdminService {
     return this.getComponentes();
   }
 
+  async createComponente(dto: { nombre: string; descripcion?: string; icono?: string; tipo: string; activo?: boolean; orden?: number }): Promise<OttComponent> {
+    const { v4: uuidv4 } = await import('uuid');
+    const existing = await this.prisma.component.findUnique({ where: { nombre: dto.nombre } });
+    if (existing) throw new ConflictException(`Ya existe un componente con el nombre "${dto.nombre}"`);
+    const maxOrden = await this.prisma.component.aggregate({ _max: { orden: true } });
+    const nextOrden = dto.orden ?? (maxOrden._max.orden ?? 0) + 1;
+    const comp = await this.prisma.component.create({
+      data: {
+        id: uuidv4(),
+        nombre: dto.nombre,
+        descripcion: dto.descripcion ?? '',
+        icono: dto.icono ?? '',
+        tipo: dto.tipo,
+        activo: dto.activo ?? true,
+        orden: nextOrden,
+      },
+    });
+    return { id: comp.id, nombre: comp.nombre, descripcion: comp.descripcion, icono: comp.icono, tipo: comp.tipo, activo: comp.activo, orden: comp.orden, categories: [] };
+  }
+
+  async updateComponente(id: string, dto: { nombre?: string; descripcion?: string; icono?: string; tipo?: string; activo?: boolean; orden?: number }): Promise<OttComponent> {
+    const comp = await this.prisma.component.findUnique({ where: { id } });
+    if (!comp) throw new NotFoundException(`Componente ${id} no encontrado`);
+    if (dto.nombre && dto.nombre !== comp.nombre) {
+      const conflict = await this.prisma.component.findUnique({ where: { nombre: dto.nombre } });
+      if (conflict) throw new ConflictException(`Ya existe un componente con el nombre "${dto.nombre}"`);
+    }
+    const updated = await this.prisma.component.update({
+      where: { id },
+      data: {
+        ...(dto.nombre !== undefined && { nombre: dto.nombre }),
+        ...(dto.descripcion !== undefined && { descripcion: dto.descripcion }),
+        ...(dto.icono !== undefined && { icono: dto.icono }),
+        ...(dto.tipo !== undefined && { tipo: dto.tipo }),
+        ...(dto.activo !== undefined && { activo: dto.activo }),
+        ...(dto.orden !== undefined && { orden: dto.orden }),
+      },
+      include: {
+        componentCategories: {
+          include: { category: { select: { id: true, nombre: true, icono: true, activo: true } } },
+        },
+      },
+    });
+    return {
+      id: updated.id, nombre: updated.nombre, descripcion: updated.descripcion,
+      icono: updated.icono, tipo: updated.tipo, activo: updated.activo, orden: updated.orden,
+      categories: updated.componentCategories.map((cc) => cc.category),
+    };
+  }
+
+  async deleteComponente(id: string): Promise<void> {
+    const comp = await this.prisma.component.findUnique({ where: { id } });
+    if (!comp) throw new NotFoundException(`Componente ${id} no encontrado`);
+    await this.prisma.componentCategory.deleteMany({ where: { componentId: id } });
+    await this.prisma.component.delete({ where: { id } });
+  }
+
   async syncComponentCategories(componentId: string, categoryIds: string[]): Promise<void> {
     const comp = await this.prisma.component.findUnique({ where: { id: componentId } });
     if (!comp) throw new NotFoundException(`Component ${componentId} not found`);

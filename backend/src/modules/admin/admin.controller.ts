@@ -33,6 +33,8 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateComponenteDto } from './dto/create-componente.dto';
+import { UpdateComponenteDto } from './dto/update-componente.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
@@ -334,6 +336,29 @@ export class AdminController {
   @ApiOperation({ summary: 'List all OTT components' })
   @Get('componentes')
   getComponentes() { return this.adminService.getComponentes(); }
+
+  @ApiOperation({ summary: 'Create a new OTT component' })
+  @Permissions('cms:content:write')
+  @Post('componentes')
+  @HttpCode(HttpStatus.CREATED)
+  createComponente(@Body() body: CreateComponenteDto) {
+    return this.adminService.createComponente(body);
+  }
+
+  @ApiOperation({ summary: 'Update an OTT component' })
+  @Permissions('cms:content:write')
+  @Patch('componentes/:id')
+  updateComponente(@Param('id') id: string, @Body() body: UpdateComponenteDto) {
+    return this.adminService.updateComponente(id, body);
+  }
+
+  @ApiOperation({ summary: 'Delete an OTT component' })
+  @Permissions('cms:content:write')
+  @Delete('componentes/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteComponente(@Param('id') id: string) {
+    return this.adminService.deleteComponente(id);
+  }
 
   @ApiOperation({ summary: 'Toggle a component active/inactive' })
   @Post('componentes/:id/toggle')
