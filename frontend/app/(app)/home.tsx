@@ -6,6 +6,7 @@ import { useAdminStore } from '../../services/adminStore';
 import { useAuthStore } from '../../services/authStore';
 import { Hero } from '../../components/Hero';
 import { MediaRow } from '../../components/MediaRow';
+import { APP, COLORS } from '../../styles/theme';
 
 // Order in which tag rows appear when present
 const TAG_ORDER = [
@@ -129,12 +130,12 @@ export default function Home() {
 
             {/* OTT restriction banner */}
             {!canAccessOtt && restrictionMessage && (
-                <View style={{ backgroundColor: '#7f1d1d', padding: 12, paddingTop: 48 }}>
-                    <Text style={{ color: '#fca5a5', fontWeight: '600', textAlign: 'center', fontSize: 13 }}>
+                <View style={{ backgroundColor: APP.dangerSurface, padding: 12, paddingTop: 48 }}>
+                    <Text style={{ color: COLORS.melon, fontWeight: '600', textAlign: 'center', fontSize: 13 }}>
                         ⚠️ {restrictionMessage}
                     </Text>
                     <TouchableOpacity onPress={handleLogout} style={{ marginTop: 8, alignItems: 'center' }}>
-                        <Text style={{ color: '#fca5a5', textDecorationLine: 'underline', fontSize: 12 }}>
+                        <Text style={{ color: COLORS.melon, textDecorationLine: 'underline', fontSize: 12 }}>
                             Cerrar sesión
                         </Text>
                     </TouchableOpacity>
@@ -144,7 +145,7 @@ export default function Home() {
             <ScrollView
                 className="flex-1"
                 refreshControl={
-                    <RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor="#FFC107" />
+                    <RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor={APP.accent} />
                 }
             >
                 {featured && <Hero movie={featured} onPlay={handlePlay} />}

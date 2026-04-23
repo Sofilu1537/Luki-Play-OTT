@@ -14,7 +14,7 @@ import { usePlanesStore } from '../../services/planesStore';
 import { useCategoriasStore } from '../../services/categoriasStore';
 import { useChannelStore } from '../../services/channelStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
 import { useTheme } from '../../hooks/useTheme';
 
 // ---------------------------------------------------------------------------
@@ -84,12 +84,12 @@ function groupLabel(group: AdminPlan['grupoUsuarios']) {
   return GROUP_OPTIONS.find((o) => o.value === group)?.label ?? group;
 }
 
-function groupColors(group: AdminPlan['grupoUsuarios']) {
+function groupColors(group: AdminPlan['grupoUsuarios'], theme: ReturnType<typeof useTheme>['theme']) {
   const tone = GROUP_OPTIONS.find((o) => o.value === group)?.tone ?? 'accent';
-  if (tone === 'green')  return { bg: C.greenSoft,  border: 'rgba(23,209,198,0.28)',  text: C.green  };
-  if (tone === 'cyan')   return { bg: C.cyanSoft,   border: 'rgba(23,209,198,0.24)',  text: C.cyan   };
-  if (tone === 'amber')  return { bg: C.amberSoft,  border: 'rgba(255,121,0,0.28)',   text: C.amber  };
-  return { bg: C.accentSoft, border: C.accentBorder, text: C.accentLight };
+  if (tone === 'green')  return { bg: theme.successSoft,  border: 'rgba(23,209,198,0.28)',  text: theme.success  };
+  if (tone === 'cyan')   return { bg: theme.infoSoft,     border: 'rgba(23,209,198,0.24)',  text: theme.info     };
+  if (tone === 'amber')  return { bg: theme.warningSoft,  border: 'rgba(255,121,0,0.28)',   text: theme.warning  };
+  return { bg: theme.accentSoft, border: theme.accentBorder, text: theme.accentLight };
 }
 
 // ---------------------------------------------------------------------------
@@ -101,57 +101,60 @@ function ToggleChip({
 }: {
   active: boolean; label: string; onPress: () => void; tone?: 'accent' | 'green' | 'cyan' | 'amber';
 }) {
+  const { theme } = useTheme();
   const palette =
-    tone === 'green'  ? { bg: C.greenSoft,  border: 'rgba(23,209,198,0.28)',  text: C.green  } :
-    tone === 'cyan'   ? { bg: C.cyanSoft,   border: 'rgba(23,209,198,0.24)',  text: C.cyan   } :
-    tone === 'amber'  ? { bg: C.amberSoft,  border: 'rgba(255,121,0,0.28)',   text: C.amber  } :
-                        { bg: C.accentSoft, border: C.accentBorder,                    text: C.accentLight  };
+    tone === 'green'  ? { bg: theme.successSoft,  border: 'rgba(23,209,198,0.28)',  text: theme.success  } :
+    tone === 'cyan'   ? { bg: theme.infoSoft,      border: 'rgba(23,209,198,0.24)',  text: theme.info     } :
+    tone === 'amber'  ? { bg: theme.warningSoft,   border: 'rgba(255,121,0,0.28)',   text: theme.warning  } :
+                        { bg: theme.accentSoft,    border: theme.accentBorder,       text: theme.accentLight  };
 
   return (
     <TouchableOpacity
       style={{
         paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
-        backgroundColor: active ? palette.bg : C.lift,
-        borderWidth: 1, borderColor: active ? palette.border : C.border,
+        backgroundColor: active ? palette.bg : theme.liftBg,
+        borderWidth: 1, borderColor: active ? palette.border : theme.border,
       }}
       onPress={onPress}
     >
-      <Text style={{ color: active ? palette.text : C.textDim, fontSize: 12, fontWeight: '700' }}>{label}</Text>
+      <Text style={{ color: active ? palette.text : theme.textSec, fontSize: 12, fontWeight: '700' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 function BooleanRow({ label, helper, value, onToggle }: { label: string; helper: string; value: boolean; onToggle: () => void }) {
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       style={{
-        backgroundColor: C.lift, borderRadius: 12, borderWidth: 1, borderColor: C.border,
+        backgroundColor: theme.liftBg, borderRadius: 12, borderWidth: 1, borderColor: theme.border,
         paddingHorizontal: 14, paddingVertical: 12,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       }}
       onPress={onToggle}
     >
       <View style={{ flex: 1, paddingRight: 12 }}>
-        <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginBottom: 3 }}>{label}</Text>
-        <Text style={{ color: C.textDim, fontSize: 12 }}>{helper}</Text>
+        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 3 }}>{label}</Text>
+        <Text style={{ color: theme.textSec, fontSize: 12 }}>{helper}</Text>
       </View>
       <View
         style={{
           width: 48, height: 28, borderRadius: 999,
-          backgroundColor: value ? C.greenSoft : C.roseSoft,
+          backgroundColor: value ? theme.successSoft : theme.dangerSoft,
           borderWidth: 1, borderColor: value ? 'rgba(16,185,129,0.28)' : 'rgba(244,63,94,0.28)',
           justifyContent: 'center', paddingHorizontal: 3,
         }}
       >
-        <View style={{ width: 20, height: 20, borderRadius: 999, backgroundColor: value ? C.green : C.rose, alignSelf: value ? 'flex-end' : 'flex-start' }} />
+        <View style={{ width: 20, height: 20, borderRadius: 999, backgroundColor: value ? theme.success : theme.danger, alignSelf: value ? 'flex-end' : 'flex-start' }} />
       </View>
     </TouchableOpacity>
   );
 }
 
 function SectionTitle({ children }: { children: string }) {
+  const { theme } = useTheme();
   return (
-    <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 10, marginTop: 6 }}>{children}</Text>
+    <Text style={{ color: theme.text, fontSize: 14, fontWeight: '800', marginBottom: 10, marginTop: 6 }}>{children}</Text>
   );
 }
 
@@ -162,41 +165,42 @@ function ChannelRow({
   selected: boolean;
   onToggle: () => void;
 }) {
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: selected ? C.accentSoft : C.lift,
+        backgroundColor: selected ? theme.accentSoft : theme.liftBg,
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-        borderWidth: 1, borderColor: selected ? C.accentBorder : C.border,
+        borderWidth: 1, borderColor: selected ? theme.accentBorder : theme.border,
         marginBottom: 6,
       }}
       onPress={onToggle}
     >
       <View style={{
         width: 20, height: 20, borderRadius: 6, borderWidth: 2,
-        borderColor: selected ? C.accent : C.muted,
-        backgroundColor: selected ? C.accent : 'transparent',
+        borderColor: selected ? theme.accent : theme.textMuted,
+        backgroundColor: selected ? theme.accent : 'transparent',
         alignItems: 'center', justifyContent: 'center',
       }}>
         {selected && <FontAwesome name="check" size={10} color="white" />}
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }}>{channel.nombre}</Text>
+        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }}>{channel.nombre}</Text>
         {channel.category && (
-          <Text style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{channel.category.nombre}</Text>
+          <Text style={{ color: theme.textSec, fontSize: 11, marginTop: 2 }}>{channel.category.nombre}</Text>
         )}
       </View>
       {channel.isLive && (
-        <View style={{ backgroundColor: C.roseSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
-          <Text style={{ color: C.rose, fontSize: 10, fontWeight: '800' }}>LIVE</Text>
+        <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
+          <Text style={{ color: theme.danger, fontSize: 10, fontWeight: '800' }}>LIVE</Text>
         </View>
       )}
       <View style={{
-        backgroundColor: channel.status === 'ACTIVE' ? C.greenSoft : C.lift,
+        backgroundColor: channel.status === 'ACTIVE' ? theme.successSoft : theme.liftBg,
         borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3,
       }}>
-        <Text style={{ color: channel.status === 'ACTIVE' ? C.green : C.muted, fontSize: 10, fontWeight: '700' }}>
+        <Text style={{ color: channel.status === 'ACTIVE' ? theme.success : theme.textMuted, fontSize: 10, fontWeight: '700' }}>
           {channel.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
         </Text>
       </View>
@@ -209,7 +213,7 @@ function ChannelRow({
 // ---------------------------------------------------------------------------
 
 export default function CmsPlanes() {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
 
@@ -439,7 +443,7 @@ export default function CmsPlanes() {
             onPress={openCreateModal}
           >
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
-              <View style={{ flex: 1, backgroundColor: C.accent }} />
+              <View style={{ flex: 1, backgroundColor: theme.accent }} />
             </View>
             <FontAwesome name="plus" size={13} color="#1A1A2E" />
             <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Agregar Plan</Text>
@@ -449,17 +453,17 @@ export default function CmsPlanes() {
         {/* ── Stats ──────────────────────────────────────────────────────── */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
           {[
-            { label: 'Planes totales',    value: String(plans.length),     icon: 'star'          as const, color: C.accent, bg: C.accentSoft },
-            { label: 'Activos',           value: String(activePlans),       icon: 'check-circle'  as const, color: C.green,  bg: C.greenSoft  },
-            { label: 'Planes ISP Bundle', value: String(ispPlans),          icon: 'wifi'          as const, color: C.green,  bg: C.greenSoft  },
-            { label: 'Canales asignados', value: String(totalChannelSlots), icon: 'television'    as const, color: C.cyan,   bg: C.cyanSoft   },
+            { label: 'Planes totales',    value: String(plans.length),     icon: 'star'          as const, color: theme.accent,   bg: theme.accentSoft  },
+            { label: 'Activos',           value: String(activePlans),       icon: 'check-circle'  as const, color: theme.success,  bg: theme.successSoft },
+            { label: 'Planes ISP Bundle', value: String(ispPlans),          icon: 'wifi'          as const, color: theme.success,  bg: theme.successSoft },
+            { label: 'Canales asignados', value: String(totalChannelSlots), icon: 'television'    as const, color: theme.info,     bg: theme.infoSoft    },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: theme.cardBg, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={item.icon} size={16} color={item.color} />
                 </View>
-                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                <Text style={{ color: theme.textSec, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
               <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
@@ -469,17 +473,17 @@ export default function CmsPlanes() {
         {/* ── Plan cards ─────────────────────────────────────────────────── */}
         {loading ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
+            <ActivityIndicator color={theme.accent} size="large" />
           </View>
         ) : plans.length === 0 ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <FontAwesome name="list-alt" size={40} color={C.muted} />
-            <Text style={{ color: C.muted, fontSize: 15, marginTop: 16 }}>No hay planes. Crea el primero.</Text>
+            <FontAwesome name="list-alt" size={40} color={theme.textMuted} />
+            <Text style={{ color: theme.textMuted, fontSize: 15, marginTop: 16 }}>No hay planes. Crea el primero.</Text>
           </View>
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
             {plans.map((plan) => {
-              const gc = groupColors(plan.grupoUsuarios);
+              const gc = groupColors(plan.grupoUsuarios, theme);
               const isIsp = plan.grupoUsuarios === 'ISP_BUNDLE';
               const chCount = plan.allowedChannelIds?.length ?? 0;
               const catCount = plan.allowedCategoryIds?.length ?? 0;
@@ -488,9 +492,9 @@ export default function CmsPlanes() {
                 <View
                   key={plan.id}
                   style={{
-                    backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 16, padding: 24,
+                    backgroundColor: theme.cardBg, borderRadius: 16, padding: 24,
                     borderWidth: isIsp ? 2 : 1,
-                    borderColor: isIsp ? C.green : (plan.activo ? C.accentBorder : (isDark ? C.border : 'rgba(130,130,130,0.34)')),
+                    borderColor: isIsp ? theme.success : (plan.activo ? theme.accentBorder : theme.border),
                     minWidth: 280, flex: 1, maxWidth: 380,
                   }}
                 >
@@ -498,13 +502,13 @@ export default function CmsPlanes() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 8 }}>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 }}>
                       {isIsp && (
-                        <View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)', flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <FontAwesome name="wifi" size={10} color={C.green} />
-                          <Text style={{ color: C.green, fontSize: 10, fontWeight: '800' }}>INCLUIDO ISP</Text>
+                        <View style={{ backgroundColor: theme.successSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)', flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <FontAwesome name="wifi" size={10} color={theme.success} />
+                          <Text style={{ color: theme.success, fontSize: 10, fontWeight: '800' }}>INCLUIDO ISP</Text>
                         </View>
                       )}
-                      <View style={{ backgroundColor: plan.activo ? C.accentSoft : C.lift, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: plan.activo ? C.accentBorder : C.border }}>
-                        <Text style={{ color: plan.activo ? C.accentLight : C.muted, fontSize: 10, fontWeight: '700' }}>
+                      <View style={{ backgroundColor: plan.activo ? theme.accentSoft : theme.liftBg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: plan.activo ? theme.accentBorder : theme.border }}>
+                        <Text style={{ color: plan.activo ? theme.accentLight : theme.textMuted, fontSize: 10, fontWeight: '700' }}>
                           {plan.activo ? 'ACTIVO' : 'INACTIVO'}
                         </Text>
                       </View>
@@ -513,26 +517,26 @@ export default function CmsPlanes() {
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: C.cyanSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(plan)}>
-                        <FontAwesome name="pencil" size={12} color={C.cyan} />
+                      <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: theme.infoSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(plan)}>
+                        <FontAwesome name="pencil" size={12} color={theme.info} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(plan)}>
-                        <FontAwesome name="trash" size={12} color={C.rose} />
+                      <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: theme.dangerSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(plan)}>
+                        <FontAwesome name="trash" size={12} color={theme.danger} />
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   {/* Name & description */}
-                  <Text style={{ color: isDark ? C.text : '#240046', fontSize: 20, fontWeight: '800', marginBottom: 4 }}>{plan.nombre}</Text>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, lineHeight: 18, marginBottom: 16 }} numberOfLines={3}>{plan.descripcion}</Text>
+                  <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800', marginBottom: 4 }}>{plan.nombre}</Text>
+                  <Text style={{ color: theme.textSec, fontSize: 12, lineHeight: 18, marginBottom: 16 }} numberOfLines={3}>{plan.descripcion}</Text>
 
                   {/* Price */}
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 14 }}>
-                    <Text style={{ color: C.accent, fontSize: 28, fontWeight: '900' }}>
+                    <Text style={{ color: theme.accent, fontSize: 28, fontWeight: '900' }}>
                       {isIsp || !(plan.precio ?? 0) ? 'Incluido' : `$${(plan.precio ?? 0).toFixed(2)}`}
                     </Text>
                     {!isIsp && (plan.precio ?? 0) > 0 && (
-                      <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'} / {plan.duracionDias ?? 30} días</Text>
+                      <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'} / {plan.duracionDias ?? 30} días</Text>
                     )}
                   </View>
 
@@ -545,19 +549,21 @@ export default function CmsPlanes() {
                       { icon: 'tv'          as const, text: `${chCount} canales`                },
                       { icon: 'tag'         as const, text: `${catCount} categorías`            },
                     ].map((item) => (
-                      <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)' }}>
-                        <FontAwesome name={item.icon} size={10} color={C.accentLight} />
-                        <Text style={{ color: isDark ? C.text : '#240046', fontSize: 11, fontWeight: '700' }}>{item.text}</Text>
+                      <View
+                        key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.liftBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: theme.border }}
+                      >
+                        <FontAwesome name={item.icon} size={10} color={theme.accentLight} />
+                        <Text style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>{item.text}</Text>
                       </View>
                     ))}
                   </View>
 
                   {/* Toggle button */}
                   <TouchableOpacity
-                    style={{ backgroundColor: plan.activo ? C.greenSoft : C.accentSoft, borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: plan.activo ? 'rgba(16,185,129,0.28)' : C.accentBorder }}
+                    style={{ backgroundColor: plan.activo ? theme.successSoft : theme.accentSoft, borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: plan.activo ? 'rgba(16,185,129,0.28)' : theme.accentBorder }}
                     onPress={() => handleToggle(plan)}
                   >
-                    <Text style={{ color: plan.activo ? C.green : C.accentLight, fontWeight: '800', fontSize: 12 }}>
+                    <Text style={{ color: plan.activo ? theme.success : theme.accentLight, fontWeight: '800', fontSize: 12 }}>
                       {plan.activo ? 'Desactivar plan' : 'Activar plan'}
                     </Text>
                   </TouchableOpacity>
@@ -571,36 +577,36 @@ export default function CmsPlanes() {
       {/* ── Plan form modal ──────────────────────────────────────────────── */}
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-          <View style={{ width: '100%', maxWidth: 980, maxHeight: '92%', backgroundColor: C.surface, borderRadius: 22, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+          <View style={{ width: '100%', maxWidth: 980, maxHeight: '92%', backgroundColor: theme.cardBg, borderRadius: 22, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
 
             {/* Modal header */}
-            <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>
-                <Text style={{ color: C.text, fontSize: 20, fontWeight: '800' }}>{editingId ? 'Editar plan' : 'Crear plan'}</Text>
-                <Text style={{ color: C.textDim, fontSize: 12, marginTop: 3 }}>
+                <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>{editingId ? 'Editar plan' : 'Crear plan'}</Text>
+                <Text style={{ color: theme.textSec, fontSize: 12, marginTop: 3 }}>
                   {editingId ? 'Modifica acceso, canales y entitlements del plan.' : 'Define un nuevo plan OTT con acceso a categorías y canales.'}
                 </Text>
               </View>
               <TouchableOpacity onPress={closeModal}>
-                <FontAwesome name="times" size={18} color={C.muted} />
+                <FontAwesome name="times" size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Tabs */}
-            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 24, paddingTop: 4 }}>
+            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.border, paddingHorizontal: 24, paddingTop: 4 }}>
               {TABS.map((tab) => {
                 const isActive = activeTab === tab.key;
                 const badge = tab.key === 'canales' ? selectedChannelCount : null;
                 return (
                   <TouchableOpacity
                     key={tab.key}
-                    style={{ paddingBottom: 12, paddingTop: 10, paddingHorizontal: 14, marginRight: 4, borderBottomWidth: 2, borderBottomColor: isActive ? C.accent : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    style={{ paddingBottom: 12, paddingTop: 10, paddingHorizontal: 14, marginRight: 4, borderBottomWidth: 2, borderBottomColor: isActive ? theme.accent : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 6 }}
                     onPress={() => setActiveTab(tab.key)}
                   >
-                    <FontAwesome name={tab.icon as any} size={12} color={isActive ? C.accent : C.muted} />
-                    <Text style={{ color: isActive ? C.accent : C.muted, fontSize: 13, fontWeight: isActive ? '800' : '600' }}>{tab.label}</Text>
+                    <FontAwesome name={tab.icon as any} size={12} color={isActive ? theme.accent : theme.textMuted} />
+                    <Text style={{ color: isActive ? theme.accent : theme.textMuted, fontSize: 13, fontWeight: isActive ? '800' : '600' }}>{tab.label}</Text>
                     {badge !== null && badge > 0 && (
-                      <View style={{ backgroundColor: C.accent, borderRadius: 999, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
+                      <View style={{ backgroundColor: theme.accent, borderRadius: 999, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
                         <Text style={{ color: 'white', fontSize: 10, fontWeight: '800' }}>{badge}</Text>
                       </View>
                     )}
@@ -617,11 +623,11 @@ export default function CmsPlanes() {
 
                   {/* ISP Bundle callout */}
                   {form.grupoUsuarios === 'ISP_BUNDLE' && (
-                    <View style={{ backgroundColor: C.greenSoft, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)', padding: 14, flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-                      <FontAwesome name="wifi" size={16} color={C.green} style={{ marginTop: 2 }} />
+                    <View style={{ backgroundColor: theme.successSoft, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)', padding: 14, flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                      <FontAwesome name="wifi" size={16} color={theme.success} style={{ marginTop: 2 }} />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: C.green, fontSize: 13, fontWeight: '800', marginBottom: 3 }}>Plan ISP Bundle</Text>
-                        <Text style={{ color: C.green, fontSize: 12, opacity: 0.85 }}>Este plan se entrega automáticamente con el servicio de internet LukiPlay. El precio se muestra como "Incluido" para el abonado.</Text>
+                        <Text style={{ color: theme.success, fontSize: 13, fontWeight: '800', marginBottom: 3 }}>Plan ISP Bundle</Text>
+                        <Text style={{ color: theme.success, fontSize: 12, opacity: 0.85 }}>Este plan se entrega automáticamente con el servicio de internet LukiPlay. El precio se muestra como "Incluido" para el abonado.</Text>
                       </View>
                     </View>
                   )}
@@ -629,25 +635,25 @@ export default function CmsPlanes() {
                   {/* Name + Price row */}
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
                     <View style={{ flex: 1, minWidth: 240 }}>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Nombre del plan *</Text>
+                      <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Nombre del plan *</Text>
                       <TextInput
                         value={form.nombre}
                         onChangeText={(v) => updateField('nombre', v)}
                         placeholder="Ej: Plan Estándar LukiPlay"
-                        placeholderTextColor={C.muted}
-                        style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
+                        placeholderTextColor={theme.textMuted}
+                        style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
                       />
                     </View>
                     {form.grupoUsuarios !== 'ISP_BUNDLE' && (
                       <View style={{ width: 130 }}>
-                        <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Precio</Text>
+                        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Precio</Text>
                         <TextInput
                           value={String(form.precio)}
                           onChangeText={(v) => updateNumberField('precio', v)}
                           keyboardType="numeric"
                           placeholder="0.00"
-                          placeholderTextColor={C.muted}
-                          style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
+                          placeholderTextColor={theme.textMuted}
+                          style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
                         />
                       </View>
                     )}
@@ -655,14 +661,14 @@ export default function CmsPlanes() {
 
                   {/* Description */}
                   <View>
-                    <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Descripción comercial *</Text>
+                    <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Descripción comercial *</Text>
                     <TextInput
                       value={form.descripcion}
                       onChangeText={(v) => updateField('descripcion', v)}
                       placeholder="Resume el valor del plan y el contenido que habilita."
-                      placeholderTextColor={C.muted}
+                      placeholderTextColor={theme.textMuted}
                       multiline numberOfLines={3}
-                      style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 92, textAlignVertical: 'top', ...webInput }}
+                      style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 92, textAlignVertical: 'top', ...webInput }}
                     />
                   </View>
 
@@ -689,14 +695,14 @@ export default function CmsPlanes() {
                         { key: 'gracePeriodDays',      label: 'Período de gracia',    min: 0   },
                       ] as const).map((field) => (
                         <View key={field.key} style={{ minWidth: 155, flex: 1 }}>
-                          <Text style={{ color: C.text, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>{field.label}</Text>
+                          <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>{field.label}</Text>
                           <TextInput
                             value={String(form[field.key])}
                             onChangeText={(v) => updateNumberField(field.key, v)}
                             keyboardType="numeric"
                             placeholder={String(field.min)}
-                            placeholderTextColor={C.muted}
-                            style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
+                            placeholderTextColor={theme.textMuted}
+                            style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, ...webInput }}
                           />
                         </View>
                       ))}
@@ -730,7 +736,7 @@ export default function CmsPlanes() {
                   {/* Entitlements */}
                   <View>
                     <SectionTitle>Entitlements de contenido</SectionTitle>
-                    <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 12 }}>Define los tipos de contenido habilitados para este plan.</Text>
+                    <Text style={{ color: theme.textSec, fontSize: 12, marginBottom: 12 }}>Define los tipos de contenido habilitados para este plan.</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                       {ENTITLEMENT_OPTIONS.map((opt) => (
                         <ToggleChip
@@ -747,7 +753,7 @@ export default function CmsPlanes() {
                   {/* Categories */}
                   <View>
                     <SectionTitle>Categorías visibles</SectionTitle>
-                    <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 12 }}>
+                    <Text style={{ color: theme.textSec, fontSize: 12, marginBottom: 12 }}>
                       El abonado solo verá el contenido perteneciente a estas categorías.
                       {categorias.length === 0 && ' — Crea categorías en el módulo de Categorías primero.'}
                     </Text>
@@ -764,9 +770,9 @@ export default function CmsPlanes() {
                         ))}
                       </View>
                     ) : (
-                      <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 20, alignItems: 'center' }}>
-                        <FontAwesome name="tag" size={24} color={C.muted} />
-                        <Text style={{ color: C.muted, fontSize: 13, marginTop: 10 }}>No hay categorías activas</Text>
+                      <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 20, alignItems: 'center' }}>
+                        <FontAwesome name="tag" size={24} color={theme.textMuted} />
+                        <Text style={{ color: theme.textMuted, fontSize: 13, marginTop: 10 }}>No hay categorías activas</Text>
                       </View>
                     )}
                   </View>
@@ -785,42 +791,42 @@ export default function CmsPlanes() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                     <View>
                       <SectionTitle>Canales incluidos en el plan</SectionTitle>
-                      <Text style={{ color: C.textDim, fontSize: 12, marginTop: -6 }}>
-                        Seleccionados: <Text style={{ color: C.accent, fontWeight: '700' }}>{selectedChannelCount}</Text> / {channels.length}
+                      <Text style={{ color: theme.textSec, fontSize: 12, marginTop: -6 }}>
+                        Seleccionados: <Text style={{ color: theme.accent, fontWeight: '700' }}>{selectedChannelCount}</Text> / {channels.length}
                       </Text>
                     </View>
                     {selectedChannelCount > 0 && (
                       <TouchableOpacity
-                        style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }}
+                        style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.dangerSoft, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }}
                         onPress={() => updateField('allowedChannelIds', [])}
                       >
-                        <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>Limpiar selección</Text>
+                        <Text style={{ color: theme.danger, fontSize: 12, fontWeight: '700' }}>Limpiar selección</Text>
                       </TouchableOpacity>
                     )}
                   </View>
 
                   {channels.length === 0 ? (
-                    <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 30, alignItems: 'center' }}>
-                      <FontAwesome name="tv" size={32} color={C.muted} />
-                      <Text style={{ color: C.muted, fontSize: 14, marginTop: 14, textAlign: 'center' }}>
+                    <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 30, alignItems: 'center' }}>
+                      <FontAwesome name="tv" size={32} color={theme.textMuted} />
+                      <Text style={{ color: theme.textMuted, fontSize: 14, marginTop: 14, textAlign: 'center' }}>
                         No hay canales disponibles.{'\n'}Crea canales en el módulo de Canales primero.
                       </Text>
                     </View>
                   ) : (
                     <>
                       {/* Search */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, gap: 10 }}>
-                        <FontAwesome name="search" size={13} color={C.muted} />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 14, gap: 10 }}>
+                        <FontAwesome name="search" size={13} color={theme.textMuted} />
                         <TextInput
                           value={channelSearch}
                           onChangeText={setChannelSearch}
                           placeholder="Buscar canal o categoría..."
-                          placeholderTextColor={C.muted}
-                          style={{ flex: 1, color: C.text, paddingVertical: 12, fontSize: 14, ...webInput }}
+                          placeholderTextColor={theme.textMuted}
+                          style={{ flex: 1, color: theme.text, paddingVertical: 12, fontSize: 14, ...webInput }}
                         />
                         {channelSearch.length > 0 && (
                           <TouchableOpacity onPress={() => setChannelSearch('')}>
-                            <FontAwesome name="times-circle" size={14} color={C.muted} />
+                            <FontAwesome name="times-circle" size={14} color={theme.textMuted} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -828,26 +834,26 @@ export default function CmsPlanes() {
                       {/* Quick-select buttons */}
                       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
                         <TouchableOpacity
-                          style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentBorder }}
+                          style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.accentSoft, borderWidth: 1, borderColor: theme.accentBorder }}
                           onPress={() => updateField('allowedChannelIds', channels.map((c) => c.id))}
                         >
-                          <Text style={{ color: C.accentLight, fontSize: 12, fontWeight: '700' }}>Seleccionar todos</Text>
+                          <Text style={{ color: theme.accentLight, fontSize: 12, fontWeight: '700' }}>Seleccionar todos</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: C.greenSoft, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)' }}
+                          style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.successSoft, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)' }}
                           onPress={() => {
                             const activeIds = channels.filter((c) => c.status === 'ACTIVE').map((c) => c.id);
                             updateField('allowedChannelIds', activeIds);
                           }}
                         >
-                          <Text style={{ color: C.green, fontSize: 12, fontWeight: '700' }}>Solo activos</Text>
+                          <Text style={{ color: theme.success, fontSize: 12, fontWeight: '700' }}>Solo activos</Text>
                         </TouchableOpacity>
                       </View>
 
                       {/* Channel list */}
                       <View>
                         {filteredChannels.length === 0 ? (
-                          <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', paddingVertical: 20 }}>Sin resultados para "{channelSearch}"</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 20 }}>Sin resultados para "{channelSearch}"</Text>
                         ) : (
                           filteredChannels.map((ch) => (
                             <ChannelRow
@@ -865,24 +871,24 @@ export default function CmsPlanes() {
               )}
 
               {formError ? (
-                <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                  <FontAwesome name="exclamation-triangle" size={13} color={C.rose} />
-                  <Text style={{ color: C.rose, fontSize: 13, flex: 1 }}>{formError}</Text>
+                <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  <FontAwesome name="exclamation-triangle" size={13} color={theme.danger} />
+                  <Text style={{ color: theme.danger, fontSize: 13, flex: 1 }}>{formError}</Text>
                 </View>
               ) : null}
             </ScrollView>
 
             {/* Modal footer */}
-            <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: C.textDim, fontSize: 12 }}>
+            <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderTopWidth: 1, borderTopColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: theme.textSec, fontSize: 12 }}>
                 {selectedChannelCount} canal{selectedChannelCount !== 1 ? 'es' : ''} · {form.allowedCategoryIds.length} categoría{form.allowedCategoryIds.length !== 1 ? 's' : ''}
               </Text>
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TouchableOpacity style={{ paddingHorizontal: 18, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeModal}>
-                  <Text style={{ color: C.textDim, fontWeight: '700' }}>Cancelar</Text>
+                <TouchableOpacity style={{ paddingHorizontal: 18, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.liftBg }} onPress={closeModal}>
+                  <Text style={{ color: theme.textSec, fontWeight: '700' }}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, backgroundColor: C.accent, opacity: saving ? 0.7 : 1, minWidth: 150, alignItems: 'center' }}
+                  style={{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, backgroundColor: theme.accent, opacity: saving ? 0.7 : 1, minWidth: 150, alignItems: 'center' }}
                   onPress={handleSave}
                   disabled={saving}
                 >
@@ -900,21 +906,21 @@ export default function CmsPlanes() {
       {/* ── Delete confirmation ──────────────────────────────────────────── */}
       <Modal visible={!!deleteConfirm} transparent animationType="fade" onRequestClose={() => setDeleteConfirm(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ width: '100%', maxWidth: 420, backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)', padding: 28 }}>
+          <View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)', padding: 28 }}>
             <View style={{ alignItems: 'center', marginBottom: 18 }}>
-              <View style={{ width: 52, height: 52, borderRadius: 999, backgroundColor: C.roseSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                <FontAwesome name="trash" size={22} color={C.rose} />
+              <View style={{ width: 52, height: 52, borderRadius: 999, backgroundColor: theme.dangerSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                <FontAwesome name="trash" size={22} color={theme.danger} />
               </View>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 6 }}>Eliminar plan</Text>
-              <Text style={{ color: C.textDim, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-                ¿Eliminar <Text style={{ color: C.text, fontWeight: '700' }}>{deleteConfirm?.nombre}</Text>?{'\n'}Los canales asignados perderán este plan de acceso.
+              <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800', marginBottom: 6 }}>Eliminar plan</Text>
+              <Text style={{ color: theme.textSec, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                ¿Eliminar <Text style={{ color: theme.text, fontWeight: '700' }}>{deleteConfirm?.nombre}</Text>?{'\'\n'}Los canales asignados perderán este plan de acceso.
               </Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity style={{ flex: 1, paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift, alignItems: 'center' }} onPress={() => setDeleteConfirm(null)}>
-                <Text style={{ color: C.textDim, fontWeight: '700' }}>Cancelar</Text>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.liftBg, alignItems: 'center' }} onPress={() => setDeleteConfirm(null)}>
+                <Text style={{ color: theme.textSec, fontWeight: '700' }}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ flex: 1, paddingVertical: 13, borderRadius: 10, backgroundColor: C.rose, alignItems: 'center' }} onPress={confirmDelete}>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 13, borderRadius: 10, backgroundColor: theme.danger, alignItems: 'center' }} onPress={confirmDelete}>
                 <Text style={{ color: 'white', fontWeight: '800' }}>Eliminar</Text>
               </TouchableOpacity>
             </View>

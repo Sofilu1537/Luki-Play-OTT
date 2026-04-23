@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { C } from '../CmsShell';
+import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
 import { ROLE_META, buildToggleItems, SOPORTE_DEFAULT_PERMISSIONS } from './types';
 import type { AdminUser } from '../../../services/api/adminApi';
@@ -22,6 +22,7 @@ interface CmsUserDetailModalProps {
 }
 
 export default function CmsUserDetailModal({ visible, user, onClose, onSavePermissions, onDelete }: CmsUserDetailModalProps) {
+  const { theme } = useTheme();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -76,21 +77,21 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <View style={{ width: '100%', maxWidth: 600, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+        <View style={{ width: '100%', maxWidth: 600, maxHeight: '90%', backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
           {/* Header */}
-          <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: C.border }}>
+          <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: theme.border }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${meta.color}18`, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={meta.icon} size={20} color={meta.color} />
                 </View>
                 <View>
-                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '800' }}>{user.nombre}</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12 }}>{user.email}</Text>
+                  <Text style={{ color: theme.text, fontSize: 17, fontWeight: '800' }}>{user.nombre}</Text>
+                  <Text style={{ color: theme.textSec, fontSize: 12 }}>{user.email}</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={onClose}>
-                <FontAwesome name="times" size={18} color={C.muted} />
+                <FontAwesome name="times" size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -99,8 +100,8 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
               <View style={{ borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: `${meta.color}18` }}>
                 <Text style={{ color: meta.color, fontSize: 11, fontWeight: '800' }}>{meta.label}</Text>
               </View>
-              <View style={{ borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: `${C.accent}18` }}>
-                <Text style={{ color: C.accent, fontSize: 11, fontWeight: '700' }}>
+              <View style={{ borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: `${theme.accent}18` }}>
+                <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '700' }}>
                   {permissions.length} permisos activos
                 </Text>
               </View>
@@ -109,8 +110,8 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
 
           <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
             {/* User info */}
-            <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12 }}>INFORMACIÓN</Text>
+            <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12 }}>INFORMACIÓN</Text>
               <InfoRow label="ID" value={user.id} />
               <InfoRow label="Teléfono" value={user.telefono || '—'} />
               <InfoRow label="Estado" value={user.status === 'active' ? 'Activo' : user.status} />
@@ -119,9 +120,9 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
 
             {/* Permissions */}
             {!isSuperadmin && (
-              <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE MÓDULOS</Text>
-                <Text style={{ color: C.muted, fontSize: 11, marginBottom: 12 }}>
+              <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE MÓDULOS</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 12 }}>
                   {isAdmin
                     ? 'Activa/desactiva módulos. Los cambios se aplican al siguiente login.'
                     : 'Los permisos de Soporte son fijos.'}
@@ -135,33 +136,33 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
             )}
 
             {isSuperadmin && (
-              <View style={{ padding: 16, backgroundColor: `${C.accent}0A`, borderRadius: 12, borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.muted, fontSize: 12, fontStyle: 'italic' }}>
+              <View style={{ padding: 16, backgroundColor: `${theme.accent}0A`, borderRadius: 12, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontStyle: 'italic' }}>
                   El Super Admin tiene acceso total (cms:*). No se pueden editar sus permisos.
                 </Text>
               </View>
             )}
 
             {error ? (
-              <View style={{ backgroundColor: C.roseSoft, borderRadius: 8, padding: 12 }}>
-                <Text style={{ color: C.rose, fontSize: 12, fontWeight: '600' }}>{error}</Text>
+              <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 8, padding: 12 }}>
+                <Text style={{ color: theme.danger, fontSize: 12, fontWeight: '600' }}>{error}</Text>
               </View>
             ) : null}
           </ScrollView>
 
           {/* Footer */}
-          <View style={{ flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1, borderTopColor: C.border }}>
+          <View style={{ flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
             {onDelete && !isSuperadmin && (
-              <TouchableOpacity onPress={handleDelete} disabled={loading} style={{ paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: C.rose, backgroundColor: C.roseSoft }}>
-                <FontAwesome name="trash-o" size={14} color={C.rose} />
+              <TouchableOpacity onPress={handleDelete} disabled={loading} style={{ paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.danger, backgroundColor: theme.dangerSoft }}>
+                <FontAwesome name="trash-o" size={14} color={theme.danger} />
               </TouchableOpacity>
             )}
             <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={onClose} style={{ paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }}>
-              <Text style={{ color: C.textDim, fontWeight: '700' }}>Cerrar</Text>
+            <TouchableOpacity onPress={onClose} style={{ paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.liftBg }}>
+              <Text style={{ color: theme.textSec, fontWeight: '700' }}>Cerrar</Text>
             </TouchableOpacity>
             {isAdmin && (
-              <TouchableOpacity onPress={handleSave} disabled={!dirty || loading} style={{ paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: dirty ? C.accent : `${C.accent}40`, opacity: loading ? 0.6 : 1 }}>
+              <TouchableOpacity onPress={handleSave} disabled={!dirty || loading} style={{ paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: dirty ? theme.accent : `${theme.accent}40`, opacity: loading ? 0.6 : 1 }}>
                 {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '800' }}>Guardar permisos</Text>}
               </TouchableOpacity>
             )}
@@ -173,10 +174,11 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
 }
 
 function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  const { theme } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', paddingVertical: 6, borderBottomWidth: last ? 0 : 1, borderBottomColor: C.border }}>
-      <Text style={{ color: C.muted, fontSize: 12, width: 90 }}>{label}</Text>
-      <Text style={{ color: C.text, fontSize: 12, flex: 1 }}>{value}</Text>
+    <View style={{ flexDirection: 'row', paddingVertical: 6, borderBottomWidth: last ? 0 : 1, borderBottomColor: theme.border }}>
+      <Text style={{ color: theme.textMuted, fontSize: 12, width: 90 }}>{label}</Text>
+      <Text style={{ color: theme.text, fontSize: 12, flex: 1 }}>{value}</Text>
     </View>
   );
 }

@@ -5,7 +5,7 @@ import { useCmsStore } from '../../services/cmsStore';
 import { useChannelStore } from '../../services/channelStore';
 import { adminListUsers, AdminUser } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
 import StatsCard from '../../components/cms/dashboard/StatsCard';
 import MonetizationWidget from '../../components/cms/dashboard/MonetizationWidget';
 import ChannelsWidget from '../../components/cms/dashboard/ChannelsWidget';

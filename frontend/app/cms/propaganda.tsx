@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function PropagandaPage() {
-  const { isDark } = useTheme();
+  const { theme } = useTheme();
   const features = [
     'Programación con fecha y hora de activación/desactivación automática',
     'Segmentación por plan contratado, canal o categoría',
@@ -20,14 +20,14 @@ export default function PropagandaPage() {
         <View style={{
           width: 72, height: 72,
           borderRadius: 20,
-          backgroundColor: `${C.rose}18`,
+          backgroundColor: `${theme.danger}18`,
           borderWidth: 1,
-          borderColor: `${C.rose}40`,
+          borderColor: `${theme.danger}40`,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: 24,
         }}>
-          <FontAwesome name="bullhorn" size={26} color={C.rose} />
+          <FontAwesome name="bullhorn" size={26} color={theme.danger} />
         </View>
 
         <View style={{ width: '100%', maxWidth: 480, marginBottom: 32 }}>
@@ -38,24 +38,24 @@ export default function PropagandaPage() {
               gap: 12,
               paddingVertical: 12,
               borderBottomWidth: i < features.length - 1 ? 1 : 0,
-              borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
+              borderBottomColor: theme.border,
             }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.rose, marginTop: 5 }} />
-              <Text style={{ color: isDark ? C.textSec : '#240046', fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.danger, marginTop: 5 }} />
+              <Text style={{ color: theme.textSec, fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
             </View>
           ))}
         </View>
 
         <View style={{
           marginTop: 32,
-          backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+          backgroundColor: theme.cardBg,
           borderRadius: 10,
           paddingHorizontal: 16,
           paddingVertical: 10,
           borderWidth: 1,
-          borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
+          borderColor: theme.border,
         }}>
-            <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
+            <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
             EN DESARROLLO
           </Text>
         </View>

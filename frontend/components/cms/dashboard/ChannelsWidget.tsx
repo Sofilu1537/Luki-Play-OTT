@@ -3,7 +3,6 @@ import { View, Text, Platform } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Svg, { Circle } from 'react-native-svg';
 import { FONT_FAMILY } from '../../../styles/typography';
-import { C } from '../CmsShell';
 import { useTheme } from '../../../hooks/useTheme';
 import type { AdminCanal } from '../../../services/api/adminApi';
 
@@ -29,7 +28,7 @@ interface ChannelStateRow {
 }
 
 function PieDonut({ slices, size = 122, strokeWidth = 16 }: { slices: PieSlice[]; size?: number; strokeWidth?: number }) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -70,10 +69,10 @@ function PieDonut({ slices, size = 122, strokeWidth = 16 }: { slices: PieSlice[]
       </Svg>
 
       <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: isDark ? C.text : '#240046', fontSize: 20, fontFamily: FONT_FAMILY.bodyBold, fontWeight: '800' }}>
+        <Text style={{ color: theme.text, fontSize: 20, fontFamily: FONT_FAMILY.bodyBold, fontWeight: '800' }}>
           {total}
         </Text>
-        <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 10, fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.8 }}>
+        <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.8 }}>
           total
         </Text>
       </View>
@@ -84,7 +83,7 @@ function PieDonut({ slices, size = 122, strokeWidth = 16 }: { slices: PieSlice[]
 export default function ChannelsWidget({ channels, isLoading, isTv = false }: ChannelsWidgetProps) {
   const { isDark, theme } = useTheme();
   const total = channels.length;
-  const softUiShadow = !isDark && Platform.OS === 'web'
+  const softUiShadow = isDark && Platform.OS === 'web'
     ? ({ boxShadow: theme.softUiShadow } as any)
     : {};
   const softUiShadowDark = isDark && Platform.OS === 'web'
@@ -121,7 +120,7 @@ export default function ChannelsWidget({ channels, isLoading, isTv = false }: Ch
       rowLabel: 'ACTIVOS',
       value: activo,
       icon: 'check-circle',
-      iconColor: C.cyan,
+      iconColor: theme.success,
     },
     {
       key: 'sin-senal',
@@ -142,12 +141,12 @@ export default function ChannelsWidget({ channels, isLoading, isTv = false }: Ch
   return (
     <View style={{
       flex: 1,
-      backgroundColor: isDark ? theme.cardBg : '#fff',
+      backgroundColor: theme.cardBg,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
       overflow: 'hidden',
-      shadowColor: isDark ? '#000000' : '#A8B0C7',
+      shadowColor: theme.cardShadow,
       shadowOpacity: isDark ? 0.36 : 0.18,
       shadowRadius: isDark ? 16 : 12,
       shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
@@ -162,12 +161,12 @@ export default function ChannelsWidget({ channels, isLoading, isTv = false }: Ch
         paddingHorizontal: 18,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
+        borderBottomColor: isDark ? theme.border : theme.iconBorderSoft,
         gap: 8,
       }}>
-        <FontAwesome name="tv" size={14} color={isDark ? C.muted : '#240046'} />
+        <FontAwesome name="tv" size={14} color={theme.chevron} />
         <Text style={{
-          color: isDark ? C.text : '#240046',
+          color: theme.text,
           fontSize: 15,
           fontWeight: '700',
           fontFamily: FONT_FAMILY.bodySemiBold,
@@ -183,7 +182,7 @@ export default function ChannelsWidget({ channels, isLoading, isTv = false }: Ch
           borderWidth: 1,
           borderColor: 'rgba(23,209,198,0.28)',
         }}>
-          <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodyBold }}>
+          <Text style={{ color: theme.success, fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodyBold }}>
             {isLoading ? '—' : total} total
           </Text>
         </View>
@@ -214,14 +213,14 @@ export default function ChannelsWidget({ channels, isLoading, isTv = false }: Ch
                   height: isTv ? 48 : 44,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: isDark ? `${row.iconColor}33` : 'rgba(130,130,130,0.18)',
-                  backgroundColor: isDark ? `${row.iconColor}14` : `${row.iconColor}14`,
+                  borderColor: isDark ? `${row.iconColor}33` : theme.iconBorderSoft,
+                  backgroundColor: `${row.iconColor}14`,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
                   <FontAwesome name={row.icon} size={isTv ? 18 : 16} color={row.iconColor} />
                 </View>
-                <Text style={{ color: isDark ? C.text : '#240046', fontSize: isTv ? 14 : 12.5, fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.3 }}>
+                <Text style={{ color: theme.text, fontSize: isTv ? 14 : 12.5, fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.3 }}>
                   {row.rowLabel}
                 </Text>
               </View>

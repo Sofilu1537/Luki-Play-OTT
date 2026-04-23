@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
 import { PrimaryButton, SecondaryButton, TextInputField } from '../../components/cms/CmsComponents';
 import { adminUpdateUser } from '../../services/api/adminApi';
 import { useCmsStore } from '../../services/cmsStore';
@@ -20,10 +20,11 @@ function ProfileField({
   required?: boolean;
   children: React.ReactNode;
 }) {
+  const { theme } = useTheme();
   return (
     <View style={{ gap: 8 }}>
-      <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodyBold }}>
-        {label} {required ? <Text style={{ color: C.danger }}>*</Text> : null}
+      <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodyBold }}>
+        {label} {required ? <Text style={{ color: theme.danger }}>*</Text> : null}
       </Text>
       {children}
     </View>
@@ -32,7 +33,7 @@ function ProfileField({
 
 export default function CmsProfileScreen() {
   const router = useRouter();
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const { profile, accessToken, refreshProfile } = useCmsStore();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -94,26 +95,26 @@ export default function CmsProfileScreen() {
         <View style={{ maxWidth: 880, width: '100%', alignSelf: 'center', gap: 18 }}>
           <View
             style={{
-              backgroundColor: isDark ? C.bgTertiary : '#FFFFFF',
+              backgroundColor: isDark ? theme.cardBgInner : '#FFFFFF',
               borderRadius: 18,
               borderWidth: 1,
-              borderColor: isDark ? C.border : 'rgba(36,0,70,0.10)',
+              borderColor: isDark ? theme.border : 'rgba(36,0,70,0.10)',
               padding: 22,
               gap: 18,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <View>
-                <Text style={{ color: isDark ? C.text : '#240046', fontSize: 24, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>
+                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 24, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>
                   Perfil del administrador
                 </Text>
-                <Text style={{ color: isDark ? C.textDim : 'rgba(36,0,70,0.65)', fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
+                <Text style={{ color: isDark ? theme.textSec : 'rgba(36,0,70,0.65)', fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
                   Edita tus datos principales de acceso y consulta la actividad reciente.
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accentSoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: C.accentBorder }}>
-                <FontAwesome name="clock-o" size={14} color={C.accent} />
-                <Text style={{ color: C.accent, fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: theme.accentSoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: theme.accentBorder }}>
+                <FontAwesome name="clock-o" size={14} color={theme.accent} />
+                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   {lastLoginLabel}
                 </Text>
               </View>
@@ -154,19 +155,19 @@ export default function CmsProfileScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
-              <View style={{ flex: 1, minWidth: 260, backgroundColor: isDark ? C.lift : 'rgba(96,38,158,0.06)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(96,38,158,0.10)' }}>
-                <Text style={{ color: isDark ? C.muted : 'rgba(36,0,70,0.60)', fontSize: 11, fontWeight: '700', marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>
+              <View style={{ flex: 1, minWidth: 260, backgroundColor: isDark ? theme.liftBg : 'rgba(96,38,158,0.06)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(96,38,158,0.10)' }}>
+                <Text style={{ color: isDark ? theme.textMuted : 'rgba(36,0,70,0.60)', fontSize: 11, fontWeight: '700', marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>
                   ROL
                 </Text>
-                <Text style={{ color: isDark ? C.text : '#240046', fontSize: 16, fontWeight: '800', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 16, fontWeight: '800', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   {profile.role.toUpperCase()}
                 </Text>
               </View>
-              <View style={{ flex: 1, minWidth: 260, backgroundColor: isDark ? C.lift : 'rgba(96,38,158,0.06)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(96,38,158,0.10)' }}>
-                <Text style={{ color: isDark ? C.muted : 'rgba(36,0,70,0.60)', fontSize: 11, fontWeight: '700', marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>
+              <View style={{ flex: 1, minWidth: 260, backgroundColor: isDark ? theme.liftBg : 'rgba(96,38,158,0.06)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(96,38,158,0.10)' }}>
+                <Text style={{ color: isDark ? theme.textMuted : 'rgba(36,0,70,0.60)', fontSize: 11, fontWeight: '700', marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>
                   ESTADO
                 </Text>
-                <Text style={{ color: isDark ? C.text : '#240046', fontSize: 16, fontWeight: '800', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 16, fontWeight: '800', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   {profile.status.toUpperCase()}
                 </Text>
               </View>
@@ -175,7 +176,7 @@ export default function CmsProfileScreen() {
             <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
               <PrimaryButton label={isSaving ? 'Guardando...' : 'Guardar cambios'} icon="save" onPress={handleSave} disabled={!canSave || isSaving} />
               <SecondaryButton label="Volver" icon="arrow-left" onPress={() => router.back()} disabled={isSaving} />
-              {isSaving && <ActivityIndicator size="small" color={C.accent} style={{ alignSelf: 'center' }} />}
+              {isSaving && <ActivityIndicator size="small" color={theme.accent} style={{ alignSelf: 'center' }} />}
             </View>
           </View>
         </View>

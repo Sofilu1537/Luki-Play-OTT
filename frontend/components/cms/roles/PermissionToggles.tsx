@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Switch } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { C } from '../CmsShell';
+import { useTheme } from '../../../hooks/useTheme';
 import type { PermissionToggleItem } from './types';
 
 interface PermissionTogglesProps {
@@ -11,6 +11,7 @@ interface PermissionTogglesProps {
 }
 
 export default function PermissionToggles({ items, readOnly, onChange }: PermissionTogglesProps) {
+  const { theme } = useTheme();
   return (
     <View style={{ gap: 2 }}>
       {items.map((item, idx) => {
@@ -26,7 +27,7 @@ export default function PermissionToggles({ items, readOnly, onChange }: Permiss
               paddingVertical: 10,
               paddingHorizontal: 14,
               borderBottomWidth: isLast ? 0 : 1,
-              borderBottomColor: C.border,
+              borderBottomColor: theme.border,
               opacity: item.locked && !item.enabled ? 0.45 : 1,
             }}
           >
@@ -35,7 +36,7 @@ export default function PermissionToggles({ items, readOnly, onChange }: Permiss
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                backgroundColor: item.enabled ? C.accentSoft : `${C.muted}18`,
+                backgroundColor: item.enabled ? theme.accentSoft : `${theme.textMuted}18`,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: 12,
@@ -44,16 +45,16 @@ export default function PermissionToggles({ items, readOnly, onChange }: Permiss
               <FontAwesome
                 name={item.icon}
                 size={14}
-                color={item.enabled ? C.accent : C.muted}
+                color={item.enabled ? theme.accent : theme.textMuted}
               />
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>
+              <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
                 {item.label}
               </Text>
               {item.locked && item.lockReason ? (
-                <Text style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>
+                <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 2 }}>
                   {item.lockReason}
                 </Text>
               ) : null}
@@ -63,15 +64,15 @@ export default function PermissionToggles({ items, readOnly, onChange }: Permiss
               <FontAwesome
                 name={item.enabled ? 'lock' : 'ban'}
                 size={14}
-                color={item.enabled ? C.accent : C.muted}
+                color={item.enabled ? theme.accent : theme.textMuted}
               />
             ) : (
               <Switch
                 value={item.enabled}
                 disabled={!canToggle}
                 onValueChange={(value) => onChange?.(item.key, value)}
-                trackColor={{ false: `${C.muted}40`, true: C.accentSoft }}
-                thumbColor={item.enabled ? C.accent : C.muted}
+                trackColor={{ false: `${theme.textMuted}40`, true: theme.accentSoft }}
+                thumbColor={item.enabled ? theme.accent : theme.textMuted}
               />
             )}
           </View>

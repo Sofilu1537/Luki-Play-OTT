@@ -3,7 +3,6 @@ import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useChannelStore } from '../../../services/channelStore';
 import { FONT_FAMILY } from '../../../styles/typography';
-import { C } from '../CmsShell';
 import { useTheme } from '../../../hooks/useTheme';
 
 type HealthStatus = 'HEALTHY' | 'DEGRADED' | 'OFFLINE' | 'MAINTENANCE';
@@ -39,7 +38,7 @@ function StatusPill({ status }: { status: HealthStatus }) {
 
 export default function LiveChannels() {
   const { channels } = useChannelStore();
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const warningColor = '#FFB800';
 
   const healthy     = channels.filter(c => c.healthStatus === 'HEALTHY').length;
@@ -65,10 +64,10 @@ export default function LiveChannels() {
 
   return (
     <View style={{
-      backgroundColor: isDark ? C.surface : '#fff',
+      backgroundColor: theme.cardBg,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
+      borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
       overflow: 'hidden',
     }}>
       {/* Header */}
@@ -79,11 +78,11 @@ export default function LiveChannels() {
         paddingHorizontal: 18,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
+        borderBottomColor: isDark ? theme.border : theme.iconBorderSoft,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <FontAwesome name="tv" size={12} color={isDark ? C.muted : '#240046'} />
-          <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+          <FontAwesome name="tv" size={12} color={theme.chevron} />
+          <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Estado de canales
           </Text>
         </View>
@@ -102,7 +101,7 @@ export default function LiveChannels() {
         paddingVertical:  12,
         gap:              8,
         borderBottomWidth: 1,
-        borderBottomColor: C.border,
+        borderBottomColor: theme.border,
       }}>
         {SUMMARY.map(item => (
           <View key={item.label} style={{
@@ -117,7 +116,7 @@ export default function LiveChannels() {
             <Text style={{ color: item.color, fontSize: 18, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold, lineHeight: 22 }}>
               {item.count}
             </Text>
-            <Text style={{ color: C.muted, fontSize: 9, fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.3, textAlign: 'center' }}>
+            <Text style={{ color: theme.textMuted, fontSize: 9, fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.3, textAlign: 'center' }}>
               {item.label}
             </Text>
           </View>
@@ -127,7 +126,7 @@ export default function LiveChannels() {
       {/* Channel rows */}
       {channels.length === 0 ? (
         <View style={{ padding: 24, alignItems: 'center' }}>
-          <Text style={{ color: C.muted, fontSize: 12, fontFamily: FONT_FAMILY.body }}>
+          <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: FONT_FAMILY.body }}>
             Sin canales configurados
           </Text>
         </View>
@@ -142,7 +141,7 @@ export default function LiveChannels() {
                 paddingHorizontal: 8,
                 paddingVertical:   11,
                 borderBottomWidth: i < topChannels.length - 1 ? 1 : 0,
-                borderBottomColor: C.border,
+                borderBottomColor: theme.border,
               }}>
                 {/* Health dot */}
                 <View style={{
@@ -160,12 +159,12 @@ export default function LiveChannels() {
                 {/* Name + tech */}
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text
-                    style={{ color: C.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
+                    style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
                     numberOfLines={1}
                   >
                     {ch.nombre}
                   </Text>
-                  <Text style={{ color: C.muted, fontSize: 10, marginTop: 1, fontFamily: FONT_FAMILY.body }}>
+                  <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 1, fontFamily: FONT_FAMILY.body }}>
                     {ch.resolution} · {ch.streamProtocol}
                   </Text>
                 </View>
@@ -173,8 +172,8 @@ export default function LiveChannels() {
                 {/* Viewer count */}
                 {ch.viewerCount > 0 && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 10 }}>
-                    <FontAwesome name="eye" size={9} color={C.muted} />
-                    <Text style={{ color: C.muted, fontSize: 10, fontFamily: FONT_FAMILY.body }}>
+                    <FontAwesome name="eye" size={9} color={theme.textMuted} />
+                    <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: FONT_FAMILY.body }}>
                       {ch.viewerCount.toLocaleString()}
                     </Text>
                   </View>

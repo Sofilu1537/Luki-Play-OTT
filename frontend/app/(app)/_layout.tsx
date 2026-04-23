@@ -2,6 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuthStore } from '../../services/authStore';
 import { useEffect } from 'react';
+import { APP } from '../../styles/theme';
 
 /**
  * Layout for the authenticated (app) route group.
@@ -29,14 +30,14 @@ export default function AppLayout() {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: '#0F041C', // Very dark purple
+                    backgroundColor: APP.tabBar,
                     borderTopWidth: 0,
                     height: 60,
                     paddingBottom: 8,
                     paddingTop: 8,
                 },
-                tabBarActiveTintColor: '#FFC107', // Luki Yellow
-                tabBarInactiveTintColor: '#6b7280',
+                tabBarActiveTintColor: APP.accent,
+                tabBarInactiveTintColor: APP.textMuted,
             }}
         >
             <Tabs.Screen

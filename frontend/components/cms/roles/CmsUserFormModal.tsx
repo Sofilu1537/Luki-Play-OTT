@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { C } from '../CmsShell';
+import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
 import { ROLE_META, buildToggleItems, TOGGLEABLE_MODULES, SOPORTE_DEFAULT_PERMISSIONS } from './types';
 import type { AdminUser } from '../../../services/api/adminApi';
@@ -31,6 +31,7 @@ interface CmsUserFormModalProps {
 }
 
 export default function CmsUserFormModal({ visible, initialData, onClose, onSave }: CmsUserFormModalProps) {
+  const { theme } = useTheme();
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -41,11 +42,11 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const inputStyle = {
-    backgroundColor: C.lift,
+    backgroundColor: theme.liftBg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: C.border,
-    color: C.text,
+    borderColor: theme.border,
+    color: theme.text,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
@@ -114,37 +115,37 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <View style={{ width: '100%', maxWidth: 700, maxHeight: '90%', backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+        <View style={{ width: '100%', maxWidth: 700, maxHeight: '90%', backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
           {/* Header */}
-          <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>
+              <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }}>
                 {initialData ? 'Editar usuario CMS' : 'Crear usuario CMS'}
               </Text>
-              <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
+              <Text style={{ color: theme.textSec, fontSize: 12, marginTop: 4 }}>
                 Usuarios internos del sistema con acceso al panel de administración.
               </Text>
             </View>
             <TouchableOpacity onPress={onClose}>
-              <FontAwesome name="times" size={18} color={C.muted} />
+              <FontAwesome name="times" size={18} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
             {/* Basic info */}
-            <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12 }}>INFORMACIÓN BÁSICA</Text>
-              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>Nombre completo</Text>
-              <TextInput style={inputStyle} value={nombre} onChangeText={setNombre} placeholder="Juan Pérez" placeholderTextColor={C.muted} />
-              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>Email</Text>
-              <TextInput style={inputStyle} value={email} onChangeText={setEmail} placeholder="usuario@lukiplay.com" placeholderTextColor={C.muted} keyboardType="email-address" autoCapitalize="none" />
-              <Text style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>Teléfono (opcional)</Text>
-              <TextInput style={{ ...inputStyle, marginBottom: 0 }} value={phone} onChangeText={setPhone} placeholder="+593..." placeholderTextColor={C.muted} />
+            <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12 }}>INFORMACIÓN BÁSICA</Text>
+              <Text style={{ color: theme.textSec, fontSize: 12, marginBottom: 4 }}>Nombre completo</Text>
+              <TextInput style={inputStyle} value={nombre} onChangeText={setNombre} placeholder="Juan Pérez" placeholderTextColor={theme.textMuted} />
+              <Text style={{ color: theme.textSec, fontSize: 12, marginBottom: 4 }}>Email</Text>
+              <TextInput style={inputStyle} value={email} onChangeText={setEmail} placeholder="usuario@lukiplay.com" placeholderTextColor={theme.textMuted} keyboardType="email-address" autoCapitalize="none" />
+              <Text style={{ color: theme.textSec, fontSize: 12, marginBottom: 4 }}>Teléfono (opcional)</Text>
+              <TextInput style={{ ...inputStyle, marginBottom: 0 }} value={phone} onChangeText={setPhone} placeholder="+593..." placeholderTextColor={theme.textMuted} />
             </View>
 
             {/* Role selector */}
-            <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12 }}>ROL</Text>
+            <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12 }}>ROL</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {(['admin', 'soporte'] as const).map((r) => {
                   const meta = ROLE_META[r];
@@ -161,14 +162,14 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
                         padding: 12,
                         borderRadius: 10,
                         borderWidth: 1,
-                        borderColor: selected ? meta.color : C.border,
-                        backgroundColor: selected ? `${meta.color}18` : C.surface,
+                        borderColor: selected ? meta.color : theme.border,
+                        backgroundColor: selected ? `${meta.color}18` : theme.cardBg,
                       }}
                     >
-                      <FontAwesome name={meta.icon} size={14} color={selected ? meta.color : C.muted} />
+                      <FontAwesome name={meta.icon} size={14} color={selected ? meta.color : theme.textMuted} />
                       <View>
-                        <Text style={{ color: selected ? C.text : C.textDim, fontSize: 13, fontWeight: '700' }}>{meta.label}</Text>
-                        <Text style={{ color: C.muted, fontSize: 10 }}>{r === 'admin' ? 'Permisos configurables' : 'Permisos fijos'}</Text>
+                        <Text style={{ color: selected ? theme.text : theme.textSec, fontSize: 13, fontWeight: '700' }}>{meta.label}</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 10 }}>{r === 'admin' ? 'Permisos configurables' : 'Permisos fijos'}</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -177,9 +178,9 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
             </View>
 
             {/* Permissions */}
-            <View style={{ backgroundColor: C.lift, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE MÓDULOS</Text>
-              <Text style={{ color: C.muted, fontSize: 11, marginBottom: 12 }}>
+            <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE MÓDULOS</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 12 }}>
                 {role === 'admin'
                   ? 'Selecciona los módulos a los que tendrá acceso este usuario.'
                   : 'Los permisos de Soporte son fijos y no se pueden modificar.'}
@@ -193,18 +194,18 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
 
             {/* Error */}
             {error ? (
-              <View style={{ backgroundColor: C.roseSoft, borderRadius: 8, padding: 12 }}>
-                <Text style={{ color: C.rose, fontSize: 12, fontWeight: '600' }}>{error}</Text>
+              <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 8, padding: 12 }}>
+                <Text style={{ color: theme.danger, fontSize: 12, fontWeight: '600' }}>{error}</Text>
               </View>
             ) : null}
           </ScrollView>
 
           {/* Footer */}
-          <View style={{ flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1, borderTopColor: C.border }}>
-            <TouchableOpacity onPress={onClose} style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.textDim, fontWeight: '700' }}>Cancelar</Text>
+          <View style={{ flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <TouchableOpacity onPress={onClose} style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
+              <Text style={{ color: theme.textSec, fontWeight: '700' }}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} disabled={loading} style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: C.accent, opacity: loading ? 0.7 : 1 }}>
+            <TouchableOpacity onPress={handleSave} disabled={loading} style={{ flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accent, opacity: loading ? 0.7 : 1 }}>
               {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '800' }}>Guardar</Text>}
             </TouchableOpacity>
           </View>

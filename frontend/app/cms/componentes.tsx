@@ -19,7 +19,7 @@ import {
   AdminCategoria,
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
 import { useTheme } from '../../hooks/useTheme';
 
 const TIPO_COLORS: Record<string, string> = {
@@ -36,7 +36,7 @@ const TIPO_COLORS: Record<string, string> = {
 };
 
 export default function CmsComponentes() {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const [componentes, setComponentes] = useState<AdminComponente[]>([]);
@@ -136,16 +136,16 @@ export default function CmsComponentes() {
         {/* Stats cards */}
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
           {[
-            { label: 'Componentes Activos',   value: activeCount,        icon: 'check-circle' as const, color: C.green, bg: C.greenSoft },
-            { label: 'Componentes Inactivos', value: inactiveCount,      icon: 'times-circle' as const, color: C.rose,  bg: C.roseSoft  },
-            { label: 'Total Componentes',     value: componentes.length, icon: 'th-large'     as const, color: C.cyan,  bg: C.cyanSoft  },
+            { label: 'Componentes Activos',   value: activeCount,        icon: 'check-circle' as const, color: theme.success, bg: theme.successSoft },
+            { label: 'Componentes Inactivos', value: inactiveCount,      icon: 'times-circle' as const, color: theme.danger,  bg: theme.dangerSoft  },
+            { label: 'Total Componentes',     value: componentes.length, icon: 'th-large'     as const, color: theme.success,  bg: theme.successSoft  },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: theme.cardBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={item.icon} size={16} color={item.color} />
                 </View>
-                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                <Text style={{ color: theme.textSec, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
               <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
@@ -157,26 +157,26 @@ export default function CmsComponentes() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+            backgroundColor: theme.cardBg,
             borderRadius: 8,
             borderWidth: 1,
-            borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
+            borderColor: theme.border,
             paddingHorizontal: 12,
             marginBottom: 20,
           }}
         >
-          <FontAwesome name="search" size={13} color={C.muted} />
+          <FontAwesome name="search" size={13} color={theme.textMuted} />
           <TextInput
             style={{
               flex: 1,
-              color: C.text,
+              color: theme.text,
               paddingVertical: 10,
               paddingHorizontal: 10,
               fontSize: 13,
               ...webInput,
             }}
             placeholder="Buscar componente por nombre o tipo..."
-            placeholderTextColor="#475569"
+            placeholderTextColor={theme.textMuted}
             value={search}
             onChangeText={setSearch}
           />
@@ -185,7 +185,7 @@ export default function CmsComponentes() {
         {/* Info banner */}
         <View
           style={{
-            backgroundColor: C.cyanSoft,
+            backgroundColor: theme.successSoft,
             borderRadius: 10,
             padding: 14,
             marginBottom: 20,
@@ -196,7 +196,7 @@ export default function CmsComponentes() {
             gap: 10,
           }}
         >
-          <FontAwesome name="info-circle" size={16} color={C.cyan} />
+          <FontAwesome name="info-circle" size={16} color={theme.success} />
           <Text style={{ color: '#93C5FD', fontSize: 12, flex: 1 }}>
             Los componentes activos se muestran en la app del abonado. Desactiva
             un componente para ocultarlo sin eliminarlo del sistema.
@@ -205,7 +205,7 @@ export default function CmsComponentes() {
 
         {loading ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
+            <ActivityIndicator color={theme.accent} size="large" />
           </View>
         ) : (
           <View style={{ gap: 12 }}>
@@ -216,11 +216,11 @@ export default function CmsComponentes() {
                 <View
                   key={comp.id}
                   style={{
-                    backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+                    backgroundColor: theme.cardBg,
                     borderRadius: 12,
                     padding: 20,
                     borderWidth: 1,
-                    borderColor: comp.activo ? `${color}40` : (isDark ? C.border : 'rgba(130,130,130,0.34)'),
+                    borderColor: comp.activo ? `${color}40` : theme.border,
                     opacity: comp.activo ? 1 : 0.7,
                   }}
                 >
@@ -269,7 +269,7 @@ export default function CmsComponentes() {
                         >
                           <Text
                             style={{
-                              color: isDark ? C.text : '#240046',
+                              color: isDark ? theme.text : theme.text,
                               fontSize: 16,
                               fontWeight: '700',
                             }}
@@ -298,16 +298,16 @@ export default function CmsComponentes() {
                           <View
                             style={{
                               backgroundColor: comp.activo
-                                ? C.greenSoft
-                                : C.roseSoft,
-                              borderRadius: 4,
-                              paddingHorizontal: 7,
-                              paddingVertical: 2,
+                                ? theme.successSoft
+                                : theme.dangerSoft,
+                              borderRadius: 6,
+                              paddingHorizontal: 8,
+                              paddingVertical: 3,
                             }}
                           >
                             <Text
                               style={{
-                                color: comp.activo ? C.green : C.rose,
+                                color: comp.activo ? theme.success : theme.danger,
                                 fontSize: 9,
                                 fontWeight: '800',
                                 letterSpacing: 0.5,
@@ -319,7 +319,7 @@ export default function CmsComponentes() {
                         </View>
                         <Text
                           style={{
-                            color: isDark ? C.muted : '#240046',
+                            color: isDark ? theme.textMuted : theme.textMuted,
                             fontSize: 12,
                             lineHeight: 18,
                           }}
@@ -329,7 +329,7 @@ export default function CmsComponentes() {
                         </Text>
                         <Text
                           style={{
-                            color: isDark ? C.muted : '#240046',
+                            color: isDark ? theme.textMuted : theme.textMuted,
                             fontSize: 10,
                             marginTop: 6,
                             fontStyle: 'italic',
@@ -352,8 +352,8 @@ export default function CmsComponentes() {
                             height: 28,
                             borderRadius: 14,
                             backgroundColor: comp.activo
-                              ? C.greenSoft
-                              : C.roseSoft,
+                              ? theme.successSoft
+                              : theme.dangerSoft,
                             justifyContent: 'center',
                             paddingHorizontal: 2,
                             borderWidth: 1,
@@ -368,14 +368,14 @@ export default function CmsComponentes() {
                               height: 22,
                               borderRadius: 11,
                               backgroundColor: comp.activo
-                                ? C.green
-                                : C.rose,
+                                ? theme.success
+                                : theme.danger,
                               alignSelf: comp.activo
                                 ? 'flex-end'
                                 : 'flex-start',
                               shadowColor: comp.activo
-                                ? C.green
-                                : C.rose,
+                                ? theme.success
+                                : theme.danger,
                               shadowOffset: { width: 0, height: 0 },
                               shadowOpacity: 0.5,
                               shadowRadius: 6,
@@ -385,7 +385,7 @@ export default function CmsComponentes() {
                       )}
                       <Text
                         style={{
-                          color: comp.activo ? C.green : C.rose,
+                          color: comp.activo ? theme.success : theme.danger,
                           fontSize: 9,
                           fontWeight: '700',
                         }}
@@ -404,7 +404,7 @@ export default function CmsComponentes() {
                       alignItems: 'center',
                       gap: 6,
                       alignSelf: 'flex-start',
-                      backgroundColor: C.cyanSoft,
+                      backgroundColor: theme.successSoft,
                       borderRadius: 6,
                       paddingHorizontal: 10,
                       paddingVertical: 5,
@@ -412,17 +412,17 @@ export default function CmsComponentes() {
                       borderColor: 'rgba(34,211,238,0.2)',
                     }}
                   >
-                    <FontAwesome name="tags" size={11} color={C.cyan} />
-                    <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>
+                    <FontAwesome name="tags" size={11} color={theme.success} />
+                    <Text style={{ color: theme.success, fontSize: 11, fontWeight: '700' }}>
                       Categorías {(comp.categories?.length ?? 0) > 0 ? `(${comp.categories!.length})` : ''}
                     </Text>
-                    <FontAwesome name={managingId === comp.id ? 'chevron-up' : 'chevron-down'} size={9} color={C.cyan} />
+                    <FontAwesome name={managingId === comp.id ? 'chevron-up' : 'chevron-down'} size={9} color={theme.success} />
                   </TouchableOpacity>
 
                   {/* Inline category panel */}
                   {managingId === comp.id && (
-                    <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 12 }}>
-                      <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 10 }}>
+                    <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 12 }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 10 }}>
                         CATEGORÍAS ASIGNADAS
                       </Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -440,16 +440,16 @@ export default function CmsComponentes() {
                                 paddingVertical: 6,
                                 borderRadius: 6,
                                 borderWidth: 1,
-                                backgroundColor: selected ? `${color}18` : C.surface,
-                                borderColor: selected ? `${color}50` : C.border,
+                                backgroundColor: selected ? `${color}18` : theme.cardBg,
+                                borderColor: selected ? `${color}50` : theme.border,
                               }}
                             >
                               <FontAwesome
                                 name={selected ? 'check-square' : 'square-o'}
                                 size={13}
-                                color={selected ? color : C.muted}
+                                color={selected ? color : theme.textMuted}
                               />
-                              <Text style={{ color: selected ? C.text : C.muted, fontSize: 12, fontWeight: selected ? '700' : '400' }}>
+                              <Text style={{ color: selected ? theme.text : theme.textMuted, fontSize: 12, fontWeight: selected ? '700' : '400' }}>
                                 {cat.nombre}
                               </Text>
                             </TouchableOpacity>
@@ -481,11 +481,11 @@ export default function CmsComponentes() {
                             borderRadius: 8,
                             paddingVertical: 9,
                             borderWidth: 1,
-                            borderColor: C.border,
+                            borderColor: theme.border,
                             alignItems: 'center',
                           }}
                         >
-                          <Text style={{ color: C.muted, fontSize: 13 }}>Cancelar</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 13 }}>Cancelar</Text>
                         </TouchableOpacity>
                       </View>
                     </View>

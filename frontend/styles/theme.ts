@@ -159,6 +159,25 @@ export const radius = {
 } as const;
 
 /**
+ * OTT app–side color constants.
+ * Always dark — the user-facing OTT experience is never light-themed.
+ * Import these in NativeWind app/auth screens that need inline style values.
+ */
+export const APP = {
+  bodyBg:          '#050B17',               // App home background (nebula dark)
+  surface:         '#1A052E',               // Card surface / admin panel bg
+  surfaceElevated: '#2A0E47',               // Elevated surface for cards/panels
+  tabBar:          '#0F041C',               // Tab bar bg & gradient end
+  gradientStart:   COLORS.russianViolet,    // '#240046' — auth screen gradient top
+  gradientEnd:     '#0D001A',               // Auth screen gradient bottom (ultra-dark)
+  accent:          COLORS.selectiveYellow,  // '#FFB800'
+  danger:          COLORS.roseRed,          // '#D1105A'
+  dangerSurface:   'rgba(209,16,90,0.22)',  // Warning/restriction banner background
+  success:         COLORS.robinEggBlue,     // '#17D1C6'
+  textMuted:       '#94A3B8',               // Slate-400 — muted labels on dark bg
+} as const;
+
+/**
  * Sidebar tokens — always violet-dark regardless of app theme.
  * bg1/bg2 form the vertical LinearGradient (#240046 → #1a0033).
  */

@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { C } from '../CmsShell';
 import { useTheme } from '../../../hooks/useTheme';
 import { ROLE_META } from './types';
 import CmsUserFormModal from './CmsUserFormModal';
@@ -24,7 +23,7 @@ import type { AdminUser, CmsUserPayload } from '../../../services/api/adminApi';
 import { useCmsStore } from '../../../services/cmsStore';
 
 export default function CmsUsersTab() {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const { accessToken } = useCmsStore();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,14 +93,14 @@ export default function CmsUsersTab() {
     <View style={{ flex: 1 }}>
       {/* Toolbar */}
       <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 10, flexWrap: 'wrap' }}>
-        <View style={{ flex: 1, minWidth: 200, flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', paddingHorizontal: 10 }}>
-          <FontAwesome name="search" size={13} color={isDark ? C.muted : '#240046'} />
+        <View style={{ flex: 1, minWidth: 200, flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.92)', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', paddingHorizontal: 10 }}>
+          <FontAwesome name="search" size={13} color={isDark ? theme.textMuted : '#240046'} />
           <TextInput
-            style={{ flex: 1, color: isDark ? C.text : '#240046', fontSize: 13, paddingVertical: 8, paddingHorizontal: 8, ...webInput }}
+            style={{ flex: 1, color: isDark ? theme.text : '#240046', fontSize: 13, paddingVertical: 8, paddingHorizontal: 8, ...webInput }}
             value={search}
             onChangeText={setSearch}
             placeholder="Buscar por nombre o email..."
-            placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.5)'}
+            placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.5)'}
           />
         </View>
 
@@ -117,12 +116,12 @@ export default function CmsUsersTab() {
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                   borderRadius: 6,
-                  backgroundColor: active ? C.accentSoft : (isDark ? C.lift : 'rgba(255,255,255,0.8)'),
+                  backgroundColor: active ? theme.accentSoft : (isDark ? theme.liftBg : 'rgba(255,255,255,0.8)'),
                   borderWidth: 1,
-                  borderColor: active ? C.accent : (isDark ? C.border : 'rgba(130,130,130,0.26)'),
+                  borderColor: active ? theme.accent : (isDark ? theme.border : 'rgba(130,130,130,0.26)'),
                 }}
               >
-                <Text style={{ color: active ? C.accent : C.textSec, fontSize: 12, fontWeight: '700' }}>{f.label}</Text>
+                <Text style={{ color: active ? theme.accent : theme.textSec, fontSize: 12, fontWeight: '700' }}>{f.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -130,7 +129,7 @@ export default function CmsUsersTab() {
 
         <TouchableOpacity
           onPress={() => { setEditUser(null); setFormVisible(true); }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: C.accent }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.accent }}
         >
           <FontAwesome name="plus" size={12} color="#fff" />
           <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Crear usuario</Text>
@@ -138,25 +137,25 @@ export default function CmsUsersTab() {
       </View>
 
       {error ? (
-        <View style={{ marginHorizontal: 16, marginBottom: 8, backgroundColor: C.roseSoft, borderRadius: 8, padding: 12 }}>
-          <Text style={{ color: C.rose, fontSize: 12 }}>{error}</Text>
+        <View style={{ marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.dangerSoft, borderRadius: 8, padding: 12 }}>
+          <Text style={{ color: theme.danger, fontSize: 12 }}>{error}</Text>
         </View>
       ) : null}
 
       {/* Table */}
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={C.accent} />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       ) : filtered.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-          <FontAwesome name="users" size={32} color={C.muted} />
-          <Text style={{ color: C.muted, fontSize: 14, marginTop: 12 }}>No se encontraron usuarios CMS.</Text>
+          <FontAwesome name="users" size={32} color={theme.textMuted} />
+          <Text style={{ color: theme.textMuted, fontSize: 14, marginTop: 12 }}>No se encontraron usuarios CMS.</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }}>
           {/* Header row */}
-          <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)' }}>
+          <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)' }}>
             <Text style={hdr(3)}>Nombre</Text>
             <Text style={hdr(2.5)}>Email</Text>
             <Text style={hdr(1)}>Rol</Text>
@@ -171,18 +170,18 @@ export default function CmsUsersTab() {
               <TouchableOpacity
                 key={user.id}
                 onPress={() => setDetailUser(user)}
-                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.20)' }}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.20)' }}
               >
                 <View style={{ flex: 3, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: meta ? `${meta.color}18` : C.lift, alignItems: 'center', justifyContent: 'center' }}>
-                    <FontAwesome name={meta?.icon ?? 'user'} size={13} color={meta?.color ?? C.accent} />
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: meta ? `${meta.color}18` : theme.liftBg, alignItems: 'center', justifyContent: 'center' }}>
+                    <FontAwesome name={meta?.icon ?? 'user'} size={13} color={meta?.color ?? theme.accent} />
                   </View>
-                  <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{user.nombre}</Text>
+                  <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{user.nombre}</Text>
                 </View>
-                <Text style={{ flex: 2.5, color: isDark ? C.textSec : '#240046', fontSize: 12 }} numberOfLines={1}>{user.email}</Text>
+                <Text style={{ flex: 2.5, color: isDark ? theme.textSec : '#240046', fontSize: 12 }} numberOfLines={1}>{user.email}</Text>
                 <View style={{ flex: 1 }}>
-                  <View style={{ alignSelf: 'flex-start', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: meta ? `${meta.color}18` : C.lift }}>
-                    <Text style={{ color: meta?.color ?? C.accent, fontSize: 11, fontWeight: '700' }}>{meta?.label ?? user.role}</Text>
+                  <View style={{ alignSelf: 'flex-start', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: meta ? `${meta.color}18` : theme.liftBg }}>
+                    <Text style={{ color: meta?.color ?? theme.accent, fontSize: 11, fontWeight: '700' }}>{meta?.label ?? user.role}</Text>
                   </View>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -191,20 +190,20 @@ export default function CmsUsersTab() {
                     borderRadius: 4,
                     paddingHorizontal: 8,
                     paddingVertical: 2,
-                    backgroundColor: user.status === 'active' ? 'rgba(16,185,129,0.14)' : C.roseSoft,
+                    backgroundColor: user.status === 'active' ? 'rgba(16,185,129,0.14)' : theme.dangerSoft,
                   }}>
-                    <Text style={{ color: user.status === 'active' ? '#10B981' : C.rose, fontSize: 11, fontWeight: '700' }}>
+                    <Text style={{ color: user.status === 'active' ? '#10B981' : theme.danger, fontSize: 11, fontWeight: '700' }}>
                       {user.status === 'active' ? 'Activo' : user.status}
                     </Text>
                   </View>
                 </View>
-                <Text style={{ flex: 0.8, color: isDark ? C.textSec : '#240046', fontSize: 12 }}>{user.permissions?.length ?? 0}</Text>
+                <Text style={{ flex: 0.8, color: isDark ? theme.textSec : '#240046', fontSize: 12 }}>{user.permissions?.length ?? 0}</Text>
                 <View style={{ flex: 0.7, flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity onPress={() => { setEditUser(user); setFormVisible(true); }}>
-                    <FontAwesome name="pencil" size={13} color={C.accent} />
+                    <FontAwesome name="pencil" size={13} color={theme.accent} />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setDetailUser(user)}>
-                    <FontAwesome name="eye" size={13} color={C.textSec} />
+                    <FontAwesome name="eye" size={13} color={theme.textSec} />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -232,5 +231,5 @@ export default function CmsUsersTab() {
 }
 
 function hdr(flex: number) {
-  return { flex, color: C.muted, fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.5 };
+  return { flex, color: theme.textMuted, fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.5 };
 }

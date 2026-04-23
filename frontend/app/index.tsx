@@ -2,6 +2,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../services/authStore';
 import { useEffect, useState } from 'react';
+import { APP } from '../styles/theme';
 
 /**
  * Application entry-point / auth-redirect gate.
@@ -37,8 +38,8 @@ export default function Index() {
     }, [restored, accessToken]);
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1A052E' }}>
-            <ActivityIndicator size="large" color="#FFC107" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: APP.surface }}>
+            <ActivityIndicator size="large" color={APP.accent} />
         </View>
     );
 }

@@ -6,25 +6,26 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import LukiPlayLogo from '../../components/LukiPlayLogo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { APP } from '../../styles/theme';
 
 type Screen = 'login' | 'first-access' | 'request-code' | 'verify-code' | 'activate' | 'forgot' | 'register-request';
 
 const P = {
-    bg: ['#240046', '#0D001A'] as const,
+    bg: [APP.gradientStart, APP.gradientEnd] as const,
     card: 'rgba(36, 0, 70, 0.65)',
     cardBorder: 'rgba(96, 38, 158, 0.24)',
     input: 'rgba(255,255,255,0.07)',
     inputBorder: 'rgba(255,255,255,0.12)',
     inputFocus: 'rgba(255,184,0,0.4)',
-    accent: '#FFB800',
+    accent: APP.accent,
     accentSoft: 'rgba(255,184,0,0.12)',
     text: '#FFFFFF',
     textSec: '#D0C4E8',
     muted: '#8B72B2',
-    error: '#F43F5E',
-    errorBg: 'rgba(244,63,94,0.12)',
-    success: '#10B981',
-    successBg: 'rgba(16,185,129,0.12)',
+    error: APP.danger,
+    errorBg: 'rgba(209,16,90,0.12)',
+    success: APP.success,
+    successBg: 'rgba(23,209,198,0.12)',
 };
 
 function AuthInput({ label, placeholder, value, onChangeText, secure, keyboardType, autoCapitalize }: {
@@ -68,7 +69,7 @@ function PrimaryButton({ title, onPress, isLoading, disabled }: { title: string;
 
 function ErrorBox({ msg }: { msg: string }) {
     return (
-        <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)' }}>
+        <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(209,16,90,0.2)' }}>
             <Text style={{ color: P.error, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>{msg}</Text>
         </View>
     );
@@ -361,7 +362,7 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             ) : (
                 <>
                     <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
-                        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+                        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
                             <FontAwesome name="check" size={24} color={P.success} />
                         </View>
                         <Text style={{ color: P.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>Contraseña actualizada</Text>
@@ -414,7 +415,7 @@ function RegisterRequestForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Solicitar acceso</Text>
             {done ? (
                 <View style={{ alignItems: 'center', marginTop: 8 }}>
-                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
                         <FontAwesome name="check" size={24} color={P.success} />
                     </View>
                     <Text style={{ color: P.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>Solicitud enviada</Text>

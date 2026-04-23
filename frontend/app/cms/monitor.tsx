@@ -6,7 +6,7 @@ import { useChannelStore } from '../../services/channelStore';
 import { ResizeMode, Video } from 'expo-av';
 import type { AdminCanal } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
 import { useTheme } from '../../hooks/useTheme';
 
 type PlaybackState = 'idle' | 'playing' | 'error';
@@ -158,33 +158,35 @@ function WebMonitorPreview({ url, onPlaybackOk, onPlaybackError }: { url: string
 }
 
 function SummaryCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
-  const { isDark } = useTheme();
+  const { theme } = useTheme();
   return (
-    <View style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ flex: 1, minWidth: 180, backgroundColor: theme.cardBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 38, height: 38, backgroundColor: `${color}22`, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
           <FontAwesome name={icon} size={16} color={color} />
         </View>
-        <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: theme.textSec, fontSize: 13, fontWeight: '600' }}>{label}</Text>
       </View>
-      <Text style={{ color: isDark ? 'white' : '#240046', fontSize: 22, fontWeight: '800' }}>{value}</Text>
+      <Text style={{ color: theme.text, fontSize: 22, fontWeight: '800' }}>{value}</Text>
     </View>
   );
 }
 
 function EmptyMonitorTile({ index }: { index: number }) {
+  const { theme } = useTheme();
   return (
-    <View style={{ flexBasis: '24%', minWidth: 220, minHeight: 170, borderRadius: 18, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, backgroundColor: '#0C1422', padding: 16, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
-      <View style={{ width: 52, height: 52, borderRadius: 14, borderWidth: 1, borderColor: C.border, backgroundColor: 'rgba(255,255,255,0.03)', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '800' }}>{String(index + 1).padStart(2, '0')}</Text>
+    <View style={{ flexBasis: '24%', minWidth: 220, minHeight: 170, borderRadius: 18, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.border, backgroundColor: '#0C1422', padding: 16, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+      <View style={{ width: 52, height: 52, borderRadius: 14, borderWidth: 1, borderColor: theme.border, backgroundColor: 'rgba(255,255,255,0.03)', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '800' }}>{String(index + 1).padStart(2, '0')}</Text>
       </View>
       <Text style={{ color: 'white', fontSize: 15, fontWeight: '700' }}>Sin canal asignado</Text>
-      <Text style={{ color: C.muted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>Este espacio se llenará cuando agregues más canales al catálogo.</Text>
+      <Text style={{ color: theme.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>Este espacio se llenará cuando agregues más canales al catálogo.</Text>
     </View>
   );
 }
 
 function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: { canal: AdminCanal; playback: PlaybackState; onPlaybackOk: () => void; onPlaybackError: () => void }) {
+  const { theme } = useTheme();
   const isActive = canal.status === 'ACTIVE';
   const tone = getStatusTone(isActive);
   const operationalTone = getOperationalTone(canal, playback);
@@ -192,7 +194,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
   const showVideoChrome = shouldRenderVideo && playback === 'playing';
 
   return (
-    <View style={{ flexBasis: '24%', minWidth: 220, minHeight: 170, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: playback === 'playing' ? C.accent : operationalTone.border, backgroundColor: '#0C1422', position: 'relative' }}>
+    <View style={{ flexBasis: '24%', minWidth: 220, minHeight: 170, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: playback === 'playing' ? theme.accent : operationalTone.border, backgroundColor: '#0C1422', position: 'relative' }}>
       {shouldRenderVideo ? (
         Platform.OS === 'web' ? (
           <WebMonitorPreview url={canal.streamUrl} onPlaybackOk={onPlaybackOk} onPlaybackError={onPlaybackError} />
@@ -208,8 +210,8 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
               {canal.logoUrl ? (
                 <Image source={{ uri: canal.logoUrl }} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)' }} />
               ) : (
-                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,198,41,0.14)', borderWidth: 1, borderColor: C.accentBorder, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: C.accent, fontSize: 10, fontWeight: '800' }}>{getInitials(canal.nombre)}</Text>
+                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,198,41,0.14)', borderWidth: 1, borderColor: theme.accentBorder, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: theme.accent, fontSize: 10, fontWeight: '800' }}>{getInitials(canal.nombre)}</Text>
                 </View>
               )}
               <View style={{ flex: 1 }}>
@@ -246,17 +248,17 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
                 {canal.logoUrl ? (
                   <Image source={{ uri: canal.logoUrl }} style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.04)' }} />
                 ) : (
-                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,198,41,0.12)', borderWidth: 1, borderColor: C.accentBorder, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: C.accent, fontSize: 12, fontWeight: '800' }}>{getInitials(canal.nombre)}</Text>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,198,41,0.12)', borderWidth: 1, borderColor: theme.accentBorder, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800' }}>{getInitials(canal.nombre)}</Text>
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={{ color: 'white', fontSize: 14, fontWeight: '800' }}>{canal.nombre}</Text>
-                  <Text numberOfLines={1} style={{ color: C.textDim, fontSize: 12, marginTop: 3 }}>{canal.category?.nombre || 'Canal registrado'}</Text>
+                  <Text numberOfLines={1} style={{ color: theme.textSec, fontSize: 12, marginTop: 3 }}>{canal.category?.nombre || 'Canal registrado'}</Text>
                 </View>
               </View>
-              <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '800' }}>{shouldRenderVideo ? 'CARGANDO' : 'FICHA'}</Text>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.textSec, fontSize: 10, fontWeight: '800' }}>{shouldRenderVideo ? 'CARGANDO' : 'FICHA'}</Text>
               </View>
             </View>
 
@@ -267,18 +269,18 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
               <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: operationalTone.background, borderWidth: 1, borderColor: operationalTone.border }}>
                 <Text style={{ color: operationalTone.color, fontSize: 10, fontWeight: '800' }}>{operationalTone.label}</Text>
               </View>
-              <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: C.border }}>
-                <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '800' }}>{getSignalLabel(canal.isLive, canal.streamProtocol)}</Text>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.textSec, fontSize: 10, fontWeight: '800' }}>{getSignalLabel(canal.isLive, canal.streamProtocol)}</Text>
               </View>
             </View>
 
-            <View style={{ backgroundColor: 'rgba(0,0,0,0.26)', borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 12, gap: 8 }}>
+            <View style={{ backgroundColor: 'rgba(0,0,0,0.26)', borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 12, gap: 8 }}>
               <View>
-                <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>URL</Text>
-                <Text selectable style={{ color: C.textDim, fontSize: 11, lineHeight: 16 }}>{canal.streamUrl || 'Sin URL configurada'}</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>URL</Text>
+                <Text selectable style={{ color: theme.textSec, fontSize: 11, lineHeight: 16 }}>{canal.streamUrl || 'Sin URL configurada'}</Text>
               </View>
               <View>
-                <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>ESTADO OPERATIVO</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>ESTADO OPERATIVO</Text>
                 <Text style={{ color: operationalTone.color, fontSize: 11, lineHeight: 16 }}>{operationalTone.reason}</Text>
               </View>
             </View>
@@ -290,7 +292,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
 }
 
 export default function CmsMonitor() {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const { profile } = useCmsStore();
   const router = useRouter();
 
@@ -348,42 +350,42 @@ export default function CmsMonitor() {
         </View>
 
         {canales.length === 0 ? (
-          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', padding: 48, alignItems: 'center', gap: 14 }}>
+          <View style={{ backgroundColor: theme.cardBg, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 48, alignItems: 'center', gap: 14 }}>
             <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: 'rgba(91,91,214,0.14)', alignItems: 'center', justifyContent: 'center' }}>
               <FontAwesome name="television" size={28} color="#5B5BD6" />
             </View>
-            <Text style={{ color: isDark ? 'white' : '#240046', fontSize: 16, fontWeight: '800' }}>Sin canales activos</Text>
-            <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
+            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }}>Sin canales activos</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
               Crea o activa canales desde la sección Canales para verlos aparecer aquí en tiempo real.
             </Text>
           </View>
         ) : (
-          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)' }}>
+          <View style={{ backgroundColor: theme.cardBg, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: theme.border }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               <View>
-                <Text style={{ color: isDark ? 'white' : '#240046', fontSize: 16, fontWeight: '700' }}>Mosaico 4x4</Text>
-                <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 12, marginTop: 4 }}>Se muestran 16 canales por pantalla. Si la URL es inválida o la señal falla, el canal queda marcado como de baja.</Text>
+                <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>Mosaico 4x4</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }}>Se muestran 16 canales por pantalla. Si la URL es inválida o la señal falla, el canal queda marcado como de baja.</Text>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12 }}>Actualizado: {new Date().toLocaleTimeString('es-CO')}</Text>
+                <Text style={{ color: theme.textSec, fontSize: 12 }}>Actualizado: {new Date().toLocaleTimeString('es-CO')}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <TouchableOpacity
                     onPress={() => setPage((current) => Math.max(0, current - 1))}
                     disabled={page === 0}
-                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page === 0 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page === 0 ? 0.5 : 1 }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page === 0 ? 'rgba(255,255,255,0.04)' : theme.liftBg, borderWidth: 1, borderColor: theme.border, opacity: page === 0 ? 0.5 : 1 }}
                   >
-                    <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '700' }}>Anterior</Text>
+                    <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>Anterior</Text>
                   </TouchableOpacity>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12 }}>Pantalla {page + 1} de {totalPages}</Text>
+                  <Text style={{ color: theme.textSec, fontSize: 12 }}>Pantalla {page + 1} de {totalPages}</Text>
                   <TouchableOpacity
                     onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
                     disabled={page >= totalPages - 1}
-                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page >= totalPages - 1 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page >= totalPages - 1 ? 0.5 : 1 }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page >= totalPages - 1 ? 'rgba(255,255,255,0.04)' : theme.liftBg, borderWidth: 1, borderColor: theme.border, opacity: page >= totalPages - 1 ? 0.5 : 1 }}
                   >
-                    <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '700' }}>Siguiente</Text>
+                    <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>Siguiente</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={{ color: C.muted, fontSize: 11 }}>Rotación automática cada 8 s</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11 }}>Rotación automática cada 8 s</Text>
               </View>
             </View>
 

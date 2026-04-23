@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
+import type { ThemeTokens } from '../../styles/theme';
 import {
   adminCreateUser,
   adminGenerateActivationCode,
@@ -90,9 +91,8 @@ function initials(name: string) {
     .slice(0, 2);
 }
 
-// Avatar uses C tokens from design system
-const AVATAR_BG = C.accentSoft;
-const AVATAR_TEXT = C.accent;
+const AVATAR_BG = 'rgba(255,184,0,0.12)';
+const AVATAR_TEXT = '#FFB800';
 
 function hasPermission(permissions: string[] | undefined, permission: string) {
   if (!permissions) return false;
@@ -103,30 +103,30 @@ function getUserType(user: Pick<AdminUser, 'isCmsUser' | 'isSubscriber'>): UserT
   return user.isCmsUser ? 'system' : 'subscriber';
 }
 
-function getUserTypeMeta(user: Pick<AdminUser, 'isCmsUser' | 'isSubscriber'>) {
-  if (user.isCmsUser)      return { label: 'Interno',  color: C.accentLight, bg: C.accentSoft };
-  if (user.isSubscriber)   return { label: 'Abonado',  color: C.cyan,        bg: C.cyanSoft   };
-  return                          { label: 'Cliente',  color: C.accent,      bg: C.accentSoft };
+function getUserTypeMeta(user: Pick<AdminUser, 'isCmsUser' | 'isSubscriber'>, theme: ThemeTokens) {
+  if (user.isCmsUser)      return { label: 'Interno',  color: theme.accentLight, bg: theme.accentSoft };
+  if (user.isSubscriber)   return { label: 'Abonado',  color: theme.info,        bg: theme.infoSoft   };
+  return                          { label: 'Cliente',  color: theme.accent,      bg: theme.accentSoft };
 }
 
 // Tipo de usuario OTT derivado de isSubscriber (fuente de verdad: base de datos)
-function getTipoMeta(user: Pick<AdminUser, 'isSubscriber'>) {
-  if (user.isSubscriber) return { label: 'Abonado', color: C.cyan,   bg: C.cyanSoft   };
-  return                        { label: 'Cliente', color: C.accent, bg: C.accentSoft };
+function getTipoMeta(user: Pick<AdminUser, 'isSubscriber'>, theme: ThemeTokens) {
+  if (user.isSubscriber) return { label: 'Abonado', color: theme.info,   bg: theme.infoSoft   };
+  return                        { label: 'Cliente', color: theme.accent, bg: theme.accentSoft };
 }
 
-function getRoleMeta(role: AdminUser['role']) {
-  if (role === 'superadmin') return { label: 'Superadmin', color: C.rose, bg: C.roseSoft };
-  if (role === 'admin') return { label: 'Admin', color: C.accent, bg: C.accentSoft };
-  if (role === 'soporte') return { label: 'Soporte', color: C.green, bg: C.greenSoft };
-  return { label: 'Cliente', color: C.textDim, bg: C.lift };
+function getRoleMeta(role: AdminUser['role'], theme: ThemeTokens) {
+  if (role === 'superadmin') return { label: 'Superadmin', color: theme.danger, bg: theme.dangerSoft };
+  if (role === 'admin') return { label: 'Admin', color: theme.accent, bg: theme.accentSoft };
+  if (role === 'soporte') return { label: 'Soporte', color: theme.success, bg: theme.successSoft };
+  return { label: 'Cliente', color: theme.textSec, bg: theme.liftBg };
 }
 
-function getStatusMeta(status: AdminUser['status']) {
-  if (status === 'active')    return { label: 'Activo',     color: C.cyan,    bg: C.cyanSoft       };
-  if (status === 'suspended') return { label: 'Suspendido', color: C.rose,    bg: C.roseSoft       };
-  if (status === 'pending')   return { label: 'Pendiente',  color: C.amber,   bg: C.amberSoft      };
-  return                             { label: 'Inactivo',   color: C.amber,   bg: C.amberSoft      };
+function getStatusMeta(status: AdminUser['status'], theme: ThemeTokens) {
+  if (status === 'active')    return { label: 'Activo',     color: theme.info,    bg: theme.infoSoft       };
+  if (status === 'suspended') return { label: 'Suspendido', color: theme.danger,    bg: theme.dangerSoft       };
+  if (status === 'pending')   return { label: 'Pendiente',  color: theme.warning,   bg: theme.warningSoft      };
+  return                             { label: 'Inactivo',   color: theme.warning,   bg: theme.warningSoft      };
 }
 
 function getDeviceCount(sessions: AdminUserSession[]) {
@@ -144,35 +144,22 @@ function generateTemporaryPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-function fieldBase(webInput: object) {
-  return {
-    backgroundColor: C.lift,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: C.border,
-    color: C.text,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 17,
-    ...webInput,
-  };
-}
-
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   return (
-    <View style={{ backgroundColor: isDark ? C.lift : '#fff', borderRadius: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', padding: 16 }}>
-      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 17, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>{title}</Text>
-      {subtitle ? <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginTop: 4, marginBottom: 12, fontFamily: FONT_FAMILY.body }}>{subtitle}</Text> : <View style={{ height: 12 }} />}
+    <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 16 }}>
+      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 17, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>{title}</Text>
+      {subtitle ? <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 4, marginBottom: 12, fontFamily: FONT_FAMILY.body }}>{subtitle}</Text> : <View style={{ height: 12 }} />}
       {children}
     </View>
   );
 }
 
 function FilterChip({ active, label, onPress, tone = 'accent' }: { active: boolean; label: string; onPress: () => void; tone?: 'accent' | 'cyan' | 'neutral' }) {
-  const activeColor = tone === 'cyan' ? C.cyan : tone === 'neutral' ? C.text : C.accentLight;
-  const activeBg = tone === 'cyan' ? C.cyanSoft : tone === 'neutral' ? C.surfaceAlt : C.accentSoft;
-  const activeBorder = tone === 'cyan' ? C.cyan : tone === 'neutral' ? C.border : C.accent;
+  const { theme } = useTheme();
+  const activeColor = tone === 'cyan' ? theme.info : tone === 'neutral' ? theme.text : theme.accentLight;
+  const activeBg = tone === 'cyan' ? theme.infoSoft : tone === 'neutral' ? theme.liftBg : theme.accentSoft;
+  const activeBorder = tone === 'cyan' ? theme.info : tone === 'neutral' ? theme.border : theme.accent;
 
   return (
     <TouchableOpacity
@@ -180,13 +167,13 @@ function FilterChip({ active, label, onPress, tone = 'accent' }: { active: boole
         paddingHorizontal: 12,
         paddingVertical: 7,
         borderRadius: 8,
-        backgroundColor: active ? activeBg : C.lift,
+        backgroundColor: active ? activeBg : theme.liftBg,
         borderWidth: 1,
-        borderColor: active ? activeBorder : C.border,
+        borderColor: active ? activeBorder : theme.border,
       }}
       onPress={onPress}
     >
-      <Text style={{ color: active ? activeColor : C.textDim, fontSize: 15, fontWeight: '700' }}>{label}</Text>
+      <Text style={{ color: active ? activeColor : theme.textSec, fontSize: 15, fontWeight: '700' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -197,7 +184,7 @@ function DropdownFilter({ label, value, options, onSelect }: {
   options: { value: string; label: string }[];
   onSelect: (value: string) => void;
 }) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const [open, setOpen] = useState(false);
   const selectedLabel = options.find((o) => o.value === value)?.label ?? label;
   const isFiltered = value !== 'all';
@@ -213,14 +200,14 @@ function DropdownFilter({ label, value, options, onSelect }: {
           paddingHorizontal: 12,
           paddingVertical: 9,
           borderRadius: 10,
-          backgroundColor: isFiltered ? C.accentSoft : (isDark ? C.lift : 'rgba(255,255,255,0.8)'),
+          backgroundColor: isFiltered ? theme.accentSoft : (isDark ? theme.liftBg : 'rgba(255,255,255,0.8)'),
           borderWidth: 1,
-          borderColor: isFiltered ? C.accentBorder : (isDark ? C.border : 'rgba(130,130,130,0.34)'),
+          borderColor: isFiltered ? theme.accentBorder : (isDark ? theme.border : 'rgba(130,130,130,0.34)'),
         }}
       >
-        <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 13, fontWeight: '700' }}>{label}:</Text>
-        <Text style={{ color: isFiltered ? C.accent : (isDark ? C.text : '#240046'), fontSize: 15, fontWeight: '700' }}>{selectedLabel}</Text>
-        <FontAwesome name={open ? 'chevron-up' : 'chevron-down'} size={9} color={isDark ? C.muted : '#240046'} />
+        <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 13, fontWeight: '700' }}>{label}:</Text>
+        <Text style={{ color: isFiltered ? theme.accent : (isDark ? theme.text : '#240046'), fontSize: 15, fontWeight: '700' }}>{selectedLabel}</Text>
+        <FontAwesome name={open ? 'chevron-up' : 'chevron-down'} size={9} color={isDark ? theme.textMuted : '#240046'} />
       </TouchableOpacity>
 
       {open ? (
@@ -236,10 +223,10 @@ function DropdownFilter({ label, value, options, onSelect }: {
             top: 42,
             left: 0,
             minWidth: 160,
-            backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+            backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
+            borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)',
             overflow: 'hidden',
             shadowColor: '#0D0020',
             shadowOpacity: isDark ? 0.5 : 0.1,
@@ -256,13 +243,13 @@ function DropdownFilter({ label, value, options, onSelect }: {
                   paddingHorizontal: 14,
                   paddingVertical: 10,
                   backgroundColor: value === option.value
-                    ? (isDark ? C.lift : 'rgba(255,255,255,0.8)')
+                    ? (isDark ? theme.liftBg : 'rgba(255,255,255,0.8)')
                     : 'transparent',
                   borderBottomWidth: i < options.length - 1 ? 1 : 0,
-                  borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
+                  borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)',
                 }}
               >
-                <Text style={{ color: value === option.value ? C.accent : (isDark ? C.textDim : '#240046'), fontSize: 15, fontWeight: value === option.value ? '800' : '600' }}>{option.label}</Text>
+                <Text style={{ color: value === option.value ? theme.accent : (isDark ? theme.textSec : '#240046'), fontSize: 15, fontWeight: value === option.value ? '800' : '600' }}>{option.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -273,7 +260,7 @@ function DropdownFilter({ label, value, options, onSelect }: {
 }
 
 function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }: { user: AdminUser; accessToken: string; onClose: () => void; onFeedback: (fb: Feedback) => void; onUserUpdated: (u: AdminUser) => void }) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const [sending, setSending] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
@@ -284,11 +271,11 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
   const [saving, setSaving] = useState(false);
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const inputStyle = {
-    backgroundColor: isDark ? C.surface : '#fff',
+    backgroundColor: isDark ? theme.cardBg : '#fff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: isDark ? C.accent : 'rgba(130,130,130,0.18)',
-    color: isDark ? C.text : '#240046',
+    borderColor: isDark ? theme.accent : 'rgba(130,130,130,0.18)',
+    color: isDark ? theme.text : '#240046',
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: CMS_LIGHT_DASHBOARD_TYPO.bodyLarge,
@@ -458,7 +445,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
 }
 
 function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => void }) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
@@ -496,7 +483,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
 }
 
 function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFormModalProps) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -514,11 +501,11 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const baseInput = {
-    backgroundColor: isDark ? C.lift : '#fff',
+    backgroundColor: isDark ? theme.liftBg : '#fff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
-    color: isDark ? C.text : '#240046',
+    borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)',
+    color: isDark ? theme.text : '#240046',
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 17,
@@ -605,13 +592,13 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <View style={{ width: '100%', maxWidth: 860, maxHeight: '90%', backgroundColor: isDark ? C.surface : '#fff', borderRadius: 18, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', overflow: 'hidden' }}>
-          <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.18)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ width: '100%', maxWidth: 860, maxHeight: '90%', backgroundColor: isDark ? theme.cardBg : '#fff', borderRadius: 18, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', overflow: 'hidden' }}>
+          <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={{ color: isDark ? C.text : '#240046', fontSize: 20, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
+              <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 20, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
             </View>
             <TouchableOpacity onPress={onClose}>
-              <FontAwesome name="times" size={18} color={isDark ? C.muted : '#240046'} />
+              <FontAwesome name="times" size={18} color={isDark ? theme.textMuted : '#240046'} />
             </TouchableOpacity>
           </View>
 
@@ -619,24 +606,24 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
             <SectionCard title="Datos de Registro">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>NOMBRE COMPLETO</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="Ej: Juan Pérez" placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'} value={nombre} onChangeText={setNombre} />
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>NOMBRE COMPLETO</Text>
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="Ej: Juan Pérez" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={nombre} onChangeText={setNombre} />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>EMAIL</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="usuario@email.com" placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>EMAIL</Text>
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="usuario@email.com" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>TELÉFONO</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="+593 999 999 999" placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>TELÉFONO</Text>
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="+593 999 999 999" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
                 </View>
                 {isAbonado ? (
                   <View style={{ flex: 1, minWidth: 220 }}>
-                    <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CÉDULA DE IDENTIDAD</Text>
+                    <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CÉDULA DE IDENTIDAD</Text>
                     <TextInput
                       style={{ ...baseInput, marginBottom: 0 }}
                       placeholder="Ej: 1712345678"
-                      placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'}
+                      placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'}
                       value={idNumber}
                       onChangeText={setIdNumber}
                       keyboardType="number-pad"
@@ -645,8 +632,8 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                   </View>
                 ) : (
                   <View style={{ flex: 1, minWidth: 220, justifyContent: 'flex-end' }}>
-                    <View style={{ backgroundColor: isDark ? C.surfaceAlt : '#fff', borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', padding: 10 }}>
-                      <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontFamily: FONT_FAMILY.body }}>Los clientes completan su registro desde la app Luki Play.</Text>
+                    <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 10 }}>
+                      <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontFamily: FONT_FAMILY.body }}>Los clientes completan su registro desde la app Luki Play.</Text>
                     </View>
                   </View>
                 )}
@@ -656,16 +643,16 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
             <SectionCard title="Sesiones" subtitle="Control de simultaneidad y dispositivos permitidos.">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>SESIONES SIMULTÁNEAS</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3" placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'} value={maxDevices} onChangeText={setMaxDevices} keyboardType="number-pad" />
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>SESIONES SIMULTÁNEAS</Text>
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={maxDevices} onChangeText={setMaxDevices} keyboardType="number-pad" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
-                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="30" placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'} value={sessionDurationDays} onChangeText={setSessionDurationDays} keyboardType="number-pad" />
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
+                  <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="30" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={sessionDurationDays} onChangeText={setSessionDurationDays} keyboardType="number-pad" />
                 </View>
               </View>
 
-              <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginTop: 12, marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>AL EXCEDER EL LÍMITE</Text>
+              <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 12, marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>AL EXCEDER EL LÍMITE</Text>
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                 {([
                   { value: 'block_new'       as const, label: 'Bloquear nuevo acceso' },
@@ -675,19 +662,19 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                     key={option.value}
                     style={{
                       paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1,
-                      borderColor:     sessionLimitPolicy === option.value ? C.cyan : C.border,
-                      backgroundColor: sessionLimitPolicy === option.value ? C.cyanSoft : (isDark ? C.lift : '#fff'),
+                      borderColor:     sessionLimitPolicy === option.value ? theme.info : theme.border,
+                      backgroundColor: sessionLimitPolicy === option.value ? theme.infoSoft : (isDark ? theme.liftBg : '#fff'),
                     }}
                     onPress={() => setSessionLimitPolicy(option.value)}
                   >
-                    <Text style={{ color: sessionLimitPolicy === option.value ? C.cyan : (isDark ? C.textDim : '#240046'), fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{option.label}</Text>
+                    <Text style={{ color: sessionLimitPolicy === option.value ? theme.info : (isDark ? theme.textSec : '#240046'), fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{option.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </SectionCard>
 
             <SectionCard title="Plan y servicio" subtitle={isAbonado ? 'Suscripción mensual ISP. Genera contrato.' : 'Acceso one-shot OTT. Sin contrato.'}>
-              <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 10, fontFamily: FONT_FAMILY.bodyBold }}>PLAN DESDE CATÁLOGO</Text>
+              <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 10, fontFamily: FONT_FAMILY.bodyBold }}>PLAN DESDE CATÁLOGO</Text>
 
               {activePlans.length > 0 ? (
                 <>
@@ -698,13 +685,13 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                         style={{
                           minWidth: 150, paddingHorizontal: 12, paddingVertical: 10,
                           borderRadius: 10, borderWidth: 1,
-                          borderColor:     planId === plan.id ? C.cyan : C.border,
-                          backgroundColor: planId === plan.id ? C.cyanSoft : (isDark ? C.lift : '#fff'),
+                          borderColor:     planId === plan.id ? theme.info : theme.border,
+                          backgroundColor: planId === plan.id ? theme.infoSoft : (isDark ? theme.liftBg : '#fff'),
                         }}
                         onPress={() => setPlanId(plan.id)}
                       >
-                        <Text style={{ color: planId === plan.id ? C.cyan : (isDark ? C.text : '#240046'), fontSize: 15, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{plan.nombre}</Text>
-                        <Text style={{ color: planId === plan.id ? C.cyan : (isDark ? C.textDim : '#240046'), fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
+                        <Text style={{ color: planId === plan.id ? theme.info : (isDark ? theme.text : '#240046'), fontSize: 15, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{plan.nombre}</Text>
+                        <Text style={{ color: planId === plan.id ? theme.info : (isDark ? theme.textSec : '#240046'), fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
                           {plan.maxDevices} disp. · {plan.videoQuality} · {plan.moneda} {plan.precio}
                         </Text>
                       </TouchableOpacity>
@@ -712,49 +699,49 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                   </View>
 
                   {selectedCatalogPlan ? (
-                    <View style={{ backgroundColor: isDark ? C.surfaceAlt : '#fff', borderRadius: 10, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', padding: 12, marginBottom: 12 }}>
-                      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 15, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
-                      <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginTop: 4, fontFamily: FONT_FAMILY.body }}>{selectedCatalogPlan.descripcion}</Text>
+                    <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 10, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 12, marginBottom: 12 }}>
+                      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 15, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
+                      <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 4, fontFamily: FONT_FAMILY.body }}>{selectedCatalogPlan.descripcion}</Text>
                     </View>
                   ) : null}
                 </>
               ) : (
-                <View style={{ backgroundColor: C.roseSoft, borderRadius: 10, borderWidth: 1, borderColor: `${C.rose}40`, padding: 12, marginBottom: 12 }}>
-                  <Text style={{ color: C.rose, fontSize: 15, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
+                <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 10, borderWidth: 1, borderColor: `${theme.danger}40`, padding: 12, marginBottom: 12 }}>
+                  <Text style={{ color: theme.danger, fontSize: 15, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
                 </View>
               )}
 
               {/* Contrato — solo para Abonados */}
               {isAbonado ? (
                 <>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CONTRATO / CÓDIGO</Text>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CONTRATO / CÓDIGO</Text>
                   <TextInput
                     style={{ ...baseInput, opacity: contractLocked ? 0.6 : 1 }}
                     placeholder="Ej: CONTRACT-001"
-                    placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.45)'}
+                    placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'}
                     value={contrato}
                     onChangeText={setContrato}
                     editable={!contractLocked}
                     autoCapitalize="characters"
                   />
                   {contractLocked ? (
-                    <Text style={{ color: C.amber, fontSize: 15, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
+                    <Text style={{ color: theme.warning, fontSize: 15, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
                   ) : null}
                 </>
               ) : (
-                <View style={{ backgroundColor: isDark ? C.surfaceAlt : '#fff', borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', padding: 10 }}>
-                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, fontFamily: FONT_FAMILY.body }}>Los clientes one-shot no generan número de contrato.</Text>
+                <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 10 }}>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontFamily: FONT_FAMILY.body }}>Los clientes one-shot no generan número de contrato.</Text>
                 </View>
               )}
             </SectionCard>
 
-            {error ? <Text style={{ color: C.rose, fontSize: 16 }}>{error}</Text> : null}
+            {error ? <Text style={{ color: theme.danger, fontSize: 16 }}>{error}</Text> : null}
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', alignItems: 'center', backgroundColor: isDark ? 'transparent' : '#fff' }} onPress={onClose}>
-                <Text style={{ color: isDark ? C.textDim : '#240046', fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>Cancelar</Text>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', alignItems: 'center', backgroundColor: isDark ? 'transparent' : '#fff' }} onPress={onClose}>
+                <Text style={{ color: isDark ? theme.textSec : '#240046', fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: C.accent, alignItems: 'center', opacity: loading ? 0.7 : 1 }} onPress={handleSave} disabled={loading}>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: theme.accent, alignItems: 'center', opacity: loading ? 0.7 : 1 }} onPress={handleSave} disabled={loading}>
                 {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>Guardar</Text>}
               </TouchableOpacity>
             </View>
@@ -824,7 +811,7 @@ function UserDetailModal({
   onSessionsUpdated,
   onRequestConfirm,
 }: UserDetailModalProps) {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const forceDarkHeaderSection = true;
   const [user, setUser] = useState<AdminUser | null>(null);
   const [plan, setPlan] = useState<AdminUserPlan | null>(null);
@@ -839,7 +826,7 @@ function UserDetailModal({
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(130,130,130,0.18)',
     borderRadius: 9,
-    color: isDark ? C.text : '#240046',
+    color: isDark ? theme.text : '#240046',
     fontSize: 17,
     paddingHorizontal: 14,
     paddingVertical: 11,
@@ -918,9 +905,9 @@ function UserDetailModal({
     }
   };
 
-  const roleMeta = user ? getRoleMeta(user.role) : null;
-  const userTypeMeta = user ? getUserTypeMeta(user) : null;
-  const statusMeta = user ? getStatusMeta(user.status) : null;
+  const roleMeta = user ? getRoleMeta(user.role, theme) : null;
+  const userTypeMeta = user ? getUserTypeMeta(user, theme) : null;
+  const statusMeta = user ? getStatusMeta(user.status, theme) : null;
 
   useEffect(() => {
     if (!visible || !accessToken || !userId) return;
@@ -1071,14 +1058,14 @@ function UserDetailModal({
           <ScrollView contentContainerStyle={{ padding: 22, gap: 14 }}>
             {loading ? (
               <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-                <ActivityIndicator color={C.accent} size="large" />
-                <Text style={{ color: isDark ? C.textDim : '#240046', marginTop: 12 }}>Cargando detalle del usuario…</Text>
+                <ActivityIndicator color={theme.accent} size="large" />
+                <Text style={{ color: isDark ? theme.textSec : '#240046', marginTop: 12 }}>Cargando detalle del usuario…</Text>
               </View>
             ) : user ? (
               <>
                 {feedback ? (
-                  <View style={{ borderRadius: 10, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
-                    <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 16, fontWeight: '700' }}>{feedback.message}</Text>
+                  <View style={{ borderRadius: 10, padding: 12, backgroundColor: feedback.type === 'success' ? theme.successSoft : theme.dangerSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${theme.success}40` : `${theme.danger}40` }}>
+                    <Text style={{ color: feedback.type === 'success' ? theme.success : theme.danger, fontSize: 16, fontWeight: '700' }}>{feedback.message}</Text>
                   </View>
                 ) : null}
 
@@ -1099,44 +1086,44 @@ function UserDetailModal({
                       {isEditingProfile ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700' }}>NOMBRES Y APELLIDOS *</Text>
+                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>NOMBRES Y APELLIDOS *</Text>
                           <TextInput style={baseInput} value={editPayload.nombre} onChangeText={v => setEditPayload({ ...editPayload, nombre: v })} />
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700' }}>CÉDULA DE IDENTIDAD</Text>
+                            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>CÉDULA DE IDENTIDAD</Text>
                             <TextInput style={baseInput} value={editPayload.idNumber} onChangeText={v => setEditPayload({ ...editPayload, idNumber: v })} />
                           </View>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700' }}>CORREO ELECTRÓNICO *</Text>
+                            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>CORREO ELECTRÓNICO *</Text>
                             <TextInput style={baseInput} value={editPayload.email} onChangeText={v => setEditPayload({ ...editPayload, email: v })} keyboardType="email-address" autoCapitalize="none" />
                           </View>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700' }}>TELÉFONO CELULAR</Text>
+                            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>TELÉFONO CELULAR</Text>
                             <TextInput style={baseInput} value={editPayload.telefono} onChangeText={v => setEditPayload({ ...editPayload, telefono: v })} keyboardType="phone-pad" />
                           </View>
                           <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700' }}>DIRECCIÓN</Text>
+                            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>DIRECCIÓN</Text>
                             <TextInput style={baseInput} value={editPayload.address} onChangeText={v => setEditPayload({ ...editPayload, address: v })} />
                           </View>
                         </View>
 
-                        <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>ESTADO</Text>
+                        <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>ESTADO</Text>
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           {(['active', 'suspended', 'inactive'] as const).map(estado => (
                             <TouchableOpacity
                               key={estado}
                               style={{
                                 flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1,
-                                borderColor: editPayload.status === estado ? C.accent : (isDark ? C.border : 'rgba(130,130,130,0.18)'),
-                                backgroundColor: editPayload.status === estado ? C.accentSoft : (isDark ? 'transparent' : '#fff'),
+                                borderColor: editPayload.status === estado ? theme.accent : (isDark ? theme.border : 'rgba(130,130,130,0.18)'),
+                                backgroundColor: editPayload.status === estado ? theme.accentSoft : (isDark ? 'transparent' : '#fff'),
                                 alignItems: 'center'
                               }}
                               onPress={() => setEditPayload({ ...editPayload, status: estado })}
                             >
-                              <Text style={{ color: editPayload.status === estado ? C.accentLight : (isDark ? C.text : '#240046'), fontSize: 15 }}>{estado === 'active' ? 'Activo' : estado === 'suspended' ? 'Suspendido' : 'Inactivo'}</Text>
+                              <Text style={{ color: editPayload.status === estado ? theme.accentLight : (isDark ? theme.text : '#240046'), fontSize: 15 }}>{estado === 'active' ? 'Activo' : estado === 'suspended' ? 'Suspendido' : 'Inactivo'}</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -1180,13 +1167,13 @@ function UserDetailModal({
                 {activeTab === 'seguridad' ? (
                   <SectionCard title="Seguridad" subtitle="Role/Permission y eventos críticos del acceso.">
                     <View style={{ gap: 8 }}>
-                      <Text style={{ color: C.textDim, fontSize: 15 }}>Rol actual: <Text style={{ color: C.text }}>Usuario</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 15 }}>MFA: <Text style={{ color: C.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 15 }}>Bloqueo: <Text style={{ color: C.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
-                      <Text style={{ color: C.textDim, fontSize: 15 }}>Cambio obligatorio de contraseña: <Text style={{ color: C.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
+                      <Text style={{ color: theme.textSec, fontSize: 15 }}>Rol actual: <Text style={{ color: theme.text }}>Usuario</Text></Text>
+                      <Text style={{ color: theme.textSec, fontSize: 15 }}>MFA: <Text style={{ color: theme.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
+                      <Text style={{ color: theme.textSec, fontSize: 15 }}>Bloqueo: <Text style={{ color: theme.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
+                      <Text style={{ color: theme.textSec, fontSize: 15 }}>Cambio obligatorio de contraseña: <Text style={{ color: theme.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
                     </View>
                     {canWrite ? (
-                      <TouchableOpacity style={{ marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent }} onPress={askPasswordReset}>
+                      <TouchableOpacity style={{ marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: theme.accent }} onPress={askPasswordReset}>
                         <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Generar reset seguro</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -1203,8 +1190,8 @@ function UserDetailModal({
                       </View>
                       {canWrite ? (
                         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(209,16,90,0.3)', backgroundColor: 'rgba(209,16,90,0.08)' }} onPress={askRevokeAllSessions}>
-                          <FontAwesome name="times" size={11} color={C.rose} />
-                          <Text style={{ color: C.rose, fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cerrar todas</Text>
+                          <FontAwesome name="times" size={11} color={theme.danger} />
+                          <Text style={{ color: theme.danger, fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cerrar todas</Text>
                         </TouchableOpacity>
                       ) : null}
                     </View>
@@ -1232,18 +1219,18 @@ function UserDetailModal({
                       </View>
                     ) : (
                       sessions.map((session) => (
-                        <View key={session.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: isDark ? C.border : 'rgba(130,130,130,0.18)' }}>
+                        <View key={session.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: isDark ? theme.border : 'rgba(130,130,130,0.18)' }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: isDark ? C.text : '#240046', fontSize: 16, fontWeight: '700' }}>{session.deviceId}</Text>
-                            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 15, marginTop: 4 }}>Canal: {session.audience} · Inicio: {fmtDate(session.createdAt)} · Expira: {fmtDate(session.expiresAt)}</Text>
+                            <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 16, fontWeight: '700' }}>{session.deviceId}</Text>
+                            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 4 }}>Canal: {session.audience} · Inicio: {fmtDate(session.createdAt)} · Expira: {fmtDate(session.expiresAt)}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: session.status === 'active' ? C.greenSoft : session.status === 'revoked' ? C.roseSoft : C.amberSoft }}>
-                              <Text style={{ color: session.status === 'active' ? C.green : session.status === 'revoked' ? C.rose : C.amber, fontSize: 13, fontWeight: '700' }}>{session.status}</Text>
+                            <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: session.status === 'active' ? theme.successSoft : session.status === 'revoked' ? theme.dangerSoft : theme.warningSoft }}>
+                              <Text style={{ color: session.status === 'active' ? theme.success : session.status === 'revoked' ? theme.danger : theme.warning, fontSize: 13, fontWeight: '700' }}>{session.status}</Text>
                             </View>
                             {canWrite ? (
-                              <TouchableOpacity style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: isDark ? C.surface : '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)', opacity: session.status === 'active' ? 1 : 0.5 }} disabled={session.status !== 'active'} onPress={() => askRevokeSession(session)}>
-                                <FontAwesome name="power-off" size={13} color={session.status === 'active' ? C.rose : C.muted} />
+                              <TouchableOpacity style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: isDark ? theme.cardBg : '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', opacity: session.status === 'active' ? 1 : 0.5 }} disabled={session.status !== 'active'} onPress={() => askRevokeSession(session)}>
+                                <FontAwesome name="power-off" size={13} color={session.status === 'active' ? theme.danger : theme.textMuted} />
                               </TouchableOpacity>
                             ) : null}
                           </View>
@@ -1266,31 +1253,31 @@ function UserDetailModal({
                     {isEditingPlan ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700' }}>CÓDIGO DE CONTRATO</Text>
+                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>CÓDIGO DE CONTRATO</Text>
                           <TextInput style={baseInput} value={editPayload.contrato} onChangeText={v => setEditPayload({ ...editPayload, contrato: v })} />
                         </View>
-                        <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
+                        <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
                         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                           {plans.map(p => (
                             <TouchableOpacity
                               key={p.id}
                               style={{
                                 padding: 12, borderRadius: 8, borderWidth: 1, minWidth: 150,
-                                borderColor: editPayload.planId === p.id ? C.accent : (isDark ? C.border : 'rgba(130,130,130,0.18)'),
-                                backgroundColor: editPayload.planId === p.id ? C.accentSoft : (isDark ? C.surface : '#fff'),
+                                borderColor: editPayload.planId === p.id ? theme.accent : (isDark ? theme.border : 'rgba(130,130,130,0.18)'),
+                                backgroundColor: editPayload.planId === p.id ? theme.accentSoft : (isDark ? theme.cardBg : '#fff'),
                               }}
                               onPress={() => setEditPayload({ ...editPayload, planId: p.id })}
                             >
-                              <Text style={{ color: editPayload.planId === p.id ? C.accentLight : (isDark ? C.text : '#240046'), fontSize: 15, fontWeight: '700' }}>{p.nombre}</Text>
-                              <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, marginTop: 4 }}>Dispositivos: {p.maxDevices} máx.</Text>
+                              <Text style={{ color: editPayload.planId === p.id ? theme.accentLight : (isDark ? theme.text : '#240046'), fontSize: 15, fontWeight: '700' }}>{p.nombre}</Text>
+                              <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, marginTop: 4 }}>Dispositivos: {p.maxDevices} máx.</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
-                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: isDark ? 'transparent' : '#fff', borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)' }} onPress={() => setIsEditingPlan(false)}>
-                            <Text style={{ color: isDark ? C.text : '#240046', fontSize: 15, fontWeight: '700' }}>Cancelar</Text>
+                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: isDark ? 'transparent' : '#fff', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)' }} onPress={() => setIsEditingPlan(false)}>
+                            <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 15, fontWeight: '700' }}>Cancelar</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: C.accent, opacity: isSaving ? 0.7 : 1 }} onPress={handleSavePlan}>
+                          <TouchableOpacity disabled={isSaving} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: theme.accent, opacity: isSaving ? 0.7 : 1 }} onPress={handleSavePlan}>
                             <Text style={{ color: '#000', fontSize: 15, fontWeight: '800' }}>{isSaving ? 'Guardando...' : 'Guardar Plan'}</Text>
                           </TouchableOpacity>
                         </View>
@@ -1335,7 +1322,7 @@ function UserDetailModal({
                               <Text style={{ color: isDark ? '#FFB800' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cambiar plan</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(209,16,90,0.25)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(209,16,90,0.06)' : '#fff', alignItems: 'center' }}>
-                              <Text style={{ color: C.rose, fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cancelar suscripción</Text>
+                              <Text style={{ color: theme.danger, fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cancelar suscripción</Text>
                             </TouchableOpacity>
                           </View>
                         )}
@@ -1346,7 +1333,7 @@ function UserDetailModal({
               </>
             ) : (
               <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-                <Text style={{ color: isDark ? C.textDim : '#240046' }}>No hay detalle disponible para este usuario.</Text>
+                <Text style={{ color: isDark ? theme.textSec : '#240046' }}>No hay detalle disponible para este usuario.</Text>
               </View>
             )}
           </ScrollView>
@@ -1445,8 +1432,8 @@ export default function CmsUsers() {
         user.telefono ?? '',
         user.contrato ?? '',
         user.plan,
-        getRoleMeta(user.role).label,
-        getUserTypeMeta(user).label,
+        getRoleMeta(user.role, theme).label,
+        getUserTypeMeta(user, theme).label,
       ].some((value) => value.toLowerCase().includes(query));
     });
   }, [users, search, statusFilter, tipoFilter]);
@@ -1503,8 +1490,8 @@ export default function CmsUsers() {
           user.idNumber ?? '—',
           user.email,
           user.telefono ?? '—',
-          getUserTypeMeta(user).label,
-          getStatusMeta(user.status).label,
+          getUserTypeMeta(user, theme).label,
+          getStatusMeta(user.status, theme).label,
           user.plan ?? '—',
           `${user.sesiones}/${user.maxDevices}`,
           fmtDate(user.createdAt),
@@ -1607,18 +1594,18 @@ export default function CmsUsers() {
     <CmsShell breadcrumbs={[{ label: 'Usuarios', path: '/cms/users' }, { label: 'Usuarios' }]} pageIcon="users">
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', marginBottom: 20, gap: 10, flexWrap: 'wrap' }}>
-            {/* Exportar Excel — outline C.accent */}
+            {/* Exportar Excel — outline theme.accent */}
             <TouchableOpacity
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 8,
                 backgroundColor: 'transparent',
                 borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
-                borderWidth: 1, borderColor: `${C.accent}66`,
+                borderWidth: 1, borderColor: `${theme.accent}66`,
               }}
               onPress={exportExcel}
             >
-              <FontAwesome name="download" size={13} color={C.accent} />
-              <Text style={{ color: C.accent, fontWeight: '700', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
+              <FontAwesome name="download" size={13} color={theme.accent} />
+              <Text style={{ color: theme.accent, fontWeight: '700', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>Exportar</Text>
             </TouchableOpacity>
             {canWrite ? (
               /* Crear usuario — accent color */
@@ -1635,7 +1622,7 @@ export default function CmsUsers() {
               >
                 {isDark ? (
                   <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
-                    <View style={{ flex: 1, backgroundColor: C.accent }} />
+                    <View style={{ flex: 1, backgroundColor: theme.accent }} />
                   </View>
                 ) : null}
                 <FontAwesome name="plus" size={13} color={isDark ? '#1A1A2E' : '#240046'} />
@@ -1645,22 +1632,22 @@ export default function CmsUsers() {
         </View>
 
         {feedback ? (
-          <View style={{ marginBottom: 16, borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${C.green}40` : `${C.rose}40` }}>
-            <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 16, fontWeight: '700' }}>{feedback.message}</Text>
+          <View style={{ marginBottom: 16, borderRadius: 12, padding: 12, backgroundColor: feedback.type === 'success' ? theme.successSoft : theme.dangerSoft, borderWidth: 1, borderColor: feedback.type === 'success' ? `${theme.success}40` : `${theme.danger}40` }}>
+            <Text style={{ color: feedback.type === 'success' ? theme.success : theme.danger, fontSize: 16, fontWeight: '700' }}>{feedback.message}</Text>
           </View>
         ) : null}
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Total',     value: stats.total,       icon: 'users',       color: C.accent, bg: C.accentSoft, warn: false },
-            { label: 'Abonados',  value: stats.subscribers, icon: 'play-circle', color: C.cyan,   bg: C.cyanSoft,   warn: false },
-            { label: 'Clientes',  value: stats.clients,     icon: 'shopping-bag',color: C.amber,  bg: C.accentSoft, warn: false },
+            { label: 'Total',     value: stats.total,       icon: 'users',       color: theme.accent, bg: theme.accentSoft, warn: false },
+            { label: 'Abonados',  value: stats.subscribers, icon: 'play-circle', color: theme.info,   bg: theme.infoSoft,   warn: false },
+            { label: 'Clientes',  value: stats.clients,     icon: 'shopping-bag',color: theme.warning,  bg: theme.accentSoft, warn: false },
           ].map((card) => (
             <View key={card.label} style={{
               flex: 1, minWidth: 180,
-              backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+              backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
               borderRadius: 14, padding: 16,
-              borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
+              borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)',
               flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
               shadowColor: '#240046',
               shadowOpacity: isDark ? 0 : 0.08,
@@ -1672,28 +1659,28 @@ export default function CmsUsers() {
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={card.icon as never} size={16} color={card.color} />
                 </View>
-                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
+                <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {card.warn ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.roseSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <FontAwesome name="warning" size={10} color={C.rose} />
-                    <Text style={{ color: C.rose, fontSize: 11, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.dangerSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <FontAwesome name="warning" size={10} color={theme.danger} />
+                    <Text style={{ color: theme.danger, fontSize: 11, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
                   </View>
                 ) : null}
-                <Text style={{ color: isDark ? C.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
+                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
               </View>
             </View>
           ))}
         </View>
 
         <View style={{
-          backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+          backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
           borderRadius: 14,
           paddingHorizontal: 16,
           paddingVertical: 14,
           borderWidth: 1,
-          borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
+          borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)',
           marginBottom: 16,
           zIndex: 50,
           elevation: 50,
@@ -1707,25 +1694,25 @@ export default function CmsUsers() {
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)',
+              backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)',
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
+              borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)',
               paddingHorizontal: 12,
               flex: 1,
               minWidth: 240,
             }}>
-              <FontAwesome name='search' size={12} color={isDark ? C.muted : '#240046'} />
+              <FontAwesome name='search' size={12} color={isDark ? theme.textMuted : '#240046'} />
               <TextInput
-                style={{ flex: 1, color: isDark ? C.text : '#240046', paddingVertical: 10, paddingHorizontal: 10, fontSize: 16, fontFamily: 'Montserrat-SemiBold', ...webInput }}
+                style={{ flex: 1, color: isDark ? theme.text : '#240046', paddingVertical: 10, paddingHorizontal: 10, fontSize: 16, fontFamily: 'Montserrat-SemiBold', ...webInput }}
                 placeholder="Buscar nombre, email, plan..."
-                placeholderTextColor={isDark ? C.muted : theme.textMuted}
+                placeholderTextColor={isDark ? theme.textMuted : theme.textMuted}
                 value={search}
                 onChangeText={setSearch}
               />
               {search ? (
                 <TouchableOpacity onPress={() => setSearch('')}>
-                  <FontAwesome name="times-circle" size={14} color={isDark ? C.muted : theme.textMuted} />
+                  <FontAwesome name="times-circle" size={14} color={isDark ? theme.textMuted : theme.textMuted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -1763,13 +1750,13 @@ export default function CmsUsers() {
                     paddingHorizontal: 10,
                     paddingVertical:    6,
                     borderRadius:       6,
-                    backgroundColor:   pageSize === size ? C.accent : 'transparent',
+                    backgroundColor:   pageSize === size ? theme.accent : 'transparent',
                     borderWidth:        pageSize === size ? 0 : 1,
-                    borderColor:       isDark ? C.border : 'rgba(130,130,130,0.34)',
+                    borderColor:       isDark ? theme.border : 'rgba(130,130,130,0.34)',
                   }}
                   onPress={() => setPageSize(size)}
                 >
-                  <Text style={{ color: pageSize === size ? '#1A1A2E' : (isDark ? C.textDim : theme.textMuted), fontSize: 15, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
+                  <Text style={{ color: pageSize === size ? '#1A1A2E' : (isDark ? theme.textSec : theme.textMuted), fontSize: 15, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{size}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1777,11 +1764,11 @@ export default function CmsUsers() {
             {/* Active filter count + clear */}
             {(statusFilter !== 'all' || tipoFilter !== 'all' || search) ? (
               <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: C.roseSoft, borderWidth: 1, borderColor: `${C.rose}40` }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: theme.dangerSoft, borderWidth: 1, borderColor: `${theme.danger}40` }}
                 onPress={() => { setSearch(''); setStatusFilter('all'); setTipoFilter('all'); }}
               >
-                <FontAwesome name="times" size={10} color={C.rose} />
-                <Text style={{ color: C.rose, fontSize: 13, fontWeight: '700' }}>Limpiar</Text>
+                <FontAwesome name="times" size={10} color={theme.danger} />
+                <Text style={{ color: theme.danger, fontSize: 13, fontWeight: '700' }}>Limpiar</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1789,19 +1776,19 @@ export default function CmsUsers() {
 
         {loading ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
-            <Text style={{ color: C.muted, marginTop: 14, fontSize: 17 }}>Cargando usuarios…</Text>
+            <ActivityIndicator color={theme.accent} size="large" />
+            <Text style={{ color: theme.textMuted, marginTop: 14, fontSize: 17 }}>Cargando usuarios…</Text>
           </View>
         ) : filteredUsers.length === 0 ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <FontAwesome name="user-times" size={36} color={C.muted} />
-            <Text style={{ color: C.muted, fontSize: 17, marginTop: 12 }}>Sin resultados</Text>
-            <Text style={{ color: C.textDim, fontSize: 15, marginTop: 6 }}>Ajusta filtros o crea un nuevo usuario si tienes permisos.</Text>
+            <FontAwesome name="user-times" size={36} color={theme.textMuted} />
+            <Text style={{ color: theme.textMuted, fontSize: 17, marginTop: 12 }}>Sin resultados</Text>
+            <Text style={{ color: theme.textSec, fontSize: 15, marginTop: 6 }}>Ajusta filtros o crea un nuevo usuario si tienes permisos.</Text>
           </View>
         ) : (
           <>
             {/* Table header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)', borderRadius: 8, marginBottom: 4, borderWidth: isDark ? 0 : 1, borderColor: isDark ? 'transparent' : 'rgba(130,130,130,0.34)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', borderRadius: 8, marginBottom: 4, borderWidth: isDark ? 0 : 1, borderColor: isDark ? 'transparent' : 'rgba(130,130,130,0.34)' }}>
               {[
                 { label: 'CONTRATO', flex: 1.2 },
                 { label: 'NOMBRE',   flex: 2   },
@@ -1814,7 +1801,7 @@ export default function CmsUsers() {
               ].map((col) => (
                 <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
                   <Text style={{
-                    color: isDark ? C.muted : '#240046',
+                    color: isDark ? theme.textMuted : '#240046',
                     fontSize: 11, fontWeight: '800',
                     letterSpacing: 1.2,
                     textTransform: 'uppercase',
@@ -1828,37 +1815,37 @@ export default function CmsUsers() {
 
             {/* Table rows */}
             {visibleUsers.map((user) => {
-              const roleMeta = getRoleMeta(user.role);
-              const statusMeta = getStatusMeta(user.status);
+              const roleMeta = getRoleMeta(user.role, theme);
+              const statusMeta = getStatusMeta(user.status, theme);
               const isMenuOpen = actionMenuUserId === user.id;
 
               return (
                 <View key={user.id} style={{
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
-                  backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
+                  backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
                   borderRadius: 8, marginBottom: 3,
                   borderBottomWidth: 1,
-                  borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
+                  borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)',
                 }}>
                   {/* CONTRATO */}
                   <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
-                    <Text style={{ color: user.contrato ? (isDark ? C.text : theme.text) : (isDark ? C.muted : theme.textMuted), fontSize: 15, fontWeight: user.contrato ? '600' : '400', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.contrato || '—'}</Text>
+                    <Text style={{ color: user.contrato ? (isDark ? theme.text : theme.text) : (isDark ? theme.textMuted : theme.textMuted), fontSize: 15, fontWeight: user.contrato ? '600' : '400', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.contrato || '—'}</Text>
                   </View>
 
                   {/* NOMBRE — avatar consistente + name */}
                   <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: `${C.accent}40` }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
                       <Text style={{ color: AVATAR_TEXT, fontSize: 13, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{initials(user.nombre)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 16, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.nombre}</Text>
-                      <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 11, marginTop: 2, fontFamily: 'Montserrat-SemiBold' }}>{getUserTypeMeta(user).label}</Text>
+                      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 16, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.nombre}</Text>
+                      <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2, fontFamily: 'Montserrat-SemiBold' }}>{getUserTypeMeta(user, theme).label}</Text>
                     </View>
                   </View>
 
                   {/* TIPO — derivado de isSubscriber (fuente: BD) */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    {(() => { const t = getTipoMeta(user); return (
+                    {(() => { const t = getTipoMeta(user, theme); return (
                       <View style={{ backgroundColor: t.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
                         <Text style={{ color: t.color, fontSize: 13, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{t.label}</Text>
                       </View>
@@ -1874,19 +1861,19 @@ export default function CmsUsers() {
 
                   {/* PLAN — accent color */}
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <View style={{ backgroundColor: C.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+                    <View style={{ backgroundColor: theme.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
                       <Text style={{ color: '#1A1A2E', fontSize: 11, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
                     </View>
                   </View>
 
                   {/* SESIONES */}
                   <View style={{ flex: 0.7, paddingHorizontal: 4 }}>
-                    <Text style={{ color: isDark ? C.text : '#240046', fontSize: 15, fontWeight: '700' }}>{user.sesiones}/{user.maxDevices}</Text>
+                    <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 15, fontWeight: '700' }}>{user.sesiones}/{user.maxDevices}</Text>
                   </View>
 
                   {/* EMAIL */}
                   <View style={{ flex: 1.5, paddingHorizontal: 4 }}>
-                    <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13 }} numberOfLines={1}>{user.email}</Text>
+                    <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13 }} numberOfLines={1}>{user.email}</Text>
                   </View>
 
                   {/* Inline Actions */}
@@ -1924,7 +1911,7 @@ export default function CmsUsers() {
         )}
 
         {!loading && filteredUsers.length > 0 ? (
-          <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 15, marginTop: 12, textAlign: 'center' }}>
+          <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 15, marginTop: 12, textAlign: 'center' }}>
             Mostrando {Math.min(visibleUsers.length, filteredUsers.length)} de {filteredUsers.length} usuarios
           </Text>
         ) : null}
