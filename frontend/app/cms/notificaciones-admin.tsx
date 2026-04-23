@@ -47,19 +47,7 @@ export default function NotificacionesAdminPage() {
           ))}
         </View>
 
-        <View style={{
-          marginTop: 32,
-          backgroundColor: theme.cardBg,
-          borderRadius: 10,
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          borderWidth: 1,
-          borderColor: theme.border,
-        }}>
-            <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
-            EN DESARROLLO
-          </Text>
-        </View>
+
       </ScrollView>
     </CmsShell>
   );
