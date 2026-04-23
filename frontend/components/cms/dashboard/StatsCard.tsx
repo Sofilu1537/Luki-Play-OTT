@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MiniChart from '../ui/MiniChart';
 import { FONT_FAMILY } from '../../../styles/typography';
@@ -16,6 +16,8 @@ interface StatsCardProps {
   data?:         number[];
   subtitle?:     string;
   labelColor?:   string;
+  minWidth?:     number;
+  mode?:         'default' | 'tv';
 }
 
 export default function StatsCard({
@@ -28,34 +30,45 @@ export default function StatsCard({
   data,
   subtitle,
   labelColor,
+  minWidth,
+  mode = 'default',
 }: StatsCardProps) {
   const { isDark, theme } = useTheme();
-  const cardTextColor = isDark ? C.text : theme.text;
-  const iconBorderColor = `${color}35`;
+  const cardTextColor = isDark ? C.text : '#240046';
+  const iconBorderColor = isDark ? `${color}35` : 'rgba(130,130,130,0.18)';
+  const isTv = mode === 'tv';
+  const softUiShadow = !isDark && Platform.OS === 'web'
+    ? ({ boxShadow: theme.softUiShadow } as any)
+    : {};
+  const softUiShadowDark = isDark && Platform.OS === 'web'
+    ? ({ boxShadow: theme.softUiShadowDark } as any)
+    : {};
 
   return (
     <View
       style={{
-        flex:            1,
-        minWidth:        200,
-        backgroundColor: isDark ? C.bgTertiary : 'rgba(255,255,255,0.92)',
-        borderRadius:    14,
-        padding:         18,
-        margin:          5,
-        borderWidth:     1,
-        borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
-        shadowColor:     '#240046',
-        shadowOpacity:   isDark ? 0 : 0.08,
-        shadowRadius:    isDark ? 0 : 20,
-        shadowOffset:    { width: 0, height: 6 },
-        elevation:       isDark ? 0 : 2,
+        flex: 1,
+        minWidth: minWidth ?? 200,
+        backgroundColor: isDark ? C.bgTertiary : '#fff',
+        borderRadius: 14,
+        padding: isTv ? 20 : 18,
+        margin: 5,
+        borderWidth: 1,
+        borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+        shadowColor: isDark ? '#000000' : '#A8B0C7',
+        shadowOpacity: isDark ? 0.34 : 0.18,
+        shadowRadius: isDark ? 16 : 12,
+        shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
+        elevation: isDark ? 10 : 6,
+        ...softUiShadow,
+        ...softUiShadowDark,
       }}
     >
       {/* Label + icon */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <Text style={{
           color:         labelColor ?? cardTextColor,
-          fontSize:      10.5,
+          fontSize:      isTv ? 11.5 : 10.5,
           fontWeight:    '700',
           letterSpacing: 1.0,
           textTransform: 'uppercase',
@@ -75,14 +88,14 @@ export default function StatsCard({
           borderWidth:     1,
           borderColor:     iconBorderColor,
         }}>
-          <FontAwesome name={icon} size={16} color={color} />
+          <FontAwesome name={icon} size={isTv ? 18 : 16} color={color} />
         </View>
       </View>
 
       {/* Value */}
       <Text style={{
         color:         cardTextColor,
-        fontSize:      32,
+        fontSize:      isTv ? 36 : 32,
         fontWeight:    '800',
         letterSpacing: -0.5,
         marginBottom:  subtitle ? 2 : 10,
@@ -95,7 +108,7 @@ export default function StatsCard({
       {subtitle ? (
         <Text style={{
           color:        cardTextColor,
-          fontSize:     12,
+          fontSize:     isTv ? 13 : 12,
           marginBottom: 10,
           fontFamily:   FONT_FAMILY.body,
         }}>
@@ -107,7 +120,7 @@ export default function StatsCard({
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8 }}>
         <Text style={{
           color:      cardTextColor,
-          fontSize:   12,
+          fontSize:   isTv ? 13 : 12,
           fontWeight: '700',
           fontFamily: FONT_FAMILY.bodySemiBold,
           flex:       1,
@@ -115,7 +128,7 @@ export default function StatsCard({
           {trend}
         </Text>
         {data && data.length > 0 && (
-          <MiniChart data={data} color={color} height={24} width={60} />
+          <MiniChart data={data} color={color} height={isTv ? 28 : 24} width={isTv ? 72 : 60} />
         )}
       </View>
     </View>

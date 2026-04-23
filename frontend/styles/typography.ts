@@ -25,3 +25,18 @@ export const TYPE_SCALE = {
   overline: { fontSize: 10, fontWeight: '800' as const, lineHeight: 12, fontFamily: 'Montserrat-Bold', letterSpacing: 1.2, textTransform: 'uppercase' as const },
   badge:    { fontSize: 9,  fontWeight: '800' as const, lineHeight: 10, fontFamily: 'Montserrat-Bold'     },
 } as const;
+
+/**
+ * Escala para UI CMS en modo claro alineada al dashboard.
+ * Se usa en tarjetas/modales de detalle para mantener consistencia visual.
+ */
+export const CMS_LIGHT_DASHBOARD_TYPO = {
+  sectionTitle:    15,
+  sectionSubtitle: 12,
+  tabLabel:        13.5,
+  fieldLabel:      10.5,
+  fieldValue:      15,
+  body:            13,
+  bodyLarge:       15,
+  button:          13,
+} as const;

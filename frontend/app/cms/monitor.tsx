@@ -7,6 +7,7 @@ import { ResizeMode, Video } from 'expo-av';
 import type { AdminCanal } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 type PlaybackState = 'idle' | 'playing' | 'error';
 
@@ -157,15 +158,16 @@ function WebMonitorPreview({ url, onPlaybackOk, onPlaybackError }: { url: string
 }
 
 function SummaryCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
+  const { isDark } = useTheme();
   return (
-    <View style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 38, height: 38, backgroundColor: `${color}22`, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
           <FontAwesome name={icon} size={16} color={color} />
         </View>
-        <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{label}</Text>
       </View>
-      <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>{value}</Text>
+      <Text style={{ color: isDark ? 'white' : '#240046', fontSize: 22, fontWeight: '800' }}>{value}</Text>
     </View>
   );
 }
@@ -288,6 +290,7 @@ function ChannelMonitorTile({ canal, playback, onPlaybackOk, onPlaybackError }: 
 }
 
 export default function CmsMonitor() {
+  const { isDark } = useTheme();
   const { profile } = useCmsStore();
   const router = useRouter();
 
@@ -345,39 +348,39 @@ export default function CmsMonitor() {
         </View>
 
         {canales.length === 0 ? (
-          <View style={{ backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 48, alignItems: 'center', gap: 14 }}>
+          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', padding: 48, alignItems: 'center', gap: 14 }}>
             <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: 'rgba(91,91,214,0.14)', alignItems: 'center', justifyContent: 'center' }}>
               <FontAwesome name="television" size={28} color="#5B5BD6" />
             </View>
-            <Text style={{ color: 'white', fontSize: 16, fontWeight: '800' }}>Sin canales activos</Text>
-            <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
+            <Text style={{ color: isDark ? 'white' : '#240046', fontSize: 16, fontWeight: '800' }}>Sin canales activos</Text>
+            <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
               Crea o activa canales desde la sección Canales para verlos aparecer aquí en tiempo real.
             </Text>
           </View>
         ) : (
-          <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: C.border }}>
+          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               <View>
-                <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>Mosaico 4x4</Text>
-                <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Se muestran 16 canales por pantalla. Si la URL es inválida o la señal falla, el canal queda marcado como de baja.</Text>
+                <Text style={{ color: isDark ? 'white' : '#240046', fontSize: 16, fontWeight: '700' }}>Mosaico 4x4</Text>
+                <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 12, marginTop: 4 }}>Se muestran 16 canales por pantalla. Si la URL es inválida o la señal falla, el canal queda marcado como de baja.</Text>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                <Text style={{ color: C.textDim, fontSize: 12 }}>Actualizado: {new Date().toLocaleTimeString('es-CO')}</Text>
+                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12 }}>Actualizado: {new Date().toLocaleTimeString('es-CO')}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <TouchableOpacity
                     onPress={() => setPage((current) => Math.max(0, current - 1))}
                     disabled={page === 0}
                     style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page === 0 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page === 0 ? 0.5 : 1 }}
                   >
-                    <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Anterior</Text>
+                    <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '700' }}>Anterior</Text>
                   </TouchableOpacity>
-                  <Text style={{ color: C.textDim, fontSize: 12 }}>Pantalla {page + 1} de {totalPages}</Text>
+                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12 }}>Pantalla {page + 1} de {totalPages}</Text>
                   <TouchableOpacity
                     onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
                     disabled={page >= totalPages - 1}
                     style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: page >= totalPages - 1 ? 'rgba(255,255,255,0.04)' : C.surfaceAlt, borderWidth: 1, borderColor: C.border, opacity: page >= totalPages - 1 ? 0.5 : 1 }}
                   >
-                    <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Siguiente</Text>
+                    <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '700' }}>Siguiente</Text>
                   </TouchableOpacity>
                 </View>
                 <Text style={{ color: C.muted, fontSize: 11 }}>Rotación automática cada 8 s</Text>

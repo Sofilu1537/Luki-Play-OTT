@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { FONT_FAMILY } from '../../../styles/typography';
@@ -45,9 +45,21 @@ const ACTIONS: QuickAction[] = [
   },
 ];
 
-export default function QuickActions() {
+export default function QuickActions({
+  minItemWidth = 160,
+  showDescription = false,
+}: {
+  minItemWidth?: number;
+  showDescription?: boolean;
+}) {
   const router = useRouter();
   const { isDark, theme } = useTheme();
+  const softUiShadow = !isDark && Platform.OS === 'web'
+    ? ({ boxShadow: theme.softUiShadow } as any)
+    : {};
+  const softUiShadowDark = isDark && Platform.OS === 'web'
+    ? ({ boxShadow: theme.softUiShadowDark } as any)
+    : {};
 
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -57,21 +69,23 @@ export default function QuickActions() {
           onPress={() => router.push(action.path as never)}
           activeOpacity={0.72}
           style={{
-            flex:            1,
-            minWidth:        160,
-            backgroundColor: isDark ? C.bgTertiary : 'rgba(255,255,255,0.92)',
-            borderRadius:    14,
-            padding:         16,
-            borderWidth:     1,
-            borderColor:     isDark ? C.borderMid : 'rgba(130,130,130,0.34)',
-            flexDirection:   'row',
-            alignItems:      'center',
-            gap:             12,
-            shadowColor:     '#240046',
-            shadowOpacity:   isDark ? 0 : 0.08,
-            shadowRadius:    isDark ? 0 : 20,
-            shadowOffset:    { width: 0, height: 6 },
-            elevation:       isDark ? 0 : 2,
+            flex: 1,
+            minWidth: minItemWidth,
+            backgroundColor: isDark ? theme.cardBg : '#fff',
+            borderRadius: 14,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            shadowColor: isDark ? '#000000' : '#A8B0C7',
+            shadowOpacity: isDark ? 0.3 : 0.16,
+            shadowRadius: isDark ? 14 : 10,
+            shadowOffset: { width: isDark ? 7 : 5, height: isDark ? 7 : 5 },
+            elevation: isDark ? 9 : 5,
+            ...softUiShadow,
+            ...softUiShadowDark,
           }}
         >
           {/* Icon */}
@@ -98,9 +112,19 @@ export default function QuickActions() {
             }}>
               {action.title}
             </Text>
+            {showDescription ? (
+              <Text style={{
+                color: isDark ? C.muted : 'rgba(36,0,70,0.72)',
+                fontSize: 12,
+                marginTop: 3,
+                fontFamily: FONT_FAMILY.body,
+              }}>
+                {action.description}
+              </Text>
+            ) : null}
           </View>
 
-          <FontAwesome name="chevron-right" size={11} color={isDark ? C.muted : theme.textMuted} />
+          <FontAwesome name="chevron-right" size={11} color={isDark ? C.muted : '#240046'} />
         </TouchableOpacity>
       ))}
     </View>

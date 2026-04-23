@@ -15,6 +15,7 @@ import { useCategoriasStore } from '../../services/categoriasStore';
 import { useChannelStore } from '../../services/channelStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -208,6 +209,7 @@ function ChannelRow({
 // ---------------------------------------------------------------------------
 
 export default function CmsPlanes() {
+  const { isDark } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
 
@@ -452,12 +454,12 @@ export default function CmsPlanes() {
             { label: 'Planes ISP Bundle', value: String(ispPlans),          icon: 'wifi'          as const, color: C.green,  bg: C.greenSoft  },
             { label: 'Canales asignados', value: String(totalChannelSlots), icon: 'television'    as const, color: C.cyan,   bg: C.cyanSoft   },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={item.icon} size={16} color={item.color} />
                 </View>
-                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
               <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
@@ -486,9 +488,9 @@ export default function CmsPlanes() {
                 <View
                   key={plan.id}
                   style={{
-                    backgroundColor: C.surface, borderRadius: 16, padding: 24,
+                    backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 16, padding: 24,
                     borderWidth: isIsp ? 2 : 1,
-                    borderColor: isIsp ? C.green : (plan.activo ? C.accentBorder : C.border),
+                    borderColor: isIsp ? C.green : (plan.activo ? C.accentBorder : (isDark ? C.border : 'rgba(130,130,130,0.34)')),
                     minWidth: 280, flex: 1, maxWidth: 380,
                   }}
                 >
@@ -521,8 +523,8 @@ export default function CmsPlanes() {
                   </View>
 
                   {/* Name & description */}
-                  <Text style={{ color: C.text, fontSize: 20, fontWeight: '800', marginBottom: 4 }}>{plan.nombre}</Text>
-                  <Text style={{ color: C.textDim, fontSize: 12, lineHeight: 18, marginBottom: 16 }} numberOfLines={3}>{plan.descripcion}</Text>
+                  <Text style={{ color: isDark ? C.text : '#240046', fontSize: 20, fontWeight: '800', marginBottom: 4 }}>{plan.nombre}</Text>
+                  <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, lineHeight: 18, marginBottom: 16 }} numberOfLines={3}>{plan.descripcion}</Text>
 
                   {/* Price */}
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 14 }}>
@@ -530,7 +532,7 @@ export default function CmsPlanes() {
                       {isIsp || !(plan.precio ?? 0) ? 'Incluido' : `$${(plan.precio ?? 0).toFixed(2)}`}
                     </Text>
                     {!isIsp && (plan.precio ?? 0) > 0 && (
-                      <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'} / {plan.duracionDias ?? 30} días</Text>
+                      <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '600' }}>{plan.moneda ?? 'USD'} / {plan.duracionDias ?? 30} días</Text>
                     )}
                   </View>
 
@@ -543,9 +545,9 @@ export default function CmsPlanes() {
                       { icon: 'tv'          as const, text: `${chCount} canales`                },
                       { icon: 'tag'         as const, text: `${catCount} categorías`            },
                     ].map((item) => (
-                      <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.lift, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
+                      <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)' }}>
                         <FontAwesome name={item.icon} size={10} color={C.accentLight} />
-                        <Text style={{ color: C.text, fontSize: 11, fontWeight: '700' }}>{item.text}</Text>
+                        <Text style={{ color: isDark ? C.text : '#240046', fontSize: 11, fontWeight: '700' }}>{item.text}</Text>
                       </View>
                     ))}
                   </View>

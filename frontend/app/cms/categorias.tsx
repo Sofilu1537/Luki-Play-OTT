@@ -7,6 +7,7 @@ import { useCategoriasStore } from '../../services/categoriasStore';
 import { useChannelStore } from '../../services/channelStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 import { LinearGradient } from 'expo-linear-gradient';
 
 function normalizeKey(value: string) {
@@ -54,6 +55,7 @@ function matchesCategory(categoryName: string, canal: AdminCanal) {
 }
 
 export default function CmsCategorias() {
+  const { isDark } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const cats = useCategoriasStore((s) => s.categorias);
@@ -207,8 +209,9 @@ export default function CmsCategorias() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <FontAwesome name="exclamation-triangle" size={32} color={C.rose} />
           <Text style={{ color: C.rose, fontSize: 14, marginTop: 12, textAlign: 'center' }}>{storeError}</Text>
-          <TouchableOpacity onPress={() => accessToken && fetchFromApi(accessToken)} style={{ marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}>
-            <Text style={{ color: 'white', fontWeight: '700' }}>Reintentar</Text>
+          <TouchableOpacity onPress={() => accessToken && fetchFromApi(accessToken)}
+            style={{ marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: isDark ? C.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.accentBorder : 'rgba(130,130,130,0.34)' }}>
+            <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Reintentar</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -217,13 +220,10 @@ export default function CmsCategorias() {
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
           <TouchableOpacity
             onPress={openCreate}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: isDark ? C.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.accentBorder : 'rgba(130,130,130,0.34)' }}
           >
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
-              <View style={{ flex: 1, backgroundColor: C.accent }} />
-            </View>
-            <FontAwesome name="plus" size={13} color="#1A1A2E" />
-            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nueva categoría</Text>
+            <FontAwesome name="plus" size={13} color={isDark ? '#1A1A2E' : '#240046'} />
+            <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nueva categoría</Text>
           </TouchableOpacity>
         </View>
 
@@ -234,12 +234,12 @@ export default function CmsCategorias() {
             { label: 'Destacadas', value: featuredCount,    icon: 'star'         as const, color: C.accentLight,  bg: C.accentFaint  },
             { label: 'Con señal',  value: withLiveSignals,  icon: 'wifi'         as const, color: C.cyan,         bg: C.cyanSoft     },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={item.icon} size={16} color={item.color} />
                 </View>
-                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
               <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
@@ -285,14 +285,11 @@ export default function CmsCategorias() {
                       <Text style={{ color: C.cyan, fontSize: 20, fontWeight: '900' }}>{selectedCategory.channelCount}</Text>
                     </View>
                     <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, minWidth: 150, overflow: 'hidden' }}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, minWidth: 150, backgroundColor: isDark ? C.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.accentBorder : 'rgba(130,130,130,0.34)' }}
                       onPress={() => router.push('/cms/canales' as never)}
                     >
-                      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16, overflow: 'hidden' }}>
-                        <View style={{ flex: 1, backgroundColor: C.accent }} />
-                      </View>
-                      <FontAwesome name="arrow-right" size={12} color="#1A1A2E" />
-                      <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 12, fontFamily: 'Montserrat-SemiBold' }}>Ver contenido asociado</Text>
+                      <FontAwesome name="arrow-right" size={12} color={isDark ? '#1A1A2E' : '#240046'} />
+                      <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontSize: 12, fontFamily: 'Montserrat-SemiBold' }}>Ver contenido asociado</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -316,8 +313,8 @@ export default function CmsCategorias() {
                       borderRadius: 22,
                       overflow: 'hidden',
                       borderWidth: 1,
-                      borderColor: isSelected ? `${cat.meta.accent}66` : isHovered ? `${cat.meta.accent}44` : C.border,
-                      backgroundColor: C.surface,
+                      borderColor: isSelected ? `${cat.meta.accent}66` : isHovered ? `${cat.meta.accent}44` : (isDark ? C.border : 'rgba(130,130,130,0.34)'),
+                      backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
                       shadowColor: cat.meta.accent,
                       shadowOpacity: isHovered || isSelected ? 0.18 : 0.04,
                       shadowRadius: isHovered || isSelected ? 24 : 10,
@@ -340,13 +337,13 @@ export default function CmsCategorias() {
 
                         {(isHovered || isSelected) ? (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
                               <FontAwesome name="pencil" size={12} color={C.cyan} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
                               <FontAwesome name={cat.activo ? 'pause' : 'play'} size={11} color={cat.activo ? C.amber : C.green} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
                               <FontAwesome name="eye" size={12} color={C.text} />
                             </TouchableOpacity>
                             <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(255,122,89,0.14)', borderWidth: 1, borderColor: 'rgba(255,122,89,0.24)', alignItems: 'center', justifyContent: 'center' }} onPress={() => deleteCategory(cat.id, cat.nombre)}>
@@ -375,28 +372,28 @@ export default function CmsCategorias() {
 
                     <View style={{ padding: 16 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, gap: 10 }}>
-                        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: C.border }}>
-                          <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
-                          <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{cat.contentCount}</Text>
+                        <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)' }}>
+                          <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
+                          <Text style={{ color: isDark ? C.text : '#240046', fontSize: 18, fontWeight: '900' }}>{cat.contentCount}</Text>
                         </View>
-                        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: C.border }}>
-                          <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
+                        <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)' }}>
+                          <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
                           <Text style={{ color: C.cyan, fontSize: 18, fontWeight: '900' }}>{cat.channelCount}</Text>
                         </View>
                       </View>
 
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
                         {cat.meta.preview.map((tag) => (
-                          <View key={tag} style={{ paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: C.lift }}>
-                            <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700' }}>{tag}</Text>
+                          <View key={tag} style={{ paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)' }}>
+                            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 10, fontWeight: '700' }}>{tag}</Text>
                           </View>
                         ))}
                       </View>
 
-                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11, borderRadius: 14, backgroundColor: isSelected ? `${cat.meta.accent}22` : C.lift, borderWidth: 1, borderColor: isSelected ? `${cat.meta.accent}33` : C.border }} onPress={() => setPreviewCategory(cat)}>
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11, borderRadius: 14, backgroundColor: isSelected ? `${cat.meta.accent}22` : (isDark ? C.lift : 'rgba(255,255,255,0.8)'), borderWidth: 1, borderColor: isSelected ? `${cat.meta.accent}33` : (isDark ? C.border : 'rgba(130,130,130,0.26)') }} onPress={() => setPreviewCategory(cat)}>
                         <View>
-                          <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }}>Preview editorial</Text>
-                          <Text style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Ver señales y contenido asociado</Text>
+                          <Text style={{ color: isDark ? C.text : '#240046', fontSize: 12, fontWeight: '800' }}>Preview editorial</Text>
+                          <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 11, marginTop: 2 }}>Ver señales y contenido asociado</Text>
                         </View>
                         <FontAwesome name="arrow-right" size={12} color={isSelected ? cat.meta.accent : C.textDim} />
                       </TouchableOpacity>

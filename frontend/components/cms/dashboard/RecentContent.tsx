@@ -44,32 +44,33 @@ export default function RecentContent({ stats, isLoading }: UserBehaviorProps) {
     { label: 'Pendientes',  value: stats?.byStatus.pending   ?? 0, color: '#B07CC6', icon: 'clock-o'      },
   ];
 
+  const { theme } = useTheme();
   return (
     <View style={{
-      backgroundColor: C.surface,
-      borderRadius:    16,
-      borderWidth:     1,
-      borderColor:     C.border,
-      overflow:        'hidden',
+      backgroundColor: isDark ? C.surface : '#fff',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
+      overflow: 'hidden',
     }}>
       {/* Header */}
       <View style={{
-        flexDirection:    'row',
-        alignItems:       'center',
-        justifyContent:   'space-between',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 18,
-        paddingVertical:  14,
+        paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: C.border,
+        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <FontAwesome name="users" size={12} color={C.muted} />
-          <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+          <FontAwesome name="users" size={12} color={isDark ? C.muted : '#240046'} />
+          <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Usuarios y comportamiento
           </Text>
         </View>
         {!isLoading && totalForPct > 0 && (
-          <Text style={{ color: C.muted, fontSize: 11, fontFamily: FONT_FAMILY.body }}>
+          <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 11, fontFamily: FONT_FAMILY.body }}>
             {totalForPct} total
           </Text>
         )}

@@ -65,15 +65,16 @@ function emptyForm(): AdminCanalPayload {
 
 // ─── StatCard Component ──────────────────────────────────────
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
+  const { isDark } = useTheme();
   return (
-    <View style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center' }}>
           <FontAwesome name={icon as any} size={16} color={color} />
         </View>
-        <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{label}</Text>
       </View>
-      <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>{value}</Text>
+      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 22, fontWeight: '800' }}>{value}</Text>
     </View>
   );
 }
@@ -167,10 +168,10 @@ function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
                 </View>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => { onClose(); onEdit(channel); }}>
+                <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }} onPress={() => { onClose(); onEdit(channel); }}>
                   <FontAwesome name="pencil" size={13} color={C.muted} />
                 </TouchableOpacity>
-                <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }} onPress={onClose}>
+                <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }} onPress={onClose}>
                   <FontAwesome name="times" size={13} color={C.muted} />
                 </TouchableOpacity>
               </View>
@@ -480,11 +481,11 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
 
           {/* Footer */}
           <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-            <TouchableOpacity onPress={onClose} style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '700' }}>Cancelar</Text>
+            <TouchableOpacity onPress={onClose} style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)' }}>
+              <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { if (validate()) onSave(form); }} style={{ paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}>
-              <Text style={{ color: '#1A1A2E', fontSize: 13, fontWeight: '800' }}>{isEdit ? 'Guardar cambios' : 'Crear canal'}</Text>
+            <TouchableOpacity onPress={() => { if (validate()) onSave(form); }} style={{ paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10, backgroundColor: isDark ? C.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.accentBorder : 'rgba(130,130,130,0.34)' }}>
+              <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontSize: 13, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{isEdit ? 'Guardar cambios' : 'Crear canal'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -605,13 +606,10 @@ export default function CmsCanales() {
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24 }}>
           <TouchableOpacity
             onPress={openCreate}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: isDark ? C.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.accentBorder : 'rgba(130,130,130,0.34)' }}
           >
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
-              <View style={{ flex: 1, backgroundColor: C.accent }} />
-            </View>
-            <FontAwesome name="plus" size={13} color="#1A1A2E" />
-            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nuevo canal</Text>
+            <FontAwesome name="plus" size={13} color={isDark ? '#1A1A2E' : '#240046'} />
+            <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nuevo canal</Text>
           </TouchableOpacity>
         </View>
 
@@ -632,24 +630,24 @@ export default function CmsCanales() {
         </View>
 
         {/* ── Filters Bar (Single line) ── */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: C.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: C.border, marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', marginBottom: 20 }}>
           {/* Search */}
-          <View style={{ flex: 1, minWidth: 200, flexDirection: 'row', alignItems: 'center', backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
-            <FontAwesome name="search" size={13} color={C.muted} />
-            <TextInput style={{ flex: 1, color: C.text, fontSize: 13, ...webInput }} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o slug..." placeholderTextColor={C.muted} />
+          <View style={{ flex: 1, minWidth: 200, flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)', borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)', paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
+            <FontAwesome name="search" size={13} color={isDark ? C.muted : '#240046'} />
+            <TextInput style={{ flex: 1, color: isDark ? C.text : '#240046', fontSize: 13, ...webInput }} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o slug..." placeholderTextColor={isDark ? C.muted : 'rgba(36,0,70,0.5)'} />
           </View>
 
           {/* Status Filter Dropdown */}
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.lift, borderRadius: 8, borderWidth: 1, borderColor: C.border }}>
-            <FontAwesome name="filter" size={12} color={C.muted} />
-            <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '600' }}>Todos los estados</Text>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)', borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)' }}>
+            <FontAwesome name="filter" size={12} color={isDark ? C.muted : '#240046'} />
+            <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '600' }}>Todos los estados</Text>
           </TouchableOpacity>
 
           {/* Category Filter Dropdown */}
           {Platform.OS === 'web' && (
-            <View style={{ borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift, overflow: 'hidden' }}>
+            <View style={{ borderRadius: 8, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.26)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)', overflow: 'hidden' }}>
               {/* @ts-ignore */}
-              <select value={filterCategory} onChange={(e: any) => setFilterCategory(e.target.value)} style={{ padding: '7px 12px', background: 'transparent', border: 'none', color: C.textDim, fontSize: 12, fontFamily: 'inherit', outline: 'none', cursor: 'pointer', minWidth: 150 } as any}>
+              <select value={filterCategory} onChange={(e: any) => setFilterCategory(e.target.value)} style={{ padding: '7px 12px', background: 'transparent', border: 'none', color: isDark ? C.textDim : '#240046', fontSize: 12, fontFamily: 'Montserrat-SemiBold', outline: 'none', cursor: 'pointer', minWidth: 150 } as any}>
                 <option value="all">Todas las categorías</option>
                 {activeCategories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.nombre}</option>))}
               </select>
@@ -666,29 +664,29 @@ export default function CmsCanales() {
 
         {/* ── Empty State ── */}
         {channels.length === 0 ? (
-          <View style={{ backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 48, alignItems: 'center', gap: 14 }}>
+          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', padding: 48, alignItems: 'center', gap: 14 }}>
             <View style={{ width: 60, height: 60, borderRadius: 14, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
               <FontAwesome name="television" size={26} color={C.accent} />
             </View>
             <Text style={{ color: C.text, fontSize: 15, fontWeight: '800' }}>Sin canales registrados</Text>
             <Text style={{ color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 320 }}>Crea tu primer canal con URL HLS/DASH, categoría y configuración OTT.</Text>
-            <TouchableOpacity onPress={openCreate} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, backgroundColor: C.accent, marginTop: 4 }}>
-              <FontAwesome name="plus" size={13} color="#1A1A2E" />
-              <Text style={{ color: '#1A1A2E', fontWeight: '800', fontSize: 13 }}>Crear primer canal</Text>
+            <TouchableOpacity onPress={openCreate} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, backgroundColor: isDark ? C.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? C.accentBorder : 'rgba(130,130,130,0.34)', marginTop: 4 }}>
+              <FontAwesome name="plus" size={13} color={isDark ? '#1A1A2E' : '#240046'} />
+              <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '800', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Crear primer canal</Text>
             </TouchableOpacity>
           </View>
         ) : filtered.length === 0 ? (
-          <View style={{ backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 24, alignItems: 'center' }}>
+          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 12, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', padding: 24, alignItems: 'center' }}>
             <FontAwesome name="television" size={24} color={C.muted} />
-            <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', marginTop: 10 }}>Sin canales para mostrar</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Ajusta los filtros de búsqueda</Text>
+            <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>Sin canales para mostrar</Text>
+            <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 12, marginTop: 4 }}>Ajusta los filtros de búsqueda</Text>
           </View>
 
         ) : viewMode === 'table' ? (
           /* ── Table View ── */
-          <View style={{ backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+          <View style={{ backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', overflow: 'hidden' }}>
             {/* Table Header */}
-            <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.lift }}>
+            <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.8)' }}>
               {['CANAL', 'CATEGORÍA', 'ESTADO', 'RESOLUCIÓN', 'VIEWERS', 'SALUD', ''].map((h, i) => (
                 <Text key={i} style={{ flex: [2.2, 1, 0.8, 0.8, 0.6, 0.8, 0.6][i], color: C.muted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: i === 6 ? 'right' : 'left' }}>
                   {h}
@@ -711,8 +709,8 @@ export default function CmsCanales() {
                       <FontAwesome name="television" size={14} color={C.accent} />
                     </View>
                     <View>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{ch.nombre}</Text>
-                      <Text style={{ color: C.muted, fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>/{ch.slug}</Text>
+                      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '600' }}>{ch.nombre}</Text>
+                      <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>/{ch.slug}</Text>
                     </View>
                   </View>
                   {/* Categoría */}
@@ -726,7 +724,7 @@ export default function CmsCanales() {
                     <StatusBadge status={ch.status} isLive={ch.isLive} />
                   </View>
                   {/* Resolución */}
-                  <Text style={{ flex: 0.8, color: C.textDim, fontSize: 12, fontWeight: '500' }}>{ch.resolution}</Text>
+                  <Text style={{ flex: 0.8, color: isDark ? C.textDim : '#240046', fontSize: 12, fontWeight: '500' }}>{ch.resolution}</Text>
                   {/* Viewers */}
                   <Text style={{ flex: 0.6, color: ch.isLive ? C.text : C.muted, fontSize: 12, fontWeight: ch.isLive ? '700' : '400' }}>
                     {ch.isLive ? ch.viewerCount.toLocaleString() : '—'}
@@ -739,13 +737,13 @@ export default function CmsCanales() {
                   <View style={{ flex: 0.6, flexDirection: 'row', gap: 4, justifyContent: 'flex-end' }}>
                     <TouchableOpacity
                       onPress={(e) => { e.stopPropagation?.(); openEdit(ch); }}
-                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <FontAwesome name="pencil" size={11} color={C.textDim} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={(e) => { e.stopPropagation?.(); setDeleteConfirm(ch.id); }}
-                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', backgroundColor: isDark ? C.lift : 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <FontAwesome name="trash" size={11} color="#D1105A" />
                     </TouchableOpacity>
@@ -764,7 +762,7 @@ export default function CmsCanales() {
                 <TouchableOpacity
                   key={ch.id}
                   onPress={() => setDetailChannel(ch)}
-                  style={{ width: 260, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}
+                  style={{ width: 260, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', overflow: 'hidden' }}
                 >
                   {/* Preview 16:9 */}
                   <View style={{ aspectRatio: 16 / 9, backgroundColor: '#0a0a12', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -782,10 +780,10 @@ export default function CmsCanales() {
 
                   <View style={{ padding: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>{ch.nombre}</Text>
+                      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>{ch.nombre}</Text>
                       <HealthBadge health={ch.healthStatus} />
                     </View>
-                    <Text style={{ color: C.muted, fontSize: 11 }}>{catName} · {ch.resolution} · {ch.streamProtocol}</Text>
+                    <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 11 }}>{catName} · {ch.resolution} · {ch.streamProtocol}</Text>
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 12, justifyContent: 'flex-end' }}>
                       <TouchableOpacity
                         onPress={(e) => { e.stopPropagation?.(); if (accessToken) toggleChannelStatusApi(accessToken, ch.id); }}

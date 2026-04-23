@@ -24,6 +24,7 @@ import {
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 function emptyForm(): AdminSliderPayload {
   return {
@@ -53,6 +54,7 @@ function sanitizeSlider(slider: AdminSlider): AdminSlider {
 }
 
 export default function CmsSliders() {
+  const { isDark } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const [sliders, setSliders] = useState<AdminSlider[]>([]);
@@ -290,12 +292,12 @@ export default function CmsSliders() {
             { label: 'Publicados',    value: stats.activos, icon: 'check-circle' as const, color: C.green, bg: C.greenSoft    },
             { label: 'Borradores',    value: stats.draft,   icon: 'pencil'       as const, color: C.amber, bg: C.accentFaint  },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={item.icon} size={16} color={item.color} />
                 </View>
-                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
               <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
@@ -350,8 +352,8 @@ export default function CmsSliders() {
                     borderRadius: 22,
                     overflow: 'hidden',
                     borderWidth: 1,
-                    borderColor: isDropTarget ? C.accentBorder : C.border,
-                    backgroundColor: C.surface,
+                    borderColor: isDropTarget ? C.accentBorder : (isDark ? C.border : 'rgba(130,130,130,0.34)'),
+                    backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
                     opacity: isDragging ? 0.58 : 1,
                     transform: [{ scale: isDragging ? 0.98 : 1 }],
                     shadowColor: '#000',
@@ -391,12 +393,12 @@ export default function CmsSliders() {
 
                   <View style={{ paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 3 }}>BANNER HERO</Text>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{slider.titulo}</Text>
+                      <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 11, fontWeight: '700', marginBottom: 3 }}>BANNER HERO</Text>
+                      <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{slider.titulo}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <FontAwesome name="arrows" size={12} color={C.muted} />
-                      <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700' }}>Drag & drop</Text>
+                      <FontAwesome name="arrows" size={12} color={isDark ? C.muted : '#240046'} />
+                      <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 11, fontWeight: '700' }}>Drag & drop</Text>
                     </View>
                   </View>
                 </View>

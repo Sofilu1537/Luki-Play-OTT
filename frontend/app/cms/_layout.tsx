@@ -2,6 +2,7 @@ import { Redirect, Stack, usePathname, useRootNavigationState } from 'expo-route
 import { ActivityIndicator, View } from 'react-native';
 import { useEffect } from 'react';
 import { useCmsStore } from '../../services/cmsStore';
+import { ThemeProvider } from '../../hooks/useTheme';
 
 /**
  * Layout for the CMS route group.
@@ -40,6 +41,7 @@ export default function CmsLayout() {
   }
 
   return (
+    <ThemeProvider>
     <Stack
       screenOptions={{
         headerShown: false,
@@ -47,5 +49,6 @@ export default function CmsLayout() {
         contentStyle: { backgroundColor: '#24004D' },
       }}
     />
+    </ThemeProvider>
   );
 }

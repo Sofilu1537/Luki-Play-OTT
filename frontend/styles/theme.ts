@@ -41,12 +41,16 @@ export interface ThemeTokens {
   warningSoft:  string;
   live:         string;
   tag:          string;
+  softUiBorder: string;
+  softUiShadow: string;
+  softUiBorderDark: string;
+  softUiShadowDark: string;
 }
 
 export const darkTheme: ThemeTokens = {
   // Backgrounds — brand palette: Russian Violet base, Rebecca Purple for surfaces
   bodyBg:       '#240046',                    // Russian Violet — fondo base de pantalla
-  cardBg:       'rgba(96, 38, 158, 0.22)',    // Rebecca Purple 22% — tarjetas sobre bodyBg
+  cardBg:       '#1A1A2E',                    // Dark card color shared across dashboard cards
   surfaceBg:    'rgba(96, 38, 158, 0.14)',    // Rebecca Purple 14% — superficies secundarias
   liftBg:       'rgba(96, 38, 158, 0.34)',    // Rebecca Purple 34% — elementos elevados (modales, popovers)
   headerBg:     '#240046',                    // Russian Violet sólido — navbar y headers
@@ -69,6 +73,10 @@ export const darkTheme: ThemeTokens = {
   warningSoft:  'rgba(255,121,0,0.14)',
   live:         '#17D1C6',
   tag:          '#B07CC6',
+  softUiBorder: 'rgba(96,38,158,0.24)',
+  softUiShadow: 'none',
+  softUiBorderDark: 'rgba(96,38,158,0.34)',
+  softUiShadowDark: '8px 8px 18px rgba(0,0,0,0.34), -6px -6px 14px rgba(118,72,170,0.10)',
 };
 
 export const lightTheme: ThemeTokens = {
@@ -77,7 +85,7 @@ export const lightTheme: ThemeTokens = {
   cardBg:       'rgba(120,120,120,0.36)',    // Gris suave más visible — tarjetas
   surfaceBg:    'rgba(120,120,120,0.28)',    // Gris suave — superficies secundarias
   liftBg:       'rgba(120,120,120,0.40)',    // Gris translúcido más sólido — elementos elevados
-  headerBg:     'rgba(255,255,255,0.96)',    // Blanco semitransparente — navbar con blur
+  headerBg:     '#240046',                    // Igual que sidebar en modo claro
   border:       'rgba(120,120,120,0.16)',    // Borde gris suave
   borderAccent: 'rgba(255,184,0,0.40)',
   text:         '#240046',                    // Russian Violet — texto primario (más on-brand que azul noche)
@@ -97,6 +105,10 @@ export const lightTheme: ThemeTokens = {
   warningSoft:  'rgba(255,121,0,0.12)',
   live:         '#17D1C6',
   tag:          '#B07CC6',
+  softUiBorder: 'rgba(236,238,246,0.95)',
+  softUiShadow: '10px 10px 22px rgba(24,39,75,0.13), -10px -10px 22px rgba(255,255,255,0.95)',
+  softUiBorderDark: 'rgba(236,238,246,0.95)',
+  softUiShadowDark: 'none',
 };
 
 /**
@@ -104,8 +116,8 @@ export const lightTheme: ThemeTokens = {
  * bg1/bg2 form the vertical LinearGradient (#240046 → #1a0033).
  */
 export const SIDEBAR = {
-  bg1:          '#240046',   // Russian Violet — igual que header
-  bg2:          '#240046',   // Russian Violet — flat, sin degradado
+  bg1:          '#240046',   // Russian Violet original (inicio)
+  bg2:          '#3A0A68',   // Variación del mismo tono para degradado sutil
   border:       'rgba(255,255,255,0.10)',
   sectionLabel: 'rgba(250,246,231,0.28)',
   text:         '#FAF6E7',

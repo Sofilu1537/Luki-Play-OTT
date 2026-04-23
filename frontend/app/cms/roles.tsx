@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 import { RolesOverviewTab, CmsUsersTab } from '../../components/cms/roles';
 
 type Tab = 'roles' | 'users';
 
 export default function RolesPage() {
+  const { isDark } = useTheme();
   const [tab, setTab] = useState<Tab>('roles');
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Roles y Permisos' }]}>
       <View style={{ flex: 1 }}>
         {/* Tab bar */}
-        <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16 }}>
+        <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)', paddingHorizontal: 16 }}>
           {([
             { key: 'roles' as Tab, label: 'Roles', icon: 'shield' as const },
             { key: 'users' as Tab, label: 'Usuarios CMS', icon: 'user-plus' as const },

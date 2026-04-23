@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function NotificacionesAdminPage() {
+  const { isDark } = useTheme();
   const features = [
     'Alertas por exceso de dispositivos por usuario',
     'Planes próximos a vencer o ya vencidos',
@@ -37,24 +39,24 @@ export default function NotificacionesAdminPage() {
               gap: 12,
               paddingVertical: 12,
               borderBottomWidth: i < features.length - 1 ? 1 : 0,
-              borderBottomColor: C.border,
+              borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.26)',
             }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.amber, marginTop: 5 }} />
-              <Text style={{ color: C.textSec, fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
+              <Text style={{ color: isDark ? C.textSec : '#240046', fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
             </View>
           ))}
         </View>
 
         <View style={{
           marginTop: 32,
-          backgroundColor: C.surface,
+          backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
           borderRadius: 10,
           paddingHorizontal: 16,
           paddingVertical: 10,
           borderWidth: 1,
-          borderColor: C.border,
+          borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
         }}>
-          <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
+            <Text style={{ color: isDark ? C.muted : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
             EN DESARROLLO
           </Text>
         </View>

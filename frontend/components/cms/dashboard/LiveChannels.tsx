@@ -65,25 +65,25 @@ export default function LiveChannels() {
 
   return (
     <View style={{
-      backgroundColor: C.surface,
-      borderRadius:    16,
-      borderWidth:     1,
-      borderColor:     C.border,
-      overflow:        'hidden',
+      backgroundColor: isDark ? C.surface : '#fff',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
+      overflow: 'hidden',
     }}>
       {/* Header */}
       <View style={{
-        flexDirection:    'row',
-        alignItems:       'center',
-        justifyContent:   'space-between',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 18,
-        paddingVertical:  14,
+        paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: C.border,
+        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <FontAwesome name="tv" size={12} color={C.muted} />
-          <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+          <FontAwesome name="tv" size={12} color={isDark ? C.muted : '#240046'} />
+          <Text style={{ color: isDark ? C.text : '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
             Estado de canales
           </Text>
         </View>

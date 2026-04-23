@@ -20,6 +20,7 @@ import {
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell, { C } from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 const TIPO_COLORS: Record<string, string> = {
   VOD: '#8B5CF6',
@@ -35,6 +36,7 @@ const TIPO_COLORS: Record<string, string> = {
 };
 
 export default function CmsComponentes() {
+  const { isDark } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const [componentes, setComponentes] = useState<AdminComponente[]>([]);
@@ -138,12 +140,12 @@ export default function CmsComponentes() {
             { label: 'Componentes Inactivos', value: inactiveCount,      icon: 'times-circle' as const, color: C.rose,  bg: C.roseSoft  },
             { label: 'Total Componentes',     value: componentes.length, icon: 'th-large'     as const, color: C.cyan,  bg: C.cyanSoft  },
           ].map((item) => (
-            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: C.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={item.icon} size={16} color={item.color} />
                 </View>
-                <Text style={{ color: C.textDim, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                <Text style={{ color: isDark ? C.textDim : '#240046', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
               </View>
               <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
             </View>
@@ -155,10 +157,10 @@ export default function CmsComponentes() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: C.surface,
+            backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
             borderRadius: 8,
             borderWidth: 1,
-            borderColor: C.border,
+            borderColor: isDark ? C.border : 'rgba(130,130,130,0.34)',
             paddingHorizontal: 12,
             marginBottom: 20,
           }}
@@ -214,11 +216,11 @@ export default function CmsComponentes() {
                 <View
                   key={comp.id}
                   style={{
-                    backgroundColor: C.surface,
+                    backgroundColor: isDark ? C.surface : 'rgba(255,255,255,0.92)',
                     borderRadius: 12,
                     padding: 20,
                     borderWidth: 1,
-                    borderColor: comp.activo ? `${color}40` : C.border,
+                    borderColor: comp.activo ? `${color}40` : (isDark ? C.border : 'rgba(130,130,130,0.34)'),
                     opacity: comp.activo ? 1 : 0.7,
                   }}
                 >
@@ -267,7 +269,7 @@ export default function CmsComponentes() {
                         >
                           <Text
                             style={{
-                              color: C.text,
+                              color: isDark ? C.text : '#240046',
                               fontSize: 16,
                               fontWeight: '700',
                             }}
@@ -317,7 +319,7 @@ export default function CmsComponentes() {
                         </View>
                         <Text
                           style={{
-                            color: C.muted,
+                            color: isDark ? C.muted : '#240046',
                             fontSize: 12,
                             lineHeight: 18,
                           }}
@@ -327,7 +329,7 @@ export default function CmsComponentes() {
                         </Text>
                         <Text
                           style={{
-                            color: C.muted,
+                            color: isDark ? C.muted : '#240046',
                             fontSize: 10,
                             marginTop: 6,
                             fontStyle: 'italic',

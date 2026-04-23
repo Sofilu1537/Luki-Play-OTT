@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { ScrollView, View, Text, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import { useChannelStore } from '../../services/channelStore';
@@ -98,9 +98,17 @@ function DashboardContent({
 }) {
   const { channels, isLoading: isLoadingChannels } = useChannelStore();
   const { isDark } = useTheme();
+  const { width } = useWindowDimensions();
   const accentColor = '#FFB800';
   const accentSoft = 'rgba(255,184,0,0.16)';
   const accentBorder = 'rgba(255,184,0,0.40)';
+  const isDesktop = width >= 1024;
+  const isTv = width >= 1600;
+  const contentPadding = isTv ? 36 : isDesktop ? 28 : 18;
+  const contentGap = isTv ? 24 : 20;
+  const contentMaxWidth = isTv ? 1760 : 1400;
+  const kpiMinWidth = isTv ? 300 : isDesktop ? 220 : 200;
+  const dualWidgetMinWidth = isTv ? 460 : isDesktop ? 320 : 280;
 
   const fmtMRR = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v}`;
 
@@ -118,7 +126,7 @@ function DashboardContent({
     {
       label:        'Ingreso mensual',
       value:        isLoading ? '—' : fmtMRR(stats?.mrr ?? 0),
-      subtitle:     `Plan $${PLAN_PRICE_USD}/mes · USD`,
+      subtitle:     `Plan $${PLAN_PRICE_USD}/mes - USD`,
       hint:         `Ingreso Recurrente Mensual — ingresos fijos mensuales. Fórmula: abonados activos × $${PLAN_PRICE_USD}`,
       trend:        isLoading ? '' : `${stats?.activeSubscribers ?? 0} × $${PLAN_PRICE_USD}`,
       trendPositive: (stats?.mrr ?? 0) > 0,
@@ -142,7 +150,7 @@ function DashboardContent({
       value:        isLoading ? '—' : `${stats?.churnRate ?? '0.0'}%`,
       subtitle:     isLoading ? '' : `${stats?.churned ?? 0} suscrip. baja`,
       hint:         'Abandono — % de suscriptores que cancelaron o fueron suspendidos. Fórmula: bajas ÷ total suscritos × 100',
-      trend:        parseFloat(stats?.churnRate ?? '0') <= 3 ? '↓ Bajo control' : '↑ Atención requerida',
+      trend:        parseFloat(stats?.churnRate ?? '0') <= 3 ? '+ Bajo control' : '↑ Atención requerida',
       trendPositive: parseFloat(stats?.churnRate ?? '0') <= 3,
       icon:         'line-chart'  as const,
       color:        '#D1105A',
@@ -153,56 +161,51 @@ function DashboardContent({
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24, gap: 20 }}
+      contentContainerStyle={{
+        paddingHorizontal: contentPadding,
+        paddingVertical: contentPadding - 2,
+        gap: contentGap,
+        width: '100%',
+        maxWidth: contentMaxWidth,
+        alignSelf: 'center',
+      }}
       showsVerticalScrollIndicator={false}
     >
-      {/* ── FIFA badge ──────────────────────────────────────── */}
-      <View style={{ alignItems: 'flex-end' }}>
-        <View style={{
-          backgroundColor:   accentSoft,
-          borderRadius:      10,
-          paddingHorizontal: 16,
-          paddingVertical:   10,
-          flexDirection:     'row',
-          alignItems:        'center',
-          gap:               8,
-          borderWidth:       1,
-          borderColor:       accentBorder,
-        }}>
-          <FontAwesome name="bolt" size={16} color={accentColor} />
-          <Text style={{ color: accentColor, fontSize: 15, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: FONT_FAMILY.bodyBold }}>
-            FIFA WORLD CUP 2026
-          </Text>
+      {/* ── KPIs ────────────────────────────────────────────── */}
+      <View>
+        <SectionHeader label="MÉTRICAS CLAVE" />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 0 }}>
+          {KPI_CARDS.map(card => (
+            <StatsCard
+              key={card.label}
+              {...card}
+              minWidth={kpiMinWidth}
+              mode={isTv ? 'tv' : 'default'}
+            />
+          ))}
         </View>
-      </View>
-
-      {/* ── Acciones rápidas ────────────────────────────────── */}
-      <View style={{ marginBottom: 8 }}>
-        <SectionHeader label="ACCIONES RÁPIDAS" />
-        <QuickActions />
       </View>
 
       {/* ── Monetización + Canales ────────────────────────────── */}
       <View>
         <SectionHeader label="MONETIZACIÓN Y CANALES" />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-          <View style={{ flex: 1, minWidth: 280 }}>
+          <View style={{ flex: 1, minWidth: dualWidgetMinWidth }}>
             <MonetizationWidget stats={stats} isLoading={isLoading} />
           </View>
-          <View style={{ flex: 1, minWidth: 280 }}>
-            <ChannelsWidget channels={channels} isLoading={isLoadingChannels} />
+          <View style={{ flex: 1, minWidth: dualWidgetMinWidth }}>
+            <ChannelsWidget channels={channels} isLoading={isLoadingChannels} isTv={isTv} />
           </View>
         </View>
       </View>
 
-      {/* ── KPIs ────────────────────────────────────────────── */}
-      <View>
-        <SectionHeader label="MÉTRICAS CLAVE" />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 0 }}>
-          {KPI_CARDS.map(card => (
-            <StatsCard key={card.label} {...card} />
-          ))}
-        </View>
+      {/* ── Acciones rápidas ────────────────────────────────── */}
+      <View style={{ marginBottom: 8 }}>
+        <SectionHeader label="ACCIONES RÁPIDAS" />
+        <QuickActions
+          minItemWidth={isTv ? 280 : isDesktop ? 220 : 160}
+          showDescription={false}
+        />
       </View>
     </ScrollView>
   );

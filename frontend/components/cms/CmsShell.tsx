@@ -14,7 +14,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../LukiPlayLogo';
-import { ThemeProvider, useTheme } from '../../hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 import { SIDEBAR } from '../../styles/theme';
 import { FONT_FAMILY } from '../../styles/typography';
 
@@ -192,7 +192,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                 letterSpacing: 0.5,
               }}
             >
-              LUKI PLAY
+              LUKIPLAY
             </Text>
             <Text
               style={{
@@ -201,6 +201,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                 fontWeight: '800',
                 letterSpacing: 2.2,
                 textTransform: 'uppercase',
+                fontFamily: FONT_FAMILY.bodyBold,
               }}
             >
               CONTROL CENTER
@@ -338,17 +339,22 @@ function TopBar({
   const activeNavItem = getActiveNavItem(pathname);
   const pageTitle = activeNavItem?.labelFull ?? breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
   const activePageIcon = activeNavItem?.icon ?? pageIcon;
+  const isDashboard = pathname === '/cms/dashboard' || pathname?.startsWith('/cms/dashboard/');
+  const isLightDashboard = !isDark && isDashboard;
 
   return (
-    <View
+    <LinearGradient
+      colors={[SIDEBAR.bg1, SIDEBAR.bg2]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
       style={{
         flexDirection:  'row',
         alignItems:     'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
         paddingVertical:   14,
-        backgroundColor:   '#240046',
         borderBottomWidth: 0,
+        borderBottomColor: 'transparent',
         zIndex:    50,
         elevation: 50,
       }}
@@ -375,6 +381,31 @@ function TopBar({
 
       {/* Right: theme toggle + avatar */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {isLightDashboard && (
+          <View
+            style={{
+              backgroundColor: '#FFF7E2',
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: 'rgba(255,184,0,0.34)',
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+            }}
+          >
+            <Text
+              style={{
+                color: '#B77900',
+                fontSize: 12,
+                fontWeight: '800',
+                letterSpacing: 0.9,
+                textTransform: 'uppercase',
+                fontFamily: FONT_FAMILY.bodyBold,
+              }}
+            >
+              ⚡ FIFA WORLD CUP 2026
+            </Text>
+          </View>
+        )}
 
         {/* Dark / Light toggle */}
         <TouchableOpacity
@@ -384,9 +415,9 @@ function TopBar({
             width:           38,
             height:          38,
             borderRadius:    10,
-            backgroundColor: isDark ? 'rgba(255,184,0,0.25)' : 'rgba(96,38,158,0.25)',
+            backgroundColor: isLightDashboard ? 'rgba(96,38,158,0.12)' : isDark ? 'rgba(255,184,0,0.25)' : 'rgba(96,38,158,0.25)',
             borderWidth:     1,
-            borderColor:     isDark ? 'rgba(255,184,0,0.60)' : 'rgba(96,38,158,0.60)',
+            borderColor:     isLightDashboard ? 'rgba(96,38,158,0.28)' : isDark ? 'rgba(255,184,0,0.60)' : 'rgba(96,38,158,0.60)',
             alignItems:      'center',
             justifyContent:  'center',
           }}
@@ -407,10 +438,10 @@ function TopBar({
               flexDirection:   'row',
               alignItems:      'center',
               gap:             8,
-              backgroundColor: theme.surfaceBg,
+              backgroundColor: isLightDashboard ? '#FAF6E7' : theme.surfaceBg,
               borderRadius:    12,
               borderWidth:     1,
-              borderColor:     theme.border,
+              borderColor:     isLightDashboard ? 'rgba(255,184,0,0.48)' : theme.border,
               paddingHorizontal: 8,
               paddingVertical:   6,
             }}
@@ -431,13 +462,13 @@ function TopBar({
                 {initials}
               </Text>
             </View>
-              <Text style={{ color: '#FAF6E7', fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              <Text style={{ color: isLightDashboard ? '#240046' : '#FAF6E7', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
               {firstName}
             </Text>
             <FontAwesome
               name={menuOpen ? 'chevron-up' : 'chevron-down'}
               size={9}
-              color={theme.textMuted}
+              color={isLightDashboard ? '#60269E' : theme.textMuted}
             />
           </TouchableOpacity>
 
@@ -448,28 +479,33 @@ function TopBar({
                 top:             46,
                 right:           0,
                 minWidth:        160,
-                backgroundColor: isDark ? '#1E0A3C' : theme.cardBg,
+                backgroundColor: isDark ? '#1E0A3C' : '#FFFFFF',
                 borderRadius:    12,
                 borderWidth:     1,
-                borderColor:     theme.border,
+                borderColor:     isDark ? theme.border : 'rgba(36,0,70,0.12)',
                 overflow:        'hidden',
                 zIndex:    60,
                 elevation: 60,
                 shadowColor:   '#000',
-                shadowOpacity: 0.35,
-                shadowRadius:  16,
-                shadowOffset:  { width: 0, height: 8 },
+                shadowOpacity: isDark ? 0.35 : 0.16,
+                shadowRadius:  isDark ? 16 : 18,
+                shadowOffset:  { width: 0, height: isDark ? 8 : 10 },
+                ...(isDark
+                  ? {}
+                  : {
+                      boxShadow: '0px 14px 30px rgba(24,39,75,0.16)',
+                    }),
               }}
             >
               <TouchableOpacity
                 onPress={() => { setMenuOpen(false); onShowProfile(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   Perfil
                 </Text>
               </TouchableOpacity>
-              <View style={{ height: 1, backgroundColor: theme.border }} />
+              <View style={{ height: 1, backgroundColor: isDark ? theme.border : 'rgba(36,0,70,0.10)' }} />
               <TouchableOpacity
                 onPress={() => { setMenuOpen(false); onLogout(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
@@ -482,7 +518,7 @@ function TopBar({
           )}
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -872,12 +908,10 @@ function CmsShellInner({ breadcrumbs, pageIcon, children }: CmsShellProps) {
 }
 
 // ---------------------------------------------------------------------------
-// CmsShell — public export, provides ThemeProvider
+// CmsShell — public export, ThemeProvider now lives in _layout.tsx
 // ---------------------------------------------------------------------------
 export default function CmsShell({ breadcrumbs, pageIcon, children }: CmsShellProps) {
   return (
-    <ThemeProvider>
-      <CmsShellInner breadcrumbs={breadcrumbs} pageIcon={pageIcon}>{children}</CmsShellInner>
-    </ThemeProvider>
+    <CmsShellInner breadcrumbs={breadcrumbs} pageIcon={pageIcon}>{children}</CmsShellInner>
   );
 }
