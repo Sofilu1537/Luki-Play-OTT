@@ -50,7 +50,7 @@ const ENTITLEMENT_OPTIONS: Array<{ value: AdminPlan['entitlements'][number]; lab
   { value: 'ppv',         label: 'PPV'             },
 ];
 
-const MIN_DEVICES = 3;
+const MIN_DEVICES = 1;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -65,7 +65,7 @@ function buildEmptyPlan(): AdminPlanPayload {
     moneda: 'USD',
     duracionDias: 30,
     activo: true,
-    maxDevices: MIN_DEVICES,
+    maxDevices: 1,
     maxConcurrentStreams: 2,
     maxProfiles: 3,
     videoQuality: 'HD',

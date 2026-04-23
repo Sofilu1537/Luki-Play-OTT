@@ -221,18 +221,18 @@ export default function CmsCategorias() {
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
           <TouchableOpacity
             onPress={openCreate}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: isDark ? theme.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.accentBorder : 'rgba(130,130,130,0.34)' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.accentBorder }}
           >
-            <FontAwesome name="plus" size={13} color={isDark ? '#1A1A2E' : '#240046'} />
-            <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nueva categoría</Text>
+            <FontAwesome name="plus" size={13} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nueva categoría</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Stat cards ── */}
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Activas',    value: activeCount,      icon: 'check-circle' as const, color: theme.text,        bg: `${theme.text}14`  },
-            { label: 'Destacadas', value: featuredCount,    icon: 'star'         as const, color: theme.accentLight,  bg: theme.accentFaint  },
+            { label: 'Activas',    value: activeCount,      icon: 'check-circle' as const, color: theme.success,      bg: theme.successSoft  },
+            { label: 'Destacadas', value: featuredCount,    icon: 'star'         as const, color: theme.accentLight,  bg: theme.accentSoft   },
             { label: 'Con señal',  value: withLiveSignals,  icon: 'wifi'         as const, color: theme.info,         bg: theme.infoSoft     },
           ].map((item) => (
             <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} color={item.color} bg={item.bg} />
@@ -243,10 +243,10 @@ export default function CmsCategorias() {
           <>
             {selectedCategory ? (
               <LinearGradient
-                colors={[`${selectedCategory.meta.accent}28`, 'rgba(12,24,41,0.96)', 'rgba(12,24,41,1)']}
+                colors={[`${selectedCategory.meta.accent}28`, isDark ? 'rgba(26,26,46,0.97)' : 'rgba(255,255,255,0.97)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{ borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 20 }}
+                style={{ borderRadius: 22, borderWidth: 1, borderColor: isDark ? theme.border : `${selectedCategory.meta.accent}44`, padding: 20 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
                   <View style={{ flex: 1, minWidth: 280 }}>
@@ -262,27 +262,27 @@ export default function CmsCategorias() {
                     <Text style={{ color: theme.textSec, fontSize: 13, lineHeight: 20, maxWidth: 720 }}>{selectedCategory.descripcion}</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
                       {selectedCategory.meta.preview.map((tag) => (
-                        <View key={tag} style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                        <View key={tag} style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
                           <Text style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>{tag}</Text>
                         </View>
                       ))}
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
                       <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
                       <Text style={{ color: theme.text, fontSize: 20, fontWeight: '900' }}>{selectedCategory.contentCount}</Text>
                     </View>
-                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
                       <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
                       <Text style={{ color: theme.info, fontSize: 20, fontWeight: '900' }}>{selectedCategory.channelCount}</Text>
                     </View>
                     <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, minWidth: 150, backgroundColor: isDark ? theme.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.accentBorder : 'rgba(130,130,130,0.34)' }}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, minWidth: 150, backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.accentBorder }}
                       onPress={() => router.push('/cms/canales' as never)}
                     >
-                      <FontAwesome name="arrow-right" size={12} color={isDark ? '#1A1A2E' : '#240046'} />
-                      <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontSize: 12, fontFamily: 'Montserrat-SemiBold' }}>Ver contenido asociado</Text>
+                      <FontAwesome name="arrow-right" size={12} color="#1A1A2E" />
+                      <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 12, fontFamily: 'Montserrat-SemiBold' }}>Ver contenido asociado</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -316,7 +316,7 @@ export default function CmsCategorias() {
                       transform: [{ translateY: isHovered ? -4 : 0 }],
                     }}
                   >
-                    <LinearGradient colors={[`${cat.meta.accent}26`, 'rgba(12,24,41,0.95)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, minHeight: 148 }}>
+                    <LinearGradient colors={[`${cat.meta.accent}22`, isDark ? '#1A1A2E' : '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, minHeight: 148 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: cat.meta.glow, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
@@ -324,19 +324,19 @@ export default function CmsCategorias() {
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }} numberOfLines={2}>{cat.nombre}</Text>
-                            <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 3 }}>{cat.id.toUpperCase()}</Text>
+                            <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 3 }}>{cat.id.slice(0, 8).toUpperCase()}</Text>
                           </View>
                         </View>
 
                         {(isHovered || isSelected) ? (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: theme.infoSoft, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
                               <FontAwesome name="pencil" size={12} color={theme.info} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: cat.activo ? theme.warningSoft : theme.successSoft, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
                               <FontAwesome name={cat.activo ? 'pause' : 'play'} size={11} color={cat.activo ? theme.warning : theme.success} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
                               <FontAwesome name="eye" size={12} color={theme.text} />
                             </TouchableOpacity>
                             <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(255,122,89,0.14)', borderWidth: 1, borderColor: 'rgba(255,122,89,0.24)', alignItems: 'center', justifyContent: 'center' }} onPress={() => deleteCategory(cat.id, cat.nombre)}>
@@ -350,7 +350,7 @@ export default function CmsCategorias() {
                         <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: cat.activo ? 'rgba(16,185,129,0.16)' : 'rgba(244,63,94,0.14)', borderWidth: 1, borderColor: cat.activo ? 'rgba(16,185,129,0.22)' : 'rgba(244,63,94,0.22)' }}>
                           <Text style={{ color: cat.activo ? theme.success : theme.danger, fontSize: 10, fontWeight: '800' }}>{cat.activo ? 'ACTIVA' : 'PAUSADA'}</Text>
                         </View>
-                        <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                        <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: `${cat.meta.accent}18`, borderWidth: 1, borderColor: `${cat.meta.accent}33` }}>
                           <Text style={{ color: cat.meta.accent, fontSize: 10, fontWeight: '800' }}>{cat.meta.tag}</Text>
                         </View>
                         {cat.highlight ? (
@@ -365,28 +365,28 @@ export default function CmsCategorias() {
 
                     <View style={{ padding: 16 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, gap: 10 }}>
-                        <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.26)' }}>
-                          <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
-                          <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 18, fontWeight: '900' }}>{cat.contentCount}</Text>
+                        <View style={{ flex: 1, backgroundColor: theme.liftBg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
+                          <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
+                          <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900' }}>{cat.contentCount}</Text>
                         </View>
-                        <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.26)' }}>
-                          <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
+                        <View style={{ flex: 1, backgroundColor: theme.liftBg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
+                          <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
                           <Text style={{ color: theme.info, fontSize: 18, fontWeight: '900' }}>{cat.channelCount}</Text>
                         </View>
                       </View>
 
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
                         {cat.meta.preview.map((tag) => (
-                          <View key={tag} style={{ paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)' }}>
-                            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 10, fontWeight: '700' }}>{tag}</Text>
+                          <View key={tag} style={{ paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
+                            <Text style={{ color: theme.textSec, fontSize: 10, fontWeight: '700' }}>{tag}</Text>
                           </View>
                         ))}
                       </View>
 
-                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11, borderRadius: 14, backgroundColor: isSelected ? `${cat.meta.accent}22` : (isDark ? theme.liftBg : 'rgba(255,255,255,0.8)'), borderWidth: 1, borderColor: isSelected ? `${cat.meta.accent}33` : (isDark ? theme.border : 'rgba(130,130,130,0.26)') }} onPress={() => setPreviewCategory(cat)}>
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11, borderRadius: 14, backgroundColor: isSelected ? `${cat.meta.accent}18` : theme.liftBg, borderWidth: 1, borderColor: isSelected ? `${cat.meta.accent}44` : theme.border }} onPress={() => setPreviewCategory(cat)}>
                         <View>
-                          <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 12, fontWeight: '800' }}>Preview editorial</Text>
-                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, marginTop: 2 }}>Ver señales y contenido asociado</Text>
+                          <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>Preview editorial</Text>
+                          <Text style={{ color: theme.textSec, fontSize: 11, marginTop: 2 }}>Ver señales y contenido asociado</Text>
                         </View>
                         <FontAwesome name="arrow-right" size={12} color={isSelected ? cat.meta.accent : theme.textSec} />
                       </TouchableOpacity>
@@ -404,7 +404,7 @@ export default function CmsCategorias() {
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           {previewCategory ? (
             <View style={{ width: '100%', maxWidth: 720, backgroundColor: theme.cardBg, borderRadius: 20, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-              <LinearGradient colors={[`${(CATEGORY_META[normalizeKey(previewCategory.nombre)]?.accent ?? theme.accent)}28`, 'rgba(12,24,41,1)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20 }}>
+              <LinearGradient colors={[`${(CATEGORY_META[normalizeKey(previewCategory.nombre)]?.accent ?? theme.accent)}22`, isDark ? '#1A1A2E' : '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: theme.text, fontSize: 24, fontWeight: '900' }}>{previewCategory.nombre}</Text>
@@ -431,12 +431,9 @@ export default function CmsCategorias() {
                 </View>
 
                 <TouchableOpacity
-                  style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
+                  style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.accentBorder }}
                   onPress={() => { setPreviewCategory(null); router.push('/cms/canales' as never); }}
                 >
-                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
-                    <View style={{ flex: 1, backgroundColor: theme.accent }} />
-                  </View>
                   <FontAwesome name="arrow-right" size={13} color="#1A1A2E" />
                   <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Ir al contenido asociado</Text>
                 </TouchableOpacity>
@@ -449,15 +446,15 @@ export default function CmsCategorias() {
       <Modal visible={Boolean(editingCategory) || isCreating} transparent animationType="fade" onRequestClose={closeEdit}>
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ width: '100%', maxWidth: 620, backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-              <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? '#18003a' : '#240046' }}>
                 <View>
-                  <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }}>{isCreating ? 'Nueva categoría' : 'Editar categoría'}</Text>
-                  <Text style={{ color: theme.textSec, fontSize: 12, marginTop: 4 }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800' }}>{isCreating ? 'Nueva categoría' : 'Editar categoría'}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 4 }}>
                     {isCreating ? 'Define nombre, descripción e ícono de la nueva categoría.' : 'Ajuste visual del catálogo editorial en CMS.'}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={closeEdit}>
-                  <FontAwesome name="times" size={18} color={theme.textMuted} />
+                  <FontAwesome name="times" size={18} color="rgba(255,255,255,0.7)" />
                 </TouchableOpacity>
               </View>
 
