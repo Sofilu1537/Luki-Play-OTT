@@ -123,10 +123,10 @@ function getRoleMeta(role: AdminUser['role'], theme: ThemeTokens) {
 }
 
 function getStatusMeta(status: AdminUser['status'], theme: ThemeTokens) {
-  if (status === 'active')    return { label: 'Activo',     color: theme.info,    bg: theme.infoSoft       };
-  if (status === 'suspended') return { label: 'Suspendido', color: theme.danger,    bg: theme.dangerSoft       };
-  if (status === 'pending')   return { label: 'Pendiente',  color: theme.warning,   bg: theme.warningSoft      };
-  return                             { label: 'Inactivo',   color: theme.warning,   bg: theme.warningSoft      };
+  if (status === 'active')    return { label: 'Activo',     color: theme.success,  bg: theme.successSoft    };
+  if (status === 'suspended') return { label: 'Suspendido', color: theme.danger,   bg: theme.dangerSoft     };
+  if (status === 'pending')   return { label: 'Pendiente',  color: theme.warning,  bg: theme.warningSoft    };
+  return                             { label: 'Inactivo',   color: theme.warning,  bg: theme.warningSoft    };
 }
 
 function getDeviceCount(sessions: AdminUserSession[]) {
@@ -147,9 +147,21 @@ function generateTemporaryPassword() {
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const { isDark, theme } = useTheme();
   return (
-    <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 16 }}>
-      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 17, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>{title}</Text>
-      {subtitle ? <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 4, marginBottom: 12, fontFamily: FONT_FAMILY.body }}>{subtitle}</Text> : <View style={{ height: 12 }} />}
+    <View style={{
+      backgroundColor: theme.cardBg,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+      padding: 16,
+      shadowColor: theme.cardShadow,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 10,
+      elevation: 3,
+      ...(Platform.OS === 'web' ? { boxShadow: isDark ? theme.softUiShadowDark : theme.softUiShadow } as object : {}),
+    }}>
+      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.sectionTitle, fontWeight: '700', fontFamily: FONT_FAMILY.bodyBold, letterSpacing: 0.2 }}>{title}</Text>
+      {subtitle ? <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.sectionSubtitle, marginTop: 3, marginBottom: 12, fontFamily: FONT_FAMILY.body }}>{subtitle}</Text> : <View style={{ height: 10 }} />}
       {children}
     </View>
   );
@@ -508,7 +520,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
     color: isDark ? theme.text : '#240046',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: FONT_FAMILY.bodySemiBold,
     ...webInput,
   };
@@ -564,7 +576,7 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
       nombre:   nombre.trim(),
       email:    email.trim().toLowerCase(),
       telefono: telefono.trim() || undefined,
-      idNumber: isAbonado ? (idNumber.trim() || undefined) : undefined,
+      idNumber: idNumber.trim() || undefined,
       status,
       role:     'cliente',
       maxDevices: Math.max(1, Number(maxDevices) || 3),
@@ -593,12 +605,12 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.76)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         <View style={{ width: '100%', maxWidth: 860, maxHeight: '90%', backgroundColor: isDark ? theme.cardBg : '#fff', borderRadius: 18, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', overflow: 'hidden' }}>
-          <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ paddingHorizontal: 24, paddingVertical: 18, backgroundColor: '#2D0060', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 20, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{initialData ? 'Editar usuario' : 'Crear usuario'}</Text>
             </View>
             <TouchableOpacity onPress={onClose}>
-              <FontAwesome name="times" size={18} color={isDark ? theme.textMuted : '#240046'} />
+              <FontAwesome name="times" size={18} color="rgba(255,255,255,0.75)" />
             </TouchableOpacity>
           </View>
 
@@ -606,53 +618,102 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
             <SectionCard title="Datos de Registro">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>NOMBRE COMPLETO</Text>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>NOMBRE COMPLETO</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="Ej: Juan Pérez" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={nombre} onChangeText={setNombre} />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>EMAIL</Text>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CÉDULA DE IDENTIDAD</Text>
+                  <TextInput
+                    style={{ ...baseInput, marginBottom: 0 }}
+                    placeholder="Ej: 1712345678"
+                    placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'}
+                    value={idNumber}
+                    onChangeText={setIdNumber}
+                    keyboardType="number-pad"
+                    maxLength={13}
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 220 }}>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>EMAIL</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="usuario@email.com" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>TELÉFONO</Text>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>TELÉFONO</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="+593 999 999 999" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
                 </View>
-                {isAbonado ? (
-                  <View style={{ flex: 1, minWidth: 220 }}>
-                    <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CÉDULA DE IDENTIDAD</Text>
-                    <TextInput
-                      style={{ ...baseInput, marginBottom: 0 }}
-                      placeholder="Ej: 1712345678"
-                      placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'}
-                      value={idNumber}
-                      onChangeText={setIdNumber}
-                      keyboardType="number-pad"
-                      maxLength={13}
-                    />
-                  </View>
-                ) : (
-                  <View style={{ flex: 1, minWidth: 220, justifyContent: 'flex-end' }}>
-                    <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 10 }}>
-                      <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontFamily: FONT_FAMILY.body }}>Los clientes completan su registro desde la app Luki Play.</Text>
+              </View>
+            </SectionCard>
+
+            <SectionCard title="Plan y servicio" subtitle={isAbonado ? 'Suscripción mensual ISP. Genera contrato.' : undefined}>
+              {activePlans.length > 0 ? (
+                <>
+                  <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 12, alignItems: 'flex-start' }}>
+                    {selectedCatalogPlan ? (
+                      <View style={{ flex: 2, minWidth: 200, backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 10, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 12 }}>
+                        <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{selectedCatalogPlan.nombre.replace(/\s+/g, '')}</Text>
+                        <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>{selectedCatalogPlan.descripcion}</Text>
+                      </View>
+                    ) : null}
+                    <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+                      {activePlans.map((plan) => (
+                        <TouchableOpacity
+                          key={plan.id}
+                          style={{
+                            minWidth: 150, paddingHorizontal: 12, paddingVertical: 10,
+                            borderRadius: 10, borderWidth: 1,
+                            borderColor:     planId === plan.id ? theme.info : theme.border,
+                            backgroundColor: planId === plan.id ? theme.infoSoft : (isDark ? theme.liftBg : '#fff'),
+                          }}
+                          onPress={() => setPlanId(plan.id)}
+                        >
+                          <Text style={{ color: planId === plan.id ? theme.info : (isDark ? theme.text : '#240046'), fontSize: 13, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{plan.nombre.replace(/\s+/g, '')}</Text>
+                          <Text style={{ color: planId === plan.id ? theme.info : (isDark ? theme.textSec : '#240046'), fontSize: 12, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
+                            {plan.maxDevices} disp. · {plan.videoQuality} · {plan.moneda} {plan.precio}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
                   </View>
-                )}
-              </View>
+                </>
+              ) : (
+                <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 10, borderWidth: 1, borderColor: `${theme.danger}40`, padding: 12, marginBottom: 12 }}>
+                  <Text style={{ color: theme.danger, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>No hay planes activos disponibles en el catálogo.</Text>
+                </View>
+              )}
+
+              {/* Contrato — solo para Abonados */}
+              {isAbonado ? (
+                <>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CONTRATO / CÓDIGO</Text>
+                  <TextInput
+                    style={{ ...baseInput, opacity: contractLocked ? 0.6 : 1 }}
+                    placeholder="Ej: CONTRACT-001"
+                    placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'}
+                    value={contrato}
+                    onChangeText={setContrato}
+                    editable={!contractLocked}
+                    autoCapitalize="characters"
+                  />
+                  {contractLocked ? (
+                    <Text style={{ color: theme.warning, fontSize: 12, marginTop: -4, fontFamily: FONT_FAMILY.body }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
+                  ) : null}
+                </>
+              ) : null}
             </SectionCard>
 
             <SectionCard title="Sesiones" subtitle="Control de simultaneidad y dispositivos permitidos.">
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>SESIONES SIMULTÁNEAS</Text>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>SESIONES SIMULTÁNEAS</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="3" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={maxDevices} onChangeText={setMaxDevices} keyboardType="number-pad" />
                 </View>
                 <View style={{ flex: 1, minWidth: 220 }}>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
+                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>DURACIÓN DE SESIÓN (DÍAS)</Text>
                   <TextInput style={{ ...baseInput, marginBottom: 0 }} placeholder="30" placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'} value={sessionDurationDays} onChangeText={setSessionDurationDays} keyboardType="number-pad" />
                 </View>
               </View>
 
-              <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 12, marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>AL EXCEDER EL LÍMITE</Text>
+              <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: 12, marginBottom: 6, fontFamily: FONT_FAMILY.bodyBold }}>AL EXCEDER EL LÍMITE</Text>
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                 {([
                   { value: 'block_new'       as const, label: 'Bloquear nuevo acceso' },
@@ -667,75 +728,13 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
                     }}
                     onPress={() => setSessionLimitPolicy(option.value)}
                   >
-                    <Text style={{ color: sessionLimitPolicy === option.value ? theme.info : (isDark ? theme.textSec : '#240046'), fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{option.label}</Text>
+                    <Text style={{ color: sessionLimitPolicy === option.value ? theme.info : (isDark ? theme.textSec : '#240046'), fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>{option.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </SectionCard>
 
-            <SectionCard title="Plan y servicio" subtitle={isAbonado ? 'Suscripción mensual ISP. Genera contrato.' : 'Acceso one-shot OTT. Sin contrato.'}>
-              <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 10, fontFamily: FONT_FAMILY.bodyBold }}>PLAN DESDE CATÁLOGO</Text>
-
-              {activePlans.length > 0 ? (
-                <>
-                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {activePlans.map((plan) => (
-                      <TouchableOpacity
-                        key={plan.id}
-                        style={{
-                          minWidth: 150, paddingHorizontal: 12, paddingVertical: 10,
-                          borderRadius: 10, borderWidth: 1,
-                          borderColor:     planId === plan.id ? theme.info : theme.border,
-                          backgroundColor: planId === plan.id ? theme.infoSoft : (isDark ? theme.liftBg : '#fff'),
-                        }}
-                        onPress={() => setPlanId(plan.id)}
-                      >
-                        <Text style={{ color: planId === plan.id ? theme.info : (isDark ? theme.text : '#240046'), fontSize: 15, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{plan.nombre}</Text>
-                        <Text style={{ color: planId === plan.id ? theme.info : (isDark ? theme.textSec : '#240046'), fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
-                          {plan.maxDevices} disp. · {plan.videoQuality} · {plan.moneda} {plan.precio}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  {selectedCatalogPlan ? (
-                    <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 10, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 12, marginBottom: 12 }}>
-                      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 15, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>Plan seleccionado: {selectedCatalogPlan.nombre}</Text>
-                      <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginTop: 4, fontFamily: FONT_FAMILY.body }}>{selectedCatalogPlan.descripcion}</Text>
-                    </View>
-                  ) : null}
-                </>
-              ) : (
-                <View style={{ backgroundColor: theme.dangerSoft, borderRadius: 10, borderWidth: 1, borderColor: `${theme.danger}40`, padding: 12, marginBottom: 12 }}>
-                  <Text style={{ color: theme.danger, fontSize: 15, fontWeight: '700' }}>No hay planes activos disponibles en el catálogo.</Text>
-                </View>
-              )}
-
-              {/* Contrato — solo para Abonados */}
-              {isAbonado ? (
-                <>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, marginBottom: 4, fontFamily: FONT_FAMILY.bodyBold }}>CONTRATO / CÓDIGO</Text>
-                  <TextInput
-                    style={{ ...baseInput, opacity: contractLocked ? 0.6 : 1 }}
-                    placeholder="Ej: CONTRACT-001"
-                    placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.45)'}
-                    value={contrato}
-                    onChangeText={setContrato}
-                    editable={!contractLocked}
-                    autoCapitalize="characters"
-                  />
-                  {contractLocked ? (
-                    <Text style={{ color: theme.warning, fontSize: 15, marginTop: -4 }}>Este contrato viene del sistema y no se puede editar manualmente.</Text>
-                  ) : null}
-                </>
-              ) : (
-                <View style={{ backgroundColor: isDark ? theme.liftBg : '#fff', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', padding: 10 }}>
-                  <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontFamily: FONT_FAMILY.body }}>Los clientes one-shot no generan número de contrato.</Text>
-                </View>
-              )}
-            </SectionCard>
-
-            {error ? <Text style={{ color: theme.danger, fontSize: 16 }}>{error}</Text> : null}
+            {error ? <Text style={{ color: theme.danger, fontSize: 13, fontFamily: FONT_FAMILY.bodySemiBold }}>{error}</Text> : null}
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.18)', alignItems: 'center', backgroundColor: isDark ? 'transparent' : '#fff' }} onPress={onClose}>
@@ -1369,6 +1368,7 @@ export default function CmsUsers() {
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const [actionMenuUserId, setActionMenuUserId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const menuButtonRefs = React.useRef<Record<string, View | null>>({});
 
   // Auto-dismiss feedback toast after 4s
@@ -1639,37 +1639,32 @@ export default function CmsUsers() {
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            { label: 'Total',     value: stats.total,       icon: 'users',       color: theme.accent, bg: theme.accentSoft, warn: false },
-            { label: 'Abonados',  value: stats.subscribers, icon: 'play-circle', color: theme.info,   bg: theme.infoSoft,   warn: false },
-            { label: 'Clientes',  value: stats.clients,     icon: 'shopping-bag',color: theme.warning,  bg: theme.accentSoft, warn: false },
+            { label: 'Total',     value: stats.total,       icon: 'users'        as const, color: theme.tag    },
+            { label: 'Abonados',  value: stats.subscribers, icon: 'play-circle'  as const, color: theme.info   },
+            { label: 'Clientes',  value: stats.clients,     icon: 'shopping-bag' as const, color: theme.accent },
           ].map((card) => (
             <View key={card.label} style={{
               flex: 1, minWidth: 180,
-              backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
+              backgroundColor: theme.cardBg,
               borderRadius: 14, padding: 16,
-              borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)',
+              borderWidth: 1,
+              borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-              shadowColor: '#240046',
-              shadowOpacity: isDark ? 0 : 0.08,
-              shadowRadius: isDark ? 0 : 20,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: isDark ? 0 : 2,
+              shadowColor: theme.cardShadow,
+              shadowOpacity: isDark ? 0.34 : 0.18,
+              shadowRadius: isDark ? 16 : 12,
+              shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
+              elevation: isDark ? 10 : 6,
+              ...(Platform.OS === 'web' && !isDark ? { boxShadow: theme.softUiShadow } as any : {}),
+              ...(Platform.OS === 'web' &&  isDark ? { boxShadow: theme.softUiShadowDark } as any : {}),
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
-                  <FontAwesome name={card.icon as never} size={16} color={card.color} />
+                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? `${card.color}35` : theme.iconBorderSoft }}>
+                  <FontAwesome name={card.icon} size={16} color={card.color} />
                 </View>
                 <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{card.label}</Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {card.warn ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.dangerSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <FontAwesome name="warning" size={10} color={theme.danger} />
-                    <Text style={{ color: theme.danger, fontSize: 11, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Alto</Text>
-                  </View>
-                ) : null}
-                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
-              </View>
+              <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>{card.value}</Text>
             </View>
           ))}
         </View>
@@ -1787,8 +1782,76 @@ export default function CmsUsers() {
           </View>
         ) : (
           <>
+            {/* Bulk actions bar */}
+            {selectedIds.size > 0 && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 10,
+                marginBottom: 10, paddingHorizontal: 14, paddingVertical: 10,
+                backgroundColor: isDark ? '#1E0A3C' : '#300050',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255,184,0,0.30)' : 'rgba(255,255,255,0.18)',
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: 'rgba(255,184,0,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{selectedIds.size}</Text>
+                  </View>
+                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                    {selectedIds.size === 1 ? 'usuario seleccionado' : 'usuarios seleccionados'}
+                  </Text>
+                </View>
+                {canWrite && (
+                  <>
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(23,209,198,0.15)', borderWidth: 1, borderColor: 'rgba(23,209,198,0.35)' }}
+                      onPress={async () => {
+                        if (!accessToken) return;
+                        for (const id of selectedIds) {
+                          const user = users.find((u) => u.id === id);
+                          if (user && user.status !== 'active') {
+                            const updated = await adminUpdateUserStatus(accessToken, id, 'active');
+                            updateUserInList(updated);
+                          }
+                        }
+                        setSelectedIds(new Set());
+                        setFeedback({ type: 'success', message: 'Usuarios activados.' });
+                      }}
+                    >
+                      <FontAwesome name="check-circle" size={12} color="#17D1C6" />
+                      <Text style={{ color: '#17D1C6', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>Activar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(209,16,90,0.15)', borderWidth: 1, borderColor: 'rgba(209,16,90,0.35)' }}
+                      onPress={async () => {
+                        if (!accessToken) return;
+                        for (const id of selectedIds) {
+                          const user = users.find((u) => u.id === id);
+                          if (user && user.status === 'active') {
+                            const updated = await adminUpdateUserStatus(accessToken, id, 'inactive');
+                            updateUserInList(updated);
+                          }
+                        }
+                        setSelectedIds(new Set());
+                        setFeedback({ type: 'success', message: 'Usuarios suspendidos.' });
+                      }}
+                    >
+                      <FontAwesome name="ban" size={12} color="#D1105A" />
+                      <Text style={{ color: '#D1105A', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>Suspender</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' }}
+                  onPress={() => setSelectedIds(new Set())}
+                >
+                  <FontAwesome name="times" size={11} color="rgba(255,255,255,0.7)" />
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Deseleccionar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Table header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', borderRadius: 8, marginBottom: 4, borderWidth: isDark ? 0 : 1, borderColor: isDark ? 'transparent' : 'rgba(130,130,130,0.34)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#2D0060', borderRadius: 8, marginBottom: 4 }}>
               {[
                 { label: 'CONTRATO', flex: 0.9  },
                 { label: 'NOMBRE',   flex: 2.6  },
@@ -1799,9 +1862,9 @@ export default function CmsUsers() {
                 { label: 'EMAIL',    flex: 1.6  },
                 { label: 'ACCIONES', flex: 1.0, align: 'right' as const },
               ].map((col) => (
-                <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4, alignItems: (col as any).align === 'right' ? 'flex-end' : 'flex-start' }}>
+                <View key={col.label} style={{ flex: col.flex, paddingHorizontal: 4, alignItems: (col as any).align === 'right' ? 'flex-end' : 'flex-start' }}>
                   <Text style={{
-                    color: isDark ? theme.textMuted : '#240046',
+                    color: '#FFFFFF',
                     fontSize: 11, fontWeight: '800',
                     letterSpacing: 1.2,
                     textTransform: 'uppercase',
@@ -1818,23 +1881,31 @@ export default function CmsUsers() {
               const roleMeta = getRoleMeta(user.role, theme);
               const statusMeta = getStatusMeta(user.status, theme);
               const isMenuOpen = actionMenuUserId === user.id;
+              const isSelected = selectedIds.has(user.id);
 
               return (
                 <View key={user.id} style={{
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
-                  backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
+                  backgroundColor: isSelected
+                    ? (isDark ? 'rgba(255,184,0,0.07)' : 'rgba(96,38,158,0.05)')
+                    : (isDark ? theme.cardBg : 'rgba(255,255,255,0.92)'),
                   borderRadius: 8, marginBottom: 3,
                   borderBottomWidth: 1,
-                  borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)',
+                  borderBottomColor: isSelected
+                    ? (isDark ? 'rgba(255,184,0,0.20)' : 'rgba(96,38,158,0.18)')
+                    : (isDark ? theme.border : 'rgba(130,130,130,0.26)'),
                 }}>
                   {/* CONTRATO */}
-                  <View style={{ flex: 0.9, paddingLeft: 4, paddingRight: 2 }}>
+                  <View style={{ flex: 0.9, paddingHorizontal: 4 }}>
                     <Text style={{ color: user.contrato ? (isDark ? theme.text : theme.text) : (isDark ? theme.textMuted : theme.textMuted), fontSize: 13, fontWeight: user.contrato ? '600' : '400', fontFamily: FONT_FAMILY.bodySemiBold }} numberOfLines={1}>{user.contrato || '—'}</Text>
                   </View>
 
-                  {/* NOMBRE — avatar consistente + name */}
-                  <View style={{ flex: 2.6, paddingLeft: 2, paddingRight: 4, justifyContent: 'center' }}>
-                    <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }} numberOfLines={1}>{user.nombre}</Text>
+                  {/* NOMBRE — round avatar + name */}
+                  <View style={{ flex: 2.6, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 4 }}>
+                    <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.22)', flexShrink: 0 }}>
+                      <Text style={{ color: AVATAR_TEXT, fontSize: 11, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{initials(user.nombre)}</Text>
+                    </View>
+                    <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold, flex: 1 }} numberOfLines={1}>{user.nombre}</Text>
                   </View>
 
                   {/* TIPO — derivado de isSubscriber (fuente: BD) */}

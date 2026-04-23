@@ -66,10 +66,26 @@ function emptyForm(): AdminCanalPayload {
 // ─── StatCard Component ──────────────────────────────────────
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
   const { isDark, theme } = useTheme();
+  const softUiShadow     = !isDark && Platform.OS === 'web' ? ({ boxShadow: theme.softUiShadow }     as any) : {};
+  const softUiShadowDark =  isDark && Platform.OS === 'web' ? ({ boxShadow: theme.softUiShadowDark } as any) : {};
   return (
-    <View style={{ flex: 1, minWidth: 180, backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{
+      flex: 1, minWidth: 180,
+      backgroundColor: theme.cardBg,
+      borderRadius: 14, padding: 16,
+      borderWidth: 1,
+      borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      shadowColor: theme.cardShadow,
+      shadowOpacity: isDark ? 0.34 : 0.18,
+      shadowRadius: isDark ? 16 : 12,
+      shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
+      elevation: isDark ? 10 : 6,
+      ...softUiShadow,
+      ...softUiShadowDark,
+    }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? `${color}35` : theme.iconBorderSoft }}>
           <FontAwesome name={icon as any} size={16} color={color} />
         </View>
         <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '600' }}>{label}</Text>

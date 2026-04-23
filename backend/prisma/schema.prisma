@@ -175,7 +175,7 @@ model Device {
 model Plan {
   id                  String   @id @default(uuid())
   nombre              String   @default("LUKI PLAY")
-  descripcion         String   @default("Streaming incluido con tu servicio de internet Luki")
+  descripcion         String   @default("Streaming incluido con tu servicio de luki Internet")
   grupoUsuarios       String   @default("ISP_BUNDLE")
   precio              Float    @default(0)
   moneda              String   @default("USD")

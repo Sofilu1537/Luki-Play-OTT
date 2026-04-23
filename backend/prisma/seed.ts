@@ -99,7 +99,7 @@ async function main() {
       create: {
         id: 'plan-lukiplay',
         nombre: 'LUKI PLAY',
-        descripcion: 'Streaming incluido con tu servicio de internet Luki',
+        descripcion: 'Streaming incluido con tu servicio de luki Internet',
         activo: true,
         maxDevices: 2,
         maxConcurrentStreams: 1,
