@@ -89,6 +89,10 @@ export default function CmsUsersTab() {
     await loadUsers();
   };
 
+  function hdr(flex: number) {
+    return { flex, color: theme.textMuted, fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.5 };
+  }
+
   return (
     <View style={{ flex: 1 }}>
       {/* Toolbar */}
@@ -230,6 +234,4 @@ export default function CmsUsersTab() {
   );
 }
 
-function hdr(flex: number) {
-  return { flex, color: theme.textMuted, fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.5 };
-}
+
