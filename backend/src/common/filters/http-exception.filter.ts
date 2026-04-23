@@ -36,6 +36,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ? exceptionResponse
           : ((exceptionResponse as Record<string, unknown>)
               .message as string) || exception.message;
+      this.logger.error(`HttpException: [${status}] ${JSON.stringify(exceptionResponse)}`);
     } else if (exception instanceof Error) {
       this.logger.error(
         `Unhandled exception: ${exception.message}`,
