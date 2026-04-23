@@ -92,10 +92,10 @@ function HealthBadge({ health }: { health: HealthStatus }) {
 
 // ─── FormField Component ──────────────────────────────────────
 function FormField({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
-  const { theme } = useTheme();
+  const { isDark, theme } = useTheme();
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>
+      <Text style={{ color: isDark ? 'rgba(250,246,231,0.4)' : '#240046', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>
         {label} {required && <Text style={{ color: '#D1105A' }}>*</Text>}
       </Text>
       {children}
@@ -275,8 +275,11 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const inputStyle = {
-    backgroundColor: theme.liftBg, borderRadius: 8, borderWidth: 1, borderColor: theme.border,
-    color: theme.text, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, ...webInput,
+    backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.9)',
+    borderRadius: 8, borderWidth: 1,
+    borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)',
+    color: isDark ? theme.text : '#240046',
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, ...webInput,
   };
 
   function upd<K extends keyof AdminCanalPayload>(key: K, val: AdminCanalPayload[K]) {
@@ -319,15 +322,15 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
         <View style={{ width: '100%', maxWidth: 520, maxHeight: '92%', backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
 
           {/* Header */}
-          <View style={{ paddingHorizontal: 22, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ paddingHorizontal: 22, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? '#18003a' : '#240046' }}>
             <View>
-              <Text style={{ color: theme.text, fontSize: 17, fontWeight: '800' }}>{isEdit ? 'Editar canal' : 'Nuevo canal'}</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 3 }}>
-                {isEdit ? `Editando: ${channel!.nombre}` : 'Configura el nuevo canal'}
+              <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800' }}>{isEdit ? 'Editar canal' : 'Nuevo canal'}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 3 }}>
+                {isEdit ? `Editando: ${channel!.nombre}` : 'Configura los datos del canal OTT.'}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="times" size={14} color={theme.textMuted} />
+            <TouchableOpacity onPress={onClose} style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="times" size={14} color="rgba(255,255,255,0.7)" />
             </TouchableOpacity>
           </View>
 
@@ -587,15 +590,23 @@ export default function CmsCanales() {
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Canales' }]}>
-      <View style={{ flex: 1, backgroundColor: isDark ? 'transparent' : '#240046' }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
 
         {/* ── Header Section ── */}
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24 }}>
           <TouchableOpacity
             onPress={openCreate}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: isDark ? theme.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.accentBorder : 'rgba(130,130,130,0.34)' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden',
+              borderWidth: isDark ? 0 : 1,
+              borderColor: isDark ? 'transparent' : 'rgba(130,130,130,0.18)',
+              backgroundColor: isDark ? 'transparent' : '#fff',
+            }}
           >
+            {isDark ? (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+                <View style={{ flex: 1, backgroundColor: theme.accent }} />
+              </View>
+            ) : null}
             <FontAwesome name="plus" size={13} color={isDark ? '#1A1A2E' : '#240046'} />
             <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nuevo canal</Text>
           </TouchableOpacity>
@@ -618,7 +629,7 @@ export default function CmsCanales() {
         </View>
 
         {/* ── Filters Bar (Single line) ── */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', marginBottom: 20, zIndex: 50, elevation: 50, shadowColor: '#240046', shadowOpacity: isDark ? 0 : 0.08, shadowRadius: isDark ? 0 : 20, shadowOffset: { width: 0, height: 6 } }}>
           {/* Search */}
           <View style={{ flex: 1, minWidth: 200, flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.26)', paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
             <FontAwesome name="search" size={13} color={isDark ? theme.textMuted : '#240046'} />
@@ -846,7 +857,6 @@ export default function CmsCanales() {
           categories={activeCategories}
         />
       )}
-      </View>
     </CmsShell>
   );
 }

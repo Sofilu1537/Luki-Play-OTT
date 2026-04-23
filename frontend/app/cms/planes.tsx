@@ -224,6 +224,7 @@ export default function CmsPlanes() {
 
   const allCategorias = useCategoriasStore((s) => s.categorias);
   const categorias = allCategorias.filter((c) => c.activo);
+  const fetchCategorias = useCategoriasStore((s) => s.fetchFromApi);
 
   const channels = useChannelStore((s) => s.channels);
   const loadChannels = useChannelStore((s) => s.loadChannels);
@@ -251,6 +252,7 @@ export default function CmsPlanes() {
     Promise.all([
       adminListPlans(accessToken),
       loadChannels(accessToken),
+      fetchCategorias(accessToken),
     ])
       .then(([plansData]) => {
         setPlans(plansData);
@@ -456,7 +458,6 @@ export default function CmsPlanes() {
           {[
             { label: 'Planes totales',    value: String(plans.length),     icon: 'star'          as const, color: theme.accent,   bg: theme.accentSoft  },
             { label: 'Activos',           value: String(activePlans),       icon: 'check-circle'  as const, color: theme.success,  bg: theme.successSoft },
-            { label: 'Planes ISP Bundle', value: String(ispPlans),          icon: 'wifi'          as const, color: theme.success,  bg: theme.successSoft },
             { label: 'Canales asignados', value: String(totalChannelSlots), icon: 'television'    as const, color: theme.info,     bg: theme.infoSoft    },
           ].map((item) => (
             <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} color={item.color} bg={item.bg} />
@@ -485,28 +486,31 @@ export default function CmsPlanes() {
                 <View
                   key={plan.id}
                   style={{
-                    backgroundColor: theme.cardBg, borderRadius: 16, padding: 24,
-                    borderWidth: isIsp ? 2 : 1,
-                    borderColor: isIsp ? theme.success : (plan.activo ? theme.accentBorder : theme.border),
+                    backgroundColor: isDark ? theme.cardBg : '#f4f5f7',
+                    borderRadius: 18, padding: 24,
+                    borderWidth: 1,
+                    borderColor: isDark ? theme.border : 'rgba(200,204,216,0.9)',
                     minWidth: 280, flex: 1, maxWidth: 380,
+                    ...(Platform.OS === 'web' ? {
+                      boxShadow: isDark
+                        ? '6px 6px 14px rgba(0,0,0,0.32), -4px -4px 10px rgba(80,80,100,0.08)'
+                        : '6px 6px 14px rgba(180,185,200,0.45), -6px -6px 14px rgba(255,255,255,0.95)',
+                    } as any : {
+                      shadowColor: isDark ? '#000' : '#b4b9c8',
+                      shadowOpacity: isDark ? 0.32 : 0.35,
+                      shadowRadius: isDark ? 8 : 10,
+                      shadowOffset: { width: 4, height: 4 },
+                      elevation: 4,
+                    }),
                   }}
                 >
                   {/* Card header */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 8 }}>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 }}>
-                      {isIsp && (
-                        <View style={{ backgroundColor: theme.successSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)', flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <FontAwesome name="wifi" size={10} color={theme.success} />
-                          <Text style={{ color: theme.success, fontSize: 10, fontWeight: '800' }}>INCLUIDO ISP</Text>
-                        </View>
-                      )}
                       <View style={{ backgroundColor: plan.activo ? theme.accentSoft : theme.liftBg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: plan.activo ? theme.accentBorder : theme.border }}>
                         <Text style={{ color: plan.activo ? theme.accentLight : theme.textMuted, fontSize: 10, fontWeight: '700' }}>
                           {plan.activo ? 'ACTIVO' : 'INACTIVO'}
                         </Text>
-                      </View>
-                      <View style={{ backgroundColor: gc.bg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: gc.border }}>
-                        <Text style={{ color: gc.text, fontSize: 10, fontWeight: '700' }}>{groupLabel(plan.grupoUsuarios)}</Text>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -573,15 +577,15 @@ export default function CmsPlanes() {
           <View style={{ width: '100%', maxWidth: 980, maxHeight: '92%', backgroundColor: theme.cardBg, borderRadius: 22, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
 
             {/* Modal header */}
-            <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? '#18003a' : '#240046' }}>
               <View>
-                <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>{editingId ? 'Editar plan' : 'Crear plan'}</Text>
-                <Text style={{ color: theme.textSec, fontSize: 12, marginTop: 3 }}>
-                  {editingId ? 'Modifica acceso, canales y entitlements del plan.' : 'Define un nuevo plan OTT con acceso a categorías y canales.'}
+                <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{editingId ? 'Editar plan' : 'Crear plan'}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 3 }}>
+                  {editingId ? 'Modifica acceso, canales y categorías del plan.' : 'Define un nuevo plan OTT con acceso a categorías y canales.'}
                 </Text>
               </View>
               <TouchableOpacity onPress={closeModal}>
-                <FontAwesome name="times" size={18} color={theme.textMuted} />
+                <FontAwesome name="times" size={18} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
             </View>
 
@@ -613,17 +617,6 @@ export default function CmsPlanes() {
               {/* ── TAB: Información ──────────────────────────────────── */}
               {activeTab === 'info' && (
                 <View style={{ gap: 20 }}>
-
-                  {/* ISP Bundle callout */}
-                  {form.grupoUsuarios === 'ISP_BUNDLE' && (
-                    <View style={{ backgroundColor: theme.successSoft, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(16,185,129,0.28)', padding: 14, flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-                      <FontAwesome name="wifi" size={16} color={theme.success} style={{ marginTop: 2 }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: theme.success, fontSize: 13, fontWeight: '800', marginBottom: 3 }}>Plan ISP Bundle</Text>
-                        <Text style={{ color: theme.success, fontSize: 12, opacity: 0.85 }}>Este plan se entrega automáticamente con el servicio de internet LukiPlay. El precio se muestra como "Incluido" para el abonado.</Text>
-                      </View>
-                    </View>
-                  )}
 
                   {/* Name + Price row */}
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
@@ -665,16 +658,6 @@ export default function CmsPlanes() {
                     />
                   </View>
 
-                  {/* Segmentation */}
-                  <View>
-                    <SectionTitle>Segmentación comercial</SectionTitle>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                      {GROUP_OPTIONS.map((opt) => (
-                        <ToggleChip key={opt.value} active={form.grupoUsuarios === opt.value} label={opt.label} tone={opt.tone} onPress={() => updateField('grupoUsuarios', opt.value)} />
-                      ))}
-                    </View>
-                  </View>
-
                   {/* Numeric fields */}
                   <View>
                     <SectionTitle>Límites del plan</SectionTitle>
@@ -702,46 +685,12 @@ export default function CmsPlanes() {
                     </View>
                   </View>
 
-                  {/* Video quality */}
-                  <View>
-                    <SectionTitle>Calidad de video</SectionTitle>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                      {QUALITY_OPTIONS.map((opt) => (
-                        <ToggleChip key={opt.value} active={form.videoQuality === opt.value} label={opt.label} onPress={() => updateField('videoQuality', opt.value)} tone="cyan" />
-                      ))}
-                    </View>
-                  </View>
-
-                  {/* Boolean toggles */}
-                  <View style={{ gap: 10 }}>
-                    <SectionTitle>Funciones del plan</SectionTitle>
-                    <BooleanRow label="Descargas offline" helper="Permitir guardar contenido para ver sin conexión." value={form.allowDownloads} onToggle={() => updateField('allowDownloads', !form.allowDownloads)} />
-                    <BooleanRow label="Casting / Airplay" helper="Transmitir a TV o dispositivos compatibles." value={form.allowCasting} onToggle={() => updateField('allowCasting', !form.allowCasting)} />
-                    <BooleanRow label="Anuncios publicitarios" helper="Mostrar publicidad durante la reproducción." value={form.hasAds} onToggle={() => updateField('hasAds', !form.hasAds)} />
-                  </View>
                 </View>
               )}
 
               {/* ── TAB: Acceso ───────────────────────────────────────── */}
               {activeTab === 'acceso' && (
                 <View style={{ gap: 20 }}>
-
-                  {/* Entitlements */}
-                  <View>
-                    <SectionTitle>Entitlements de contenido</SectionTitle>
-                    <Text style={{ color: theme.textSec, fontSize: 12, marginBottom: 12 }}>Define los tipos de contenido habilitados para este plan.</Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                      {ENTITLEMENT_OPTIONS.map((opt) => (
-                        <ToggleChip
-                          key={opt.value}
-                          active={(form.entitlements as string[]).includes(opt.value)}
-                          label={opt.label}
-                          onPress={() => toggleArray('entitlements', opt.value)}
-                          tone="accent"
-                        />
-                      ))}
-                    </View>
-                  </View>
 
                   {/* Categories */}
                   <View>
