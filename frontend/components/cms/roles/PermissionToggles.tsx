@@ -53,6 +53,11 @@ export default function PermissionToggles({ items, readOnly, onChange }: Permiss
               <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
                 {item.label}
               </Text>
+              {item.description ? (
+                <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 2 }}>
+                  {item.description}
+                </Text>
+              ) : null}
               {item.locked && item.lockReason ? (
                 <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 2 }}>
                   {item.lockReason}

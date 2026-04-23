@@ -12,7 +12,7 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
-import { ROLE_META, buildToggleItems, TOGGLEABLE_MODULES, SOPORTE_DEFAULT_PERMISSIONS } from './types';
+import { ROLE_META, buildToggleItems, buildContentPermItems, TOGGLEABLE_MODULES, SOPORTE_DEFAULT_PERMISSIONS } from './types';
 import type { AdminUser } from '../../../services/api/adminApi';
 
 type CmsRole = 'admin' | 'soporte';
@@ -82,6 +82,7 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
   }, [role]);
 
   const toggleItems = buildToggleItems(role, permissions);
+  const contentPermItems = buildContentPermItems(role, permissions);
 
   const handleToggle = (key: string, enabled: boolean) => {
     setPermissions((prev) =>
@@ -177,12 +178,12 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
               </View>
             </View>
 
-            {/* Permissions */}
+            {/* Module permissions */}
             <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
               <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE MÓDULOS</Text>
               <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 12 }}>
                 {role === 'admin'
-                  ? 'Selecciona los módulos a los que tendrá acceso este usuario.'
+                  ? 'Selecciona los módulos visibles en la barra lateral de este usuario.'
                   : 'Los permisos de Soporte son fijos y no se pueden modificar.'}
               </Text>
               <PermissionToggles
@@ -191,6 +192,21 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
                 onChange={handleToggle}
               />
             </View>
+
+            {/* Content API permissions */}
+            {role === 'admin' && (
+              <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE CONTENIDO</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 12 }}>
+                  Controla qué operaciones de API puede ejecutar sobre canales, categorías y sliders.
+                </Text>
+                <PermissionToggles
+                  items={contentPermItems}
+                  readOnly={false}
+                  onChange={handleToggle}
+                />
+              </View>
+            )}
 
             {/* Error */}
             {error ? (

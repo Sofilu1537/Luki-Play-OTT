@@ -39,6 +39,7 @@ interface CmsState {
   bootstrapSession: () => Promise<void>;
   restoreSession: (token: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -180,5 +181,23 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     if (!accessToken) return;
     const profile = await cmsGetMe(accessToken);
     set({ profile });
+  },
+
+  /**
+   * Use the stored refresh token to obtain a fresh access token.
+   * Updates the store and storage on success.
+   * Returns the new access token or null if refresh fails.
+   */
+  refreshAccessToken: async (): Promise<string | null> => {
+    try {
+      const storedRefreshToken = await getRefreshToken();
+      if (!storedRefreshToken) return null;
+      const tokens = await cmsRefreshToken(storedRefreshToken);
+      await saveTokens(tokens.accessToken, tokens.refreshToken);
+      set({ accessToken: tokens.accessToken });
+      return tokens.accessToken;
+    } catch {
+      return null;
+    }
   },
 }));

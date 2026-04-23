@@ -230,14 +230,30 @@ async function apiFetch<T>(
   accessToken: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers ?? {}),
-    },
-  });
+  const doRequest = (token: string) =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(options.headers ?? {}),
+      },
+    });
+
+  let res = await doRequest(accessToken);
+
+  // On 401, attempt a silent token refresh and retry once
+  if (res.status === 401) {
+    try {
+      const { useCmsStore } = await import('../cmsStore');
+      const newToken = await useCmsStore.getState().refreshAccessToken();
+      if (newToken) {
+        res = await doRequest(newToken);
+      }
+    } catch {
+      // Refresh failed — fall through and throw the 401 below
+    }
+  }
 
   // Throw on non-ok responses
   if (!res.ok) {
@@ -599,13 +615,31 @@ export async function adminValidateStream(
 }
 
 export async function adminUploadChannelLogo(accessToken: string, file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch(`${API_BASE_URL}/admin/canales/upload-logo`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: formData,
-  });
+  const doUpload = async (token: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${API_BASE_URL}/admin/canales/upload-logo`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  };
+
+  let res = await doUpload(accessToken);
+
+  // On 401, attempt a silent token refresh and retry once
+  if (res.status === 401) {
+    try {
+      const { useCmsStore } = await import('../cmsStore');
+      const newToken = await useCmsStore.getState().refreshAccessToken();
+      if (newToken) {
+        res = await doUpload(newToken);
+      }
+    } catch {
+      // Refresh failed — fall through and throw the 401 below
+    }
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => null);
     throw new Error(err?.message ?? `Upload failed (${res.status})`);

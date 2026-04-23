@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
-import { ROLE_META, buildToggleItems, SOPORTE_DEFAULT_PERMISSIONS, TOGGLEABLE_MODULES } from './types';
+import { ROLE_META, buildToggleItems, buildContentPermItems, SOPORTE_DEFAULT_PERMISSIONS, TOGGLEABLE_MODULES } from './types';
 
 const DISPLAY_ROLES = ['superadmin', 'admin', 'soporte', 'cliente'] as const;
 
@@ -22,6 +22,7 @@ export default function RolesOverviewTab() {
 
         const isCliente = roleKey === 'cliente';
         const toggleItems = isCliente ? [] : buildToggleItems(roleKey, roleKey === 'admin' ? [] : []);
+        const contentItems = isCliente ? [] : buildContentPermItems(roleKey, roleKey === 'admin' ? [] : []);
         const enabledCount = toggleItems.filter((t) => t.enabled).length;
 
         return (
@@ -92,7 +93,17 @@ export default function RolesOverviewTab() {
                 </Text>
               </View>
             ) : (
-              <PermissionToggles items={toggleItems} readOnly />
+              <>
+                <PermissionToggles items={toggleItems} readOnly />
+                {contentItems.length > 0 && (
+                  <View style={{ borderTopWidth: 1, borderTopColor: isDark ? theme.border : 'rgba(130,130,130,0.26)', paddingTop: 4 }}>
+                    <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1 }}>CONTENIDO (API)</Text>
+                    </View>
+                    <PermissionToggles items={contentItems} readOnly />
+                  </View>
+                )}
+              </>
             )}
           </View>
         );

@@ -52,11 +52,54 @@ export const ROLE_META: Record<string, { label: string; color: string; icon: FAI
 export interface PermissionToggleItem {
   key: string;
   label: string;
+  description?: string;
   icon: FAIconName;
-  path: string;
+  path?: string;
   enabled: boolean;
   locked: boolean;
   lockReason?: string;
+}
+
+/**
+ * Content operation permissions — separate from module-visibility keys.
+ * These control what API operations (read/write) are allowed on content.
+ */
+export const CONTENT_PERM_DEFS = [
+  {
+    key: 'cms:content:read',
+    label: 'Lectura de contenido',
+    description: 'Ver canales, categorías, sliders y planes desde la API',
+    icon: 'eye' as FAIconName,
+  },
+  {
+    key: 'cms:content:write',
+    label: 'Escritura de contenido',
+    description: 'Crear, editar, eliminar canales, categorías y sliders',
+    icon: 'pencil' as FAIconName,
+  },
+];
+
+/** Build content-permission toggle items for a given role and its current permissions. */
+export function buildContentPermItems(
+  role: string,
+  currentPermissions: string[],
+): PermissionToggleItem[] {
+  const isSuperadmin = role === 'superadmin';
+  const isSoporte = role === 'soporte';
+
+  return CONTENT_PERM_DEFS.map((def) => ({
+    key: def.key,
+    label: def.label,
+    description: def.description,
+    icon: def.icon,
+    enabled: isSuperadmin || currentPermissions.includes(def.key),
+    locked: isSuperadmin || isSoporte,
+    lockReason: isSuperadmin
+      ? 'Super Admin tiene todos los permisos'
+      : isSoporte
+        ? 'No disponible para Soporte'
+        : undefined,
+  }));
 }
 
 /** Build toggle items for a given role and its current permissions. */

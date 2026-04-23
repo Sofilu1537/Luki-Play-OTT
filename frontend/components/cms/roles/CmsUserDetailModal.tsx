@@ -10,7 +10,7 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
-import { ROLE_META, buildToggleItems, SOPORTE_DEFAULT_PERMISSIONS } from './types';
+import { ROLE_META, buildToggleItems, buildContentPermItems } from './types';
 import type { AdminUser } from '../../../services/api/adminApi';
 
 interface CmsUserDetailModalProps {
@@ -42,6 +42,7 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
   const isAdmin = user.role === 'admin';
   const isSuperadmin = user.role === 'superadmin';
   const toggleItems = buildToggleItems(user.role, permissions);
+  const contentPermItems = buildContentPermItems(user.role, permissions);
 
   const handleToggle = (key: string, enabled: boolean) => {
     setPermissions((prev) => enabled ? [...prev, key] : prev.filter((p) => p !== key));
@@ -118,17 +119,34 @@ export default function CmsUserDetailModal({ visible, user, onClose, onSavePermi
               <InfoRow label="Email" value={user.email} last />
             </View>
 
-            {/* Permissions */}
+            {/* Module permissions */}
             {!isSuperadmin && (
               <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
                 <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE MÓDULOS</Text>
                 <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 12 }}>
                   {isAdmin
-                    ? 'Activa/desactiva módulos. Los cambios se aplican al siguiente login.'
+                    ? 'Activa/desactiva módulos visibles en la barra lateral.'
                     : 'Los permisos de Soporte son fijos.'}
                 </Text>
                 <PermissionToggles
                   items={toggleItems}
+                  readOnly={!isAdmin}
+                  onChange={handleToggle}
+                />
+              </View>
+            )}
+
+            {/* Content API permissions (read / write) */}
+            {!isSuperadmin && (
+              <View style={{ backgroundColor: theme.liftBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 4 }}>PERMISOS DE CONTENIDO</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 12 }}>
+                  {isAdmin
+                    ? 'Controla qué operaciones de API puede ejecutar este usuario sobre canales, categorías y sliders.'
+                    : 'Los permisos de Soporte son fijos.'}
+                </Text>
+                <PermissionToggles
+                  items={contentPermItems}
                   readOnly={!isAdmin}
                   onChange={handleToggle}
                 />

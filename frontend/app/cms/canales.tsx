@@ -69,7 +69,7 @@ function emptyForm(): AdminCanalPayload {
 function StatusBadge({ status, isLive }: { status: ChannelStatus; isLive: boolean }) {
   const cfg = STATUS_CONFIG[status];
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: cfg.bg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: cfg.bg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start' }}>
       {isLive && status === 'ACTIVE' && (
         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cfg.color }} />
       )}
@@ -303,9 +303,10 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
     ).then((url) => {
       upd('logoUrl', url);
       setLogoUploading(false);
-    }).catch(() => {
+    }).catch((err: unknown) => {
       setLogoUploading(false);
-      setFormError('Error al subir el logo. Intenta de nuevo.');
+      const msg = err instanceof Error ? err.message : 'Error al subir el logo.';
+      setFormError(`No se pudo subir el logo: ${msg}`);
     });
   }
 
@@ -432,7 +433,7 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
 
             {/* Categoría */}
             <FormField label="Categoría" required>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {categories.map((cat) => {
                   const sel = form.categoryId === cat.id;
                   return (
@@ -449,7 +450,7 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
+              </View>
             </FormField>
 
             {/* Control Parental — only when category is adult content */}
@@ -504,7 +505,7 @@ export default function CmsCanales() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | ChannelStatus>('all');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showForm, setShowForm] = useState(false);
   const [editingChannel, setEditingChannel] = useState<AdminCanal | null>(null);
   const [detailChannel, setDetailChannel] = useState<AdminCanal | null>(null);
@@ -568,6 +569,7 @@ export default function CmsCanales() {
       if (editingChannel && !isLocalId) {
         await updateChannelApi(accessToken, editingChannel.id, formData);
         setFeedback({ type: 'success', message: 'Canal actualizado.' });
+        setTimeout(() => setFeedback(null), 1000);
       } else {
         await createChannelApi(accessToken, formData);
         setFeedback({ type: 'success', message: 'Canal creado correctamente.' });
@@ -685,9 +687,9 @@ export default function CmsCanales() {
           /* ── Table View ── */
           <View style={{ backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', overflow: 'hidden' }}>
             {/* Table Header */}
-            <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)', backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)' }}>
+            <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)', backgroundColor: isDark ? '#18003a' : '#240046' }}>
               {['CANAL', 'CATEGORÍA', 'ESTADO', 'VIEWERS', ''].map((h, i) => (
-                <Text key={i} style={{ flex: [2.2, 1, 0.8, 0.6, 0.6][i], color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: i === 4 ? 'right' : 'left' }}>
+                <Text key={i} style={{ flex: [2.2, 1, 0.8, 0.6, 0.6][i], color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: i === 4 ? 'right' : 'left' }}>
                   {h}
                 </Text>
               ))}
@@ -768,12 +770,9 @@ export default function CmsCanales() {
                   <View style={{ aspectRatio: 16 / 9, backgroundColor: '#0a0a12', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {ch.logoUrl
                       // @ts-ignore – web-only img
-                      ? <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ maxHeight: 52, maxWidth: 130, objectFit: 'contain', opacity: 0.9 }} />
+                      ? <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ width: '72%', height: '72%', objectFit: 'contain', opacity: 0.9 }} />
                       : <FontAwesome name="television" size={28} color="rgba(255,255,255,0.1)" />
                     }
-                    <View style={{ position: 'absolute', top: 8, left: 8 }}>
-                      <StatusBadge status={ch.status} isLive={ch.isLive} />
-                    </View>
                     {ch.isLive && (
                       <View style={{ position: 'absolute', bottom: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
                         <FontAwesome name="eye" size={9} color="#fff" />
@@ -783,11 +782,11 @@ export default function CmsCanales() {
                   </View>
 
                   <View style={{ padding: 14 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                       <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>{ch.nombre}</Text>
-                      <HealthBadge health={ch.healthStatus} />
+                      <StatusBadge status={ch.status} isLive={ch.isLive} />
                     </View>
-                    <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 11 }}>{catName} · {ch.resolution} · {ch.streamProtocol}</Text>
+                    <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 11 }}>{catName}</Text>
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 12, justifyContent: 'flex-end' }}>
                       <TouchableOpacity
                         onPress={(e) => { e.stopPropagation?.(); if (accessToken) toggleChannelStatusApi(accessToken, ch.id); }}
