@@ -13,12 +13,21 @@ import { Platform, StyleSheet, View } from 'react-native';
 function WebHlsPlayer({
   src,
   style,
+  volume = 1,
 }: {
   src: string;
   style?: object;
+  volume?: number;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+      videoRef.current.muted = volume === 0;
+    }
+  }, [volume]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -84,14 +93,14 @@ function WebHlsPlayer({
     autoPlay: true,
     playsInline: true,
     controls: false,
-    muted: false,
+    muted: volume === 0,
   });
 }
 
 // ─────────────────────────────────────────────
 // Native HLS player (expo-av — SDK 52 compatible)
 // ─────────────────────────────────────────────
-function NativeHlsPlayer({ src, style }: { src: string; style?: object }) {
+function NativeHlsPlayer({ src, style, volume = 1 }: { src: string; style?: object; volume?: number }) {
   // Lazy import expo-av to avoid issues on web
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { Video, ResizeMode } = require('expo-av') as typeof import('expo-av');
@@ -101,6 +110,8 @@ function NativeHlsPlayer({ src, style }: { src: string; style?: object }) {
       source={{ uri: src }}
       useNativeControls={false}
       resizeMode={ResizeMode.CONTAIN}
+      volume={volume}
+      isMuted={volume === 0}
       shouldPlay
       isLooping
     />
@@ -113,21 +124,22 @@ function NativeHlsPlayer({ src, style }: { src: string; style?: object }) {
 interface HlsVideoPlayerProps {
   src: string;
   style?: object;
+  volume?: number;
   /** Not used in CMS edition — kept for API compatibility with Player */
   onPlayerReady?: (player: unknown) => void;
 }
 
-export function HlsVideoPlayer({ src, style }: HlsVideoPlayerProps) {
+export function HlsVideoPlayer({ src, style, volume = 1 }: HlsVideoPlayerProps) {
   if (Platform.OS === 'web') {
     return (
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
-        <WebHlsPlayer src={src} style={style} />
+        <WebHlsPlayer src={src} style={style} volume={volume} />
       </View>
     );
   }
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
-      <NativeHlsPlayer src={src} style={style} />
+      <NativeHlsPlayer src={src} style={style} volume={volume} />
     </View>
   );
 }

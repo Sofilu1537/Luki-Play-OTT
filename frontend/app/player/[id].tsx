@@ -16,10 +16,10 @@ import React, {
 } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Pressable,
-  FlatList, Animated, Platform,
+  FlatList, Animated, Platform, PanResponder,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChannels, getCurrentProgram, getProgressPercent } from '../../services/useChannels';
 import { HlsVideoPlayer } from '../../components/HlsVideoPlayer';
@@ -41,7 +41,7 @@ function Icon({ name, size = 20, color = '#fff' }: { name: string; size?: number
     grid: '⠿', settings: '⚙️', heart: '♥', heartFill: '♥', pip: '⧉',
     back10: '↺', channelList: '≡', close: '✕', play: '▶', pause: '⏸',
     number: '#', arrow: '→', fire: '🔥', check: '✓', fullscreen: '⛶',
-    back: '←',
+    back: '←', volume: '🔊', mute: '🔇',
   };
   return <Text style={{ fontSize: size, color, lineHeight: size + 4 }}>{icons[name] ?? name}</Text>;
 }
@@ -78,8 +78,8 @@ function TopBar({
 }
 
 function BottomInfoBar({
-  channel, isFavorite, opacity, onFavorite,
-}: { channel: Channel; isFavorite: boolean; opacity: Animated.Value; onFavorite: () => void }) {
+  channel, isFavorite, opacity, onFavorite, onFullscreen, isFullscreen, onVolumeChange, volume = 1
+}: { channel: Channel; isFavorite: boolean; opacity: Animated.Value; onFavorite: () => void; onFullscreen?: () => void; isFullscreen?: boolean; onVolumeChange?: (v: number) => void; volume?: number }) {
   const program = getCurrentProgram(channel);
   return (
     <Animated.View style={[styles.bottomInfoBar, { opacity }]}>
@@ -95,6 +95,43 @@ function BottomInfoBar({
       <View style={styles.infoCenter}>
         <Text style={styles.programName} numberOfLines={1}>{program.title}</Text>
         <View style={styles.liveDot} />
+      </View>
+      <View style={styles.infoRight}>
+        {onVolumeChange && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 4 }}>
+            <TouchableOpacity onPress={() => onVolumeChange(volume === 0 ? 1 : 0)} style={styles.iconBtn}>
+              <Icon name={volume < 0.05 ? 'mute' : 'volume'} size={20} />
+            </TouchableOpacity>
+            <View 
+              style={{ width: 80, height: 24, justifyContent: 'center', marginHorizontal: 4 }}
+              onStartShouldSetResponder={() => true}
+              onResponderMove={(evt) => {
+                const x = evt.nativeEvent.locationX;
+                let v = x / 80;
+                if (v < 0) v = 0;
+                if (v > 1) v = 1;
+                onVolumeChange(v);
+              }}
+              onResponderGrant={(evt) => {
+                const x = evt.nativeEvent.locationX;
+                let v = x / 80;
+                if (v < 0) v = 0;
+                if (v > 1) v = 1;
+                onVolumeChange(v);
+              }}
+            >
+              <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
+                <View style={{ width: `${volume * 100}%`, height: '100%', backgroundColor: '#fff', borderRadius: 2 }} />
+                <View style={{ position: 'absolute', top: -5, left: `${volume * 100}%`, marginLeft: -7, width: 14, height: 14, borderRadius: 7, backgroundColor: '#fff' }} />
+              </View>
+            </View>
+          </View>
+        )}
+        {onFullscreen && (
+          <TouchableOpacity onPress={onFullscreen} style={styles.iconBtn}>
+            <Icon name={isFullscreen ? 'close' : 'fullscreen'} size={20} />
+          </TouchableOpacity>
+        )}
       </View>
     </Animated.View>
   );
@@ -233,6 +270,10 @@ export default function LivePlayer() {
   const [showNowPlaying, setShowNowPlaying] = useState(false);
   const [dialInput, setDialInput] = useState('');
   const [isLocked, setIsLocked] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [volume, setVolume] = useState(1.0);
+  
+  const playerRef = useRef<any>(null);
 
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -269,9 +310,72 @@ export default function LivePlayer() {
     setShowDial(false);
   };
 
+  const toggleFullscreen = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const docFuncs = ['requestFullscreen', 'webkitRequestFullscreen', 'mozRequestFullScreen', 'msRequestFullscreen'] as const;
+      const exitFuncs = ['exitFullscreen', 'webkitExitFullscreen', 'mozCancelFullScreen', 'msExitFullscreen'] as const;
+      const doc = document as any;
+      const el = playerRef.current || (document.documentElement as any);
+
+      if (!isFullscreen) {
+        for (const func of docFuncs) {
+          if (el[func]) {
+            el[func]();
+            break;
+          }
+        }
+      } else {
+        for (const func of exitFuncs) {
+          if (doc[func]) {
+            doc[func]();
+            break;
+          }
+        }
+      }
+    }
+  }, [isFullscreen]);
+
+  const handleVolumeChange = useCallback((v: number) => {
+    setVolume(v);
+  }, []);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        if (Math.abs(gestureState.dx) > 50) {
+          if (gestureState.dx < 0) {
+            // Swiped left -> next
+            setActiveIndex((prev) => (prev + 1) % channels.length);
+          } else {
+            // Swiped right -> prev
+            setActiveIndex((prev) => (prev - 1 + channels.length) % channels.length);
+          }
+        } else {
+          showControlsNow();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const onFullscreenChange = () => {
+        const doc = document as any;
+        const isFS = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement);
+        setIsFullscreen(isFS);
+      };
+      
+      const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+      events.forEach(e => document.addEventListener(e, onFullscreenChange));
+      return () => events.forEach(e => document.removeEventListener(e, onFullscreenChange));
+    }
+  }, []);
+
   if (channelsLoading) {
     return (
       <View style={[styles.player, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Stack.Screen options={{ headerShown: false }} />
         <StatusBar hidden />
         <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>▶ LUKI PLAY</Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>Cargando canales…</Text>
@@ -282,6 +386,7 @@ export default function LivePlayer() {
   if (!activeChannel) {
     return (
       <View style={[styles.player, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
+        <Stack.Screen options={{ headerShown: false }} />
         <StatusBar hidden />
         <Text style={{ color: '#f43f5e', fontSize: 16, fontWeight: '800', textAlign: 'center' }}>No hay canales disponibles</Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 10, textAlign: 'center' }}>
@@ -298,12 +403,16 @@ export default function LivePlayer() {
   }
 
   return (
-    <View style={styles.player}>
+    <View style={styles.player} ref={playerRef}>
+      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar hidden />
 
-      <Pressable style={StyleSheet.absoluteFill} onPress={showControlsNow}>
-        <HlsVideoPlayer src={activeChannel.streamUrl} />
-      </Pressable>
+      <View 
+        style={StyleSheet.absoluteFill} 
+        {...panResponder.panHandlers}
+      >
+        <HlsVideoPlayer src={activeChannel.streamUrl} volume={volume} />
+      </View>
 
       {dialInput !== '' && (
         <View style={styles.channelToast}>
@@ -316,7 +425,16 @@ export default function LivePlayer() {
       {showControls && (
         <>
           <TopBar isLocked={isLocked} onLock={() => setIsLocked(l => !l)} opacity={controlsOpacity} onBack={() => router.back()} />
-          <BottomInfoBar channel={activeChannel} isFavorite={activeChannel.isFavorite} opacity={controlsOpacity} onFavorite={() => setChannels(channels.map((c, i) => i === activeIndex ? { ...c, isFavorite: !c.isFavorite } : c))} />
+          <BottomInfoBar 
+            channel={activeChannel} 
+            isFavorite={activeChannel.isFavorite} 
+            opacity={controlsOpacity} 
+            onFavorite={() => setChannels(channels.map((c, i) => i === activeIndex ? { ...c, isFavorite: !c.isFavorite } : c))}
+            onFullscreen={toggleFullscreen}
+            isFullscreen={isFullscreen}
+            onVolumeChange={handleVolumeChange}
+            volume={volume}
+          />
           <LiveProgressBar channel={activeChannel} opacity={controlsOpacity} />
         </>
       )}
@@ -390,6 +508,7 @@ const styles = StyleSheet.create({
   channelLogo: { fontSize: 18 },
   channelName: { color: '#fff', fontWeight: '700', fontSize: 13 },
   infoCenter: { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
+  infoRight: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
   programName: { color: '#fff', fontSize: 14, fontWeight: '600', flexShrink: 1 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: S.accent },
   progressSection: {
