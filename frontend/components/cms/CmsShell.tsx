@@ -334,13 +334,16 @@ function TopBar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-  const firstName = profile?.email?.split('@')[0] ?? 'admin';
-  const initials  = firstName.slice(0, 2).toUpperCase();
+  const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim();
+  const displayName = (fullName || profile?.email?.split('@')[0] || 'admin').toUpperCase();
+  const initials  = displayName.slice(0, 2);
   const activeNavItem = getActiveNavItem(pathname);
   const pageTitle = activeNavItem?.labelFull ?? breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
   const activePageIcon = activeNavItem?.icon ?? pageIcon;
   const isDashboard = pathname === '/cms/dashboard' || pathname?.startsWith('/cms/dashboard/');
   const isLightDashboard = !isDark && isDashboard;
+  const topBarChipBackground = isLightDashboard ? 'rgba(96,38,158,0.12)' : isDark ? 'rgba(255,184,0,0.25)' : 'rgba(96,38,158,0.25)';
+  const topBarChipBorder = isLightDashboard ? 'rgba(96,38,158,0.28)' : isDark ? 'rgba(255,184,0,0.60)' : 'rgba(96,38,158,0.60)';
 
   return (
     <LinearGradient
@@ -381,31 +384,29 @@ function TopBar({
 
       {/* Right: theme toggle + avatar */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        {isLightDashboard && (
-          <View
+        <View
+          style={{
+            backgroundColor: topBarChipBackground,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: topBarChipBorder,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+          }}
+        >
+          <Text
             style={{
-              backgroundColor: '#FFF7E2',
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: 'rgba(255,184,0,0.34)',
-              paddingHorizontal: 12,
-              paddingVertical: 8,
+              color: isDark ? '#FFDA6B' : '#FFFFFF',
+              fontSize: 12,
+              fontWeight: '800',
+              letterSpacing: 0.9,
+              textTransform: 'uppercase',
+              fontFamily: FONT_FAMILY.bodyBold,
             }}
           >
-            <Text
-              style={{
-                color: '#B77900',
-                fontSize: 12,
-                fontWeight: '800',
-                letterSpacing: 0.9,
-                textTransform: 'uppercase',
-                fontFamily: FONT_FAMILY.bodyBold,
-              }}
-            >
-              ⚡ FIFA WORLD CUP 2026
-            </Text>
-          </View>
-        )}
+            ⚡ FIFA WORLD CUP 2026
+          </Text>
+        </View>
 
         {/* Dark / Light toggle */}
         <TouchableOpacity
@@ -415,9 +416,9 @@ function TopBar({
             width:           38,
             height:          38,
             borderRadius:    10,
-            backgroundColor: isLightDashboard ? 'rgba(96,38,158,0.12)' : isDark ? 'rgba(255,184,0,0.25)' : 'rgba(96,38,158,0.25)',
+            backgroundColor: topBarChipBackground,
             borderWidth:     1,
-            borderColor:     isLightDashboard ? 'rgba(96,38,158,0.28)' : isDark ? 'rgba(255,184,0,0.60)' : 'rgba(96,38,158,0.60)',
+            borderColor:     topBarChipBorder,
             alignItems:      'center',
             justifyContent:  'center',
           }}
@@ -438,10 +439,10 @@ function TopBar({
               flexDirection:   'row',
               alignItems:      'center',
               gap:             8,
-              backgroundColor: isLightDashboard ? '#FAF6E7' : theme.surfaceBg,
+              backgroundColor: topBarChipBackground,
               borderRadius:    12,
               borderWidth:     1,
-              borderColor:     isLightDashboard ? 'rgba(255,184,0,0.48)' : theme.border,
+              borderColor:     topBarChipBorder,
               paddingHorizontal: 8,
               paddingVertical:   6,
             }}
@@ -453,22 +454,22 @@ function TopBar({
                 borderRadius:    8,
                 alignItems:      'center',
                 justifyContent:  'center',
-                backgroundColor: theme.accentSoft,
+                backgroundColor: isDark ? 'rgba(255,184,0,0.16)' : 'rgba(255,255,255,0.10)',
                 borderWidth:     1,
-                borderColor:     theme.accentBorder,
+                borderColor:     isDark ? 'rgba(255,184,0,0.40)' : 'rgba(255,255,255,0.24)',
               }}
             >
-              <Text style={{ color: isDark ? theme.accent : theme.text, fontSize: 11, fontWeight: '800' }}>
+              <Text style={{ color: isDark ? theme.accent : '#FFFFFF', fontSize: 11, fontWeight: '800' }}>
                 {initials}
               </Text>
             </View>
-              <Text style={{ color: isLightDashboard ? '#240046' : '#FAF6E7', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
-              {firstName}
+              <Text style={{ color: isDark ? '#FAF6E7' : '#FFFFFF', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              {displayName}
             </Text>
             <FontAwesome
               name={menuOpen ? 'chevron-up' : 'chevron-down'}
               size={9}
-              color={isLightDashboard ? '#60269E' : theme.textMuted}
+              color={isDark ? theme.textMuted : '#FFFFFF'}
             />
           </TouchableOpacity>
 
@@ -529,16 +530,25 @@ function ProfileModal({
   visible,
   onClose,
   onLogout,
+  onEditProfile,
 }: {
   visible: boolean;
   onClose: () => void;
   onLogout: () => void;
+  onEditProfile: () => void;
 }) {
   const { profile } = useCmsStore();
   if (!profile) return null;
 
-  const displayName = profile.email?.split('@')[0].toUpperCase() ?? 'USUARIO';
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim();
+  const displayName = (fullName || profile.email?.split('@')[0] || 'USUARIO').toUpperCase();
   const initials    = displayName.slice(0, 2);
+  const lastLoginLabel = profile.lastLoginAt
+    ? new Date(profile.lastLoginAt).toLocaleString('es-EC', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : 'Sin registros';
 
   const roleMeta: Record<string, { label: string; color: string; bg: string }> = {
     superadmin: { label: 'SUPERADMIN', color: '#FFB800', bg: 'rgba(255,184,0,0.12)'     },
@@ -556,11 +566,12 @@ function ProfileModal({
   const status = statusMeta[profile.status] ?? statusMeta.active;
 
   const infoRows: { label: string; value: string; icon: React.ComponentProps<typeof FontAwesome>['name'] }[] = [
-    { label: 'Correo electrónico', value: profile.email,                              icon: 'envelope'    },
-    { label: 'ID de usuario',      value: profile.id,                                 icon: 'id-badge'    },
-    { label: 'Rol',                value: role.label,                                 icon: 'shield'      },
-    { label: 'Estado',             value: status.label,                               icon: 'circle'      },
-    { label: 'Contrato',           value: profile.contractNumber ?? 'N/A — Interno',  icon: 'file-text-o' },
+    { label: 'Nombres completos',  value: fullName || 'No especificado',                  icon: 'user'         },
+    { label: 'Cédula de identidad',value: profile.idNumber ?? 'No especificada',          icon: 'credit-card'  },
+    { label: 'Correo electrónico', value: profile.email,                                  icon: 'envelope'     },
+    { label: 'Rol',                value: role.label,                                     icon: 'shield'      },
+    { label: 'Último inicio de sesión', value: lastLoginLabel,                            icon: 'clock-o'      },
+    { label: 'Estado',             value: status.label,                                   icon: 'circle'       },
   ];
 
   return (
@@ -591,6 +602,26 @@ function ProfileModal({
           }}
           onPress={() => {}}
         >
+          <TouchableOpacity
+            onPress={onClose}
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.12)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2,
+            }}
+          >
+            <FontAwesome name="close" size={14} color="#FAF6E7" />
+          </TouchableOpacity>
+
           {/* Header gradient */}
           <LinearGradient
             colors={['rgba(36,0,70,0.97)', 'rgba(96,38,158,0.88)']}
@@ -647,20 +678,34 @@ function ProfileModal({
             </View>
           </LinearGradient>
 
-          {/* Info rows */}
-          <View style={{ padding: 20 }}>
-            <Text
-              style={{
-                color:         'rgba(255,255,255,0.35)',
-                fontSize:      10,
-                fontWeight:    '800',
-                letterSpacing: 1.5,
-                marginBottom:  12,
-                fontFamily:    FONT_FAMILY.bodyBold,
-              }}
-            >
-              INFORMACIÓN DE LA CUENTA
-            </Text>
+          <ScrollView style={{ maxHeight: 440 }} contentContainerStyle={{ padding: 20, paddingBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <Text
+                style={{
+                  color:         'rgba(255,255,255,0.35)',
+                  fontSize:      10,
+                  fontWeight:    '800',
+                  letterSpacing: 1.5,
+                  fontFamily:    FONT_FAMILY.bodyBold,
+                }}
+              >
+                INFORMACIÓN DE LA CUENTA
+              </Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 8,
+                  borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
+                  backgroundColor: C.accent,
+                  overflow: 'hidden',
+                }}
+                onPress={() => { onClose(); onEditProfile(); }}
+              >
+                <FontAwesome name="pencil" size={13} color="#1A1A2E" />
+                <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 16, fontFamily: FONT_FAMILY.bodySemiBold }}>
+                  Editar perfil
+                </Text>
+              </TouchableOpacity>
+            </View>
             {infoRows.map((row, i) => (
               <View
                 key={row.label}
@@ -699,59 +744,58 @@ function ProfileModal({
                   </Text>
                   <Text
                     style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
-                    numberOfLines={1}
                   >
                     {row.value}
                   </Text>
                 </View>
               </View>
             ))}
-          </View>
 
-          {/* Permissions */}
-          {profile.permissions && profile.permissions.length > 0 && (
-            <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-              <Text
-                style={{
-                  color:         'rgba(255,255,255,0.35)',
-                  fontSize:      10,
-                  fontWeight:    '800',
-                  letterSpacing: 1.5,
-                  marginBottom:  10,
-                  fontFamily:    FONT_FAMILY.bodyBold,
-                }}
-              >
-                PERMISOS ASIGNADOS
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {profile.permissions.map((p) => (
-                  <View
-                    key={p}
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      borderRadius:    6,
-                      paddingHorizontal: 8,
-                      paddingVertical:   4,
-                      borderWidth:     1,
-                      borderColor:     'rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
-                      {p}
-                    </Text>
-                  </View>
-                ))}
+            {profile.entitlements && profile.entitlements.length > 0 && (
+              <View style={{ paddingTop: 18 }}>
+                <Text
+                  style={{
+                    color:         'rgba(255,255,255,0.35)',
+                    fontSize:      10,
+                    fontWeight:    '800',
+                    letterSpacing: 1.5,
+                    marginBottom:  10,
+                    fontFamily:    FONT_FAMILY.bodyBold,
+                  }}
+                >
+                  ENTITLEMENTS
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {profile.entitlements.map((entitlement) => (
+                    <View
+                      key={entitlement}
+                      style={{
+                        backgroundColor: 'rgba(255,184,0,0.10)',
+                        borderRadius:    6,
+                        paddingHorizontal: 8,
+                        paddingVertical:   4,
+                        borderWidth:     1,
+                        borderColor:     'rgba(255,184,0,0.22)',
+                      }}
+                    >
+                      <Text style={{ color: '#FFDA6B', fontSize: 10, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                        {entitlement}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </ScrollView>
 
           {/* Actions */}
-          <View style={{ padding: 20, paddingTop: 4, gap: 8 }}>
+          <View style={{ padding: 20, paddingTop: 4, alignItems: 'flex-end' }}>
             <TouchableOpacity
               onPress={() => { onClose(); onLogout(); }}
               style={{
                 backgroundColor: 'rgba(209,16,90,0.12)',
                 borderRadius:    12,
+                paddingHorizontal: 16,
                 paddingVertical: 12,
                 alignItems:      'center',
                 borderWidth:     1,
@@ -764,21 +808,6 @@ function ProfileModal({
                   Cerrar sesión
                 </Text>
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                borderRadius:    12,
-                paddingVertical: 12,
-                alignItems:      'center',
-                borderWidth:     1,
-                borderColor:     'rgba(255,255,255,0.08)',
-              }}
-            >
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '600', fontSize: 13, fontFamily: FONT_FAMILY.bodySemiBold }}>
-                Cerrar
-              </Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -902,6 +931,7 @@ function CmsShellInner({ breadcrumbs, pageIcon, children }: CmsShellProps) {
         visible={showProfile}
         onClose={() => setShowProfile(false)}
         onLogout={handleLogout}
+        onEditProfile={() => router.push('/cms/profile' as never)}
       />
     </View>
   );

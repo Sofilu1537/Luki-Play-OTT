@@ -19,8 +19,9 @@ export class InMemoryUserRepository implements UserRepository, OnModuleInit {
       new User({ id: 'usr-004', contractNumber: 'CONTRACT-004', email: 'ana@example.com', phone: '+57300777888', passwordHash: hash, role: UserRole.CLIENTE, status: UserStatus.ACTIVE, accountId: 'acc-004', createdAt: new Date() }),
       new User({ id: 'usr-ott-001', contractNumber: 'OTT-000001', email: 'pedro@example.com', phone: '+57300999000', passwordHash: hash, role: UserRole.CLIENTE, status: UserStatus.ACTIVE, accountId: 'acc-ott-001', createdAt: new Date() }),
       new User({ id: 'usr-005', contractNumber: 'CONTRACT-005', email: 'sofia.soria.chamba@gmail.com', phone: '+593999000111', firstName: 'Sofia', lastName: 'Soria', passwordHash: hash, role: UserRole.CLIENTE, status: UserStatus.ACTIVE, accountId: 'acc-005', createdAt: new Date() }),
-      new User({ id: 'usr-admin-001', contractNumber: null, email: 'admin@lukiplay.com', firstName: 'Admin', lastName: 'Principal', passwordHash: hash, role: UserRole.SUPERADMIN, status: UserStatus.ACTIVE, accountId: null, createdAt: new Date() }),
-      new User({ id: 'usr-soporte-001', contractNumber: null, email: 'soporte@lukiplay.com', firstName: 'Agente', lastName: 'Soporte', passwordHash: hash, role: UserRole.SOPORTE, status: UserStatus.ACTIVE, accountId: null, createdAt: new Date() }),
+      new User({ id: 'usr-admin-001', contractNumber: null, email: 'admin@lukiplay.com', firstName: 'Carlos', lastName: 'Luki', idNumber: '0102030405', passwordHash: hash, role: UserRole.SUPERADMIN, status: UserStatus.ACTIVE, accountId: null, createdAt: new Date() }),
+      new User({ id: 'usr-admin-002', contractNumber: null, email: 'gestion@lukiplay.com', firstName: 'Paula', lastName: 'Gestion', idNumber: '0102030407', passwordHash: hash, role: UserRole.ADMIN, status: UserStatus.ACTIVE, accountId: null, createdAt: new Date(), dynamicPermissions: ['cms:dashboard', 'cms:users', 'cms:users:read', 'cms:users:write'] }),
+      new User({ id: 'usr-soporte-001', contractNumber: null, email: 'soporte@lukiplay.com', firstName: 'Andrea', lastName: 'Soporte', idNumber: '0102030406', passwordHash: hash, role: UserRole.SOPORTE, status: UserStatus.ACTIVE, accountId: null, createdAt: new Date() }),
     ];
 
     for (const user of seedUsers) {

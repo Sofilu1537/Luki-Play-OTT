@@ -28,6 +28,9 @@ export interface CmsAuthResponse {
 
 export interface CmsUserProfile {
   id: string;
+  firstName: string | null;
+  lastName: string | null;
+  idNumber: string | null;
   email: string;
   role: string;
   status: string;
@@ -37,6 +40,7 @@ export interface CmsUserProfile {
   serviceStatus: string | null;
   canAccessOtt: boolean;
   restrictionMessage: string | null;
+  lastLoginAt: string | null;
   permissions: string[];
   entitlements: string[];
 }

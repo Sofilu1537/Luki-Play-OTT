@@ -38,6 +38,7 @@ interface CmsState {
   logout: () => void;
   bootstrapSession: () => Promise<void>;
   restoreSession: (token: string) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,6 +54,7 @@ interface CmsState {
  *
  * Credentials:
  *   soporte@lukiplay.com / password123  (SUPPORT)
+ *   gestion@lukiplay.com / password123  (ADMIN)
  *   admin@lukiplay.com   / password123  (SUPERADMIN)
  */
 export const useCmsStore = create<CmsState>((set, get) => ({
@@ -171,5 +173,12 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       await clearTokens();
       set({ profile: null, accessToken: null, isLoading: false, isRestoring: false, hasRestored: true });
     }
+  },
+
+  refreshProfile: async () => {
+    const { accessToken } = get();
+    if (!accessToken) return;
+    const profile = await cmsGetMe(accessToken);
+    set({ profile });
   },
 }));

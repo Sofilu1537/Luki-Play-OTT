@@ -34,6 +34,7 @@ export class User {
   // Extended security fields
   firstName: string | null;
   lastName: string | null;
+  idNumber: string | null;
   mustChangePassword: boolean;
   mfaEnabled: boolean;
   lockedUntil: Date | null;
@@ -54,6 +55,7 @@ export class User {
     createdAt: Date;
     firstName?: string | null;
     lastName?: string | null;
+    idNumber?: string | null;
     mustChangePassword?: boolean;
     mfaEnabled?: boolean;
     lockedUntil?: Date | null;
@@ -73,6 +75,7 @@ export class User {
     this.createdAt = props.createdAt;
     this.firstName = props.firstName ?? null;
     this.lastName = props.lastName ?? null;
+    this.idNumber = props.idNumber ?? null;
     this.mustChangePassword = props.mustChangePassword ?? false;
     this.mfaEnabled = props.mfaEnabled ?? false;
     this.lockedUntil = props.lockedUntil ?? null;

@@ -54,6 +54,9 @@ export class GetCurrentUserUseCase {
 
     return {
       id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      idNumber: user.idNumber,
       contractNumber: user.contractNumber,
       email: user.email,
       role: user.role,
@@ -63,6 +66,7 @@ export class GetCurrentUserUseCase {
       serviceStatus,
       canAccessOtt,
       restrictionMessage,
+      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       permissions,
       entitlements,
     };

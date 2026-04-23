@@ -119,12 +119,21 @@ async function main() {
     // ─── 2. Create internal CMS users ───────────────────────
     await tx.customer.upsert({
       where: { email: 'admin@lukiplay.com' },
-      update: {},
+      update: {
+        nombre: 'Carlos Luki',
+        firstName: 'Carlos',
+        lastName: 'Luki',
+        idNumber: '0102030405',
+        isCmsUser: true,
+        isSubscriber: false,
+        isAccountActivated: true,
+      },
       create: {
-        nombre: 'Admin Principal',
-        firstName: 'Admin',
-        lastName: 'Principal',
+        nombre: 'Carlos Luki',
+        firstName: 'Carlos',
+        lastName: 'Luki',
         email: 'admin@lukiplay.com',
+        idNumber: '0102030405',
         passwordHash: defaultPasswordHash,
         role: 'SUPERADMIN',
         status: 'ACTIVE',
@@ -135,13 +144,50 @@ async function main() {
     });
 
     await tx.customer.upsert({
-      where: { email: 'soporte@lukiplay.com' },
-      update: {},
+      where: { email: 'gestion@lukiplay.com' },
+      update: {
+        nombre: 'Paula Gestion',
+        firstName: 'Paula',
+        lastName: 'Gestion',
+        idNumber: '0102030407',
+        permissions: ['cms:dashboard', 'cms:users', 'cms:users:read', 'cms:users:write'],
+        isCmsUser: true,
+        isSubscriber: false,
+        isAccountActivated: true,
+      },
       create: {
-        nombre: 'Agente Soporte',
-        firstName: 'Agente',
+        nombre: 'Paula Gestion',
+        firstName: 'Paula',
+        lastName: 'Gestion',
+        email: 'gestion@lukiplay.com',
+        idNumber: '0102030407',
+        passwordHash: defaultPasswordHash,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        permissions: ['cms:dashboard', 'cms:users', 'cms:users:read', 'cms:users:write'],
+        isCmsUser: true,
+        isSubscriber: false,
+        isAccountActivated: true,
+      },
+    });
+
+    await tx.customer.upsert({
+      where: { email: 'soporte@lukiplay.com' },
+      update: {
+        nombre: 'Andrea Soporte',
+        firstName: 'Andrea',
+        lastName: 'Soporte',
+        idNumber: '0102030406',
+        isCmsUser: true,
+        isSubscriber: false,
+        isAccountActivated: true,
+      },
+      create: {
+        nombre: 'Andrea Soporte',
+        firstName: 'Andrea',
         lastName: 'Soporte',
         email: 'soporte@lukiplay.com',
+        idNumber: '0102030406',
         passwordHash: defaultPasswordHash,
         role: 'SOPORTE',
         status: 'ACTIVE',
@@ -151,7 +197,7 @@ async function main() {
       },
     });
 
-    console.log('✅ 2 CMS users created (admin + soporte)');
+    console.log('✅ 3 CMS users created (superadmin + admin + soporte)');
 
     // ─── 3. Create default categories ───────────────────────
     const defaultCategories = [
