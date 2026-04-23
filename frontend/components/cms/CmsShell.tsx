@@ -274,9 +274,8 @@ function TopBar({
   const pageTitle = activeNavItem?.labelFull ?? breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
   const activePageIcon = activeNavItem?.icon ?? pageIcon;
   const isDashboard = pathname === '/cms/dashboard' || pathname?.startsWith('/cms/dashboard/');
-  const isLightDashboard = !isDark && isDashboard;
-  const topBarChipBackground = isLightDashboard ? 'rgba(96,38,158,0.12)' : isDark ? 'rgba(255,184,0,0.25)' : 'rgba(96,38,158,0.25)';
-  const topBarChipBorder = isLightDashboard ? 'rgba(96,38,158,0.28)' : isDark ? 'rgba(255,184,0,0.60)' : 'rgba(96,38,158,0.60)';
+  const topBarChipBackground = isDashboard ? 'rgba(96,38,158,0.12)' : 'rgba(96,38,158,0.25)';
+  const topBarChipBorder     = isDashboard ? 'rgba(96,38,158,0.28)' : 'rgba(96,38,158,0.60)';
 
   return (
     <LinearGradient
@@ -319,17 +318,17 @@ function TopBar({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View
           style={{
-            backgroundColor: topBarChipBackground,
+            backgroundColor: 'rgba(96,38,158,0.25)',
             borderRadius: 10,
             borderWidth: 1,
-            borderColor: topBarChipBorder,
+            borderColor: 'rgba(96,38,158,0.60)',
             paddingHorizontal: 12,
             paddingVertical: 8,
           }}
         >
           <Text
             style={{
-              color: isDark ? '#FFDA6B' : '#FFFFFF',
+              color: '#FFFFFF',
               fontSize: 12,
               fontWeight: '800',
               letterSpacing: 0.9,
@@ -387,22 +386,22 @@ function TopBar({
                 borderRadius:    8,
                 alignItems:      'center',
                 justifyContent:  'center',
-                backgroundColor: isDark ? 'rgba(255,184,0,0.16)' : 'rgba(255,255,255,0.10)',
+                backgroundColor: 'rgba(255,255,255,0.10)',
                 borderWidth:     1,
-                borderColor:     isDark ? 'rgba(255,184,0,0.40)' : 'rgba(255,255,255,0.24)',
+                borderColor:     'rgba(255,255,255,0.24)',
               }}
             >
-              <Text style={{ color: isDark ? theme.accent : '#FFFFFF', fontSize: 11, fontWeight: '800' }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800' }}>
                 {initials}
               </Text>
             </View>
-              <Text style={{ color: isDark ? '#FAF6E7' : '#FFFFFF', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
               {displayName}
             </Text>
             <FontAwesome
               name={menuOpen ? 'chevron-up' : 'chevron-down'}
               size={9}
-              color={isDark ? theme.textMuted : '#FFFFFF'}
+              color='#FFFFFF'
             />
           </TouchableOpacity>
 
@@ -413,33 +412,29 @@ function TopBar({
                 top:             46,
                 right:           0,
                 minWidth:        160,
-                backgroundColor: isDark ? '#1E0A3C' : '#FFFFFF',
+                backgroundColor: '#FFFFFF',
                 borderRadius:    12,
                 borderWidth:     1,
-                borderColor:     isDark ? theme.border : 'rgba(36,0,70,0.12)',
+                borderColor:     'rgba(36,0,70,0.12)',
                 overflow:        'hidden',
                 zIndex:    60,
                 elevation: 60,
                 shadowColor:   '#000',
-                shadowOpacity: isDark ? 0.35 : 0.16,
-                shadowRadius:  isDark ? 16 : 18,
-                shadowOffset:  { width: 0, height: isDark ? 8 : 10 },
-                ...(isDark
-                  ? {}
-                  : {
-                      boxShadow: '0px 14px 30px rgba(24,39,75,0.16)',
-                    }),
+                shadowOpacity: 0.16,
+                shadowRadius:  18,
+                shadowOffset:  { width: 0, height: 10 },
+                ...({ boxShadow: '0px 14px 30px rgba(24,39,75,0.16)' } as any),
               }}
             >
               <TouchableOpacity
                 onPress={() => { setMenuOpen(false); onShowProfile(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                <Text style={{ color: '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   Perfil
                 </Text>
               </TouchableOpacity>
-              <View style={{ height: 1, backgroundColor: isDark ? theme.border : 'rgba(36,0,70,0.10)' }} />
+              <View style={{ height: 1, backgroundColor: 'rgba(36,0,70,0.10)' }} />
               <TouchableOpacity
                 onPress={() => { setMenuOpen(false); onLogout(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}

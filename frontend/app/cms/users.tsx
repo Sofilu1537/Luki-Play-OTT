@@ -1659,7 +1659,7 @@ export default function CmsUsers() {
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: card.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <FontAwesome name={card.icon as never} size={16} color={card.color} />
                 </View>
-                <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 16, fontFamily: 'Montserrat-SemiBold' }}>{card.label}</Text>
+                <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{card.label}</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {card.warn ? (
@@ -1790,16 +1790,16 @@ export default function CmsUsers() {
             {/* Table header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', borderRadius: 8, marginBottom: 4, borderWidth: isDark ? 0 : 1, borderColor: isDark ? 'transparent' : 'rgba(130,130,130,0.34)' }}>
               {[
-                { label: 'CONTRATO', flex: 1.2 },
-                { label: 'NOMBRE',   flex: 2   },
-                { label: 'TIPO',     flex: 1   },
-                { label: 'ESTADO',   flex: 1   },
-                { label: 'PLAN',     flex: 1   },
-                { label: 'SESIONES', flex: 0.7 },
-                { label: 'EMAIL',    flex: 1.5 },
-                { label: 'ACCIONES', flex: 1.2 },
+                { label: 'CONTRATO', flex: 0.9  },
+                { label: 'NOMBRE',   flex: 2.6  },
+                { label: 'TIPO',     flex: 0.8  },
+                { label: 'ESTADO',   flex: 0.9  },
+                { label: 'PLAN',     flex: 1.1  },
+                { label: 'SESIONES', flex: 0.55 },
+                { label: 'EMAIL',    flex: 1.6  },
+                { label: 'ACCIONES', flex: 1.0, align: 'right' as const },
               ].map((col) => (
-                <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4 }}>
+                <View key={col.label || 'menu'} style={{ flex: col.flex, paddingHorizontal: 4, alignItems: (col as any).align === 'right' ? 'flex-end' : 'flex-start' }}>
                   <Text style={{
                     color: isDark ? theme.textMuted : '#240046',
                     fontSize: 11, fontWeight: '800',
@@ -1828,23 +1828,17 @@ export default function CmsUsers() {
                   borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)',
                 }}>
                   {/* CONTRATO */}
-                  <View style={{ flex: 1.2, paddingHorizontal: 4 }}>
-                    <Text style={{ color: user.contrato ? (isDark ? theme.text : theme.text) : (isDark ? theme.textMuted : theme.textMuted), fontSize: 15, fontWeight: user.contrato ? '600' : '400', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.contrato || '—'}</Text>
+                  <View style={{ flex: 0.9, paddingLeft: 4, paddingRight: 2 }}>
+                    <Text style={{ color: user.contrato ? (isDark ? theme.text : theme.text) : (isDark ? theme.textMuted : theme.textMuted), fontSize: 13, fontWeight: user.contrato ? '600' : '400', fontFamily: FONT_FAMILY.bodySemiBold }} numberOfLines={1}>{user.contrato || '—'}</Text>
                   </View>
 
                   {/* NOMBRE — avatar consistente + name */}
-                  <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: AVATAR_BG, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
-                      <Text style={{ color: AVATAR_TEXT, fontSize: 13, fontWeight: '800', fontFamily: 'Montserrat-SemiBold' }}>{initials(user.nombre)}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 16, fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.nombre}</Text>
-                      <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2, fontFamily: 'Montserrat-SemiBold' }}>{getUserTypeMeta(user, theme).label}</Text>
-                    </View>
+                  <View style={{ flex: 2.6, paddingLeft: 2, paddingRight: 4, justifyContent: 'center' }}>
+                    <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }} numberOfLines={1}>{user.nombre}</Text>
                   </View>
 
                   {/* TIPO — derivado de isSubscriber (fuente: BD) */}
-                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 0.8, paddingHorizontal: 4 }}>
                     {(() => { const t = getTipoMeta(user, theme); return (
                       <View style={{ backgroundColor: t.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
                         <Text style={{ color: t.color, fontSize: 13, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{t.label}</Text>
@@ -1853,31 +1847,31 @@ export default function CmsUsers() {
                   </View>
 
                   {/* ESTADO */}
-                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 0.9, paddingHorizontal: 4 }}>
                     <View style={{ backgroundColor: statusMeta.bg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' }}>
                       <Text style={{ color: statusMeta.color, fontSize: 13, fontWeight: '600', fontFamily: 'Montserrat-SemiBold' }}>{statusMeta.label}</Text>
                     </View>
                   </View>
 
                   {/* PLAN — accent color */}
-                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 1.1, paddingHorizontal: 4 }}>
                     <View style={{ backgroundColor: theme.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
                       <Text style={{ color: '#1A1A2E', fontSize: 11, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: 'Montserrat-SemiBold' }} numberOfLines={1}>{user.plan}</Text>
                     </View>
                   </View>
 
                   {/* SESIONES */}
-                  <View style={{ flex: 0.7, paddingHorizontal: 4 }}>
-                    <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 15, fontWeight: '700' }}>{user.sesiones}/{user.maxDevices}</Text>
+                  <View style={{ flex: 0.55, paddingHorizontal: 4 }}>
+                    <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>{user.sesiones}/{user.maxDevices}</Text>
                   </View>
 
                   {/* EMAIL */}
-                  <View style={{ flex: 1.5, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 1.6, paddingHorizontal: 4 }}>
                     <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13 }} numberOfLines={1}>{user.email}</Text>
                   </View>
 
                   {/* Inline Actions */}
-                  <View style={{ flex: 1.2, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 1.0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, paddingHorizontal: 4 }}>
                     <TouchableOpacity
                       style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)', alignItems: 'center', justifyContent: 'center' }}
                       onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}
