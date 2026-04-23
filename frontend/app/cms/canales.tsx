@@ -8,6 +8,7 @@ import { useCmsStore } from '../../services/cmsStore';
 import { useChannelStore } from '../../services/channelStore';
 import { useCategoriasStore } from '../../services/categoriasStore';
 import type { AdminCanal, AdminCanalPayload } from '../../services/api/adminApi';
+import { resolveLogoUrl } from '../../services/api/config';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell from '../../components/cms/CmsShell';
 import { StatCard } from '../../components/cms/CmsComponents';
@@ -354,7 +355,7 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
                 {form.logoUrl ? (
                   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                   // @ts-ignore – web-only img element
-                  <img src={form.logoUrl} alt="Logo preview" style={{ height: 64, objectFit: 'contain', borderRadius: 8, background: '#1A1A2E', padding: 6 }} />
+                  <img src={resolveLogoUrl(form.logoUrl)} alt="Logo preview" style={{ height: 64, objectFit: 'contain', borderRadius: 8, background: '#1A1A2E', padding: 6 }} />
                 ) : null}
                 <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                   {Platform.OS === 'web' ? (
@@ -545,6 +546,8 @@ export default function CmsCanales() {
 
   if (!profile) return null;
 
+  const canDelete = profile.role === 'superadmin' || (profile.permissions ?? []).some((p) => p === 'cms:*' || p === 'cms:content:write');
+
   // Handlers
   function openCreate() {
     setEditingChannel(null);
@@ -560,7 +563,9 @@ export default function CmsCanales() {
   async function handleSave(formData: AdminCanalPayload) {
     if (!accessToken) return;
     try {
-      if (editingChannel) {
+      // A channel with a "ch-local-" ID was never persisted to the DB (stale localStorage)
+      const isLocalId = editingChannel?.id?.startsWith('ch-local-');
+      if (editingChannel && !isLocalId) {
         await updateChannelApi(accessToken, editingChannel.id, formData);
         setFeedback({ type: 'success', message: 'Canal actualizado.' });
       } else {
@@ -625,7 +630,6 @@ export default function CmsCanales() {
           <StatCard label="Total canales" value={stats.total} icon="television" color="#B07CC6" />
           <StatCard label="En vivo ahora" value={stats.live} icon="bolt" color="#17D1C6" />
           <StatCard label="Viewers totales" value={stats.viewers.toLocaleString()} icon="eye" color="#1E96FC" />
-          <StatCard label="Streams saludables" value={`${stats.healthy}/${stats.total}`} icon="check-circle" color="#17D1C6" />
         </View>
 
         {/* ── Filters Bar (Single line) ── */}
@@ -636,28 +640,24 @@ export default function CmsCanales() {
             <TextInput style={{ flex: 1, color: isDark ? theme.text : '#240046', fontSize: 13, ...webInput }} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o slug..." placeholderTextColor={isDark ? theme.textMuted : 'rgba(36,0,70,0.5)'} />
           </View>
 
-          {/* Status Filter Dropdown */}
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.26)' }}>
-            <FontAwesome name="filter" size={12} color={isDark ? theme.textMuted : '#240046'} />
-            <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 12, fontWeight: '600' }}>Todos los estados</Text>
-          </TouchableOpacity>
-
           {/* Category Filter Dropdown */}
           {Platform.OS === 'web' && (
             <View style={{ borderRadius: 8, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.26)', backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', overflow: 'hidden' }}>
               {/* @ts-ignore */}
-              <select value={filterCategory} onChange={(e: any) => setFilterCategory(e.target.value)} style={{ padding: '7px 12px', background: 'transparent', border: 'none', color: isDark ? theme.textSec : '#240046', fontSize: 12, fontFamily: 'Montserrat-SemiBold', outline: 'none', cursor: 'pointer', minWidth: 150 } as any}>
+              <select value={filterCategory} onChange={(e: any) => setFilterCategory(e.target.value)} style={{ padding: '7px 12px', background: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)', border: 'none', color: isDark ? theme.textSec : '#240046', fontSize: 12, fontFamily: 'Montserrat-SemiBold', outline: 'none', cursor: 'pointer', minWidth: 150, colorScheme: isDark ? 'dark' : 'light' } as any}>
                 <option value="all">Todas las categorías</option>
-                {activeCategories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.nombre}</option>))}
+                {categorias.map((cat) => (<option key={cat.id} value={cat.id}>{cat.nombre}</option>))}
               </select>
             </View>
           )}
 
           {/* View Toggle */}
           <View style={{ flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: theme.border }}>
-            {(['table', 'grid'] as ViewMode[]).map((m) => (<TouchableOpacity key={m} onPress={() => setViewMode(m)} style={{ width: 34, height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: viewMode === m ? theme.accentSoft : 'transparent' }}>
-              <FontAwesome name={m === 'table' ? 'list' : 'th-large'} size={13} color={viewMode === m ? theme.accent : theme.textMuted} />
-            </TouchableOpacity>))}
+            {(['table', 'grid'] as ViewMode[]).map((m) => (
+              <TouchableOpacity key={m} onPress={() => setViewMode(m)} style={{ width: 34, height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: viewMode === m ? theme.accentSoft : 'transparent' }}>
+                <FontAwesome name={m === 'table' ? 'list' : 'th-large'} size={13} color={viewMode === m ? theme.accent : theme.textMuted} />
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -686,8 +686,8 @@ export default function CmsCanales() {
           <View style={{ backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', overflow: 'hidden' }}>
             {/* Table Header */}
             <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)', backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.8)' }}>
-              {['CANAL', 'CATEGORÍA', 'ESTADO', 'RESOLUCIÓN', 'VIEWERS', 'SALUD', ''].map((h, i) => (
-                <Text key={i} style={{ flex: [2.2, 1, 0.8, 0.8, 0.6, 0.8, 0.6][i], color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: i === 6 ? 'right' : 'left' }}>
+              {['CANAL', 'CATEGORÍA', 'ESTADO', 'VIEWERS', ''].map((h, i) => (
+                <Text key={i} style={{ flex: [2.2, 1, 0.8, 0.6, 0.6][i], color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: i === 4 ? 'right' : 'left' }}>
                   {h}
                 </Text>
               ))}
@@ -704,9 +704,14 @@ export default function CmsCanales() {
                 >
                   {/* Canal */}
                   <View style={{ flex: 2.2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.accentBorder }}>
-                      <FontAwesome name="television" size={14} color={theme.accent} />
-                    </View>
+                    {ch.logoUrl ? (
+                      // @ts-ignore – web-only img
+                      <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain', background: 'rgba(120,60,180,0.1)', border: '1px solid rgba(120,60,180,0.25)', padding: 3, flexShrink: 0 }} />
+                    ) : (
+                      <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.accentBorder }}>
+                        <FontAwesome name="television" size={14} color={theme.accent} />
+                      </View>
+                    )}
                     <View>
                       <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '600' }}>{ch.nombre}</Text>
                       <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>/{ch.slug}</Text>
@@ -722,16 +727,10 @@ export default function CmsCanales() {
                   <View style={{ flex: 0.8 }}>
                     <StatusBadge status={ch.status} isLive={ch.isLive} />
                   </View>
-                  {/* Resolución */}
-                  <Text style={{ flex: 0.8, color: isDark ? theme.textSec : '#240046', fontSize: 12, fontWeight: '500' }}>{ch.resolution}</Text>
                   {/* Viewers */}
                   <Text style={{ flex: 0.6, color: ch.isLive ? theme.text : theme.textMuted, fontSize: 12, fontWeight: ch.isLive ? '700' : '400' }}>
                     {ch.isLive ? ch.viewerCount.toLocaleString() : '—'}
                   </Text>
-                  {/* Salud */}
-                  <View style={{ flex: 0.8 }}>
-                    <HealthBadge health={ch.healthStatus} />
-                  </View>
                   {/* Acciones */}
                   <View style={{ flex: 0.6, flexDirection: 'row', gap: 4, justifyContent: 'flex-end' }}>
                     <TouchableOpacity
@@ -740,12 +739,14 @@ export default function CmsCanales() {
                     >
                       <FontAwesome name="pencil" size={11} color={theme.textSec} />
                     </TouchableOpacity>
+                    {canDelete && (
                     <TouchableOpacity
                       onPress={(e) => { e.stopPropagation?.(); setDeleteConfirm(ch.id); }}
                       style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', backgroundColor: isDark ? theme.liftBg : 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <FontAwesome name="trash" size={11} color="#D1105A" />
                     </TouchableOpacity>
+                    )}
                   </View>
                 </TouchableOpacity>
               );
@@ -765,7 +766,11 @@ export default function CmsCanales() {
                 >
                   {/* Preview 16:9 */}
                   <View style={{ aspectRatio: 16 / 9, backgroundColor: '#0a0a12', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    <FontAwesome name="television" size={28} color="rgba(255,255,255,0.1)" />
+                    {ch.logoUrl
+                      // @ts-ignore – web-only img
+                      ? <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ maxHeight: 52, maxWidth: 130, objectFit: 'contain', opacity: 0.9 }} />
+                      : <FontAwesome name="television" size={28} color="rgba(255,255,255,0.1)" />
+                    }
                     <View style={{ position: 'absolute', top: 8, left: 8 }}>
                       <StatusBadge status={ch.status} isLive={ch.isLive} />
                     </View>
@@ -796,12 +801,14 @@ export default function CmsCanales() {
                       >
                         <FontAwesome name="pencil" size={11} color={theme.textSec} />
                       </TouchableOpacity>
+                      {canDelete && (
                       <TouchableOpacity
                         onPress={(e) => { e.stopPropagation?.(); setDeleteConfirm(ch.id); }}
                         style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.border }}
                       >
                         <FontAwesome name="trash" size={11} color="#D1105A" />
                       </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>

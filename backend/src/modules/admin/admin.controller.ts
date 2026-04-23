@@ -37,13 +37,17 @@ import { CreateComponenteDto } from './dto/create-componente.dto';
 import { UpdateComponenteDto } from './dto/update-componente.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { HlsValidatorService } from './hls-validator.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly hlsValidator: HlsValidatorService,
+  ) {}
 
   // ---- Users ---------------------------------------------------------------
 
@@ -255,6 +259,13 @@ export class AdminController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteCanal(@Param('id') id: string) {
     return this.adminService.deleteCanal(id);
+  }
+
+  @ApiOperation({ summary: 'Validate an HLS stream URL' })
+  @Permissions('cms:content:read')
+  @Post('canales/validate-stream')
+  validateStream(@Body() body: { url: string }) {
+    return this.hlsValidator.validate(body.url);
   }
 
   @ApiOperation({ summary: 'List all categories' })

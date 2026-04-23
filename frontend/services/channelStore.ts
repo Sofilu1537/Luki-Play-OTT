@@ -82,7 +82,8 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
     set({ isLoading: true });
     try {
       const data = await adminListCanales(accessToken);
-      if (Array.isArray(data) && data.length > 0) {
+      // Always overwrite localStorage with server data so stale local-temp IDs don't persist
+      if (Array.isArray(data)) {
         set({ channels: persist(data) });
       }
     } finally {

@@ -249,6 +249,11 @@ async function apiFetch<T>(
     throw new Error(msg);
   }
 
+  // 204 No Content or empty body — return undefined without parsing
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
+
   return res.json() as Promise<T>;
 }
 
@@ -568,6 +573,31 @@ export async function adminDeleteCanal(accessToken: string, id: string): Promise
   return apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
 }
 
+// ---------------------------------------------------------------------------
+// HLS stream validation
+// ---------------------------------------------------------------------------
+
+export type HlsStatus = 'VALID' | 'NO_SIGNAL' | 'INVALID';
+
+export interface HlsValidationResult {
+  status: HlsStatus;
+  isReachable: boolean;
+  hasPlaylist: boolean;
+  hasSegments: boolean;
+  segmentProbe?: { url: string; reachable: boolean };
+  error?: string;
+}
+
+export async function adminValidateStream(
+  accessToken: string,
+  url: string,
+): Promise<HlsValidationResult> {
+  return apiFetch<HlsValidationResult>('/admin/canales/validate-stream', accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
+
 export async function adminUploadChannelLogo(accessToken: string, file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
@@ -581,7 +611,9 @@ export async function adminUploadChannelLogo(accessToken: string, file: File): P
     throw new Error(err?.message ?? `Upload failed (${res.status})`);
   }
   const data = await res.json() as { url: string };
-  return `${API_BASE_URL}${data.url}`;
+  // Return the relative path (/uploads/logos/...) so it is environment-agnostic
+  // when stored in the DB. Use resolveLogoUrl() on the frontend to render it.
+  return data.url;
 }
 
 // ---------------------------------------------------------------------------

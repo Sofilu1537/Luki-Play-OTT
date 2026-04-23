@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { HlsValidatorService } from './hls-validator.service.js';
 
 /**
  * ChannelHealthService
@@ -12,9 +13,14 @@ import { PrismaService } from '../prisma/prisma.service.js';
  * moving average so the value decays naturally over time.
  *
  * Fields written:
- *   healthStatus        — 'HEALTHY' | 'OFFLINE'
+ *   healthStatus        — 'HEALTHY' | 'DEGRADED' | 'OFFLINE'
  *   lastHealthCheckAt   — timestamp of last attempt
  *   uptimePercent       — rolling moving average (0–100)
+ *
+ * Health mapping:
+ *   VALID      → HEALTHY   (reachable + valid M3U8 + active segments)
+ *   NO_SIGNAL  → DEGRADED  (reachable + valid M3U8, but no segments yet)
+ *   INVALID    → OFFLINE   (unreachable or not a valid HLS response)
  */
 @Injectable()
 export class ChannelHealthService {
@@ -23,10 +29,10 @@ export class ChannelHealthService {
   /** Number of samples used for the rolling uptime average */
   private static readonly ROLLING_SAMPLES = 100;
 
-  /** HTTP request timeout in milliseconds */
-  private static readonly TIMEOUT_MS = 6_000;
-
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly hlsValidator: HlsValidatorService,
+  ) {}
 
   // -------------------------------------------------------------------------
   // Cron — every 2 minutes
@@ -61,45 +67,38 @@ export class ChannelHealthService {
     streamUrl: string,
     currentUptime: number,
   ): Promise<void> {
-    const isUp = await this.probeUrl(streamUrl);
-    const newUptime = this.rollingAverage(currentUptime, isUp ? 100 : 0);
+    const result = await this.hlsValidator.validate(streamUrl, { probeSegment: false });
+
+    // Map HLS validation result to DB health status
+    let healthStatus: 'HEALTHY' | 'DEGRADED' | 'OFFLINE';
+    let uptimeSample: number;
+
+    switch (result.status) {
+      case 'VALID':
+        healthStatus  = 'HEALTHY';
+        uptimeSample  = 100;
+        break;
+      case 'NO_SIGNAL':
+        // Reachable and a valid playlist, but no segments — stream is degraded
+        healthStatus  = 'DEGRADED';
+        uptimeSample  = 0;
+        break;
+      default:
+        healthStatus  = 'OFFLINE';
+        uptimeSample  = 0;
+        break;
+    }
+
+    const newUptime = this.rollingAverage(currentUptime, uptimeSample);
 
     await this.prisma.channel.update({
       where: { id },
       data: {
-        healthStatus:       isUp ? 'HEALTHY' : 'OFFLINE',
-        lastHealthCheckAt:  new Date(),
-        uptimePercent:      newUptime,
+        healthStatus,
+        lastHealthCheckAt: new Date(),
+        uptimePercent:     newUptime,
       },
     });
-  }
-
-  // -------------------------------------------------------------------------
-  // HTTP probe
-  // -------------------------------------------------------------------------
-
-  private async probeUrl(url: string): Promise<boolean> {
-    const controller = new AbortController();
-    const timer = setTimeout(
-      () => controller.abort(),
-      ChannelHealthService.TIMEOUT_MS,
-    );
-
-    try {
-      // Try HEAD first (cheap); fall back to GET range request for strict HLS
-      const res = await fetch(url, {
-        method:  'HEAD',
-        signal:  controller.signal,
-        headers: { 'Range': 'bytes=0-0' },
-      });
-
-      // 2xx or 206 Partial Content = stream is reachable
-      return res.ok || res.status === 206;
-    } catch {
-      return false;
-    } finally {
-      clearTimeout(timer);
-    }
   }
 
   // -------------------------------------------------------------------------

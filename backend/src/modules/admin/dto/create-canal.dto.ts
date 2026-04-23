@@ -61,7 +61,7 @@ export class CreateCanalDto {
   })
   @IsOptional()
   @ValidateIf((o) => o.logoUrl !== undefined && o.logoUrl !== null && o.logoUrl !== '')
-  @IsUrl({ require_protocol: true })
+  @Matches(/^(https?:\/\/.+|\/uploads\/.+)$/, { message: 'logoUrl must be a valid URL or a relative upload path (/uploads/...)' })
   logoUrl?: string;
 
   @ApiProperty({ example: 'cat-001', description: 'Category ID' })
