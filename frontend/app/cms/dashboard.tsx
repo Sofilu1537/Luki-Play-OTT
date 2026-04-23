@@ -97,11 +97,9 @@ function DashboardContent({
   isLoading: boolean;
 }) {
   const { channels, isLoading: isLoadingChannels } = useChannelStore();
-  const { isDark } = useTheme();
+  const { theme } = useTheme();
   const { width } = useWindowDimensions();
-  const accentColor = '#FFB800';
-  const accentSoft = 'rgba(255,184,0,0.16)';
-  const accentBorder = 'rgba(255,184,0,0.40)';
+  const accentColor = theme.accent;
   const isDesktop = width >= 1024;
   const isTv = width >= 1600;
   const contentPadding = isTv ? 36 : isDesktop ? 28 : 18;

@@ -3,7 +3,6 @@ import { View, Text, Platform } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FONT_FAMILY } from '../../../styles/typography';
-import { C } from '../CmsShell';
 import { useTheme } from '../../../hooks/useTheme';
 
 const PLAN_PRICE = 26;
@@ -33,7 +32,7 @@ function MetricTile({
   color:     string;
 }) {
   const { isDark, theme } = useTheme();
-  const cardTextColor = isDark ? C.text : theme.text;
+  const cardTextColor = theme.text;
   const softUiShadow = !isDark && Platform.OS === 'web'
     ? ({ boxShadow: theme.softUiShadow } as any)
     : {};
@@ -44,14 +43,14 @@ function MetricTile({
   return (
     <View style={{
       flex: 1,
-      backgroundColor: isDark ? C.bgSecondary : '#fff',
+      backgroundColor: theme.cardBgInner,
       borderRadius: 14,
       paddingVertical: 12,
       paddingHorizontal: 8,
       borderWidth: 1,
       borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
       alignItems: 'center',
-      shadowColor: isDark ? '#000000' : '#A8B0C7',
+      shadowColor: theme.cardShadow,
       shadowOpacity: isDark ? 0.24 : 0.14,
       shadowRadius: isDark ? 12 : 8,
       shadowOffset: { width: isDark ? 6 : 4, height: isDark ? 6 : 4 },
@@ -91,11 +90,11 @@ function fmtUSD(v: number): string {
 
 export default function MonetizationWidget({ stats, isLoading }: MonetizationWidgetProps) {
   const { isDark, theme } = useTheme();
-  const cardTextColor = isDark ? C.text : theme.text;
-  const accentColor = '#FFB800';
-  const accentSoft = 'rgba(255,184,0,0.18)';
+  const cardTextColor = theme.text;
+  const accentColor    = theme.accent;
+  const accentSoft     = 'rgba(255,184,0,0.18)';
   const accentGradient = ['rgba(255,184,0,0.16)', 'rgba(255,184,0,0.06)'] as const;
-  const accentBorder = 'rgba(255,184,0,0.28)';
+  const accentBorder   = theme.accentBorder;
   const mrr           = stats?.mrr               ?? 0;
   const arr           = mrr * 12;
   const active        = stats?.activeSubscribers  ?? 0;
@@ -110,12 +109,12 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
 
   return (
     <View style={{
-      backgroundColor: isDark ? theme.cardBg : '#fff',
+      backgroundColor: theme.cardBg,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
       overflow: 'hidden',
-      shadowColor: isDark ? '#000000' : '#A8B0C7',
+      shadowColor: theme.cardShadow,
       shadowOpacity: isDark ? 0.36 : 0.18,
       shadowRadius: isDark ? 16 : 12,
       shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
@@ -130,11 +129,11 @@ export default function MonetizationWidget({ stats, isLoading }: MonetizationWid
         paddingHorizontal: 18,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? C.border : 'rgba(130,130,130,0.18)',
+        borderBottomColor: isDark ? theme.softUiBorder : theme.iconBorderSoft,
         gap: 8,
       }}>
-        <FontAwesome name="bar-chart" size={14} color={isDark ? C.muted : '#240046'} />
-        <Text style={{ color: isDark ? C.text : '#240046', fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+        <FontAwesome name="bar-chart" size={14} color={theme.chevron} />
+        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
           Monetización
         </Text>
       </View>

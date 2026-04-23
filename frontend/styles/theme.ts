@@ -45,6 +45,17 @@ export interface ThemeTokens {
   softUiShadow: string;
   softUiBorderDark: string;
   softUiShadowDark: string;
+  // ── Semantic tokens added for component-level theming ──────────────────────
+  /** Darker inner surface inside cards (e.g. MetricTile inside MonetizationWidget) */
+  cardBgInner:     string;
+  /** Shadow color for elevated cards */
+  cardShadow:      string;
+  /** Chevron / arrow icon color */
+  chevron:         string;
+  /** Soft border for icon containers (alpha badge rings) */
+  iconBorderSoft:  string;
+  /** Uppercase section header label color */
+  sectionLabel:    string;
 }
 
 export const darkTheme: ThemeTokens = {
@@ -77,12 +88,17 @@ export const darkTheme: ThemeTokens = {
   softUiShadow: 'none',
   softUiBorderDark: 'rgba(96,38,158,0.34)',
   softUiShadowDark: '8px 8px 18px rgba(0,0,0,0.34), -6px -6px 14px rgba(118,72,170,0.10)',
+  cardBgInner:     '#111122',
+  cardShadow:      '#000000',
+  chevron:         'rgba(255,255,255,0.55)',
+  iconBorderSoft:  'rgba(96,38,158,0.35)',
+  sectionLabel:    'rgba(255,255,255,0.85)',
 };
 
 export const lightTheme: ThemeTokens = {
   // Backgrounds — light neutral palette: white base + transparent gray surfaces
   bodyBg:       '#FFFFFF',                    // Blanco puro — fondo base de pantalla
-  cardBg:       'rgba(120,120,120,0.36)',    // Gris suave más visible — tarjetas
+  cardBg:       '#FFFFFF',                   // Blanco sólido — tarjetas de dashboard en modo claro
   surfaceBg:    'rgba(120,120,120,0.28)',    // Gris suave — superficies secundarias
   liftBg:       'rgba(120,120,120,0.40)',    // Gris translúcido más sólido — elementos elevados
   headerBg:     '#240046',                    // Igual que sidebar en modo claro
@@ -109,7 +125,38 @@ export const lightTheme: ThemeTokens = {
   softUiShadow: '10px 10px 22px rgba(24,39,75,0.13), -10px -10px 22px rgba(255,255,255,0.95)',
   softUiBorderDark: 'rgba(236,238,246,0.95)',
   softUiShadowDark: 'none',
+  cardBgInner:     '#FFFFFF',
+  cardShadow:      '#A8B0C7',
+  chevron:         '#240046',
+  iconBorderSoft:  'rgba(130,130,130,0.18)',
+  sectionLabel:    '#240046',
 };
+
+/**
+ * Spacing scale — use these instead of magic numbers.
+ * Import as: import { spacing } from '../styles/theme';
+ */
+export const spacing = {
+  xs:  4,
+  sm:  8,
+  md:  16,
+  lg:  24,
+  xl:  32,
+  xxl: 48,
+} as const;
+
+/**
+ * Border radius scale — use these instead of magic numbers.
+ * Import as: import { radius } from '../styles/theme';
+ */
+export const radius = {
+  sm:   8,
+  md:   12,
+  card: 14,
+  lg:   16,
+  xl:   18,
+  full: 999,
+} as const;
 
 /**
  * Sidebar tokens — always violet-dark regardless of app theme.

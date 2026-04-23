@@ -46,11 +46,13 @@ export default function CmsProfileScreen() {
       router.replace('/cms/login' as never);
       return;
     }
+    // Solo actualizar los campos si cambia el id del perfil
     setFirstName(profile.firstName ?? '');
     setLastName(profile.lastName ?? '');
     setIdNumber(profile.idNumber ?? '');
     setEmail(profile.email ?? '');
-  }, [profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, router]);
 
   const canSave = useMemo(() => {
     return Boolean(firstName.trim() && lastName.trim() && email.trim());
@@ -92,7 +94,7 @@ export default function CmsProfileScreen() {
         <View style={{ maxWidth: 880, width: '100%', alignSelf: 'center', gap: 18 }}>
           <View
             style={{
-              backgroundColor: isDark ? C.surface : '#FFFFFF',
+              backgroundColor: isDark ? C.bgTertiary : '#FFFFFF',
               borderRadius: 18,
               borderWidth: 1,
               borderColor: isDark ? C.border : 'rgba(36,0,70,0.10)',

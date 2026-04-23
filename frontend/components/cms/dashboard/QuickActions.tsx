@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { FONT_FAMILY } from '../../../styles/typography';
-import { C } from '../CmsShell';
 import { useTheme } from '../../../hooks/useTheme';
 
 interface QuickAction {
@@ -71,7 +70,7 @@ export default function QuickActions({
           style={{
             flex: 1,
             minWidth: minItemWidth,
-            backgroundColor: isDark ? theme.cardBg : '#fff',
+            backgroundColor: theme.cardBg,
             borderRadius: 14,
             padding: 16,
             borderWidth: 1,
@@ -79,7 +78,7 @@ export default function QuickActions({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 12,
-            shadowColor: isDark ? '#000000' : '#A8B0C7',
+            shadowColor: theme.cardShadow,
             shadowOpacity: isDark ? 0.3 : 0.16,
             shadowRadius: isDark ? 14 : 10,
             shadowOffset: { width: isDark ? 7 : 5, height: isDark ? 7 : 5 },
@@ -105,7 +104,7 @@ export default function QuickActions({
           {/* Labels */}
           <View style={{ flex: 1 }}>
             <Text style={{
-              color:        isDark ? C.text : theme.text,
+              color:        theme.text,
               fontSize:     15,
               fontWeight:   '700',
               fontFamily:   FONT_FAMILY.bodySemiBold,
@@ -114,7 +113,7 @@ export default function QuickActions({
             </Text>
             {showDescription ? (
               <Text style={{
-                color: isDark ? C.muted : 'rgba(36,0,70,0.72)',
+                color: theme.textMuted,
                 fontSize: 12,
                 marginTop: 3,
                 fontFamily: FONT_FAMILY.body,
@@ -124,7 +123,7 @@ export default function QuickActions({
             ) : null}
           </View>
 
-          <FontAwesome name="chevron-right" size={11} color={isDark ? C.muted : '#240046'} />
+          <FontAwesome name="chevron-right" size={11} color={theme.chevron} />
         </TouchableOpacity>
       ))}
     </View>
