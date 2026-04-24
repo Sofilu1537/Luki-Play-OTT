@@ -16,8 +16,6 @@ export interface AdminUser {
   lastName: string | null;
   email: string;
   telefono: string | null;
-  idNumber: string | null;
-  address: string | null;
   plan: string;
   planId: string | null;
   fechaInicio: string;
@@ -45,8 +43,6 @@ export interface AdminUserPayload {
   lastName?: string;
   email: string;
   telefono?: string;
-  idNumber?: string;
-  address?: string;
   plan?: string;
   planId?: string;
   contrato?: string;
@@ -107,7 +103,6 @@ export interface AdminPlan {
   entitlements: Array<'live-tv' | 'vod-basic' | 'vod-premium' | 'series' | 'kids' | 'sports' | 'radio' | '4k' | 'downloads' | 'ppv'>;
   allowedComponentIds: string[];
   allowedCategoryIds: string[];
-  allowedChannelIds: string[];
 }
 
 export type AdminPlanPayload = Omit<AdminPlan, 'id'>;
@@ -158,7 +153,6 @@ export interface AdminCanal {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
-  lastHealthCheckAt?: string | null;
 }
 
 export type AdminCanalPayload = {
@@ -183,16 +177,9 @@ export type AdminCanalPayload = {
 export interface AdminCategoria {
   id: string;
   nombre: string;
-  slug?: string;
   descripcion: string;
   icono: string;
-  accentColor?: string;
-  displayOrder?: number;
   activo: boolean;
-  esContenidoAdulto?: boolean;
-  channelCategories?: Array<{ channel: { id: string; nombre: string; status: string } }>;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface AdminBlogPost {
@@ -230,30 +217,14 @@ async function apiFetch<T>(
   accessToken: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const doRequest = (token: string) =>
-    fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        ...(options.headers ?? {}),
-      },
-    });
-
-  let res = await doRequest(accessToken);
-
-  // On 401, attempt a silent token refresh and retry once
-  if (res.status === 401) {
-    try {
-      const { useCmsStore } = await import('../cmsStore');
-      const newToken = await useCmsStore.getState().refreshAccessToken();
-      if (newToken) {
-        res = await doRequest(newToken);
-      }
-    } catch {
-      // Refresh failed — fall through and throw the 401 below
-    }
-  }
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      ...(options.headers ?? {}),
+    },
+  });
 
   // Throw on non-ok responses
   if (!res.ok) {
@@ -263,11 +234,6 @@ async function apiFetch<T>(
         ? String((data as Record<string, unknown>).message)
         : `HTTP ${res.status}`;
     throw new Error(msg);
-  }
-
-  // 204 No Content or empty body — return undefined without parsing
-  if (res.status === 204 || res.headers.get('content-length') === '0') {
-    return undefined as T;
   }
 
   return res.json() as Promise<T>;
@@ -313,11 +279,17 @@ export async function adminSetUserPassword(accessToken: string, id: string, newP
   });
 }
 
-export async function adminSendRecoveryCode(accessToken: string, id: string, email: string): Promise<{ message: string; code?: string }> {
-  return apiFetch<{ message: string; code?: string }>(`/admin/users/${id}/recovery-code`, accessToken, {
+export async function adminSendRecoveryCode(email: string): Promise<{ message: string; code?: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/send-recovery-code`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Error al enviar código de recuperación');
+  }
+  return res.json();
 }
 
 export async function adminGenerateActivationCode(userId: string, email: string): Promise<{ message: string; code?: string }> {
@@ -362,13 +334,8 @@ export interface CmsUserPayload {
   email: string;
   telefono?: string;
   role: 'admin' | 'soporte';
+  permissions?: string[];
   password?: string;
-}
-
-/** A CMS role with its assigned permission keys. */
-export interface CmsRole {
-  key: 'superadmin' | 'admin' | 'soporte' | 'cliente';
-  permissions: string[];
 }
 
 export async function adminListCmsUsers(accessToken: string): Promise<AdminUser[]> {
@@ -387,21 +354,18 @@ export async function adminCreateCmsUser(
       email: data.email,
       telefono: data.telefono,
       role: data.role,
+      permissions: data.permissions,
       password: data.password ?? 'TempPass2025!',
     }),
   });
 }
 
-export async function adminGetRoles(accessToken: string): Promise<CmsRole[]> {
-  return apiFetch<CmsRole[]>('/admin/roles', accessToken);
-}
-
-export async function adminUpdateRolePermissions(
+export async function adminUpdateCmsUserPermissions(
   accessToken: string,
-  roleKey: string,
+  userId: string,
   permissions: string[],
-): Promise<CmsRole> {
-  return apiFetch<CmsRole>(`/admin/roles/${roleKey}/permissions`, accessToken, {
+): Promise<AdminUser> {
+  return apiFetch<AdminUser>(`/admin/users/${userId}`, accessToken, {
     method: 'PATCH',
     body: JSON.stringify({ permissions }),
   });
@@ -412,61 +376,29 @@ export async function adminUpdateRolePermissions(
 // ---------------------------------------------------------------------------
 
 export async function adminListPlans(accessToken: string): Promise<AdminPlan[]> {
-  try {
-    return await apiFetch<AdminPlan[]>('/admin/planes', accessToken);
-  } catch {
-    // Local store is the source of truth when API is unreachable
-    const { usePlanesStore } = require('../planesStore');
-    return usePlanesStore.getState().planes;
-  }
+  return apiFetch<AdminPlan[]>('/admin/planes', accessToken);
 }
 
 export async function adminCreatePlan(accessToken: string, data: AdminPlanPayload): Promise<AdminPlan> {
-  try {
-    return await apiFetch<AdminPlan>('/admin/planes', accessToken, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const { usePlanesStore } = require('../planesStore');
-    return usePlanesStore.getState().add(data);
-  }
+  return apiFetch<AdminPlan>('/admin/planes', accessToken, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminUpdatePlan(accessToken: string, id: string, data: Partial<AdminPlanPayload>): Promise<AdminPlan> {
-  try {
-    return await apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const { usePlanesStore } = require('../planesStore');
-    usePlanesStore.getState().update(id, data);
-    const updated = usePlanesStore.getState().planes.find((p: AdminPlan) => p.id === id);
-    if (!updated) throw new Error('Plan no encontrado');
-    return updated;
-  }
+  return apiFetch<AdminPlan>(`/admin/planes/${id}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function adminTogglePlan(accessToken: string, id: string): Promise<AdminPlan> {
-  try {
-    return await apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
-    const { usePlanesStore } = require('../planesStore');
-    usePlanesStore.getState().toggle(id);
-    const updated = usePlanesStore.getState().planes.find((p: AdminPlan) => p.id === id);
-    if (!updated) throw new Error('Plan no encontrado');
-    return updated;
-  }
+  return apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
 }
 
 export async function adminDeletePlan(accessToken: string, id: string): Promise<void> {
-  try {
-    await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
-    const { usePlanesStore } = require('../planesStore');
-    usePlanesStore.getState().remove(id);
-  }
+  await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
 }
 
 // ---------------------------------------------------------------------------
@@ -572,13 +504,9 @@ export async function adminListCanales(accessToken: string): Promise<AdminCanal[
 }
 
 export async function adminCreateCanal(accessToken: string, data: AdminCanalPayload): Promise<AdminCanal> {
-  // Strip empty optional URL fields so backend @IsUrl validation is not triggered
-  const payload = { ...data };
-  if (!payload.backupUrl) delete (payload as Partial<AdminCanalPayload>).backupUrl;
-  if (!payload.logoUrl) delete (payload as Partial<AdminCanalPayload>).logoUrl;
   return apiFetch<AdminCanal>('/admin/canales', accessToken, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(data),
   });
 }
 
@@ -595,67 +523,6 @@ export async function adminToggleCanal(accessToken: string, id: string): Promise
 
 export async function adminDeleteCanal(accessToken: string, id: string): Promise<void> {
   return apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
-}
-
-// ---------------------------------------------------------------------------
-// HLS stream validation
-// ---------------------------------------------------------------------------
-
-export type HlsStatus = 'VALID' | 'NO_SIGNAL' | 'INVALID';
-
-export interface HlsValidationResult {
-  status: HlsStatus;
-  isReachable: boolean;
-  hasPlaylist: boolean;
-  hasSegments: boolean;
-  segmentProbe?: { url: string; reachable: boolean };
-  error?: string;
-}
-
-export async function adminValidateStream(
-  accessToken: string,
-  url: string,
-): Promise<HlsValidationResult> {
-  return apiFetch<HlsValidationResult>('/admin/canales/validate-stream', accessToken, {
-    method: 'POST',
-    body: JSON.stringify({ url }),
-  });
-}
-
-export async function adminUploadChannelLogo(accessToken: string, file: File): Promise<string> {
-  const doUpload = async (token: string) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return fetch(`${API_BASE_URL}/admin/canales/upload-logo`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-  };
-
-  let res = await doUpload(accessToken);
-
-  // On 401, attempt a silent token refresh and retry once
-  if (res.status === 401) {
-    try {
-      const { useCmsStore } = await import('../cmsStore');
-      const newToken = await useCmsStore.getState().refreshAccessToken();
-      if (newToken) {
-        res = await doUpload(newToken);
-      }
-    } catch {
-      // Refresh failed — fall through and throw the 401 below
-    }
-  }
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    throw new Error(err?.message ?? `Upload failed (${res.status})`);
-  }
-  const data = await res.json() as { url: string };
-  // Return the relative path (/uploads/logos/...) so it is environment-agnostic
-  // when stored in the DB. Use resolveLogoUrl() on the frontend to render it.
-  return data.url;
 }
 
 // ---------------------------------------------------------------------------
@@ -751,39 +618,6 @@ export async function adminDeleteCategoria(accessToken: string, id: string): Pro
   }
 }
 
-export async function adminGetCategoria(accessToken: string, id: string): Promise<AdminCategoria> {
-  return apiFetch<AdminCategoria>(`/admin/categorias/${id}`, accessToken);
-}
-
-export async function adminAssociateCategoriaChannels(
-  accessToken: string,
-  categoryId: string,
-  channelIds: string[],
-): Promise<void> {
-  await apiFetch<void>(`/admin/categorias/${categoryId}/canales`, accessToken, {
-    method: 'POST',
-    body: JSON.stringify({ channelIds }),
-  });
-}
-
-export async function adminRemoveCategoriaChannel(
-  accessToken: string,
-  categoryId: string,
-  channelId: string,
-): Promise<void> {
-  await apiFetch<void>(`/admin/categorias/${categoryId}/canales/${channelId}`, accessToken, { method: 'DELETE' });
-}
-
-export async function adminBulkReorderCategorias(
-  accessToken: string,
-  items: { id: string; displayOrder: number }[],
-): Promise<void> {
-  await apiFetch<void>(`/admin/categorias/reorder/bulk`, accessToken, {
-    method: 'PATCH',
-    body: JSON.stringify({ items }),
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Blog
 // ---------------------------------------------------------------------------
@@ -835,7 +669,6 @@ export interface AdminComponente {
   tipo: string;
   activo: boolean;
   orden: number;
-  categories?: Array<{ id: string; nombre: string; icono: string; activo: boolean }>;
 }
 
 const mockComponentes: AdminComponente[] = [
@@ -864,72 +697,6 @@ export async function adminToggleComponente(accessToken: string, id: string): Pr
     if (comp) comp.activo = !comp.activo;
     return comp ? { ...comp } : mockComponentes[0];
   }
-}
-
-export async function adminReorderComponentes(
-  accessToken: string,
-  ids: string[],
-): Promise<AdminComponente[]> {
-  try {
-    return await apiFetch<AdminComponente[]>('/admin/componentes/reorder', accessToken, {
-      method: 'POST',
-      body: JSON.stringify({ ids }),
-    });
-  } catch {
-    // optimistic: return mock sorted by provided order
-    return ids.map((id, i) => {
-      const comp = mockComponentes.find((c) => c.id === id) ?? mockComponentes[0];
-      return { ...comp, orden: i + 1 };
-    });
-  }
-}
-
-export interface CreateComponentePayload {
-  nombre: string;
-  descripcion?: string;
-  icono?: string;
-  tipo: string;
-  activo?: boolean;
-  orden?: number;
-}
-
-export async function adminCreateComponente(
-  accessToken: string,
-  data: CreateComponentePayload,
-): Promise<AdminComponente> {
-  return apiFetch<AdminComponente>('/admin/componentes', accessToken, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function adminUpdateComponente(
-  accessToken: string,
-  id: string,
-  data: Partial<CreateComponentePayload>,
-): Promise<AdminComponente> {
-  return apiFetch<AdminComponente>(`/admin/componentes/${id}`, accessToken, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function adminDeleteComponente(
-  accessToken: string,
-  id: string,
-): Promise<void> {
-  await apiFetch<void>(`/admin/componentes/${id}`, accessToken, { method: 'DELETE' });
-}
-
-export async function adminSyncComponenteCategorias(
-  accessToken: string,
-  componentId: string,
-  categoryIds: string[],
-): Promise<void> {
-  await apiFetch<void>(`/admin/componentes/${componentId}/categorias`, accessToken, {
-    method: 'POST',
-    body: JSON.stringify({ categoryIds }),
-  });
 }
 
 export async function publicListActiveComponentes(): Promise<AdminComponente[]> {

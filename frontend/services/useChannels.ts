@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Channel, STATIC_CHANNELS, getCurrentProgram, getProgressPercent } from './channelTypes';
-import { API_BASE_URL } from './api/config';
+import { API_BASE_URL, resolveLogoUrl } from './api/config';
 
 export type { Channel };
 export { getCurrentProgram, getProgressPercent };
@@ -33,12 +33,35 @@ interface BackendCanal {
 // Use unified config
 const BACKEND_BASE = API_BASE_URL;
 
+// ─────────────────────────────────────────────
+// Favorites persistence (web: localStorage, native: in-memory only)
+// ─────────────────────────────────────────────
+const FAV_KEY = 'luki_channel_favs';
+
+function loadStoredFavs(): Set<string> {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(FAV_KEY);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    }
+  } catch {}
+  return new Set();
+}
+
+function saveFavs(ids: string[]) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(FAV_KEY, JSON.stringify(ids));
+    }
+  } catch {}
+}
+
 function toChannel(c: BackendCanal, index: number, prevFavs: Set<string>): Channel {
   return {
     id: c.id,
     number: index + 1,
     name: c.nombre,
-    logo: c.logo || '📺',
+    logo: resolveLogoUrl(c.logo) || '📺',
     streamUrl: c.streamUrl,
     category: c.categoria || 'General',
     isFavorite: prevFavs.has(c.id),
@@ -78,7 +101,10 @@ async function fetchChannels() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: BackendCanal[] = await res.json();
-    const oldFavs = new Set(_store.channels.filter(ch => ch.isFavorite).map(ch => ch.id));
+    // Merge in-memory favs + persisted favs so neither is lost
+    const inMemoryFavs = new Set(_store.channels.filter(ch => ch.isFavorite).map(ch => ch.id));
+    const storedFavs = loadStoredFavs();
+    const oldFavs = new Set([...inMemoryFavs, ...storedFavs]);
 
     if (data.length > 0) {
       _store = {
@@ -90,7 +116,7 @@ async function fetchChannels() {
     } else {
       // Backend has no channels yet — use static fallback
       _store = {
-        channels: STATIC_CHANNELS,
+        channels: STATIC_CHANNELS.map(ch => ({ ...ch, isFavorite: oldFavs.has(ch.id) })),
         loading: false,
         error: null,
         isFromBackend: false,
@@ -98,8 +124,9 @@ async function fetchChannels() {
     }
   } catch (error) {
     console.error("fetchChannels failed:", error);
+    const storedFavs = loadStoredFavs();
     _store = {
-      channels: STATIC_CHANNELS,
+      channels: STATIC_CHANNELS.map(ch => ({ ...ch, isFavorite: storedFavs.has(ch.id) })),
       loading: false,
       error: 'No se pudo conectar al servidor. Mostrando canales demo.',
       isFromBackend: false,
@@ -129,7 +156,8 @@ export function useChannels() {
   }, []);
 
   const setChannels = (channels: Channel[]) => {
-    _store = { ...state, channels };
+    _store = { ..._store, channels };
+    saveFavs(channels.filter(c => c.isFavorite).map(c => c.id));
     notify();
   };
 

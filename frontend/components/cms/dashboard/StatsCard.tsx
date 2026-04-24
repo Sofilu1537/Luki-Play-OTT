@@ -1,22 +1,18 @@
 import React from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MiniChart from '../ui/MiniChart';
 import { FONT_FAMILY } from '../../../styles/typography';
-import { useTheme } from '../../../hooks/useTheme';
+import { C } from '../CmsShell';
 
 interface StatsCardProps {
-  label:         string;
-  value:         string;
-  trend:         string;
+  label: string;
+  value: string;
+  trend: string;
   trendPositive: boolean;
-  icon:          React.ComponentProps<typeof FontAwesome>['name'];
-  color:         string;
-  data?:         number[];
-  subtitle?:     string;
-  labelColor?:   string;
-  minWidth?:     number;
-  mode?:         'default' | 'tv';
+  icon: React.ComponentProps<typeof FontAwesome>['name'];
+  color: string;
+  data: number[];
 }
 
 export default function StatsCard({
@@ -27,108 +23,95 @@ export default function StatsCard({
   icon,
   color,
   data,
-  subtitle,
-  labelColor,
-  minWidth,
-  mode = 'default',
 }: StatsCardProps) {
-  const { isDark, theme } = useTheme();
-  const cardTextColor   = theme.text;
-  const iconBorderColor = isDark ? `${color}35` : theme.iconBorderSoft;
-  const isTv = mode === 'tv';
-  const softUiShadow = !isDark && Platform.OS === 'web'
-    ? ({ boxShadow: theme.softUiShadow } as any)
-    : {};
-  const softUiShadowDark = isDark && Platform.OS === 'web'
-    ? ({ boxShadow: theme.softUiShadowDark } as any)
-    : {};
+  const trendColor = trendPositive ? '#17D1C6' : '#D1105A';
 
   return (
     <View
       style={{
         flex: 1,
-        minWidth: minWidth ?? 200,
-        backgroundColor: theme.cardBg,
+        minWidth: 200,
+        backgroundColor: C.surface,
         borderRadius: 14,
-        padding: isTv ? 20 : 18,
-        margin: 5,
+        padding: 16,
+        margin: 6,
         borderWidth: 1,
-        borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
-        shadowColor: theme.cardShadow,
-        shadowOpacity: isDark ? 0.34 : 0.18,
-        shadowRadius: isDark ? 16 : 12,
-        shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
-        elevation: isDark ? 10 : 6,
-        ...softUiShadow,
-        ...softUiShadowDark,
+        borderColor: C.border,
       }}
     >
-      {/* Label + icon */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <Text style={{
-          color:         labelColor ?? (isDark ? theme.textSec : '#240046'),
-          fontSize:      isTv ? 13 : 15,
-          fontWeight:    '700',
-          flex:          1,
-          marginRight:   8,
-          fontFamily:    FONT_FAMILY.bodySemiBold,
-        }}>
+      {/* Top row */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 12,
+        }}
+      >
+        <Text
+          style={{
+            color: C.muted,
+            fontSize: 9,
+            fontWeight: '700',
+            letterSpacing: 0.8,
+            textTransform: 'uppercase',
+            flex: 1,
+            marginRight: 8,
+            fontFamily: FONT_FAMILY.bodyBold,
+          }}
+        >
           {label}
         </Text>
-        <View style={{
-          width:           38,
-          height:          38,
-          borderRadius:    10,
-          backgroundColor: `${color}18`,
-          alignItems:      'center',
-          justifyContent:  'center',
-          borderWidth:     1,
-          borderColor:     iconBorderColor,
-        }}>
-          <FontAwesome name={icon} size={isTv ? 18 : 16} color={color} />
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            backgroundColor: `${color}18`,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <FontAwesome name={icon} size={14} color={color} />
         </View>
       </View>
 
       {/* Value */}
-      <Text style={{
-        color:         cardTextColor,
-        fontSize:      isTv ? 36 : 32,
-        fontWeight:    '800',
-        letterSpacing: -0.5,
-        marginBottom:  subtitle ? 2 : 10,
-        fontFamily:    FONT_FAMILY.bodyBold,
-      }}>
+      <Text
+        style={{
+          color: C.text,
+          fontSize: 24,
+          fontWeight: '800',
+          marginBottom: 10,
+          letterSpacing: -0.3,
+          fontFamily: FONT_FAMILY.bodyBold,
+        }}
+      >
         {value}
       </Text>
 
-      {/* Subtitle */}
-      {subtitle ? (
-        <Text style={{
-          color:        cardTextColor,
-          fontSize:     isTv ? 13 : 12,
-          marginBottom: 10,
-          fontFamily:   FONT_FAMILY.body,
-        }}>
-          {subtitle}
-        </Text>
-      ) : null}
-
-      {/* Trend + sparkline */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8 }}>
-        <Text style={{
-          color:      cardTextColor,
-          fontSize:   isTv ? 13 : 12,
-          fontWeight: '700',
-          fontFamily: FONT_FAMILY.bodySemiBold,
-          flex:       1,
-        }}>
+      {/* Bottom: trend + sparkline */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{
+            color: trendColor,
+            fontSize: 11,
+            fontWeight: '700',
+            fontFamily: FONT_FAMILY.bodySemiBold,
+            flex: 1,
+          }}
+        >
           {trend}
         </Text>
-        {data && data.length > 0 && (
-          <MiniChart data={data} color={color} height={isTv ? 28 : 24} width={isTv ? 72 : 60} />
-        )}
+        <MiniChart data={data} color={color} height={24} width={60} />
       </View>
     </View>
   );
 }
-

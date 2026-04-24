@@ -1,4 +1,4 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs, useRouter, useRootNavigationState } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuthStore } from '../../services/authStore';
 import { useEffect } from 'react';
@@ -18,12 +18,17 @@ import { APP } from '../../styles/theme';
 export default function AppLayout() {
     const accessToken = useAuthStore((state) => state.accessToken);
     const router = useRouter();
+    const rootNavState = useRootNavigationState();
 
     useEffect(() => {
+        // Wait until the Root Layout navigator is fully mounted before navigating.
+        // Without this guard, router.replace fires before expo-router is ready
+        // and throws "Attempted to navigate before mounting the Root Layout".
+        if (!rootNavState?.key) return;
         if (!accessToken) {
             router.replace('/(auth)/login');
         }
-    }, [accessToken, router]);
+    }, [accessToken, router, rootNavState?.key]);
 
     return (
         <Tabs

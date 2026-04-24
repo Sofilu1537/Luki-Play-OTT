@@ -10,7 +10,6 @@ import {
   Min,
   Max,
   Matches,
-  ValidateIf,
 } from 'class-validator';
 
 export enum CanalStatusDto {
@@ -32,17 +31,13 @@ export class CreateCanalDto {
   @IsNotEmpty()
   nombre: string;
 
-  @ApiProperty({
-    example: 'espn-ecuador',
-    description: 'URL-friendly slug, auto-generated from name if not provided',
-  })
+  @ApiProperty({ example: 'espn-ecuador', description: 'URL-friendly slug, auto-generated from name if not provided' })
   @IsOptional()
   @IsString()
   slug?: string;
 
   @ApiProperty({
-    example:
-      'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/.../playlist.m3u8',
+    example: 'https://g2qd3e2ay7an-hls-live.5centscdn.com/channel35/.../playlist.m3u8',
     description: 'Primary stream URL (HLS .m3u8 or DASH .mpd)',
   })
   @IsString()
@@ -55,26 +50,17 @@ export class CreateCanalDto {
     description: 'Fallback stream URL, used if primary fails',
   })
   @IsOptional()
-  @ValidateIf(
-    (o) =>
-      o.backupUrl !== undefined && o.backupUrl !== null && o.backupUrl !== '',
-  )
+  @IsString()
   @IsUrl({ require_protocol: true })
   backupUrl?: string;
 
   @ApiPropertyOptional({
-    example:
-      'https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg',
+    example: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg',
     description: 'Channel logo URL, PNG transparent recommended (200x100px)',
   })
   @IsOptional()
-  @ValidateIf(
-    (o) => o.logoUrl !== undefined && o.logoUrl !== null && o.logoUrl !== '',
-  )
-  @Matches(/^(https?:\/\/.+|\/uploads\/.+)$/, {
-    message:
-      'logoUrl must be a valid URL or a relative upload path (/uploads/...)',
-  })
+  @IsString()
+  @IsUrl({ require_protocol: true })
   logoUrl?: string;
 
   @ApiProperty({ example: 'cat-001', description: 'Category ID' })
@@ -139,14 +125,12 @@ export class CreateCanalDto {
 
   @ApiPropertyOptional({
     example: 'EC,CO,PE',
-    description:
-      'Comma-separated ISO 3166-1 country codes for geo-restriction. Empty = no restriction.',
+    description: 'Comma-separated ISO 3166-1 country codes for geo-restriction. Empty = no restriction.',
   })
   @IsOptional()
   @IsString()
   @Matches(/^[A-Z]{2}(,[A-Z]{2})*$|^$/, {
-    message:
-      'geoRestriction must be empty or valid ISO country codes separated by commas (e.g., EC,CO,PE)',
+    message: 'geoRestriction must be empty or valid ISO country codes separated by commas (e.g., EC,CO,PE)',
   })
   geoRestriction?: string;
 

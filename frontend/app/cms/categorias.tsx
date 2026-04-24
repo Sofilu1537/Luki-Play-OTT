@@ -1,14 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Pressable, Modal, TextInput, Platform, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Pressable, Modal, TextInput, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import type { AdminCanal, AdminCategoria } from '../../services/api/adminApi';
 import { useCategoriasStore } from '../../services/categoriasStore';
 import { useChannelStore } from '../../services/channelStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell from '../../components/cms/CmsShell';
-import { StatCard } from '../../components/cms/CmsComponents';
-import { useTheme } from '../../hooks/useTheme';
+import CmsShell, { C } from '../../components/cms/CmsShell';
 import { LinearGradient } from 'expo-linear-gradient';
 
 function normalizeKey(value: string) {
@@ -56,37 +54,28 @@ function matchesCategory(categoryName: string, canal: AdminCanal) {
 }
 
 export default function CmsCategorias() {
-  const { isDark, theme } = useTheme();
-  const { profile, accessToken } = useCmsStore();
+  const { profile } = useCmsStore();
   const router = useRouter();
   const cats = useCategoriasStore((s) => s.categorias);
-  const isLoading = useCategoriasStore((s) => s.isLoading);
-  const storeError = useCategoriasStore((s) => s.error);
-  const { fetchFromApi, add: storeAdd, update: storeUpdate, toggle: storeToggle, remove: storeRemove } = useCategoriasStore();
+  const { add: storeAdd, update: storeUpdate, toggle: storeToggle, remove: storeRemove } = useCategoriasStore();
   const canales = useChannelStore((s) => s.channels);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<AdminCategoria | null>(null);
   const [editingCategory, setEditingCategory] = useState<AdminCategoria | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '', accentColor: '#FFB800', displayOrder: 99 });
-  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
+  const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '' });
   const [formError, setFormError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (!profile) { router.replace('/cms/login' as never); return; }
-    if (accessToken) fetchFromApi(accessToken);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  if (!profile) { router.replace('/cms/login' as never); }
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
   const enrichedCategories = useMemo(() => {
     return cats.map((cat, index) => {
       const meta = CATEGORY_META[normalizeKey(cat.nombre)] ?? {
-        accent: theme.accent,
-        glow: theme.accentSoft,
+        accent: C.accent,
+        glow: C.accentSoft,
         icon: (cat.icono as React.ComponentProps<typeof FontAwesome>['name']) || 'tag',
         tag: 'Curada',
         featured: false,
@@ -105,7 +94,7 @@ export default function CmsCategorias() {
         highlight: index < 3 || meta.featured,
       };
     });
-  }, [cats, canales, theme]);
+  }, [cats, canales]);
 
   if (!profile) return null;
 
@@ -117,136 +106,105 @@ export default function CmsCategorias() {
 
   function openEdit(category: AdminCategoria) {
     setEditingCategory(category);
-    const existingChannelIds = (category.channelCategories ?? []).map((cc) => cc.channel.id);
-    setForm({
-      nombre: category.nombre,
-      descripcion: category.descripcion,
-      icono: category.icono ?? '',
-      accentColor: category.accentColor ?? '#FFB800',
-      displayOrder: category.displayOrder ?? 99,
-    });
-    setSelectedChannelIds(existingChannelIds);
+    setForm({ nombre: category.nombre, descripcion: category.descripcion, icono: category.icono ?? '' });
     setFormError('');
   }
 
   function openCreate() {
     setIsCreating(true);
-    setForm({ nombre: '', descripcion: '', icono: '', accentColor: '#FFB800', displayOrder: 99 });
-    setSelectedChannelIds([]);
+    setForm({ nombre: '', descripcion: '', icono: '' });
     setFormError('');
   }
 
   function closeEdit() {
     setEditingCategory(null);
     setIsCreating(false);
-    setForm({ nombre: '', descripcion: '', icono: '', accentColor: '#FFB800', displayOrder: 99 });
-    setSelectedChannelIds([]);
+    setForm({ nombre: '', descripcion: '', icono: '' });
     setFormError('');
   }
 
-  async function saveEdit() {
+  function saveEdit() {
     const nombre = form.nombre.trim();
     if (!nombre) { setFormError('El nombre es requerido.'); return; }
-    if (form.accentColor && !/^#[0-9A-Fa-f]{6}$/.test(form.accentColor)) {
-      setFormError('El color debe ser un hex válido (ej: #FFB800)');
-      return;
-    }
-    if (!accessToken) { setFormError('Sesión expirada. Recarga la página.'); return; }
     setFormError('');
-    setIsSaving(true);
     try {
       if (isCreating) {
-        const created = await storeAdd(accessToken, {
-          nombre,
-          descripcion: form.descripcion.trim(),
-          icono: form.icono.trim(),
-          accentColor: form.accentColor,
-          displayOrder: form.displayOrder,
-          channelIds: selectedChannelIds,
-        });
+        const created = storeAdd({ nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
         setSelectedId(created.id);
       } else if (editingCategory) {
-        await storeUpdate(accessToken, editingCategory.id, {
-          nombre,
-          descripcion: form.descripcion.trim(),
-          icono: form.icono.trim(),
-          accentColor: form.accentColor,
-          displayOrder: form.displayOrder,
-          channelIds: selectedChannelIds,
-        } as any);
+        storeUpdate(editingCategory.id, { nombre, descripcion: form.descripcion.trim(), icono: form.icono.trim() });
       }
       closeEdit();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'No se pudo guardar la categoría.');
-    } finally {
-      setIsSaving(false);
     }
   }
 
-  async function toggleCategory(categoryId: string) {
-    if (!accessToken) return;
-    await storeToggle(accessToken, categoryId);
+  function toggleCategory(categoryId: string) {
+    storeToggle(categoryId);
   }
 
-  async function deleteCategory(categoryId: string, nombre: string) {
+  function deleteCategory(categoryId: string, nombre: string) {
     if (!window.confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
-    if (!accessToken) return;
-    try {
-      await storeRemove(accessToken, categoryId);
-      if (selectedId === categoryId) setSelectedId(null);
-    } catch (err: unknown) {
-      window.alert(err instanceof Error ? err.message : 'No se pudo eliminar la categoría.');
-    }
+    storeRemove(categoryId);
+    if (selectedId === categoryId) setSelectedId(null);
   }
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Categorías' }]}>
-      {isLoading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={theme.accent} size="large" />
-          <Text style={{ color: theme.textSec, fontSize: 13, marginTop: 12 }}>Cargando categorías...</Text>
-        </View>
-      ) : storeError ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <FontAwesome name="exclamation-triangle" size={32} color={theme.danger} />
-          <Text style={{ color: theme.danger, fontSize: 14, marginTop: 12, textAlign: 'center' }}>{storeError}</Text>
-          <TouchableOpacity onPress={() => accessToken && fetchFromApi(accessToken)}
-            style={{ marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: isDark ? theme.accent : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isDark ? theme.accentBorder : 'rgba(130,130,130,0.34)' }}>
-            <Text style={{ color: isDark ? '#1A1A2E' : '#240046', fontWeight: '700', fontFamily: 'Montserrat-SemiBold' }}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 18 }}>
-        {/* ── Button row ── */}
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
-          <TouchableOpacity
-            onPress={openCreate}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.accentBorder }}
-          >
-            <FontAwesome name="plus" size={13} color="#1A1A2E" />
-            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nueva categoría</Text>
-          </TouchableOpacity>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 16, flexWrap: 'wrap' }}>
+          <View>
+            <Text style={{ color: 'white', fontSize: 22, fontWeight: '800' }}>Categorías</Text>
+            <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
+              Clasificación principal del contenido que el admin publica para la experiencia del player.
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+            <TouchableOpacity
+              onPress={openCreate}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, backgroundColor: C.accent }}
+            >
+              <FontAwesome name="plus" size={12} color="white" />
+              <Text style={{ color: 'white', fontSize: 13, fontWeight: '800' }}>Nueva categoría</Text>
+            </TouchableOpacity>
+            <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
+              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>ACTIVAS</Text>
+              <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{activeCount}</Text>
+            </View>
+            <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
+              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>DESTACADAS</Text>
+              <Text style={{ color: C.accentLight, fontSize: 18, fontWeight: '900' }}>{featuredCount}</Text>
+            </View>
+            <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, minWidth: 130 }}>
+              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CON SEÑAL</Text>
+              <Text style={{ color: C.cyan, fontSize: 18, fontWeight: '900' }}>{withLiveSignals}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* ── Stat cards ── */}
-        <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-          {[
-            { label: 'Activas',    value: activeCount,      icon: 'check-circle' as const, color: theme.success,      bg: theme.successSoft  },
-            { label: 'Destacadas', value: featuredCount,    icon: 'star'         as const, color: theme.accentLight,  bg: theme.accentSoft   },
-            { label: 'Con señal',  value: withLiveSignals,  icon: 'wifi'         as const, color: theme.info,         bg: theme.infoSoft     },
-          ].map((item) => (
-            <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} color={item.color} bg={item.bg} />
-          ))}
+        <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 18, padding: 18 }}>
+          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+            <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="tags" size={16} color={C.accentLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 }}>Propósito del módulo</Text>
+              <Text style={{ color: C.textDim, fontSize: 12, lineHeight: 18 }}>
+                Aquí se define el tipo de categoría al que pertenece cada contenido. Esta clasificación organiza filas, navegación y descubrimiento dentro del player.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {cats.length === 0 ? null : (
           <>
             {selectedCategory ? (
               <LinearGradient
-                colors={[`${selectedCategory.meta.accent}28`, isDark ? 'rgba(26,26,46,0.97)' : 'rgba(255,255,255,0.97)']}
+                colors={[`${selectedCategory.meta.accent}28`, 'rgba(12,24,41,0.96)', 'rgba(12,24,41,1)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{ borderRadius: 22, borderWidth: 1, borderColor: isDark ? theme.border : `${selectedCategory.meta.accent}44`, padding: 20 }}
+                style={{ borderRadius: 22, borderWidth: 1, borderColor: C.border, padding: 20 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
                   <View style={{ flex: 1, minWidth: 280 }}>
@@ -255,34 +213,30 @@ export default function CmsCategorias() {
                         <FontAwesome name={selectedCategory.meta.icon} size={18} color={selectedCategory.meta.accent} />
                       </View>
                       <View>
-                        <Text style={{ color: theme.text, fontSize: 22, fontWeight: '900' }}>{selectedCategory.nombre}</Text>
-                        <Text style={{ color: theme.textSec, fontSize: 12, marginTop: 3 }}>Sección editorial del catálogo OTT</Text>
+                        <Text style={{ color: C.text, fontSize: 22, fontWeight: '900' }}>{selectedCategory.nombre}</Text>
+                        <Text style={{ color: C.textDim, fontSize: 12, marginTop: 3 }}>Sección editorial del catálogo OTT</Text>
                       </View>
                     </View>
-                    <Text style={{ color: theme.textSec, fontSize: 13, lineHeight: 20, maxWidth: 720 }}>{selectedCategory.descripcion}</Text>
+                    <Text style={{ color: C.textDim, fontSize: 13, lineHeight: 20, maxWidth: 720 }}>{selectedCategory.descripcion}</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
                       {selectedCategory.meta.preview.map((tag) => (
-                        <View key={tag} style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                          <Text style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>{tag}</Text>
+                        <View key={tag} style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                          <Text style={{ color: C.text, fontSize: 11, fontWeight: '700' }}>{tag}</Text>
                         </View>
                       ))}
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                      <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
-                      <Text style={{ color: theme.text, fontSize: 20, fontWeight: '900' }}>{selectedCategory.contentCount}</Text>
+                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                      <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
+                      <Text style={{ color: C.text, fontSize: 20, fontWeight: '900' }}>{selectedCategory.contentCount}</Text>
                     </View>
-                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                      <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
-                      <Text style={{ color: theme.info, fontSize: 20, fontWeight: '900' }}>{selectedCategory.channelCount}</Text>
+                    <View style={{ minWidth: 132, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                      <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
+                      <Text style={{ color: C.cyan, fontSize: 20, fontWeight: '900' }}>{selectedCategory.channelCount}</Text>
                     </View>
-                    <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, minWidth: 150, backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.accentBorder }}
-                      onPress={() => router.push('/cms/canales' as never)}
-                    >
-                      <FontAwesome name="arrow-right" size={12} color="#1A1A2E" />
-                      <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 12, fontFamily: 'Montserrat-SemiBold' }}>Ver contenido asociado</Text>
+                    <TouchableOpacity style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }} onPress={() => router.push('/cms/canales' as never)}>
+                      <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>Ver contenido asociado</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -306,8 +260,8 @@ export default function CmsCategorias() {
                       borderRadius: 22,
                       overflow: 'hidden',
                       borderWidth: 1,
-                      borderColor: isSelected ? `${cat.meta.accent}66` : isHovered ? `${cat.meta.accent}44` : (isDark ? theme.border : 'rgba(130,130,130,0.34)'),
-                      backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
+                      borderColor: isSelected ? `${cat.meta.accent}66` : isHovered ? `${cat.meta.accent}44` : C.border,
+                      backgroundColor: C.surface,
                       shadowColor: cat.meta.accent,
                       shadowOpacity: isHovered || isSelected ? 0.18 : 0.04,
                       shadowRadius: isHovered || isSelected ? 24 : 10,
@@ -316,31 +270,31 @@ export default function CmsCategorias() {
                       transform: [{ translateY: isHovered ? -4 : 0 }],
                     }}
                   >
-                    <LinearGradient colors={[`${cat.meta.accent}22`, isDark ? '#1A1A2E' : '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, minHeight: 148 }}>
+                    <LinearGradient colors={[`${cat.meta.accent}26`, 'rgba(12,24,41,0.95)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, minHeight: 148 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: cat.meta.glow, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
                             <FontAwesome name={cat.meta.icon} size={18} color={cat.meta.accent} />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }} numberOfLines={2}>{cat.nombre}</Text>
-                            <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 3 }}>{cat.id.slice(0, 8).toUpperCase()}</Text>
+                            <Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }} numberOfLines={2}>{cat.nombre}</Text>
+                            <Text style={{ color: C.muted, fontSize: 10, marginTop: 3 }}>{cat.id.toUpperCase()}</Text>
                           </View>
                         </View>
 
                         {(isHovered || isSelected) ? (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: theme.infoSoft, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
-                              <FontAwesome name="pencil" size={12} color={theme.info} />
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => openEdit(cat)}>
+                              <FontAwesome name="pencil" size={12} color={C.cyan} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: cat.activo ? theme.warningSoft : theme.successSoft, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
-                              <FontAwesome name={cat.activo ? 'pause' : 'play'} size={11} color={cat.activo ? theme.warning : theme.success} />
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => toggleCategory(cat.id)}>
+                              <FontAwesome name={cat.activo ? 'pause' : 'play'} size={11} color={cat.activo ? C.amber : C.green} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
-                              <FontAwesome name="eye" size={12} color={theme.text} />
+                            <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(13,0,32,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreviewCategory(cat)}>
+                              <FontAwesome name="eye" size={12} color={C.text} />
                             </TouchableOpacity>
                             <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 999, backgroundColor: 'rgba(255,122,89,0.14)', borderWidth: 1, borderColor: 'rgba(255,122,89,0.24)', alignItems: 'center', justifyContent: 'center' }} onPress={() => deleteCategory(cat.id, cat.nombre)}>
-                              <FontAwesome name="trash" size={11} color={theme.danger} />
+                              <FontAwesome name="trash" size={11} color={C.rose} />
                             </TouchableOpacity>
                           </View>
                         ) : null}
@@ -348,9 +302,9 @@ export default function CmsCategorias() {
 
                       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
                         <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: cat.activo ? 'rgba(16,185,129,0.16)' : 'rgba(244,63,94,0.14)', borderWidth: 1, borderColor: cat.activo ? 'rgba(16,185,129,0.22)' : 'rgba(244,63,94,0.22)' }}>
-                          <Text style={{ color: cat.activo ? theme.success : theme.danger, fontSize: 10, fontWeight: '800' }}>{cat.activo ? 'ACTIVA' : 'PAUSADA'}</Text>
+                          <Text style={{ color: cat.activo ? C.green : C.rose, fontSize: 10, fontWeight: '800' }}>{cat.activo ? 'ACTIVA' : 'PAUSADA'}</Text>
                         </View>
-                        <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: `${cat.meta.accent}18`, borderWidth: 1, borderColor: `${cat.meta.accent}33` }}>
+                        <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
                           <Text style={{ color: cat.meta.accent, fontSize: 10, fontWeight: '800' }}>{cat.meta.tag}</Text>
                         </View>
                         {cat.highlight ? (
@@ -360,35 +314,35 @@ export default function CmsCategorias() {
                         ) : null}
                       </View>
 
-                      <Text style={{ color: theme.textSec, fontSize: 12, lineHeight: 18 }} numberOfLines={3}>{cat.descripcion}</Text>
+                      <Text style={{ color: C.textDim, fontSize: 12, lineHeight: 18 }} numberOfLines={3}>{cat.descripcion}</Text>
                     </LinearGradient>
 
                     <View style={{ padding: 16 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, gap: 10 }}>
-                        <View style={{ flex: 1, backgroundColor: theme.liftBg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
-                          <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
-                          <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900' }}>{cat.contentCount}</Text>
+                        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: C.border }}>
+                          <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CONTENIDOS</Text>
+                          <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{cat.contentCount}</Text>
                         </View>
-                        <View style={{ flex: 1, backgroundColor: theme.liftBg, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: theme.border }}>
-                          <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
-                          <Text style={{ color: theme.info, fontSize: 18, fontWeight: '900' }}>{cat.channelCount}</Text>
+                        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: C.border }}>
+                          <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>CANALES</Text>
+                          <Text style={{ color: C.cyan, fontSize: 18, fontWeight: '900' }}>{cat.channelCount}</Text>
                         </View>
                       </View>
 
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
                         {cat.meta.preview.map((tag) => (
-                          <View key={tag} style={{ paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                            <Text style={{ color: theme.textSec, fontSize: 10, fontWeight: '700' }}>{tag}</Text>
+                          <View key={tag} style={{ paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: C.lift }}>
+                            <Text style={{ color: C.textDim, fontSize: 10, fontWeight: '700' }}>{tag}</Text>
                           </View>
                         ))}
                       </View>
 
-                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11, borderRadius: 14, backgroundColor: isSelected ? `${cat.meta.accent}18` : theme.liftBg, borderWidth: 1, borderColor: isSelected ? `${cat.meta.accent}44` : theme.border }} onPress={() => setPreviewCategory(cat)}>
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11, borderRadius: 14, backgroundColor: isSelected ? `${cat.meta.accent}22` : C.lift, borderWidth: 1, borderColor: isSelected ? `${cat.meta.accent}33` : C.border }} onPress={() => setPreviewCategory(cat)}>
                         <View>
-                          <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>Preview editorial</Text>
-                          <Text style={{ color: theme.textSec, fontSize: 11, marginTop: 2 }}>Ver señales y contenido asociado</Text>
+                          <Text style={{ color: C.text, fontSize: 12, fontWeight: '800' }}>Preview editorial</Text>
+                          <Text style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Ver señales y contenido asociado</Text>
                         </View>
-                        <FontAwesome name="arrow-right" size={12} color={isSelected ? cat.meta.accent : theme.textSec} />
+                        <FontAwesome name="arrow-right" size={12} color={isSelected ? cat.meta.accent : C.textDim} />
                       </TouchableOpacity>
                     </View>
                   </Pressable>
@@ -398,44 +352,39 @@ export default function CmsCategorias() {
           </>
         )}
       </ScrollView>
-      )}
 
       <Modal visible={Boolean(previewCategory)} transparent animationType="fade" onRequestClose={() => setPreviewCategory(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           {previewCategory ? (
-            <View style={{ width: '100%', maxWidth: 720, backgroundColor: theme.cardBg, borderRadius: 20, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-              <LinearGradient colors={[`${(CATEGORY_META[normalizeKey(previewCategory.nombre)]?.accent ?? theme.accent)}22`, isDark ? '#1A1A2E' : '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20 }}>
+            <View style={{ width: '100%', maxWidth: 720, backgroundColor: C.surface, borderRadius: 20, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+              <LinearGradient colors={[`${(CATEGORY_META[normalizeKey(previewCategory.nombre)]?.accent ?? C.accent)}28`, 'rgba(12,24,41,1)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: theme.text, fontSize: 24, fontWeight: '900' }}>{previewCategory.nombre}</Text>
-                    <Text style={{ color: theme.textSec, fontSize: 13, marginTop: 6, lineHeight: 20 }}>{previewCategory.descripcion}</Text>
+                    <Text style={{ color: C.text, fontSize: 24, fontWeight: '900' }}>{previewCategory.nombre}</Text>
+                    <Text style={{ color: C.textDim, fontSize: 13, marginTop: 6, lineHeight: 20 }}>{previewCategory.descripcion}</Text>
                   </View>
                   <TouchableOpacity onPress={() => setPreviewCategory(null)}>
-                    <FontAwesome name="times" size={18} color={theme.textMuted} />
+                    <FontAwesome name="times" size={18} color={C.muted} />
                   </TouchableOpacity>
                 </View>
               </LinearGradient>
 
               <View style={{ padding: 20 }}>
-                <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginBottom: 8 }}>CANALES RELACIONADOS</Text>
+                <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginBottom: 8 }}>CANALES RELACIONADOS</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   {enrichedCategories.find((item) => item.id === previewCategory.id)?.relatedChannels.length ? (
                     enrichedCategories.find((item) => item.id === previewCategory.id)?.relatedChannels.map((canal) => (
-                      <View key={canal.id} style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                        <Text style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>{canal.nombre}</Text>
+                      <View key={canal.id} style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: C.lift, borderWidth: 1, borderColor: C.border }}>
+                        <Text style={{ color: C.text, fontSize: 11, fontWeight: '700' }}>{canal.nombre}</Text>
                       </View>
                     ))
                   ) : (
-                    <Text style={{ color: theme.textSec, fontSize: 12 }}>Aún no hay canales directamente asociados.</Text>
+                    <Text style={{ color: C.textDim, fontSize: 12 }}>Aún no hay canales directamente asociados en el mock del CMS.</Text>
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.accentBorder }}
-                  onPress={() => { setPreviewCategory(null); router.push('/cms/canales' as never); }}
-                >
-                  <FontAwesome name="arrow-right" size={13} color="#1A1A2E" />
-                  <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Ir al contenido asociado</Text>
+                <TouchableOpacity style={{ alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, backgroundColor: C.accent }} onPress={() => { setPreviewCategory(null); router.push('/cms/canales' as never); }}>
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>Ir al contenido asociado</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -445,128 +394,61 @@ export default function CmsCategorias() {
 
       <Modal visible={Boolean(editingCategory) || isCreating} transparent animationType="fade" onRequestClose={closeEdit}>
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ width: '100%', maxWidth: 620, backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-              <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? '#18003a' : '#240046' }}>
+          <View style={{ width: '100%', maxWidth: 620, backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+              <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
-                  <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800' }}>{isCreating ? 'Nueva categoría' : 'Editar categoría'}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 4 }}>
+                  <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{isCreating ? 'Nueva categoría' : 'Editar categoría'}</Text>
+                  <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
                     {isCreating ? 'Define nombre, descripción e ícono de la nueva categoría.' : 'Ajuste visual del catálogo editorial en CMS.'}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={closeEdit}>
-                  <FontAwesome name="times" size={18} color="rgba(255,255,255,0.7)" />
+                  <FontAwesome name="times" size={18} color={C.muted} />
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={{ maxHeight: 520 }}>
               <View style={{ padding: 20, gap: 12 }}>
-                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>NOMBRE <Text style={{ color: theme.danger }}>*</Text></Text>
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>NOMBRE <Text style={{ color: C.rose }}>*</Text></Text>
                 <TextInput
                   value={form.nombre}
                   onChangeText={(value) => setForm((current) => ({ ...current, nombre: value }))}
                   placeholder="Ej: Contenido Adulto, Tu Cancha…"
-                  placeholderTextColor={theme.textMuted}
-                  style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
+                  placeholderTextColor={C.muted}
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
                 />
-                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>DESCRIPCIÓN</Text>
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>DESCRIPCIÓN</Text>
                 <TextInput
                   value={form.descripcion}
                   onChangeText={(value) => setForm((current) => ({ ...current, descripcion: value }))}
                   placeholder="Describe cómo se presenta esta sección en el player"
-                  placeholderTextColor={theme.textMuted}
+                  placeholderTextColor={C.muted}
                   multiline
                   numberOfLines={4}
-                  style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, minHeight: 90, textAlignVertical: 'top', ...webInput }}
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, minHeight: 90, textAlignVertical: 'top', ...webInput }}
                 />
-                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>ÍCONO (clase FontAwesome)</Text>
+                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>ÍCONO (clase FontAwesome)</Text>
                 <TextInput
                   value={form.icono}
                   onChangeText={(value) => setForm((current) => ({ ...current, icono: value }))}
                   placeholder="Ej: futbol-o, film, music, child…"
-                  placeholderTextColor={theme.textMuted}
-                  style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
+                  placeholderTextColor={C.muted}
+                  style={{ backgroundColor: C.lift, borderRadius: 10, borderWidth: 1, borderColor: C.border, color: C.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
                 />
-
-                {/* Color de acento */}
-                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>COLOR DE ACENTO</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(form.accentColor) ? form.accentColor : '#FFB800', borderWidth: 1, borderColor: theme.border }} />
-                  <TextInput
-                    value={form.accentColor}
-                    onChangeText={(value) => setForm((current) => ({ ...current, accentColor: value }))}
-                    placeholder="#FFB800"
-                    placeholderTextColor={theme.textMuted}
-                    style={{ flex: 1, backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
-                  />
-                </View>
-
-                {/* Orden de display */}
-                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>ORDEN DE VISUALIZACIÓN</Text>
-                <TextInput
-                  value={String(form.displayOrder)}
-                  onChangeText={(value) => setForm((current) => ({ ...current, displayOrder: parseInt(value, 10) || 99 }))}
-                  placeholder="99"
-                  placeholderTextColor={theme.textMuted}
-                  keyboardType="numeric"
-                  style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, paddingHorizontal: 12, paddingVertical: 11, fontSize: 13, ...webInput }}
-                />
-
-                {/* Channel Selector */}
-                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700', marginTop: 4 }}>CANALES ASOCIADOS</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 4 }}>Selecciona los canales que pertenecen a esta categoría.</Text>
-                <View style={{ backgroundColor: theme.liftBg, borderRadius: 10, borderWidth: 1, borderColor: theme.border, maxHeight: 180, overflow: 'hidden' }}>
-                  <ScrollView nestedScrollEnabled>
-                    {(canales as AdminCanal[]).length === 0 ? (
-                      <Text style={{ color: theme.textMuted, fontSize: 12, padding: 12 }}>No hay canales disponibles.</Text>
-                    ) : (
-                      (canales as AdminCanal[]).map((canal) => {
-                        const isSelected = selectedChannelIds.includes(canal.id);
-                        return (
-                          <TouchableOpacity
-                            key={canal.id}
-                            onPress={() => setSelectedChannelIds((prev) =>
-                              isSelected ? prev.filter((id) => id !== canal.id) : [...prev, canal.id]
-                            )}
-                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: theme.border, gap: 10 }}
-                          >
-                            <View style={{
-                              width: 18, height: 18, borderRadius: 4, borderWidth: 2,
-                              borderColor: isSelected ? theme.accent : theme.border,
-                              backgroundColor: isSelected ? theme.accent : 'transparent',
-                              alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              {isSelected ? <FontAwesome name="check" size={10} color="white" /> : null}
-                            </View>
-                            <Text style={{ color: isSelected ? theme.text : theme.textSec, fontSize: 12, flex: 1 }} numberOfLines={1}>{canal.nombre}</Text>
-                            <Text style={{ color: theme.textMuted, fontSize: 10 }}>{canal.status}</Text>
-                          </TouchableOpacity>
-                        );
-                      })
-                    )}
-                  </ScrollView>
-                </View>
-                {selectedChannelIds.length > 0 && (
-                  <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '700' }}>{selectedChannelIds.length} canal(es) seleccionado(s)</Text>
-                )}
-
                 {formError ? (
-                  <Text style={{ color: theme.danger, fontSize: 12, fontWeight: '700' }}>{formError}</Text>
+                  <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>{formError}</Text>
                 ) : null}
               </View>
-              </ScrollView>
 
-              <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: theme.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-                <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.liftBg }} onPress={closeEdit} disabled={isSaving}>
-                  <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+              <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+                <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeEdit}>
+                  <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: isSaving ? theme.textMuted : theme.accent, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent }}
                   onPress={saveEdit}
-                  disabled={isSaving}
                 >
-                  {isSaving ? <ActivityIndicator size={12} color="white" /> : null}
                   <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>
-                    {isSaving ? 'Guardando…' : isCreating ? 'Crear categoría' : 'Guardar cambios'}
+                    {isCreating ? 'Crear categoría' : 'Guardar cambios'}
                   </Text>
                 </TouchableOpacity>
               </View>

@@ -28,12 +28,6 @@ enum SessionLimitPolicy {
   REPLACE_OLDEST
 }
 
-enum RegistrationRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 enum ChannelStatus {
   ACTIVE
   SCHEDULED
@@ -54,38 +48,7 @@ enum ChannelHealthStatus {
   MAINTENANCE
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  GRACE_PERIOD
-  SUSPENDED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-}
-
-enum NotificationType {
-  SUBSCRIPTION_REMINDER
-  SUBSCRIPTION_EXPIRED
-  SUBSCRIPTION_SUSPENDED
-  PAYMENT_RECEIVED
-  PAYMENT_FAILED
-}
-
 // ─── Models ──────────────────────────────────────────────
-
-model CmsRole {
-  id          String   @id @default(uuid())
-  key         UserRole @unique
-  permissions String[] @default([])
-  updatedAt   DateTime @updatedAt
-
-  @@map("cms_roles")
-}
 
 model Customer {
   id                 String     @id @default(uuid())
@@ -95,8 +58,7 @@ model Customer {
   email              String?    @unique
   ispEmail           String?
   telefono           String?
-  idNumber           String?    @unique // Cédula de identidad
-  address            String?    // Dirección
+  idNumber           String?    @unique
   passwordHash       String?
   role               UserRole   @default(CLIENTE)
   status             UserStatus @default(PENDING)
@@ -108,16 +70,13 @@ model Customer {
   isCmsUser          Boolean    @default(false)
   isSubscriber       Boolean    @default(true)
   isAccountActivated Boolean    @default(false)
+  permissions        String[]   @default([])
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   deletedAt          DateTime?
 
-  contracts       Contract[]
-  sessions        Session[]
-  activationCodes ActivationCode[]
-  subscriptions   Subscription[]
-  payments        Payment[]
-  notifications   Notification[]
+  contracts Contract[]
+  sessions  Session[]
 
   @@map("customers")
 }
@@ -127,7 +86,6 @@ model Contract {
   customerId          String
   contractNumber      String             @unique @db.VarChar(20)
   planName            String             @default("LUKI PLAY")
-  planId              String?
   ispPlanName         String?
   maxDevices          Int                @default(2)
   maxConcurrentStreams Int               @default(1)
@@ -208,68 +166,22 @@ model Device {
 model Plan {
   id                  String   @id @default(uuid())
   nombre              String   @default("LUKI PLAY")
-  descripcion         String   @default("Streaming incluido con tu servicio de luki Internet")
-  grupoUsuarios       String   @default("ISP_BUNDLE")
-  precio              Float    @default(0)
-  moneda              String   @default("USD")
-  duracionDias        Int      @default(30)
+  descripcion         String   @default("Streaming incluido con tu servicio de internet Luki")
   activo              Boolean  @default(true)
-  maxDevices          Int      @default(3)
-  maxConcurrentStreams Int     @default(2)
+  maxDevices          Int      @default(2)
+  maxConcurrentStreams Int     @default(1)
   maxProfiles         Int      @default(3)
   videoQuality        String   @default("HD")
   allowDownloads      Boolean  @default(false)
   allowCasting        Boolean  @default(true)
   hasAds              Boolean  @default(true)
-  trialDays           Int      @default(0)
-  gracePeriodDays     Int      @default(0)
   entitlements        Json     @default("[\"live-tv\", \"vod-basic\", \"sports\"]")
   allowedComponentIds Json     @default("[]")
   allowedCategoryIds  Json     @default("[]")
-  allowedChannelIds   Json     @default("[]")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  subscriptions Subscription[]
-
   @@map("plans")
-}
-
-model ActivationCode {
-  id          String    @id @default(uuid())
-  customerId  String
-  code        String    // "A1B2C3" — alfanumérico 6 chars, en texto plano (corta vida)
-  generatedBy String?   // NULL = autoservicio, userId = generado por soporte CMS
-  sentToEmail String?   // Email al que se envió el código (NULL si fue por soporte)
-  expiresAt   DateTime
-  usedAt      DateTime?
-  createdAt   DateTime  @default(now())
-
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  @@index([code])
-  @@index([customerId])
-  @@map("activation_codes")
-}
-
-model RegistrationRequest {
-  id          String                    @id @default(uuid())
-  nombres     String
-  apellidos   String
-  idNumber    String
-  telefono    String
-  email       String?
-  direccion   String?
-  status      RegistrationRequestStatus @default(PENDING)
-  reviewedBy  String?   // ID del usuario CMS que aprobó/rechazó
-  reviewedAt  DateTime?
-  reviewNotes String?
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
-
-  @@index([status])
-  @@index([idNumber])
-  @@map("registration_requests")
 }
 
 model SyncLog {
@@ -291,38 +203,15 @@ model SyncLog {
 model Category {
   id            String    @id @default(uuid())
   nombre        String    @unique
-  slug          String?   @unique
   descripcion   String    @default("")
   icono         String    @default("")
-  accentColor   String    @default("#FFB800")
-  displayOrder  Int       @default(99)
   activo        Boolean   @default(true)
-  esContenidoAdulto Boolean @default(false)
-  deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  channels            Channel[]
-  channelCategories   ChannelCategory[]
-  componentCategories ComponentCategory[]
+  channels Channel[]
 
-  @@index([activo])
-  @@index([displayOrder])
   @@map("categories")
-}
-
-model ChannelCategory {
-  channelId  String
-  categoryId String
-  assignedAt DateTime @default(now())
-
-  channel  Channel  @relation(fields: [channelId],  references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([channelId, categoryId])
-  @@index([channelId])
-  @@index([categoryId])
-  @@map("channel_categories")
 }
 
 model Channel {
@@ -367,109 +256,8 @@ model Channel {
   updatedAt               DateTime            @updatedAt
   deletedAt               DateTime?
 
-  channelCategories ChannelCategory[]
-
   @@index([categoryId])
   @@index([status])
   @@index([isLive])
   @@map("channels")
-}
-
-model Component {
-  id          String   @id
-  nombre      String   @unique
-  descripcion String   @default("")
-  icono       String   @default("")
-  tipo        String
-  activo      Boolean  @default(true)
-  orden       Int      @default(99)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  componentCategories ComponentCategory[]
-
-  @@index([activo])
-  @@index([orden])
-  @@map("components")
-}
-
-model ComponentCategory {
-  componentId String
-  categoryId  String
-  assignedAt  DateTime @default(now())
-
-  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  category  Category  @relation(fields: [categoryId],  references: [id], onDelete: Cascade)
-
-  @@id([componentId, categoryId])
-  @@index([componentId])
-  @@index([categoryId])
-  @@map("component_categories")
-}
-
-// ─── Subscription System ─────────────────────────────────
-
-model Subscription {
-  id                 String             @id @default(uuid())
-  customerId         String
-  planId             String
-  startDate          DateTime
-  expirationDate     DateTime
-  gracePeriodEnd     DateTime?          // null when plan.gracePeriodDays = 0
-  status             SubscriptionStatus @default(ACTIVE)
-
-  // Notification dedup flags — reset on renewal
-  reminderSent       Boolean            @default(false)
-  expiredNotifSent   Boolean            @default(false)
-  suspendedNotifSent Boolean            @default(false)
-
-  // Immutable snapshot of plan rules at subscription creation time
-  planSnapshot       Json
-
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  customer  Customer  @relation(fields: [customerId], references: [id])
-  plan      Plan      @relation(fields: [planId], references: [id])
-  payments  Payment[]
-
-  @@index([customerId])
-  @@index([status, expirationDate])
-  @@index([status, gracePeriodEnd])
-  @@map("subscriptions")
-}
-
-model Payment {
-  id             String        @id @default(uuid())
-  customerId     String
-  subscriptionId String
-  amount         Float
-  currency       String        @default("USD")
-  status         PaymentStatus @default(PENDING)
-  externalRef    String?       // Payment gateway transaction ID
-  metadata       Json?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  customer     Customer     @relation(fields: [customerId], references: [id])
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
-
-  @@index([customerId])
-  @@index([subscriptionId])
-  @@map("payments")
-}
-
-model Notification {
-  id         String           @id @default(uuid())
-  customerId String
-  type       NotificationType
-  channel    String           @default("email")
-  sentAt     DateTime         @default(now())
-  status     String           @default("SENT")
-  metadata   Json?
-
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  @@index([customerId, type])
-  @@map("notifications")
 }

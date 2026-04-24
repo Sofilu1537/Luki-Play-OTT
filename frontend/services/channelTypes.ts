@@ -106,19 +106,40 @@ export function getCurrentProgram(channel: Channel): EpgProgram {
     return { title: channel.name, startTime: '00:00', endTime: '23:59', description: 'En vivo' };
   }
   const now = new Date();
-  const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  return channel.epg.find(p => p.startTime <= nowStr && p.endTime > nowStr) ?? channel.epg[0]!;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  return channel.epg.find(p => {
+    const start = toMin(p.startTime);
+    const end = toMin(p.endTime);
+    if (end < start) {
+      // Midnight-crossing program (e.g. 23:30 – 01:00)
+      return nowMin >= start || nowMin < end;
+    }
+    return nowMin >= start && nowMin < end;
+  }) ?? channel.epg[0]!;
 }
 
 export function getProgressPercent(program: EpgProgram): number {
   const toMin = (t: string) => {
     const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
+    return (h ?? 0) * 60 + (m ?? 0);
   };
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const start = toMin(program.startTime);
-  const end = toMin(program.endTime);
-  if (end <= start) return 100;
-  return Math.min(100, Math.max(0, ((nowMin - start) / (end - start)) * 100));
+  let end = toMin(program.endTime);
+  let elapsed = nowMin - start;
+
+  if (end < start) {
+    // Midnight-crossing: add 24h to end and adjust elapsed if we're past midnight
+    end += 24 * 60;
+    if (nowMin < start) elapsed = (nowMin + 24 * 60) - start;
+  }
+
+  const duration = end - start;
+  if (duration <= 0) return 100;
+  return Math.min(100, Math.max(0, (elapsed / duration) * 100));
 }

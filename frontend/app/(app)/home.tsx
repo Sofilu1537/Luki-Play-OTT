@@ -138,7 +138,13 @@ function FavoritesRow({ channels, onSelectChannel }: { channels: Channel[]; onSe
                             style={{ width: 120, alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: `${APP.accent}33` }}
                             onPress={() => onSelectChannel(item)}
                         >
-                            <Text style={{ fontSize: 36 }}>{item.logo}</Text>
+                            {(!item.logo || item.logo === '📺') ? (
+                                <Ionicons name="tv-outline" size={40} color="rgba(255,255,255,0.7)" />
+                            ) : item.logo.startsWith('http') ? (
+                                <Image source={{ uri: item.logo }} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+                            ) : (
+                                <Text style={{ fontSize: 36 }}>{item.logo}</Text>
+                            )}
                             <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>{item.name}</Text>
                             <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center' }} numberOfLines={1}>{prog.title}</Text>
                         </TouchableOpacity>

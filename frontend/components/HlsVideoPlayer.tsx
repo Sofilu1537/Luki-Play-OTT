@@ -33,17 +33,8 @@ function WebHlsPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    let isMounted = true;
-
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Hls = require('hls.js').default;
-
-    if (!isMounted) return;
-
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -75,9 +66,15 @@ function WebHlsPlayer({
     }
 
     return () => {
-      isMounted = false;
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      } else {
+        // Safari native cleanup
+        video.pause();
+        video.src = '';
+        video.load();
+      }
     };
   }, [src]);
 
