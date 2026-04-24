@@ -19,6 +19,41 @@ import { SIDEBAR } from '../../styles/theme';
 import { FONT_FAMILY } from '../../styles/typography';
 
 // ---------------------------------------------------------------------------
+// C — flat design-token constants for CMS screens (always dark)
+// Import as: import CmsShell, { C } from '../../components/cms/CmsShell';
+// ---------------------------------------------------------------------------
+export const C = {
+  // Backgrounds
+  bodyBg:     '#240046',
+  surface:    '#1A1A2E',
+  surfaceAlt: 'rgba(96,38,158,0.14)',
+  lift:       'rgba(96,38,158,0.34)',
+  // Borders
+  border:     'rgba(255,255,255,0.08)',
+  // Text
+  text:       '#FFFFFF',
+  textDim:    'rgba(255,255,255,0.88)',
+  textMuted:  'rgba(255,255,255,0.65)',
+  muted:      'rgba(255,255,255,0.40)',
+  // Accent — Selective Yellow
+  accent:       '#FFB800',
+  accentSoft:   'rgba(255,184,0,0.12)',
+  accentBorder: 'rgba(255,184,0,0.30)',
+  accentLight:  '#FFDA6B',
+  // Cyan / Teal — success / active
+  cyan:     '#17D1C6',
+  cyanSoft: 'rgba(23,209,198,0.14)',
+  // Green — alias for cyan in this palette
+  green:     '#17D1C6',
+  greenSoft: 'rgba(23,209,198,0.14)',
+  // Rose — danger / suspension
+  rose:     '#D1105A',
+  roseSoft: 'rgba(209,16,90,0.14)',
+  // Amber — warning / pending
+  amber:     '#FF7900',
+  amberSoft: 'rgba(255,121,0,0.14)',
+} as const;
+
 // Nav definition
 // ---------------------------------------------------------------------------
 export interface NavItem {
