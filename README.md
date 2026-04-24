@@ -14,7 +14,7 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 |---------------------|---------------------------------------------------------------|
 | **Nombre**          | LUKI Play OTT                                                 |
 | **Propósito**       | Plataforma OTT de streaming y contenido bajo demanda          |
-| **Estado**          | v0.4.0-beta — Sprint 1 completado (Autenticación, RBAC por rol persistido en BD, CMS completo) |
+| **Estado**          | v0.4.0-beta — Sprint 1 completado (Autenticación, RBAC granular read/write por módulo, Módulo Roles rediseñado, Perfil con cambio de contraseña) |
 | **Autor**           | Sofia Soria  — Product Designer , DataCom S.A. |
 | **Repositorio**     | https://github.com/Sofilu1537/Luki-Play-OTT                  |
 | **Zona horaria**    | America/Guayaquil (UTC-5)                                     |
@@ -67,18 +67,29 @@ npx prisma db seed           # Carga datos de prueba (49 usuarios)
 npm run start:dev
 ```
 
-> **⚠️ Configuración de correo requerida**: el proyecto ya usa Titan Email para el envío
-> de claves temporales y correos transaccionales. En el `.env` se debe completar
-> `SMTP_PASS` para la cuenta `noreply@luki.ec`. Los valores de referencia son:
+> **Configuración de correo**: El proyecto usa `NodemailerEmailService` para enviar OTP,
+> códigos de activación y recuperación de contraseña. **Requiere credenciales SMTP** en el `.env`.
 >
-> `SMTP_HOST=smtp.titan.email`
-> `SMTP_PORT=465`
-> `SMTP_SECURE=true`
-> `SMTP_USER=noreply@luki.ec`
-> `SMTP_FROM=noreply@luki.ec`
+> **Desarrollo local** — usar [Mailtrap](https://mailtrap.io) (sandbox gratuito, no envía correos reales):
+> ```
+> SMTP_HOST=sandbox.smtp.mailtrap.io
+> SMTP_PORT=2525
+> SMTP_SECURE=false
+> SMTP_USER=<usuario_mailtrap>
+> SMTP_PASS=<password_mailtrap>
+> SMTP_FROM=noreply@lukiplay.com
+> ```
+> Crear cuenta en mailtrap.io → Email Testing → SMTP Settings → copiar credenciales.
 >
-> Sin `SMTP_PASS`, el envío de OTP, códigos de activación y recuperación de contraseña
-> no funcionará.
+> **Producción** — usar el servidor SMTP real (Titan Email, AWS SES, SendGrid, etc.):
+> ```
+> SMTP_HOST=smtp.titan.email
+> SMTP_PORT=465
+> SMTP_SECURE=true
+> SMTP_USER=noreply@luki.ec
+> SMTP_PASS=<contraseña_real>
+> SMTP_FROM=noreply@luki.ec
+> ```
 
 El backend queda disponible en `http://localhost:3000`.
 Swagger: `http://localhost:3000/api/docs`
@@ -255,6 +266,7 @@ Los cambios a permisos de un rol aplican a **todos los usuarios** con ese rol en
 | 3.5    | Módulo Categorías con campos extendidos y M:M canales     | ✅ Completado |
 | 3.6    | Módulo Componentes con M:M categorías y persistencia BD   | ✅ Completado |
 | 3.7    | RBAC por rol: tabla `cms_roles`, permisos editables desde CMS | ✅ Completado |
+| 3.8    | Módulo Roles rediseñado: matriz read/write por módulo, gestión de usuarios CMS, perfil con cambio de contraseña | ✅ Completado |
 | 4      | Integración billing/CRM real                              | ⏳ Pendiente  |
 
 ---
