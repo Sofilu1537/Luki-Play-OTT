@@ -3,209 +3,188 @@ set -euo pipefail
 
 # Deploy script for EC2 Debian instance.
 # Usage:
-#   bash deploy-ec2.sh [--branch BRANCH] [--repo-url URL] [--app-dir DIR]
-#
-# Modes:
-#   - default: clone/update the repo from origin
-#   - snapshot: set SKIP_GIT_SYNC=1 to deploy files already present in APP_DIR
-
-usage() {
-  cat <<'EOF'
-Usage:
-  bash deploy-ec2.sh [--branch BRANCH] [--repo-url URL] [--app-dir DIR]
-
-Environment:
-  SKIP_GIT_SYNC=1     Deploy current files in APP_DIR without git clone/fetch/pull.
-  DEPLOY_BRANCH=name  Branch to deploy when git sync is enabled.
-  BACKEND_PORT=8100   Backend listen port.
-  NGINX_PORT=8120     Public nginx port.
-EOF
-}
+#   bash deploy-ec2.sh [--branch BRANCH]
 
 REPO_URL="${REPO_URL:-https://github.com/Sofilu1537/Luki-Play-OTT.git}"
 APP_DIR="${APP_DIR:-$HOME/Luki-Play-OTT}"
 STATIC_DIR="${STATIC_DIR:-/var/www/luki-play-ott}"
-BACKEND_PORT="${BACKEND_PORT:-8100}"
-NGINX_PORT="${NGINX_PORT:-8120}"
-BRANCH="${DEPLOY_BRANCH:-}"
+BACKEND_PORT="${BACKEND_PORT:-3000}"
+BRANCH="${DEPLOY_BRANCH:-main}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --branch)
-      BRANCH="$2"
-      shift 2
-      ;;
-    --repo-url)
-      REPO_URL="$2"
-      shift 2
-      ;;
-    --app-dir)
-      APP_DIR="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown argument: $1" >&2
-      usage
-      exit 1
-      ;;
+    --branch) BRANCH="$2"; shift 2 ;;
+    --repo-url) REPO_URL="$2"; shift 2 ;;
+    --app-dir) APP_DIR="$2"; shift 2 ;;
+    *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
 FRONTEND_DIR="$APP_DIR/frontend"
 BACKEND_DIR="$APP_DIR/backend"
-FRONTEND_BUILD_DIR="$FRONTEND_DIR/dist"
 
-sudo apt update
-sudo apt install -y git curl nginx
+# ── 1. System packages ────────────────────────────────────────────────────────
+export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update -qq
+sudo apt-get install -y -qq git curl nginx postgresql postgresql-contrib redis-server
 
-# Install Node 20
-if ! command -v node >/dev/null 2>&1 || [[ "$(node -v)" != v20* ]]; then
+# ── 2. Node 20 ───────────────────────────────────────────────────────────────
+if ! node --version 2>/dev/null | grep -q '^v20'; then
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-  sudo apt install -y nodejs
+  sudo apt-get install -y -qq nodejs
 fi
 
+# ── 3. PM2 ───────────────────────────────────────────────────────────────────
 if ! command -v pm2 >/dev/null 2>&1; then
-  sudo npm install -g pm2
+  sudo npm install -g pm2 --quiet
 fi
 
-# Clone or update repo when requested. Skip this entirely for local snapshot uploads.
-if [[ "${SKIP_GIT_SYNC:-0}" != "1" ]]; then
-  if [[ -d "$APP_DIR/.git" ]]; then
-    cd "$APP_DIR"
-    git fetch --all --prune
+# ── 4. PostgreSQL setup ───────────────────────────────────────────────────────
+sudo systemctl enable postgresql --quiet
+sudo systemctl start postgresql
 
-    if [[ -n "$BRANCH" ]]; then
-      if ! git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
-        echo "Remote branch origin/$BRANCH not found." >&2
-        exit 1
-      fi
+DB_NAME="lukiplay_prd"
+DB_USER="lukiplay_admin"
+DB_PASS="lukiplay_$(openssl rand -hex 8)"
 
-      git checkout -B "$BRANCH" "origin/$BRANCH"
-    else
-      CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-      git checkout "$CURRENT_BRANCH"
-      git pull --rebase origin "$CURRENT_BRANCH"
-      BRANCH="$CURRENT_BRANCH"
-    fi
-  else
-    mkdir -p "$(dirname "$APP_DIR")"
+# Create user and DB only if they don't exist
+sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='${DB_USER}'" | grep -q 1 || \
+  sudo -u postgres psql -c "CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASS}';"
 
-    if [[ -n "$BRANCH" ]]; then
-      git clone --branch "$BRANCH" --single-branch "$REPO_URL" "$APP_DIR"
-    else
-      git clone "$REPO_URL" "$APP_DIR"
-      BRANCH="$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)"
-    fi
-  fi
-elif [[ ! -f "$BACKEND_DIR/package.json" || ! -f "$FRONTEND_DIR/package.json" ]]; then
-  echo "APP_DIR does not contain backend/frontend sources: $APP_DIR" >&2
-  exit 1
+sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" | grep -q 1 || \
+  sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};"
+
+# If user already exists, update the password so .env stays in sync
+sudo -u postgres psql -c "ALTER USER ${DB_USER} WITH PASSWORD '${DB_PASS}';" 2>/dev/null || true
+
+DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
+
+# ── 5. Redis ──────────────────────────────────────────────────────────────────
+sudo systemctl enable redis-server --quiet
+sudo systemctl start redis-server
+
+# ── 6. Clone / update repo ────────────────────────────────────────────────────
+if [[ -d "$APP_DIR/.git" ]]; then
+  cd "$APP_DIR"
+  git fetch --all --prune
+  git checkout -B "$BRANCH" "origin/$BRANCH"
+else
+  mkdir -p "$(dirname "$APP_DIR")"
+  git clone --branch "$BRANCH" --single-branch "$REPO_URL" "$APP_DIR"
 fi
 
-# Backend build
+# ── 7. Backend .env ───────────────────────────────────────────────────────────
+JWT_SECRET="$(openssl rand -hex 32)"
+REFRESH_SECRET="$(openssl rand -hex 32)"
+
+cat > "$BACKEND_DIR/.env" <<EOF
+PORT=${BACKEND_PORT}
+NODE_ENV=production
+DATABASE_URL=${DATABASE_URL}
+REDIS_URL=redis://localhost:6379
+SUBSCRIBER_JWT_SECRET=${JWT_SECRET}
+ADMIN_JWT_SECRET=${REFRESH_SECRET}
+JWT_EXPIRATION=15m
+REFRESH_TOKEN_EXPIRATION=7d
+BCRYPT_SALT_ROUNDS=12
+USE_MOCK_API=false
+THROTTLE_TTL=60000
+THROTTLE_LIMIT=100
+SMTP_HOST=smtp.titan.email
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=noreply@luki.ec
+SMTP_PASS=
+SMTP_FROM=noreply@luki.ec
+EOF
+
+echo ".env written to $BACKEND_DIR/.env"
+
+# ── 8. Backend build ──────────────────────────────────────────────────────────
 cd "$BACKEND_DIR"
-npm install
+npm install --legacy-peer-deps
+npx prisma generate
+DATABASE_URL="${DATABASE_URL}" npx prisma db push --accept-data-loss
+DATABASE_URL="${DATABASE_URL}" npx prisma db seed 2>/dev/null || echo "Seed skipped"
 npm run build
 
-# Start backend via PM2
-if pm2 describe luki-play-backend >/dev/null 2>&1; then
-  PORT="$BACKEND_PORT" pm2 restart luki-play-backend --update-env
+# ── 9. PM2 ────────────────────────────────────────────────────────────────────
+if pm2 describe luki-backend >/dev/null 2>&1; then
+  pm2 restart luki-backend --update-env
 else
-  PORT="$BACKEND_PORT" pm2 start npm --name luki-play-backend -- run start:prod
+  pm2 start npm --name luki-backend -- run start:prod
 fi
 pm2 save
+sudo env PATH="$PATH:/usr/bin" pm2 startup systemd -u admin --hp /home/admin 2>/dev/null || true
 
-# Frontend build on server only if resources allow.
+# ── 10. Frontend build ────────────────────────────────────────────────────────
 cd "$FRONTEND_DIR"
-npm install
+npm install --legacy-peer-deps
 npm run build:web
 
-if [[ ! -d "$FRONTEND_BUILD_DIR" && -d "$FRONTEND_DIR/web-build" ]]; then
-  FRONTEND_BUILD_DIR="$FRONTEND_DIR/web-build"
-fi
+FRONTEND_BUILD_DIR="$FRONTEND_DIR/dist"
+[[ -d "$FRONTEND_BUILD_DIR" ]] || FRONTEND_BUILD_DIR="$FRONTEND_DIR/web-build"
 
 if [[ ! -d "$FRONTEND_BUILD_DIR" ]]; then
-  echo "Frontend build output not found in $FRONTEND_DIR/dist or $FRONTEND_DIR/web-build" >&2
+  echo "ERROR: Frontend build output not found." >&2
   exit 1
 fi
 
-# Publish frontend static files to nginx web root
 sudo mkdir -p "$STATIC_DIR"
-sudo rm -rf "$STATIC_DIR"/*
-sudo cp -r "$FRONTEND_BUILD_DIR"/* "$STATIC_DIR"
+sudo rm -rf "${STATIC_DIR:?}"/*
+sudo cp -r "$FRONTEND_BUILD_DIR"/. "$STATIC_DIR/"
 
-# Nginx config
-sudo tee /etc/nginx/sites-available/luki-play-ott.conf > /dev/null <<EOF
+# ── 11. Nginx ─────────────────────────────────────────────────────────────────
+sudo tee /etc/nginx/sites-available/luki-play.conf > /dev/null <<NGINX
 server {
-  listen 80;
-  listen $NGINX_PORT;
+  listen 80 default_server;
   server_name _;
 
-  root $STATIC_DIR;
+  root ${STATIC_DIR};
   index index.html;
 
-  location /auth/ {
-    proxy_pass http://127.0.0.1:$BACKEND_PORT/auth/;
+  # Uploads (logos, etc.)
+  location /uploads/ {
+    alias ${BACKEND_DIR}/uploads/;
+    expires 30d;
+    add_header Cache-Control "public";
+  }
+
+  # Backend API routes
+  location ~ ^/(auth|admin|public|api)/ {
+    proxy_pass http://127.0.0.1:${BACKEND_PORT};
     proxy_http_version 1.1;
-    proxy_set_header Host localhost:$BACKEND_PORT;
-    proxy_set_header X-Forwarded-Host \$host;
+    proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     proxy_set_header Authorization \$http_authorization;
+    proxy_read_timeout 60s;
   }
 
-  location /admin/ {
-    proxy_pass http://127.0.0.1:$BACKEND_PORT/admin/;
-    proxy_http_version 1.1;
-    proxy_set_header Host localhost:$BACKEND_PORT;
-    proxy_set_header X-Forwarded-Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header Authorization \$http_authorization;
-  }
-
-  location /public/ {
-    proxy_pass http://127.0.0.1:$BACKEND_PORT/public/;
-    proxy_http_version 1.1;
-    proxy_set_header Host localhost:$BACKEND_PORT;
-    proxy_set_header X-Forwarded-Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-  }
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:$BACKEND_PORT/api/;
-    proxy_http_version 1.1;
-    proxy_set_header Host localhost:$BACKEND_PORT;
-    proxy_set_header X-Forwarded-Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  # SPA fallback
+  location / {
+    try_files \$uri \$uri.html \$uri/ /index.html;
   }
 
   location ~ /\.(?!well-known).* {
     deny all;
-    return 404;
-  }
-
-  location / {
-    try_files \$uri \$uri.html \$uri/ /index.html;
   }
 }
-EOF
+NGINX
 
-sudo ln -fs /etc/nginx/sites-available/luki-play-ott.conf /etc/nginx/sites-enabled/luki-play-ott.conf
+sudo ln -fs /etc/nginx/sites-available/luki-play.conf /etc/nginx/sites-enabled/luki-play.conf
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
+sudo systemctl enable nginx --quiet
 sudo systemctl reload nginx
 
-PUBLIC_HOST="$(curl -fsS ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
+PUBLIC_IP="$(curl -fsS --max-time 3 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
 
-echo "Deployment completed."
-echo "Source: ${BRANCH:-local-snapshot}"
-echo "Frontend: http://$PUBLIC_HOST:$NGINX_PORT"
-echo "CMS Login: http://$PUBLIC_HOST:$NGINX_PORT/cms/login"
-echo "Backend health: http://$PUBLIC_HOST:$NGINX_PORT/auth/health"
+echo ""
+echo "══════════════════════════════════════════"
+echo " Deployment complete — branch: ${BRANCH}"
+echo "══════════════════════════════════════════"
+echo " App:        http://${PUBLIC_IP}"
+echo " CMS login:  http://${PUBLIC_IP}/cms/login"
+echo " API health: http://${PUBLIC_IP}/auth/health"
+echo "══════════════════════════════════════════"
