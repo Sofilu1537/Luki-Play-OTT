@@ -1199,12 +1199,16 @@ export class AdminService {
 
   // ---- Canales CRUD (Prisma persistence) ----------------------------------
 
-  async getCanales() {
-    return this.prisma.channel.findMany({
+  async getCanales(canSeeUrls = true) {
+    const channels = await this.prisma.channel.findMany({
       where: { deletedAt: null },
       include: { category: true },
       orderBy: { sortOrder: 'asc' },
     });
+    if (!canSeeUrls) {
+      return channels.map(({ streamUrl: _hidden, ...rest }) => rest);
+    }
+    return channels;
   }
 
   async createCanal(dto: CreateCanalDto) {

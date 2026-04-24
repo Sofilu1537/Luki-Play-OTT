@@ -29,4 +29,18 @@ export interface EmailService {
   sendRecoveryCode(to: string, code: string, name?: string): Promise<void>;
   sendActivationCode(to: string, code: string): Promise<void>;
   sendRegistrationRequest(data: RegistrationRequestData): Promise<void>;
+
+  // ─── Subscription lifecycle notifications ─────────────────────────────────
+  sendSubscriptionReminder(
+    to: string,
+    displayName: string,
+    expirationDate: Date,
+  ): Promise<void>;
+  sendSubscriptionExpired(
+    to: string,
+    displayName: string,
+    graceDeadline: Date,
+  ): Promise<void>;
+  sendSubscriptionSuspended(to: string, displayName: string): Promise<void>;
 }
+

@@ -23,7 +23,13 @@ async function bootstrap() {
 
   app.useGlobalPipes(globalValidationPipe);
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.enableCors();
+  app.enableCors({
+    origin: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true,
+    optionsSuccessStatus: 204,
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Luki Play Auth Service')

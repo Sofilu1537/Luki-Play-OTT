@@ -91,7 +91,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
   /**
    * Log out the current CMS user.
-   * Calls the logout endpoint (best-effort) and clears all stored tokens.
+   * Calls the logout endpoint (best-effort), clears all stored tokens,
+   * and resets hasRestored so the layout bootstraps cleanly on re-entry.
    */
   logout: () => {
     const { accessToken } = get();
@@ -99,7 +100,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       cmsLogout(accessToken);
     }
     clearTokens();
-    set({ profile: null, accessToken: null });
+    set({ profile: null, accessToken: null, hasRestored: false });
   },
 
   /**

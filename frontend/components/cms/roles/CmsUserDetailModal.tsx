@@ -10,7 +10,7 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '../../../hooks/useTheme';
 import PermissionToggles from './PermissionToggles';
-import { ROLE_META, buildToggleItems, buildContentPermItems } from './types';
+import { ROLE_META, buildModulePermissions } from './types';
 import { adminGetRoles } from '../../../services/api/adminApi';
 import type { AdminUser, CmsRole } from '../../../services/api/adminApi';
 import { useCmsStore } from '../../../services/cmsStore';
@@ -48,8 +48,7 @@ export default function CmsUserDetailModal({ visible, user, onClose, onDelete }:
   const meta = ROLE_META[user.role] ?? ROLE_META['admin']!;
   const isSuperadmin = user.role === 'superadmin';
   const permissions = roleData?.permissions ?? [];
-  const toggleItems = buildToggleItems(user.role, permissions, false);
-  const contentPermItems = buildContentPermItems(user.role, permissions, false);
+  const matrixItems = buildModulePermissions(user.role, permissions, false);
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -119,15 +118,7 @@ export default function CmsUserDetailModal({ visible, user, onClose, onDelete }:
                 {loadingRole ? (
                   <ActivityIndicator size="small" color={theme.accent} />
                 ) : (
-                  <>
-                    <PermissionToggles items={toggleItems} readOnly />
-                    {contentPermItems.length > 0 && (
-                      <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
-                        <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>CONTENIDO (API)</Text>
-                        <PermissionToggles items={contentPermItems} readOnly />
-                      </View>
-                    )}
-                  </>
+                  <PermissionToggles items={matrixItems} readOnly />
                 )}
               </View>
             )}

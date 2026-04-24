@@ -17,8 +17,8 @@ export default function RolesPage() {
         {/* Tab bar */}
         <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.border, paddingHorizontal: 16 }}>
           {([
-            { key: 'roles' as Tab, label: 'Roles', icon: 'shield' as const },
-            { key: 'users' as Tab, label: 'Usuarios CMS', icon: 'user-plus' as const },
+            { key: 'roles' as Tab, label: 'Roles y permisos', icon: 'shield' as const },
+            { key: 'users' as Tab, label: 'Usuarios internos', icon: 'users' as const },
           ]).map((t) => {
             const active = tab === t.key;
             return (

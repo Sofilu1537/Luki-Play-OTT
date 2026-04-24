@@ -65,6 +65,7 @@ export class PrismaUserRepository implements UserRepository {
       mfaEnabled: user.mfaEnabled,
       lockedUntil: user.lockedUntil,
       lastLoginAt: user.lastLoginAt,
+      isCmsUser: user.isCmsUser(),
     };
 
     const customer = await this.prisma.customer.upsert({

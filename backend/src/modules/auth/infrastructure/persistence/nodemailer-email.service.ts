@@ -292,6 +292,72 @@ export class NodemailerEmailService implements EmailService {
     );
   }
 
+  // ─── Subscription lifecycle notifications ─────────────────────────────────
+
+  async sendSubscriptionReminder(
+    to: string,
+    displayName: string,
+    expirationDate: Date,
+  ): Promise<void> {
+    const formatted = expirationDate.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const content = `
+      <div style="background-color: #fff8e1; padding: 20px; border-left: 4px solid #ffb700; margin: 25px 0; border-radius: 4px;">
+        <p style="margin-top: 0; font-size: 15px; color: #444;">Tu suscripción a <strong>Luki Play</strong> vence el <strong>${formatted}</strong>.</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">Para continuar disfrutando sin interrupciones, renueva antes de esa fecha.</p>
+      </div>
+    `;
+    await this.send(
+      to,
+      'Tu suscripción vence pronto — Luki Play',
+      this.buildLukiEmail(displayName, content),
+    );
+  }
+
+  async sendSubscriptionExpired(
+    to: string,
+    displayName: string,
+    graceDeadline: Date,
+  ): Promise<void> {
+    const formatted = graceDeadline.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const content = `
+      <div style="background-color: #fef2f2; padding: 20px; border-left: 4px solid #ef4444; margin: 25px 0; border-radius: 4px;">
+        <p style="margin-top: 0; font-size: 15px; color: #444;">Tu suscripción a <strong>Luki Play</strong> ha vencido.</p>
+        <p style="font-size: 14px; color: #666;">Tienes hasta el <strong>${formatted}</strong> para renovar y mantener el acceso.</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">Si no renuevas antes de esa fecha, tu cuenta será suspendida automáticamente.</p>
+      </div>
+    `;
+    await this.send(
+      to,
+      'Tu suscripción ha vencido — Luki Play',
+      this.buildLukiEmail(displayName, content),
+    );
+  }
+
+  async sendSubscriptionSuspended(
+    to: string,
+    displayName: string,
+  ): Promise<void> {
+    const content = `
+      <div style="background-color: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; margin: 25px 0; border-radius: 4px;">
+        <p style="margin-top: 0; font-size: 15px; color: #444;">Tu acceso a <strong>Luki Play</strong> ha sido suspendido por falta de renovación.</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">Contacta a soporte o renueva tu plan para reactivar tu cuenta.</p>
+      </div>
+    `;
+    await this.send(
+      to,
+      'Tu cuenta ha sido suspendida — Luki Play',
+      this.buildLukiEmail(displayName, content),
+    );
+  }
+
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
       const info = await this.transporter.sendMail({

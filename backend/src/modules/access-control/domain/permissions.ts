@@ -58,19 +58,62 @@ export const CMS_MODULES = [
 ] as const;
 
 /**
+ * Operations available per module.
+ * Drives the permission matrix UI and granular key generation.
+ */
+export const MODULE_OPS: Record<string, ('read' | 'write')[]> = {
+  'cms:dashboard':    ['read'],
+  'cms:users':        ['read', 'write'],
+  'cms:componentes':  ['read', 'write'],
+  'cms:planes':       ['read', 'write'],
+  'cms:canales':      ['read', 'write'],
+  'cms:categorias':   ['read', 'write'],
+  'cms:sliders':      ['read', 'write'],
+  'cms:monitor':      ['read'],
+  'cms:notif-admin':  ['write'],
+  'cms:analitica':    ['read'],
+  'cms:propaganda':   ['write'],
+  'cms:notif-abonado':['write'],
+  'cms:roles':        [],
+};
+
+/**
  * All valid permission keys accepted by the system.
  * Used to sanitize permission arrays before persisting them.
  */
 export const VALID_CMS_PERMISSIONS: string[] = [
+  // Module-level keys (sidebar visibility + backward compat)
   ...CMS_MODULES.map((m) => m.key),
+  // Wildcard
   'cms:*',
+  // Granular per-module operation keys
+  'cms:dashboard:read',
   'cms:users:read',
   'cms:users:write',
+  'cms:componentes:read',
+  'cms:componentes:write',
+  'cms:planes:read',
+  'cms:planes:write',
+  'cms:canales:read',
+  'cms:canales:write',
+  'cms:categorias:read',
+  'cms:categorias:write',
+  'cms:sliders:read',
+  'cms:sliders:write',
+  'cms:monitor:read',
+  'cms:notif-admin:write',
+  'cms:analitica:read',
+  'cms:propaganda:write',
+  'cms:notif-abonado:write',
+  // Legacy content keys (kept for backward compat with existing sessions)
   'cms:content:read',
   'cms:content:write',
-  'cms:analytics:read',
-  'cms:settings:read',
-  'cms:settings:write',
+  // Subscription management
+  'cms:subscriptions:read',
+  'cms:subscriptions:create',
+  'cms:subscriptions:renew',
+  'cms:subscriptions:cancel',
+  // App permissions
   'app:playback',
   'app:profiles',
 ];

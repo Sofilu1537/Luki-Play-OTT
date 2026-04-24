@@ -9,6 +9,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 /**
  * Root application module.
@@ -21,6 +22,7 @@ import { AdminModule } from './modules/admin/admin.module';
  * - {@link BillingModule} — ISP billing gateway
  * - {@link CrmModule} — customer relationship management gateway
  * - {@link ProfilesModule} — user profiles (placeholder)
+ * - {@link SubscriptionModule} — subscription lifecycle, payments, notifications
  */
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { AdminModule } from './modules/admin/admin.module';
     CrmModule,
     ProfilesModule,
     AdminModule,
+    SubscriptionModule,
   ],
 })
 export class AppModule {}

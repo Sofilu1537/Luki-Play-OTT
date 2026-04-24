@@ -72,4 +72,36 @@ export class MockEmailService implements EmailService {
       `[MOCK EMAIL] Solicitante: ${data.nombres} ${data.apellidos} | Cédula: ${data.idNumber} | ID: ${data.requestId}`,
     );
   }
+
+  async sendSubscriptionReminder(
+    to: string,
+    displayName: string,
+    expirationDate: Date,
+  ): Promise<void> {
+    this.logger.log(`[MOCK EMAIL] Subscription reminder → ${to}`);
+    this.logger.log(
+      `[MOCK EMAIL] Hola ${displayName}, tu suscripción vence el ${expirationDate.toISOString()}`,
+    );
+  }
+
+  async sendSubscriptionExpired(
+    to: string,
+    displayName: string,
+    graceDeadline: Date,
+  ): Promise<void> {
+    this.logger.log(`[MOCK EMAIL] Subscription expired → ${to}`);
+    this.logger.log(
+      `[MOCK EMAIL] Hola ${displayName}, tu suscripción ha vencido. Plazo límite: ${graceDeadline.toISOString()}`,
+    );
+  }
+
+  async sendSubscriptionSuspended(
+    to: string,
+    displayName: string,
+  ): Promise<void> {
+    this.logger.log(`[MOCK EMAIL] Subscription suspended → ${to}`);
+    this.logger.log(
+      `[MOCK EMAIL] Hola ${displayName}, tu acceso a Luki Play ha sido suspendido.`,
+    );
+  }
 }

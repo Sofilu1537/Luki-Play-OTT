@@ -62,7 +62,11 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
 
 function hasPermission(permissions: string[] | undefined, key: string): boolean {
   if (!permissions) return true;
-  return permissions.includes('cms:*') || permissions.includes(key);
+  return (
+    permissions.includes('cms:*') ||
+    permissions.includes(key) ||
+    permissions.some((p) => p.startsWith(key + ':'))
+  );
 }
 
 function getActiveNavItem(pathname: string | null | undefined): NavItem | undefined {
