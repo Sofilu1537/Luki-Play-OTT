@@ -11,8 +11,8 @@ import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
 import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../access-control/guards/permissions.guard';
-import { Permissions } from '../access-control/decorators/permissions.decorator';
+import { PermissionsGuard } from '../auth/presentation/guards/permissions.guard';
+import { Permissions } from '../auth/presentation/decorators/permissions.decorator';
 
 @Controller('subscription')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

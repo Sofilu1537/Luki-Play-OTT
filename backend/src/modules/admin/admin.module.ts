@@ -6,9 +6,10 @@ import { HlsValidatorService } from './hls-validator.service';
 import { AuthModule } from '../auth/auth.module';
 import { AccessControlModule } from '../access-control/access-control.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
-  imports: [AuthModule, AccessControlModule, PrismaModule],
+  imports: [AuthModule, AccessControlModule, PrismaModule, SubscriptionModule],
   controllers: [AdminController],
   providers: [AdminService, ChannelHealthService, HlsValidatorService],
   exports: [AdminService, HlsValidatorService],
