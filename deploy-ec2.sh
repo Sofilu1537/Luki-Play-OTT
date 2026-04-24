@@ -117,16 +117,15 @@ fi
 pm2 save
 sudo env PATH="$PATH:/usr/bin" pm2 startup systemd -u admin --hp /home/admin 2>/dev/null || true
 
-# ── 10. Frontend build ────────────────────────────────────────────────────────
-cd "$FRONTEND_DIR"
-npm install --legacy-peer-deps
-npm run build:web
-
+# ── 10. Frontend ─────────────────────────────────────────────────────────────
+# Build happens locally (t3.micro doesn't have enough RAM for Metro bundler).
+# Run: npm run build:web in frontend/ locally, then re-run this script.
 FRONTEND_BUILD_DIR="$FRONTEND_DIR/dist"
 [[ -d "$FRONTEND_BUILD_DIR" ]] || FRONTEND_BUILD_DIR="$FRONTEND_DIR/web-build"
 
 if [[ ! -d "$FRONTEND_BUILD_DIR" ]]; then
-  echo "ERROR: Frontend build output not found." >&2
+  echo "ERROR: No frontend build found at $FRONTEND_BUILD_DIR"
+  echo "Run 'npm run build:web' in the frontend directory and redeploy."
   exit 1
 fi
 
