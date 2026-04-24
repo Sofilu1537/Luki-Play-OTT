@@ -35,7 +35,7 @@ function ProfileField({
 export default function CmsProfileScreen() {
   const router = useRouter();
   const { isDark, theme } = useTheme();
-  const { profile, accessToken, refreshProfile } = useCmsStore();
+  const { profile, accessToken, refreshProfile, logout } = useCmsStore();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [idNumber, setIdNumber] = useState('');
@@ -105,13 +105,14 @@ export default function CmsProfileScreen() {
     setPwdFeedback(null);
     try {
       await cmsChangePassword(accessToken, currentPassword, newPassword);
-      setPwdFeedback({ type: 'success', message: 'Contraseña actualizada. Todas las sesiones han sido cerradas. Vuelve a iniciar sesión.' });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setPwdFeedback({ type: 'success', message: 'Contraseña actualizada. Redirigiendo al login...' });
+      // All sessions are revoked server-side — clear local state and redirect
+      setTimeout(() => {
+        logout();
+        router.replace('/cms/login' as never);
+      }, 2000);
     } catch (error) {
       setPwdFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.' });
-    } finally {
       setIsChangingPwd(false);
     }
   }
