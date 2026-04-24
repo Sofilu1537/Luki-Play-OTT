@@ -326,6 +326,21 @@ export class AuthController {
     return { message: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
   }
 
+  @Post('cms/reset-with-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password using recovery code — CMS internal users only (SUPERADMIN/ADMIN/SOPORTE)' })
+  @ApiResponse({ status: 200, type: MessageResponse })
+  @ApiResponse({ status: 403, description: 'El correo no pertenece a un usuario interno' })
+  async cmsResetWithCode(
+    @Body() dto: { email: string; code: string; newPassword: string; confirmPassword: string },
+  ): Promise<MessageResponse> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      return { message: 'Las contraseñas no coinciden.' };
+    }
+    await this.resetPasswordWithCodeUseCase.execute(dto.email, dto.code, dto.newPassword, true);
+    return { message: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
+  }
+
   // ─── Contract-based auth (subscribers) ───────────────────
 
   @Post('app/contract-login')

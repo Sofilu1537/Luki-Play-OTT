@@ -14,7 +14,7 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 |---------------------|---------------------------------------------------------------|
 | **Nombre**          | LUKI Play OTT                                                 |
 | **Propósito**       | Plataforma OTT de streaming y contenido bajo demanda          |
-| **Estado**          | v0.3.0-beta — Sprint 1 completado (Modulos de autenticación y roles y persistencia en base de datos) |
+| **Estado**          | v0.4.0-beta — Sprint 1 completado (Autenticación, RBAC por rol persistido en BD, CMS completo) |
 | **Autor**           | Sofia Soria  — Product Designer , DataCom S.A. |
 | **Repositorio**     | https://github.com/Sofilu1537/Luki-Play-OTT                  |
 | **Zona horaria**    | America/Guayaquil (UTC-5)                                     |
@@ -136,6 +136,7 @@ Todos tienen `mustChangePassword: true` hasta completar primer acceso.
 | Email                    | Contraseña   | Rol            |
 |--------------------------|--------------|----------------|
 | admin@lukiplay.com       | password123  | Super Admin    |
+| gestion@lukiplay.com     | password123  | Admin          |
 | soporte@lukiplay.com     | password123  | Soporte        |
 
 ---
@@ -146,8 +147,8 @@ Todos tienen `mustChangePassword: true` hasta completar primer acceso.
 Luki-Play-OTT/
 ├── backend/                        # API NestJS
 │   ├── prisma/
-│   │   ├── schema.prisma           # Modelos de datos (11 modelos, 5 enums)
-│   │   ├── seed.ts                 # Seed: 47 suscriptores + 2 CMS + plan
+│   │   ├── schema.prisma           # Modelos de datos (12 modelos, 5 enums)
+│   │   ├── seed.ts                 # Seed: 47 suscriptores + 3 CMS + plan + roles
 │   │   └── migrations/             # Migraciones SQL de PostgreSQL
 │   ├── prisma.config.ts            # Configuración Prisma 7 (datasource + seed)
 │   ├── src/
@@ -164,7 +165,7 @@ Luki-Play-OTT/
 │   │       │   └── presentation/   # Controlador, guards, decoradores
 │   │       ├── prisma/             # PrismaService + repositorios PostgreSQL
 │   │       │   └── repositories/   # Implementaciones Prisma de los puertos
-│   │       ├── access-control/     # Permisos y roles (RBAC)
+│   │       ├── access-control/     # RBAC: CMS_MODULES, VALID_CMS_PERMISSIONS, sanitizePermissions()
 │   │       ├── admin/              # Gestión CMS (usuarios, componentes, etc.)
 │   │       ├── billing/            # Facturación (mock)
 │   │       ├── crm/                # CRM (mock)
@@ -208,6 +209,21 @@ La plataforma sigue una arquitectura **frontend/backend separados**:
 
 ---
 
+## Control de Acceso (RBAC)
+
+Los permisos están almacenados por **rol** en la tabla `cms_roles`, no por usuario individual. Al hacer login, los permisos del rol se incluyen en el JWT y se evalúan en cada request mediante `PermissionsGuard`.
+
+| Rol        | Permisos          | Editable desde CMS |
+|------------|-------------------|--------------------|
+| SUPERADMIN | Todos (`cms:*`)   | No (fijo)          |
+| ADMIN      | Configurables     | Sí (por SUPERADMIN)|
+| SOPORTE    | Configurables     | Sí (por SUPERADMIN)|
+| CLIENTE    | Solo app OTT      | No (fijo)          |
+
+Los cambios a permisos de un rol aplican a **todos los usuarios** con ese rol en su próximo inicio de sesión. Las sesiones activas conservan el JWT anterior hasta que expira (15 min).
+
+---
+
 ## Módulos del CMS
 
 | Módulo                  | Ruta                            | Estado        |
@@ -238,6 +254,7 @@ La plataforma sigue una arquitectura **frontend/backend separados**:
 | 3      | Persistencia PostgreSQL + Prisma + auth por contrato      | ✅ Completado |
 | 3.5    | Módulo Categorías con campos extendidos y M:M canales     | ✅ Completado |
 | 3.6    | Módulo Componentes con M:M categorías y persistencia BD   | ✅ Completado |
+| 3.7    | RBAC por rol: tabla `cms_roles`, permisos editables desde CMS | ✅ Completado |
 | 4      | Integración billing/CRM real                              | ⏳ Pendiente  |
 
 ---

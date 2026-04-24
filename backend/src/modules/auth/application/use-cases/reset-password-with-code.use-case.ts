@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
 import { USER_REPOSITORY } from '../../domain/interfaces/user.repository';
 import type { UserRepository } from '../../domain/interfaces/user.repository';
@@ -25,7 +25,7 @@ export class ResetPasswordWithCodeUseCase {
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
   ) {}
 
-  async execute(email: string, rawCode: string, newPassword: string): Promise<void> {
+  async execute(email: string, rawCode: string, newPassword: string, requireCms = false): Promise<void> {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Find valid recovery codes for this email
@@ -40,6 +40,11 @@ export class ResetPasswordWithCodeUseCase {
     const user = await this.userRepo.findByEmail(normalizedEmail);
     if (!user) {
       throw new BadRequestException('No se encontró un usuario con este correo.');
+    }
+
+    // CMS-only path: reject non-internal users
+    if (requireCms && !user.isCmsUser()) {
+      throw new ForbiddenException('Este correo no pertenece a un usuario interno autorizado.');
     }
 
     // Hash new password and update

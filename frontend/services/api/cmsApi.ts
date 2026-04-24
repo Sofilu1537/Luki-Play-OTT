@@ -320,7 +320,7 @@ export async function cmsResetWithCode(
   newPassword: string,
   confirmPassword: string,
 ): Promise<{ message: string }> {
-  const response = await fetch(`${API_BASE_URL}/auth/app/reset-with-code`, {
+  const response = await fetch(`${API_BASE_URL}/auth/cms/reset-with-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code, newPassword, confirmPassword }),
