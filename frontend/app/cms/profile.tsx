@@ -51,17 +51,13 @@ export default function CmsProfileScreen() {
   const [pwdFeedback, setPwdFeedback] = useState<Feedback>(null);
 
   useEffect(() => {
-    if (!profile) {
-      router.replace('/cms/login' as never);
-      return;
-    }
-    // Solo actualizar los campos si cambia el id del perfil
+    if (!profile) return; // _layout.tsx handles redirect when profile is null
     setFirstName(profile.firstName ?? '');
     setLastName(profile.lastName ?? '');
     setIdNumber(profile.idNumber ?? '');
     setEmail(profile.email ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id, router]);
+  }, [profile?.id]);
 
   const canSave = useMemo(() => {
     return Boolean(firstName.trim() && lastName.trim() && email.trim());
@@ -84,8 +80,10 @@ export default function CmsProfileScreen() {
       });
       await refreshProfile();
       setFeedback({ type: 'success', message: 'Perfil actualizado correctamente.' });
+      setTimeout(() => setFeedback(null), 2000);
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo actualizar el perfil.' });
+      setTimeout(() => setFeedback(null), 4000);
     } finally {
       setIsSaving(false);
     }
@@ -106,13 +104,14 @@ export default function CmsProfileScreen() {
     try {
       await cmsChangePassword(accessToken, currentPassword, newPassword);
       setPwdFeedback({ type: 'success', message: 'Contraseña actualizada. Redirigiendo al login...' });
-      // All sessions are revoked server-side — clear local state and redirect
+      // All sessions are revoked server-side — clearing local state triggers
+      // the _layout.tsx guard which redirects to /cms/login automatically
       setTimeout(() => {
         logout();
-        router.replace('/cms/login' as never);
       }, 2000);
     } catch (error) {
       setPwdFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.' });
+      setTimeout(() => setPwdFeedback(null), 4000);
       setIsChangingPwd(false);
     }
   }
@@ -122,6 +121,14 @@ export default function CmsProfileScreen() {
   const lastLoginLabel = profile.lastLoginAt
     ? new Date(profile.lastLoginAt).toLocaleString('es-EC', { dateStyle: 'medium', timeStyle: 'short' })
     : 'Sin registros';
+
+  const roleLabels: Record<string, { title: string; subtitle: string }> = {
+    superadmin: { title: 'Perfil del Super Administrador', subtitle: 'Acceso total al sistema. Gestiona roles, permisos y configuración global.' },
+    admin:      { title: 'Perfil del Administrador',       subtitle: 'Edita tus datos principales de acceso y consulta la actividad reciente.' },
+    soporte:    { title: 'Perfil de Soporte',              subtitle: 'Edita tus datos de acceso y revisa tu actividad reciente.' },
+  };
+  const roleKey = profile.role?.toLowerCase() ?? 'admin';
+  const roleLabel = roleLabels[roleKey] ?? roleLabels.admin;
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Perfil' }]} pageIcon="user-circle">
@@ -140,10 +147,10 @@ export default function CmsProfileScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <View>
                 <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 24, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>
-                  Perfil del administrador
+                  {roleLabel.title}
                 </Text>
                 <Text style={{ color: isDark ? theme.textSec : 'rgba(36,0,70,0.65)', fontSize: 13, marginTop: 4, fontFamily: FONT_FAMILY.body }}>
-                  Edita tus datos principales de acceso y consulta la actividad reciente.
+                  {roleLabel.subtitle}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: theme.accentSoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: theme.accentBorder }}>
