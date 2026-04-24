@@ -3,15 +3,12 @@
  *
  * Fetches from GET /public/canales on the CMS backend (port 3000).
  * Module-level cache ensures the request runs only once, regardless of
- * how many components subscribe. Falls back to static channels when the
- * backend has no channels configured yet.
+ * how many components subscribe.
  *
- * Port alignment: CMS backend runs on localhost:3000 (not 8100 as in the
- * standalone Luki-Play-Player). This hook is the CMS-specific adaptation.
+ * Only channels assigned from the CMS are shown — there is no static fallback.
  */
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import { Channel, STATIC_CHANNELS, getCurrentProgram, getProgressPercent } from './channelTypes';
+import { Channel, getCurrentProgram, getProgressPercent } from './channelTypes';
 import { API_BASE_URL, resolveLogoUrl } from './api/config';
 
 export type { Channel };
@@ -114,21 +111,20 @@ async function fetchChannels() {
         isFromBackend: true,
       };
     } else {
-      // Backend has no channels yet — use static fallback
+      // CMS has no channels configured yet
       _store = {
-        channels: STATIC_CHANNELS.map(ch => ({ ...ch, isFavorite: oldFavs.has(ch.id) })),
+        channels: [],
         loading: false,
         error: null,
-        isFromBackend: false,
+        isFromBackend: true,
       };
     }
   } catch (error) {
     console.error("fetchChannels failed:", error);
-    const storedFavs = loadStoredFavs();
     _store = {
-      channels: STATIC_CHANNELS.map(ch => ({ ...ch, isFavorite: storedFavs.has(ch.id) })),
+      channels: [],
       loading: false,
-      error: 'No se pudo conectar al servidor. Mostrando canales demo.',
+      error: 'No se pudo conectar al servidor CMS.',
       isFromBackend: false,
     };
   }

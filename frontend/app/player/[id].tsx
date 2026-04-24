@@ -388,9 +388,11 @@ export default function LivePlayer() {
       <View style={[styles.player, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
         <Stack.Screen options={{ headerShown: false }} />
         <StatusBar hidden />
-        <Text style={{ color: '#f43f5e', fontSize: 16, fontWeight: '800', textAlign: 'center' }}>No hay canales disponibles</Text>
+        <Text style={{ color: '#f43f5e', fontSize: 16, fontWeight: '800', textAlign: 'center' }}>
+          {channelsError ?? 'No hay canales configurados'}
+        </Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 10, textAlign: 'center' }}>
-          {channelsError ?? 'Agrega un canal en el CMS (/cms/canales)'}
+          Agrega canales desde el CMS en{'\n'}/cms/canales
         </Text>
         <TouchableOpacity
           style={{ marginTop: 24, backgroundColor: '#FFB800', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12 }}

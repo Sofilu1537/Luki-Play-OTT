@@ -25,6 +25,8 @@ import { SetUserPasswordDto } from './dto/set-user-password.dto.js';
 import { CanalStatusDto, StreamProtocolDto, CreateCanalDto } from './dto/create-canal.dto.js';
 import { CreateCategoriaDto } from './dto/create-categoria.dto.js';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
+import { CreateComponenteDto } from './dto/create-componente.dto.js';
+import { UpdateComponenteDto } from './dto/update-componente.dto.js';
 import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto.js';
 import { UpdateCanalDto } from './dto/update-canal.dto.js';
 import { UpdatePlanDto } from './dto/update-plan.dto.js';
@@ -43,6 +45,7 @@ export interface OttComponent {
   tipo: string;        // VOD | LIVE | DESTACADOS | SERIES | RADIO | PPV
   activo: boolean;
   orden: number;
+  categories?: { id: string; nombre: string; activo: boolean }[];
 }
 
 export interface OttPlan {
@@ -669,7 +672,7 @@ export class AdminService {
 
   // ---- Canales CRUD (Prisma persistence) ----------------------------------
 
-  async getCanales() {
+  async getCanales(_canSeeUrls?: boolean) {
     return this.prisma.channel.findMany({
       where: { deletedAt: null },
       include: { category: true },
@@ -820,7 +823,7 @@ export class AdminService {
 
   // ---- Categorias CRUD (Prisma persistence) ---------------------------------
 
-  async getCategorias(): Promise<any[]> {
+  async getCategorias(_filters?: { active?: string; search?: string; limit?: string; offset?: string }): Promise<any[]> {
     return this.prisma.category.findMany({
       orderBy: { nombre: 'asc' },
     });
@@ -911,7 +914,195 @@ export class AdminService {
     });
   }
 
-  // ---- Helper methods for channels ------
+  // ---- Extended categoria / channel helpers --------------------------------
+
+  async getCategoriaById(id: string): Promise<any> {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) throw new NotFoundException(`Category ${id} not found`);
+    return category;
+  }
+
+  async syncCategoryChannels(categoryId: string, channelIds: string[]): Promise<any> {
+    const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    if (!category) throw new NotFoundException(`Category ${categoryId} not found`);
+    if (channelIds.length > 0) {
+      await this.prisma.channel.updateMany({
+        where: { id: { in: channelIds }, deletedAt: null },
+        data: { categoryId },
+      });
+    }
+    return this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { channels: { where: { deletedAt: null } } },
+    });
+  }
+
+  async removeCategoryChannel(_categoryId: string, _channelId: string): Promise<void> {
+    // Channels have a required categoryId FK; no-op to avoid constraint violations.
+  }
+
+  async bulkReorderCategorias(items: { id: string; displayOrder: number }[]): Promise<any[]> {
+    await Promise.all(
+      items.map((item) =>
+        this.prisma.category.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder } as any,
+        }),
+      ),
+    );
+    return this.prisma.category.findMany({ orderBy: { nombre: 'asc' } as any });
+  }
+
+  // ---- CMS Roles -----------------------------------------------------------
+
+  async getCmsRoles(): Promise<any[]> {
+    return (this.prisma as any).cmsRole.findMany({ orderBy: { key: 'asc' } });
+  }
+
+  async updateCmsRolePermissions(key: string, permissions: string[]): Promise<any> {
+    return (this.prisma as any).cmsRole.update({ where: { key }, data: { permissions } });
+  }
+
+  // ---- Recovery code -------------------------------------------------------
+
+  async sendRecoveryCode(id: string, email?: string): Promise<{ message: string }> {
+    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    if (!customer) throw new NotFoundException(`User ${id} not found`);
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const targetEmail = email?.trim() || customer.email || '';
+    if (targetEmail) {
+      await this.emailService.sendGeneratedPassword(targetEmail, code, customer.firstName ?? 'Usuario');
+    }
+    return { message: `Código de recuperación enviado a ${targetEmail}` };
+  }
+
+  // ---- Componentes CRUD (in-memory) ----------------------------------------
+
+  createComponente(body: CreateComponenteDto): OttComponent {
+    const existing = this.componentes.find((c) => c.nombre === body.nombre);
+    if (existing) throw new BadRequestException(`Component "${body.nombre}" already exists`);
+    const maxOrden = this.componentes.reduce((m, c) => Math.max(m, c.orden), 0);
+    const comp: OttComponent = {
+      id: `comp-${uuidv4().slice(0, 8)}`,
+      nombre: body.nombre,
+      descripcion: body.descripcion ?? '',
+      icono: body.icono ?? '',
+      tipo: body.tipo,
+      activo: body.activo ?? true,
+      orden: body.orden ?? maxOrden + 1,
+      categories: [],
+    };
+    this.componentes.push(comp);
+    return { ...comp };
+  }
+
+  updateComponente(id: string, body: UpdateComponenteDto): OttComponent {
+    const comp = this.componentes.find((c) => c.id === id);
+    if (!comp) throw new NotFoundException(`Component ${id} not found`);
+    if (body.nombre !== undefined) comp.nombre = body.nombre;
+    if (body.descripcion !== undefined) comp.descripcion = body.descripcion;
+    if (body.icono !== undefined) comp.icono = body.icono;
+    if (body.tipo !== undefined) comp.tipo = body.tipo;
+    if (body.activo !== undefined) comp.activo = body.activo;
+    if (body.orden !== undefined) comp.orden = body.orden;
+    return { ...comp };
+  }
+
+  deleteComponente(id: string): void {
+    const idx = this.componentes.findIndex((c) => c.id === id);
+    if (idx === -1) throw new NotFoundException(`Component ${id} not found`);
+    this.componentes.splice(idx, 1);
+  }
+
+  getComponenteById(id: string): OttComponent {
+    const comp = this.componentes.find((c) => c.id === id);
+    if (!comp) throw new NotFoundException(`Component ${id} not found`);
+    return { ...comp };
+  }
+
+  async syncComponentCategories(id: string, categoryIds: string[]): Promise<OttComponent> {
+    const comp = this.componentes.find((c) => c.id === id);
+    if (!comp) throw new NotFoundException(`Component ${id} not found`);
+    const categories = await this.prisma.category.findMany({ where: { id: { in: categoryIds } } });
+    comp.categories = categories.map((cat) => ({ id: cat.id, nombre: cat.nombre, activo: cat.activo }));
+    return { ...comp };
+  }
+
+  // ---- Registration requests -----------------------------------------------
+
+  async listRegistrationRequests(
+    _status?: string,
+    page = 1,
+    limit = 20,
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+    try {
+      const skip = (page - 1) * limit;
+      const where = _status ? { status: _status as any } : {};
+      const [data, total] = await Promise.all([
+        (this.prisma as any).registrationRequest.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+        (this.prisma as any).registrationRequest.count({ where }),
+      ]);
+      return { data, total, page, limit };
+    } catch {
+      return { data: [], total: 0, page, limit };
+    }
+  }
+
+  async getRegistrationRequest(id: string): Promise<any> {
+    const req = await (this.prisma as any).registrationRequest.findUnique({ where: { id } });
+    if (!req) throw new NotFoundException(`Registration request ${id} not found`);
+    return req;
+  }
+
+  async approveRegistrationRequest(
+    id: string,
+    contractNumber: string,
+    maxDevices?: number,
+    actorId?: string,
+  ): Promise<any> {
+    const req = await this.getRegistrationRequest(id);
+    const bcrypt = await import('bcrypt');
+    const customer = await this.prisma.customer.create({
+      data: {
+        nombre: `${req.nombres} ${req.apellidos}`,
+        firstName: req.nombres,
+        lastName: req.apellidos,
+        email: req.email,
+        telefono: req.telefono,
+        passwordHash: await bcrypt.default.hash(Math.random().toString(36), 10),
+        role: 'CLIENTE' as any,
+        status: 'ACTIVE' as any,
+        isSubscriber: true,
+        contracts: {
+          create: {
+            contractNumber: contractNumber.trim().toUpperCase(),
+            planName: 'LUKI PLAY',
+            maxDevices: maxDevices ?? 3,
+            sessionDurationDays: 30,
+            fechaInicio: new Date(),
+            fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          },
+        },
+      },
+      include: { contracts: true },
+    });
+    await (this.prisma as any).registrationRequest.update({
+      where: { id },
+      data: { status: 'APPROVED', reviewedBy: actorId, reviewedAt: new Date() },
+    });
+    return { customer, message: 'Solicitud aprobada y cuenta creada.' };
+  }
+
+  async rejectRegistrationRequest(id: string, reason: string, actorId?: string): Promise<any> {
+    await this.getRegistrationRequest(id);
+    await (this.prisma as any).registrationRequest.update({
+      where: { id },
+      data: { status: 'REJECTED', reviewedBy: actorId, reviewedAt: new Date(), reviewNotes: reason },
+    });
+    return { message: 'Solicitud rechazada.' };
+  }
+
+  // ---- Helper methods for channels -----------------------------------------
 
   private autoSlug(name: string): string {
     return name

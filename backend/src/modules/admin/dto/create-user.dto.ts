@@ -103,4 +103,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   password?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  permissions?: string[];
 }

@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useContentStore, Movie } from '../../services/contentStore';
-import { useAdminStore } from '../../services/adminStore';
 import { useAuthStore } from '../../services/authStore';
 import { useChannels, getCurrentProgram } from '../../services/useChannels';
 import type { Channel } from '../../services/channelTypes';
@@ -168,7 +167,6 @@ function FavoritesRow({ channels, onSelectChannel }: { channels: Channel[]; onSe
  */
 export default function Home() {
     const { featured: hardcodedFeatured, trending: hardcodedTrending, fetchContent, isLoading } = useContentStore();
-    const adminChannels = useAdminStore((state) => state.channels);
     const authState = useAuthStore((state) => state as unknown as {
         logout: () => Promise<void> | void;
         canAccessOtt?: boolean;
@@ -180,11 +178,6 @@ export default function Home() {
     const { channels: liveChannels, reload: reloadChannels } = useChannels();
     const router = useRouter();
 
-    // Load channels from IndexedDB once on mount
-    useEffect(() => {
-        useAdminStore.getState().init();
-    }, []);
-
     // Re-fetch content and channels every time screen comes into focus
     useFocusEffect(
         useCallback(() => {
@@ -193,27 +186,12 @@ export default function Home() {
         }, [])
     );
 
-    // Wait for Zustand to rehydrate from IndexedDB before merging admin channels
-    const hasHydrated = useAdminStore((state) => state._hasHydrated);
-    const effectiveAdminChannels = hasHydrated ? adminChannels : [];
+    const featured = hardcodedFeatured;
 
-    // Convert admin channels to Movie shape
-    const adminMovies: Movie[] = useMemo(() => effectiveAdminChannels.map((ch) => ({
-        id: ch.id,
-        title: ch.title,
-        poster: ch.imageUrl,
-        backdrop: ch.imageUrl,
-        description: ch.description || '',
-        videoUrl: ch.videoUrl,
-        tags: ch.tags || [],
-    })), [effectiveAdminChannels]);
-
-    const featured = adminMovies.length > 0 ? adminMovies[0] : hardcodedFeatured;
-
-    // Merge all content — admin first (priority)
+    // Content rows come from contentStore (VOD catalogue)
     const allMovies: Movie[] = useMemo(
-        () => [...adminMovies, ...hardcodedTrending],
-        [adminMovies, hardcodedTrending]
+        () => [...hardcodedTrending],
+        [hardcodedTrending]
     );
 
     // Build tag → items map dynamically
