@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { FirstAccessAppDto } from '../dto/first-access-app.dto.js';
 
@@ -21,7 +26,9 @@ export class FirstAccessAppUseCase {
     const customer = contract.customer;
 
     if (!customer.idNumber) {
-      throw new BadRequestException('El contrato no tiene cédula registrada. Contacte a soporte.');
+      throw new BadRequestException(
+        'El contrato no tiene cédula registrada. Contacte a soporte.',
+      );
     }
 
     if (customer.idNumber !== dto.idNumber) {
@@ -29,7 +36,9 @@ export class FirstAccessAppUseCase {
     }
 
     if (customer.isAccountActivated) {
-      throw new BadRequestException('Esta cuenta ya fue activada. Use "Iniciar sesión" con su contraseña.');
+      throw new BadRequestException(
+        'Esta cuenta ya fue activada. Use "Iniciar sesión" con su contraseña.',
+      );
     }
 
     this.logger.log(`First access verified for contract ${dto.contractNumber}`);

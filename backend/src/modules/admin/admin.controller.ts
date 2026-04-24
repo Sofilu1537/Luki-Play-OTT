@@ -90,18 +90,26 @@ export class AdminController {
   @ApiOperation({ summary: 'Update user status (admin)' })
   @Permissions('cms:users:write')
   @Patch('users/:id/status')
-  async updateUserStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserStatusDto,
+  ) {
     return this.adminService.updateUserStatus(id, dto.status);
   }
 
   @ApiOperation({ summary: 'Reset or change a user password (admin)' })
   @Permissions('cms:users:write')
   @Post('users/:id/password')
-  async setUserPassword(@Param('id') id: string, @Body() dto: SetUserPasswordDto) {
+  async setUserPassword(
+    @Param('id') id: string,
+    @Body() dto: SetUserPasswordDto,
+  ) {
     return this.adminService.setUserPassword(id, dto);
   }
 
-  @ApiOperation({ summary: 'Auto-generate a secure password and send it by email (admin)' })
+  @ApiOperation({
+    summary: 'Auto-generate a secure password and send it by email (admin)',
+  })
   @Permissions('cms:users:write')
   @Post('users/:id/generate-password')
   @HttpCode(HttpStatus.OK)
@@ -109,11 +117,17 @@ export class AdminController {
     return this.adminService.generateAndSendPassword(id);
   }
 
-  @ApiOperation({ summary: 'Generate a 6-character recovery code and send it by email (admin)' })
+  @ApiOperation({
+    summary:
+      'Generate a 6-character recovery code and send it by email (admin)',
+  })
   @Permissions('cms:users:write')
   @Post('users/:id/recovery-code')
   @HttpCode(HttpStatus.OK)
-  async sendRecoveryCode(@Param('id') id: string, @Body() body: { email?: string }) {
+  async sendRecoveryCode(
+    @Param('id') id: string,
+    @Body() body: { email?: string },
+  ) {
     return this.adminService.sendRecoveryCode(id, body.email);
   }
 
@@ -128,7 +142,10 @@ export class AdminController {
   @Permissions('cms:users:write')
   @Delete('users/:id/sessions/:sessionId')
   @HttpCode(HttpStatus.OK)
-  async revokeUserSession(@Param('id') id: string, @Param('sessionId') sessionId: string) {
+  async revokeUserSession(
+    @Param('id') id: string,
+    @Param('sessionId') sessionId: string,
+  ) {
     return this.adminService.revokeUserSession(id, sessionId);
   }
 
@@ -154,7 +171,9 @@ export class AdminController {
     return this.adminService.getCmsRoles();
   }
 
-  @ApiOperation({ summary: 'Update permissions for a CMS role (ADMIN or SOPORTE only)' })
+  @ApiOperation({
+    summary: 'Update permissions for a CMS role (ADMIN or SOPORTE only)',
+  })
   @Permissions('cms:roles')
   @Patch('roles/:key/permissions')
   async updateRolePermissions(
@@ -182,7 +201,9 @@ export class AdminController {
   // ---- Stub routes for future modules --------------------------------------
 
   @Get('planes')
-  getPlanes() { return this.adminService.getPlanes(); }
+  getPlanes() {
+    return this.adminService.getPlanes();
+  }
 
   @Post('planes')
   createPlan(@Body() dto: CreatePlanDto) {
@@ -207,12 +228,16 @@ export class AdminController {
   }
 
   @Get('sliders')
-  getSliders() { return this.adminService.getSliders(); }
+  getSliders() {
+    return this.adminService.getSliders();
+  }
 
   @ApiOperation({ summary: 'List all channels' })
   @Permissions('cms:content:read')
   @Get('canales')
-  getCanales() { return this.adminService.getCanales(); }
+  getCanales() {
+    return this.adminService.getCanales();
+  }
 
   @ApiOperation({ summary: 'Upload a channel logo image' })
   @Permissions('cms:content:write')
@@ -281,7 +306,12 @@ export class AdminController {
   @ApiOperation({ summary: 'List all categories' })
   @Permissions('cms:content:read')
   @Get('categorias')
-  getCategorias(@Query('active') active?: string, @Query('search') search?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
+  getCategorias(
+    @Query('active') active?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
     return this.adminService.getCategorias({ active, search, limit, offset });
   }
 
@@ -318,7 +348,10 @@ export class AdminController {
   @Permissions('cms:content:write')
   @Post('categorias/:id/canales')
   @HttpCode(HttpStatus.OK)
-  syncCategoriaCanales(@Param('id') id: string, @Body() body: { channelIds: string[] }) {
+  syncCategoriaCanales(
+    @Param('id') id: string,
+    @Body() body: { channelIds: string[] },
+  ) {
     return this.adminService.syncCategoryChannels(id, body.channelIds ?? []);
   }
 
@@ -326,7 +359,10 @@ export class AdminController {
   @Permissions('cms:content:write')
   @Delete('categorias/:id/canales/:channelId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeCategoriaCanal(@Param('id') id: string, @Param('channelId') channelId: string) {
+  removeCategoriaCanal(
+    @Param('id') id: string,
+    @Param('channelId') channelId: string,
+  ) {
     return this.adminService.removeCategoryChannel(id, channelId);
   }
 
@@ -334,7 +370,9 @@ export class AdminController {
   @Permissions('cms:content:write')
   @Patch('categorias/reorder/bulk')
   @HttpCode(HttpStatus.OK)
-  bulkReorderCategorias(@Body() body: { items: { id: string; displayOrder: number }[] }) {
+  bulkReorderCategorias(
+    @Body() body: { items: { id: string; displayOrder: number }[] },
+  ) {
     return this.adminService.bulkReorderCategorias(body.items ?? []);
   }
 
@@ -347,16 +385,22 @@ export class AdminController {
   }
 
   @Get('blog')
-  getBlog() { return this.adminService.getBlog(); }
+  getBlog() {
+    return this.adminService.getBlog();
+  }
 
   @Get('impuestos')
-  getImpuestos() { return this.adminService.getImpuestos(); }
+  getImpuestos() {
+    return this.adminService.getImpuestos();
+  }
 
   // ---- Componentes (content types visible to subscribers) ------------------
 
   @ApiOperation({ summary: 'List all OTT components' })
   @Get('componentes')
-  getComponentes() { return this.adminService.getComponentes(); }
+  getComponentes() {
+    return this.adminService.getComponentes();
+  }
 
   @ApiOperation({ summary: 'Create a new OTT component' })
   @Permissions('cms:content:write')
@@ -406,8 +450,14 @@ export class AdminController {
   @Permissions('cms:content:write')
   @Post('componentes/:id/categorias')
   @HttpCode(HttpStatus.OK)
-  syncComponenteCategorias(@Param('id') id: string, @Body() body: { categoryIds: string[] }) {
-    return this.adminService.syncComponentCategories(id, body.categoryIds ?? []);
+  syncComponenteCategorias(
+    @Param('id') id: string,
+    @Body() body: { categoryIds: string[] },
+  ) {
+    return this.adminService.syncComponentCategories(
+      id,
+      body.categoryIds ?? [],
+    );
   }
 
   // ---- Componentes: public endpoint (no auth required) --------------------
@@ -436,7 +486,10 @@ export class AdminController {
     return this.adminService.getRegistrationRequest(id);
   }
 
-  @ApiOperation({ summary: 'Aprobar solicitud: crea customer + contract + código de activación' })
+  @ApiOperation({
+    summary:
+      'Aprobar solicitud: crea customer + contract + código de activación',
+  })
   @Permissions('cms:users:write')
   @Post('registration-requests/:id/approve')
   @HttpCode(HttpStatus.OK)
@@ -446,7 +499,12 @@ export class AdminController {
     @Request() req: any,
   ) {
     const actorId = req.user?.sub ?? 'system';
-    return this.adminService.approveRegistrationRequest(id, body.contractNumber, body.maxDevices, actorId);
+    return this.adminService.approveRegistrationRequest(
+      id,
+      body.contractNumber,
+      body.maxDevices,
+      actorId,
+    );
   }
 
   @ApiOperation({ summary: 'Rechazar solicitud de registro' })
@@ -459,6 +517,10 @@ export class AdminController {
     @Request() req: any,
   ) {
     const actorId = req.user?.sub ?? 'system';
-    return this.adminService.rejectRegistrationRequest(id, body.reason, actorId);
+    return this.adminService.rejectRegistrationRequest(
+      id,
+      body.reason,
+      actorId,
+    );
   }
 }

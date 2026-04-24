@@ -2,19 +2,59 @@
  * CMS module definitions — single source of truth for sidebar items and permission keys.
  */
 export const CMS_MODULES = [
-  { key: 'cms:dashboard',       label: 'Dashboard',             icon: 'th-large',     path: '/cms/dashboard' },
-  { key: 'cms:users',           label: 'Usuarios',              icon: 'users',        path: '/cms/users' },
-  { key: 'cms:componentes',     label: 'Componentes',           icon: 'puzzle-piece', path: '/cms/componentes' },
-  { key: 'cms:planes',          label: 'Planes',                icon: 'star',         path: '/cms/planes' },
-  { key: 'cms:canales',         label: 'Canales',               icon: 'tv',           path: '/cms/canales' },
-  { key: 'cms:categorias',      label: 'Categorías',            icon: 'tags',         path: '/cms/categorias' },
-  { key: 'cms:sliders',         label: 'Sliders',               icon: 'image',        path: '/cms/sliders' },
-  { key: 'cms:monitor',         label: 'Monitor',               icon: 'bar-chart',    path: '/cms/monitor' },
-  { key: 'cms:notif-admin',     label: 'Notif. Administrador',  icon: 'bell',         path: '/cms/notificaciones-admin' },
-  { key: 'cms:analitica',       label: 'Analítica',             icon: 'line-chart',   path: '/cms/analitica' },
-  { key: 'cms:propaganda',      label: 'Propaganda',            icon: 'bullhorn',     path: '/cms/propaganda' },
-  { key: 'cms:notif-abonado',   label: 'Notif. Abonado',       icon: 'commenting',   path: '/cms/notificaciones-abonado' },
-  { key: 'cms:roles',           label: 'Roles',                 icon: 'shield',       path: '/cms/roles' },
+  {
+    key: 'cms:dashboard',
+    label: 'Dashboard',
+    icon: 'th-large',
+    path: '/cms/dashboard',
+  },
+  { key: 'cms:users', label: 'Usuarios', icon: 'users', path: '/cms/users' },
+  {
+    key: 'cms:componentes',
+    label: 'Componentes',
+    icon: 'puzzle-piece',
+    path: '/cms/componentes',
+  },
+  { key: 'cms:planes', label: 'Planes', icon: 'star', path: '/cms/planes' },
+  { key: 'cms:canales', label: 'Canales', icon: 'tv', path: '/cms/canales' },
+  {
+    key: 'cms:categorias',
+    label: 'Categorías',
+    icon: 'tags',
+    path: '/cms/categorias',
+  },
+  { key: 'cms:sliders', label: 'Sliders', icon: 'image', path: '/cms/sliders' },
+  {
+    key: 'cms:monitor',
+    label: 'Monitor',
+    icon: 'bar-chart',
+    path: '/cms/monitor',
+  },
+  {
+    key: 'cms:notif-admin',
+    label: 'Notif. Administrador',
+    icon: 'bell',
+    path: '/cms/notificaciones-admin',
+  },
+  {
+    key: 'cms:analitica',
+    label: 'Analítica',
+    icon: 'line-chart',
+    path: '/cms/analitica',
+  },
+  {
+    key: 'cms:propaganda',
+    label: 'Propaganda',
+    icon: 'bullhorn',
+    path: '/cms/propaganda',
+  },
+  {
+    key: 'cms:notif-abonado',
+    label: 'Notif. Abonado',
+    icon: 'commenting',
+    path: '/cms/notificaciones-abonado',
+  },
+  { key: 'cms:roles', label: 'Roles', icon: 'shield', path: '/cms/roles' },
 ] as const;
 
 /**

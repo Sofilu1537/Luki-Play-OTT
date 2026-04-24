@@ -22,7 +22,13 @@ export class FirstAccessToken {
     this.createdAt = props.createdAt;
   }
 
-  isExpired(): boolean { return new Date() > this.expiresAt; }
-  isUsed(): boolean { return this.usedAt !== null; }
-  isValid(): boolean { return !this.isExpired() && !this.isUsed(); }
+  isExpired(): boolean {
+    return new Date() > this.expiresAt;
+  }
+  isUsed(): boolean {
+    return this.usedAt !== null;
+  }
+  isValid(): boolean {
+    return !this.isExpired() && !this.isUsed();
+  }
 }

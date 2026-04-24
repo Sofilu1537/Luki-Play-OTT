@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { TOKEN_SERVICE } from '../../domain/interfaces/token.service.js';
 import type { TokenService } from '../../domain/interfaces/token.service.js';
@@ -33,19 +38,30 @@ export class ContractLoginUseCase {
       throw new UnauthorizedException('La cuenta no está activa');
     }
 
-    if (customer.isLocked && customer.lockedUntil && customer.lockedUntil > new Date()) {
+    if (
+      customer.isLocked &&
+      customer.lockedUntil &&
+      customer.lockedUntil > new Date()
+    ) {
       throw new UnauthorizedException('Cuenta bloqueada temporalmente');
     }
 
     if (!customer.passwordHash) {
-      throw new UnauthorizedException('La cuenta no ha sido activada. Use "Primera vez" para configurar su contraseña.');
+      throw new UnauthorizedException(
+        'La cuenta no ha sido activada. Use "Primera vez" para configurar su contraseña.',
+      );
     }
 
     if (!customer.isAccountActivated) {
-      throw new UnauthorizedException('La cuenta no ha sido activada. Use "Primera vez" para configurar su contraseña.');
+      throw new UnauthorizedException(
+        'La cuenta no ha sido activada. Use "Primera vez" para configurar su contraseña.',
+      );
     }
 
-    const passwordValid = await this.hashService.compare(dto.password, customer.passwordHash);
+    const passwordValid = await this.hashService.compare(
+      dto.password,
+      customer.passwordHash,
+    );
     if (!passwordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -66,7 +82,9 @@ export class ContractLoginUseCase {
         deviceId: dto.deviceId,
         audience: 'app',
         refreshToken: tokenPair.refreshToken,
-        expiresAt: new Date(Date.now() + contract.sessionDurationDays * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(
+          Date.now() + contract.sessionDurationDays * 24 * 60 * 60 * 1000,
+        ),
       },
     });
 
@@ -75,7 +93,9 @@ export class ContractLoginUseCase {
       data: { lastLoginAt: new Date() },
     });
 
-    this.logger.log(`Contract login success: ${dto.contractNumber} → customer ${customer.id}`);
+    this.logger.log(
+      `Contract login success: ${dto.contractNumber} → customer ${customer.id}`,
+    );
 
     return {
       accessToken: tokenPair.accessToken,

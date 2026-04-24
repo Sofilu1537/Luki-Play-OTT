@@ -28,7 +28,10 @@ export interface AdminUser {
   permissions: string[];
 }
 
-export function toAdminUser(customer: any, activeSessions: number = 0): AdminUser {
+export function toAdminUser(
+  customer: any,
+  activeSessions: number = 0,
+): AdminUser {
   const contract = customer.contracts?.[0];
   return {
     id: customer.id,
@@ -39,7 +42,9 @@ export function toAdminUser(customer: any, activeSessions: number = 0): AdminUse
     telefono: customer.telefono,
     idNumber: customer.idNumber,
     address: customer.address,
-    plan: customer.isCmsUser ? 'Usuario CMS' : (contract?.planName ?? 'LUKI PLAY'),
+    plan: customer.isCmsUser
+      ? 'Usuario CMS'
+      : (contract?.planName ?? 'LUKI PLAY'),
     planId: contract?.planId ?? null,
     fechaInicio: contract?.fechaInicio?.toISOString().slice(0, 10) ?? '',
     fechaFin: contract?.fechaFin?.toISOString().slice(0, 10) ?? '',
@@ -54,7 +59,10 @@ export function toAdminUser(customer: any, activeSessions: number = 0): AdminUse
     lastLoginAt: customer.lastLoginAt?.toISOString() ?? null,
     maxDevices: contract?.maxDevices ?? 3,
     sessionDurationDays: contract?.sessionDurationDays ?? 30,
-    sessionLimitPolicy: contract?.sessionLimitPolicy === 'REPLACE_OLDEST' ? 'replace_oldest' : 'block_new',
+    sessionLimitPolicy:
+      contract?.sessionLimitPolicy === 'REPLACE_OLDEST'
+        ? 'replace_oldest'
+        : 'block_new',
     isCmsUser: customer.isCmsUser,
     isSubscriber: customer.isSubscriber,
     permissions: customer.permissions ?? [],

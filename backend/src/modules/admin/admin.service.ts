@@ -1,4 +1,11 @@
-import { Injectable, Inject, BadRequestException, ConflictException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -22,13 +29,25 @@ import type { AdminUser } from './utils/to-admin-user.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { SetUserPasswordDto } from './dto/set-user-password.dto.js';
-import { CanalStatusDto, StreamProtocolDto, CreateCanalDto } from './dto/create-canal.dto.js';
+import {
+  CanalStatusDto,
+  StreamProtocolDto,
+  CreateCanalDto,
+} from './dto/create-canal.dto.js';
 import { CreateCategoriaDto } from './dto/create-categoria.dto.js';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
-import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto.js';
+import {
+  CreatePlanDto,
+  PlanEntitlementDto,
+  PlanUserGroupDto,
+  PlanVideoQualityDto,
+} from './dto/create-plan.dto.js';
 import { UpdateCanalDto } from './dto/update-canal.dto.js';
 import { UpdatePlanDto } from './dto/update-plan.dto.js';
-import { CMS_MODULES, sanitizePermissions } from '../access-control/domain/permissions.js';
+import {
+  CMS_MODULES,
+  sanitizePermissions,
+} from '../access-control/domain/permissions.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // ---------------------------------------------------------------------------
@@ -43,7 +62,12 @@ export interface OttComponent {
   tipo: string;
   activo: boolean;
   orden: number;
-  categories?: Array<{ id: string; nombre: string; icono: string; activo: boolean }>;
+  categories?: Array<{
+    id: string;
+    nombre: string;
+    icono: string;
+    activo: boolean;
+  }>;
 }
 
 export interface OttPlan {
@@ -182,13 +206,22 @@ export class AdminService {
       orderBy: { orden: 'asc' },
       include: {
         componentCategories: {
-          include: { category: { select: { id: true, nombre: true, icono: true, activo: true } } },
+          include: {
+            category: {
+              select: { id: true, nombre: true, icono: true, activo: true },
+            },
+          },
         },
       },
     });
     return rows.map((r) => ({
-      id: r.id, nombre: r.nombre, descripcion: r.descripcion,
-      icono: r.icono, tipo: r.tipo, activo: r.activo, orden: r.orden,
+      id: r.id,
+      nombre: r.nombre,
+      descripcion: r.descripcion,
+      icono: r.icono,
+      tipo: r.tipo,
+      activo: r.activo,
+      orden: r.orden,
       categories: r.componentCategories.map((cc) => cc.category),
     }));
   }
@@ -198,14 +231,23 @@ export class AdminService {
       where: { id },
       include: {
         componentCategories: {
-          include: { category: { select: { id: true, nombre: true, icono: true, activo: true } } },
+          include: {
+            category: {
+              select: { id: true, nombre: true, icono: true, activo: true },
+            },
+          },
         },
       },
     });
     if (!comp) throw new NotFoundException(`Component ${id} not found`);
     return {
-      id: comp.id, nombre: comp.nombre, descripcion: comp.descripcion,
-      icono: comp.icono, tipo: comp.tipo, activo: comp.activo, orden: comp.orden,
+      id: comp.id,
+      nombre: comp.nombre,
+      descripcion: comp.descripcion,
+      icono: comp.icono,
+      tipo: comp.tipo,
+      activo: comp.activo,
+      orden: comp.orden,
       categories: comp.componentCategories.map((cc) => cc.category),
     };
   }
@@ -213,23 +255,53 @@ export class AdminService {
   async toggleComponente(id: string): Promise<OttComponent> {
     const comp = await this.prisma.component.findUnique({ where: { id } });
     if (!comp) throw new NotFoundException(`Component ${id} not found`);
-    const updated = await this.prisma.component.update({ where: { id }, data: { activo: !comp.activo } });
-    return { id: updated.id, nombre: updated.nombre, descripcion: updated.descripcion,
-             icono: updated.icono, tipo: updated.tipo, activo: updated.activo, orden: updated.orden, categories: [] };
+    const updated = await this.prisma.component.update({
+      where: { id },
+      data: { activo: !comp.activo },
+    });
+    return {
+      id: updated.id,
+      nombre: updated.nombre,
+      descripcion: updated.descripcion,
+      icono: updated.icono,
+      tipo: updated.tipo,
+      activo: updated.activo,
+      orden: updated.orden,
+      categories: [],
+    };
   }
 
   async reorderComponentes(ids: string[]): Promise<OttComponent[]> {
     await this.prisma.$transaction(
-      ids.map((id, index) => this.prisma.component.update({ where: { id }, data: { orden: index + 1 } })),
+      ids.map((id, index) =>
+        this.prisma.component.update({
+          where: { id },
+          data: { orden: index + 1 },
+        }),
+      ),
     );
     return this.getComponentes();
   }
 
-  async createComponente(dto: { nombre: string; descripcion?: string; icono?: string; tipo: string; activo?: boolean; orden?: number }): Promise<OttComponent> {
+  async createComponente(dto: {
+    nombre: string;
+    descripcion?: string;
+    icono?: string;
+    tipo: string;
+    activo?: boolean;
+    orden?: number;
+  }): Promise<OttComponent> {
     const { v4: uuidv4 } = await import('uuid');
-    const existing = await this.prisma.component.findUnique({ where: { nombre: dto.nombre } });
-    if (existing) throw new ConflictException(`Ya existe un componente con el nombre "${dto.nombre}"`);
-    const maxOrden = await this.prisma.component.aggregate({ _max: { orden: true } });
+    const existing = await this.prisma.component.findUnique({
+      where: { nombre: dto.nombre },
+    });
+    if (existing)
+      throw new ConflictException(
+        `Ya existe un componente con el nombre "${dto.nombre}"`,
+      );
+    const maxOrden = await this.prisma.component.aggregate({
+      _max: { orden: true },
+    });
     const nextOrden = dto.orden ?? (maxOrden._max.orden ?? 0) + 1;
     const comp = await this.prisma.component.create({
       data: {
@@ -242,15 +314,39 @@ export class AdminService {
         orden: nextOrden,
       },
     });
-    return { id: comp.id, nombre: comp.nombre, descripcion: comp.descripcion, icono: comp.icono, tipo: comp.tipo, activo: comp.activo, orden: comp.orden, categories: [] };
+    return {
+      id: comp.id,
+      nombre: comp.nombre,
+      descripcion: comp.descripcion,
+      icono: comp.icono,
+      tipo: comp.tipo,
+      activo: comp.activo,
+      orden: comp.orden,
+      categories: [],
+    };
   }
 
-  async updateComponente(id: string, dto: { nombre?: string; descripcion?: string; icono?: string; tipo?: string; activo?: boolean; orden?: number }): Promise<OttComponent> {
+  async updateComponente(
+    id: string,
+    dto: {
+      nombre?: string;
+      descripcion?: string;
+      icono?: string;
+      tipo?: string;
+      activo?: boolean;
+      orden?: number;
+    },
+  ): Promise<OttComponent> {
     const comp = await this.prisma.component.findUnique({ where: { id } });
     if (!comp) throw new NotFoundException(`Componente ${id} no encontrado`);
     if (dto.nombre && dto.nombre !== comp.nombre) {
-      const conflict = await this.prisma.component.findUnique({ where: { nombre: dto.nombre } });
-      if (conflict) throw new ConflictException(`Ya existe un componente con el nombre "${dto.nombre}"`);
+      const conflict = await this.prisma.component.findUnique({
+        where: { nombre: dto.nombre },
+      });
+      if (conflict)
+        throw new ConflictException(
+          `Ya existe un componente con el nombre "${dto.nombre}"`,
+        );
     }
     const updated = await this.prisma.component.update({
       where: { id },
@@ -264,13 +360,22 @@ export class AdminService {
       },
       include: {
         componentCategories: {
-          include: { category: { select: { id: true, nombre: true, icono: true, activo: true } } },
+          include: {
+            category: {
+              select: { id: true, nombre: true, icono: true, activo: true },
+            },
+          },
         },
       },
     });
     return {
-      id: updated.id, nombre: updated.nombre, descripcion: updated.descripcion,
-      icono: updated.icono, tipo: updated.tipo, activo: updated.activo, orden: updated.orden,
+      id: updated.id,
+      nombre: updated.nombre,
+      descripcion: updated.descripcion,
+      icono: updated.icono,
+      tipo: updated.tipo,
+      activo: updated.activo,
+      orden: updated.orden,
       categories: updated.componentCategories.map((cc) => cc.category),
     };
   }
@@ -278,13 +383,21 @@ export class AdminService {
   async deleteComponente(id: string): Promise<void> {
     const comp = await this.prisma.component.findUnique({ where: { id } });
     if (!comp) throw new NotFoundException(`Componente ${id} no encontrado`);
-    await this.prisma.componentCategory.deleteMany({ where: { componentId: id } });
+    await this.prisma.componentCategory.deleteMany({
+      where: { componentId: id },
+    });
     await this.prisma.component.delete({ where: { id } });
   }
 
-  async syncComponentCategories(componentId: string, categoryIds: string[]): Promise<void> {
-    const comp = await this.prisma.component.findUnique({ where: { id: componentId } });
-    if (!comp) throw new NotFoundException(`Component ${componentId} not found`);
+  async syncComponentCategories(
+    componentId: string,
+    categoryIds: string[],
+  ): Promise<void> {
+    const comp = await this.prisma.component.findUnique({
+      where: { id: componentId },
+    });
+    if (!comp)
+      throw new NotFoundException(`Component ${componentId} not found`);
     await this.prisma.componentCategory.deleteMany({ where: { componentId } });
     if (!categoryIds.length) return;
     const valid = await this.prisma.category.findMany({
@@ -318,11 +431,16 @@ export class AdminService {
       where: { revokedAt: null, expiresAt: { gt: new Date() } },
       _count: true,
     });
-    const sessionMap = new Map(sessionCounts.map(s => [s.contractId, s._count]));
+    const sessionMap = new Map(
+      sessionCounts.map((s) => [s.contractId, s._count]),
+    );
 
-    const users = customers.map(c => {
-      const contractIds = c.contracts.map(ct => ct.id);
-      const activeSessions = contractIds.reduce((sum, cid) => sum + (sessionMap.get(cid) ?? 0), 0);
+    const users = customers.map((c) => {
+      const contractIds = c.contracts.map((ct) => ct.id);
+      const activeSessions = contractIds.reduce(
+        (sum, cid) => sum + (sessionMap.get(cid) ?? 0),
+        0,
+      );
       return toAdminUser(c, activeSessions);
     });
 
@@ -341,7 +459,9 @@ export class AdminService {
 
   async createUser(dto: CreateUserDto): Promise<AdminUser> {
     const normalizedEmail = dto.email.trim().toLowerCase();
-    const existing = await this.prisma.customer.findUnique({ where: { email: normalizedEmail } });
+    const existing = await this.prisma.customer.findUnique({
+      where: { email: normalizedEmail },
+    });
     if (existing && !existing.deletedAt) {
       throw new ConflictException('Ya existe un usuario con ese correo.');
     }
@@ -350,11 +470,19 @@ export class AdminService {
     const status = dto.status ?? UserStatus.ACTIVE;
 
     // CMS user path
-    if (role === UserRole.SUPERADMIN || role === UserRole.ADMIN || role === UserRole.SOPORTE) {
-      const firstName = dto.firstName?.trim() || this.extractNames(dto.nombre).firstName;
-      const lastName = dto.lastName?.trim() || this.extractNames(dto.nombre).lastName;
+    if (
+      role === UserRole.SUPERADMIN ||
+      role === UserRole.ADMIN ||
+      role === UserRole.SOPORTE
+    ) {
+      const firstName =
+        dto.firstName?.trim() || this.extractNames(dto.nombre).firstName;
+      const lastName =
+        dto.lastName?.trim() || this.extractNames(dto.nombre).lastName;
       if (!firstName) {
-        throw new BadRequestException('Los usuarios del sistema requieren nombre.');
+        throw new BadRequestException(
+          'Los usuarios del sistema requieren nombre.',
+        );
       }
 
       const created = await this.createCmsUserUseCase.execute({
@@ -370,7 +498,6 @@ export class AdminService {
         where: { id: created.id },
         data: {
           status: this.toPrismaStatus(status),
-          ...(dto.permissions ? { permissions: dto.permissions } : {}),
         },
         include: { contracts: { where: { deletedAt: null } } },
       });
@@ -392,7 +519,9 @@ export class AdminService {
                 planName: dto.plan ?? dto.planId ?? 'LUKI PLAY',
                 maxDevices: dto.maxDevices ?? 3,
                 sessionDurationDays: dto.sessionDurationDays ?? 30,
-                sessionLimitPolicy: this.toPrismaSessionLimitPolicy(dto.sessionLimitPolicy),
+                sessionLimitPolicy: this.toPrismaSessionLimitPolicy(
+                  dto.sessionLimitPolicy,
+                ),
                 fechaInicio: new Date(),
                 fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
               },
@@ -430,16 +559,21 @@ export class AdminService {
     if (dto.email) {
       const normalizedEmail = dto.email.trim().toLowerCase();
       if (normalizedEmail !== customer.email?.toLowerCase()) {
-        const dup = await this.prisma.customer.findUnique({ where: { email: normalizedEmail } });
+        const dup = await this.prisma.customer.findUnique({
+          where: { email: normalizedEmail },
+        });
         if (dup && dup.id !== id) {
           throw new ConflictException('Ya existe un usuario con ese correo.');
         }
       }
     }
 
-    const names = dto.nombre !== undefined && dto.firstName === undefined && dto.lastName === undefined
-      ? this.extractNames(dto.nombre)
-      : { firstName: null, lastName: null };
+    const names =
+      dto.nombre !== undefined &&
+      dto.firstName === undefined &&
+      dto.lastName === undefined
+        ? this.extractNames(dto.nombre)
+        : { firstName: null, lastName: null };
 
     await this.prisma.customer.update({
       where: { id },
@@ -456,26 +590,58 @@ export class AdminService {
             ? { lastName: names.lastName }
             : {}),
         ...(dto.email ? { email: dto.email.trim().toLowerCase() } : {}),
-        ...(dto.telefono !== undefined ? { telefono: dto.telefono?.trim() || null } : {}),
-        ...(dto.idNumber !== undefined ? { idNumber: dto.idNumber?.trim() || null } : {}),
-        ...(dto.address !== undefined ? { address: dto.address?.trim() || null } : {}),
+        ...(dto.telefono !== undefined
+          ? { telefono: dto.telefono?.trim() || null }
+          : {}),
+        ...(dto.idNumber !== undefined
+          ? { idNumber: dto.idNumber?.trim() || null }
+          : {}),
+        ...(dto.address !== undefined
+          ? { address: dto.address?.trim() || null }
+          : {}),
         ...(dto.status ? { status: this.toPrismaStatus(dto.status) } : {}),
-        ...(dto.permissions !== undefined ? { permissions: dto.permissions } : {}),
       },
     });
 
     // Update contract-related fields on first contract
     const contract = customer.contracts[0];
-    if (contract && (dto.maxDevices !== undefined || dto.sessionDurationDays !== undefined || dto.sessionLimitPolicy !== undefined || dto.planId !== undefined || dto.contrato !== undefined)) {
-      const plan = dto.planId ? await this.prisma.plan.findUnique({ where: { id: dto.planId } }) : null;
+    if (
+      contract &&
+      (dto.maxDevices !== undefined ||
+        dto.sessionDurationDays !== undefined ||
+        dto.sessionLimitPolicy !== undefined ||
+        dto.planId !== undefined ||
+        dto.contrato !== undefined)
+    ) {
+      const plan = dto.planId
+        ? await this.prisma.plan.findUnique({ where: { id: dto.planId } })
+        : null;
       await this.prisma.contract.update({
         where: { id: contract.id },
         data: {
-          ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
-          ...(dto.sessionDurationDays !== undefined ? { sessionDurationDays: dto.sessionDurationDays } : {}),
-          ...(dto.sessionLimitPolicy !== undefined ? { sessionLimitPolicy: this.toPrismaSessionLimitPolicy(dto.sessionLimitPolicy) } : {}),
-          ...(dto.planId !== undefined && plan ? { planName: plan.nombre, planId: plan.id, maxDevices: plan.maxDevices } : {}),
-          ...(dto.contrato !== undefined ? { contractNumber: dto.contrato } : {}),
+          ...(dto.maxDevices !== undefined
+            ? { maxDevices: dto.maxDevices }
+            : {}),
+          ...(dto.sessionDurationDays !== undefined
+            ? { sessionDurationDays: dto.sessionDurationDays }
+            : {}),
+          ...(dto.sessionLimitPolicy !== undefined
+            ? {
+                sessionLimitPolicy: this.toPrismaSessionLimitPolicy(
+                  dto.sessionLimitPolicy,
+                ),
+              }
+            : {}),
+          ...(dto.planId !== undefined && plan
+            ? {
+                planName: plan.nombre,
+                planId: plan.id,
+                maxDevices: plan.maxDevices,
+              }
+            : {}),
+          ...(dto.contrato !== undefined
+            ? { contractNumber: dto.contrato }
+            : {}),
         },
       });
     }
@@ -489,16 +655,26 @@ export class AdminService {
   }
 
   async deleteUser(id: string): Promise<void> {
-    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const now = new Date();
-    await this.prisma.customer.update({ where: { id }, data: { deletedAt: now } });
-    await this.prisma.contract.updateMany({ where: { customerId: id, deletedAt: null }, data: { deletedAt: now } });
+    await this.prisma.customer.update({
+      where: { id },
+      data: { deletedAt: now },
+    });
+    await this.prisma.contract.updateMany({
+      where: { customerId: id, deletedAt: null },
+      data: { deletedAt: now },
+    });
   }
 
   async updateUserStatus(id: string, status: UserStatus): Promise<AdminUser> {
-    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const updated = await this.prisma.customer.update({
@@ -510,14 +686,24 @@ export class AdminService {
     return toAdminUser(updated, activeSessions);
   }
 
-  async setUserPassword(id: string, dto: SetUserPasswordDto): Promise<{ message: string }> {
-    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+  async setUserPassword(
+    id: string,
+    dto: SetUserPasswordDto,
+  ): Promise<{ message: string }> {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.prisma.customer.update({
       where: { id },
-      data: { passwordHash, mustChangePassword: true, isLocked: false, lockedUntil: null },
+      data: {
+        passwordHash,
+        mustChangePassword: true,
+        isLocked: false,
+        lockedUntil: null,
+      },
     });
 
     if (dto.revokeSessions !== false) {
@@ -528,28 +714,44 @@ export class AdminService {
   }
 
   async generateAndSendPassword(id: string): Promise<{ message: string }> {
-    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const password = this.generateSecurePassword();
     const passwordHash = await bcrypt.hash(password, 10);
     await this.prisma.customer.update({
       where: { id },
-      data: { passwordHash, mustChangePassword: true, isLocked: false, lockedUntil: null },
+      data: {
+        passwordHash,
+        mustChangePassword: true,
+        isLocked: false,
+        lockedUntil: null,
+      },
     });
 
     await this.revokeAllSessionsForCustomer(id);
 
     const displayName = customer.firstName
       ? `${customer.firstName} ${customer.lastName ?? ''}`.trim()
-      : customer.email?.split('@')[0] ?? 'Usuario';
+      : (customer.email?.split('@')[0] ?? 'Usuario');
 
-    await this.emailService.sendGeneratedPassword(customer.email ?? '', password, displayName);
+    await this.emailService.sendGeneratedPassword(
+      customer.email ?? '',
+      password,
+      displayName,
+    );
     return { message: `Contraseña generada y enviada a ${customer.email}` };
   }
 
-  async sendRecoveryCode(id: string, emailStr?: string): Promise<{ message: string, code: string }> {
-    const customer = await this.prisma.customer.findUnique({ where: { id, deletedAt: null } });
+  async sendRecoveryCode(
+    id: string,
+    emailStr?: string,
+  ): Promise<{ message: string; code: string }> {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -561,24 +763,38 @@ export class AdminService {
     const passwordHash = await bcrypt.hash(code, 10);
     await this.prisma.customer.update({
       where: { id },
-      data: { passwordHash, mustChangePassword: true, isLocked: false, lockedUntil: null },
+      data: {
+        passwordHash,
+        mustChangePassword: true,
+        isLocked: false,
+        lockedUntil: null,
+      },
     });
 
     await this.revokeAllSessionsForCustomer(id);
 
     const displayName = customer.firstName
       ? `${customer.firstName} ${customer.lastName ?? ''}`.trim()
-      : customer.email?.split('@')[0] ?? 'Usuario';
+      : (customer.email?.split('@')[0] ?? 'Usuario');
 
     const targetEmail = emailStr || customer.email || customer.ispEmail;
     if (targetEmail) {
       try {
-        await this.emailService.sendRecoveryCode(targetEmail, code, displayName);
+        await this.emailService.sendRecoveryCode(
+          targetEmail,
+          code,
+          displayName,
+        );
       } catch {
-        this.logger.warn(`Email delivery failed for ${targetEmail} — code still valid`);
+        this.logger.warn(
+          `Email delivery failed for ${targetEmail} — code still valid`,
+        );
       }
     }
-    return { message: `Código enviado a ${targetEmail || 'correo no registrado'}`, code };
+    return {
+      message: `Código enviado a ${targetEmail || 'correo no registrado'}`,
+      code,
+    };
   }
 
   /**
@@ -589,23 +805,28 @@ export class AdminService {
    * - Fisher-Yates shuffle with crypto-random indices
    */
   private generateSecurePassword(): string {
-    const upper   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lower   = 'abcdefghijklmnopqrstuvwxyz';
-    const digits  = '0123456789';
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
     const special = '!@#$%&*-_=+?';
-    const all     = upper + lower + digits + special;
+    const all = upper + lower + digits + special;
 
-    const pick = (charset: string): string => charset[randomBytes(1)[0] % charset.length];
+    const pick = (charset: string): string =>
+      charset[randomBytes(1)[0] % charset.length];
 
     const required = [
-      pick(upper), pick(upper),
-      pick(lower), pick(lower),
-      pick(digits), pick(digits),
-      pick(special), pick(special),
+      pick(upper),
+      pick(upper),
+      pick(lower),
+      pick(lower),
+      pick(digits),
+      pick(digits),
+      pick(special),
+      pick(special),
     ];
 
     const remaining = Array.from({ length: 8 }, () => pick(all));
-    const combined  = [...required, ...remaining];
+    const combined = [...required, ...remaining];
 
     for (let i = combined.length - 1; i > 0; i--) {
       const j = randomBytes(1)[0] % (i + 1);
@@ -622,35 +843,50 @@ export class AdminService {
     });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    const contractIds = customer.contracts.map(c => c.id);
+    const contractIds = customer.contracts.map((c) => c.id);
     const sessions = await this.prisma.session.findMany({
       where: { contractId: { in: contractIds } },
       orderBy: { createdAt: 'desc' },
     });
 
     const now = new Date();
-    return sessions.map(s => ({
+    return sessions.map((s) => ({
       id: s.id,
       deviceId: s.deviceId,
       audience: s.audience,
       createdAt: s.createdAt.toISOString(),
       expiresAt: s.expiresAt.toISOString(),
       revokedAt: s.revokedAt?.toISOString() ?? null,
-      status: (s.revokedAt ? 'revoked' : s.expiresAt < now ? 'expired' : 'active') as AdminUserSessionRecord['status'],
+      status: s.revokedAt
+        ? 'revoked'
+        : s.expiresAt < now
+          ? 'expired'
+          : 'active',
     }));
   }
 
-  async revokeUserSession(id: string, sessionId: string): Promise<{ message: string }> {
+  async revokeUserSession(
+    id: string,
+    sessionId: string,
+  ): Promise<{ message: string }> {
     const customer = await this.prisma.customer.findUnique({
       where: { id, deletedAt: null },
       include: { contracts: { select: { id: true } } },
     });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
-    const contractIds = customer.contracts.map(c => c.id);
-    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
-    if (!session || (session.contractId && !contractIds.includes(session.contractId)) || (!session.contractId && session.customerId !== id)) {
-      throw new NotFoundException('La sesión indicada no existe para este usuario.');
+    const contractIds = customer.contracts.map((c) => c.id);
+    const session = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+    });
+    if (
+      !session ||
+      (session.contractId && !contractIds.includes(session.contractId)) ||
+      (!session.contractId && session.customerId !== id)
+    ) {
+      throw new NotFoundException(
+        'La sesión indicada no existe para este usuario.',
+      );
     }
 
     await this.prisma.session.update({
@@ -679,7 +915,9 @@ export class AdminService {
 
     const contract = customer.contracts[0];
     const plan = contract
-      ? await this.prisma.plan.findFirst({ where: { nombre: contract.planName } })
+      ? await this.prisma.plan.findFirst({
+          where: { nombre: contract.planName },
+        })
       : null;
 
     return {
@@ -688,7 +926,8 @@ export class AdminService {
       descripcion: plan?.descripcion ?? '',
       duracionDias: contract?.sessionDurationDays ?? 30,
       maxDevices: plan?.maxDevices ?? contract?.maxDevices ?? 3,
-      maxConcurrentStreams: plan?.maxConcurrentStreams ?? contract?.maxConcurrentStreams ?? 1,
+      maxConcurrentStreams:
+        plan?.maxConcurrentStreams ?? contract?.maxConcurrentStreams ?? 1,
       maxProfiles: plan?.maxProfiles ?? 3,
       videoQuality: (plan?.videoQuality ?? 'HD') as PlanVideoQualityDto,
       allowDownloads: plan?.allowDownloads ?? false,
@@ -705,11 +944,14 @@ export class AdminService {
   // ---- Monitor -------------------------------------------------------------
 
   async getMonitorStats() {
-    const [totalUsuarios, usuariosActivos, contratosActivos] = await Promise.all([
-      this.prisma.customer.count({ where: { deletedAt: null } }),
-      this.prisma.customer.count({ where: { deletedAt: null, status: PrismaUserStatus.ACTIVE } }),
-      this.prisma.contract.count({ where: { deletedAt: null } }),
-    ]);
+    const [totalUsuarios, usuariosActivos, contratosActivos] =
+      await Promise.all([
+        this.prisma.customer.count({ where: { deletedAt: null } }),
+        this.prisma.customer.count({
+          where: { deletedAt: null, status: PrismaUserStatus.ACTIVE },
+        }),
+        this.prisma.contract.count({ where: { deletedAt: null } }),
+      ]);
 
     return {
       totalUsuarios,
@@ -724,8 +966,13 @@ export class AdminService {
   // ---- Roles & Permissions ---------------------------------------------------
 
   async getCmsRoles(): Promise<Array<{ key: string; permissions: string[] }>> {
-    const roles = await this.prisma.cmsRole.findMany({ orderBy: { key: 'asc' } });
-    return roles.map((r) => ({ key: r.key.toLowerCase(), permissions: r.permissions }));
+    const roles = await this.prisma.cmsRole.findMany({
+      orderBy: { key: 'asc' },
+    });
+    return roles.map((r) => ({
+      key: r.key.toLowerCase(),
+      permissions: r.permissions,
+    }));
   }
 
   async updateCmsRolePermissions(
@@ -734,7 +981,9 @@ export class AdminService {
   ): Promise<{ key: string; permissions: string[] }> {
     const key = roleKey.toUpperCase() as PrismaUserRole;
     if (key === PrismaUserRole.SUPERADMIN || key === PrismaUserRole.CLIENTE) {
-      throw new BadRequestException('Los permisos de SUPERADMIN y CLIENTE no se pueden editar.');
+      throw new BadRequestException(
+        'Los permisos de SUPERADMIN y CLIENTE no se pueden editar.',
+      );
     }
 
     const role = await this.prisma.cmsRole.findUnique({ where: { key } });
@@ -759,7 +1008,10 @@ export class AdminService {
   }
 
   async createPlan(dto: CreatePlanDto) {
-    await this.validatePlanReferences(dto.allowedComponentIds, dto.allowedCategoryIds ?? []);
+    await this.validatePlanReferences(
+      dto.allowedComponentIds,
+      dto.allowedCategoryIds ?? [],
+    );
 
     const plan = await this.prisma.plan.create({
       data: {
@@ -781,8 +1033,8 @@ export class AdminService {
         gracePeriodDays: dto.gracePeriodDays ?? 0,
         entitlements: dto.entitlements as string[],
         allowedComponentIds: dto.allowedComponentIds,
-        allowedCategoryIds: (dto.allowedCategoryIds ?? []) as string[],
-        allowedChannelIds: (dto.allowedChannelIds ?? []) as string[],
+        allowedCategoryIds: dto.allowedCategoryIds ?? [],
+        allowedChannelIds: dto.allowedChannelIds ?? [],
       },
     });
 
@@ -797,8 +1049,10 @@ export class AdminService {
     const existing = await this.prisma.plan.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Plan ${id} not found`);
 
-    const nextComponentIds = dto.allowedComponentIds ?? (existing.allowedComponentIds as string[]);
-    const nextCategoryIds = dto.allowedCategoryIds ?? (existing.allowedCategoryIds as string[]);
+    const nextComponentIds =
+      dto.allowedComponentIds ?? (existing.allowedComponentIds as string[]);
+    const nextCategoryIds =
+      dto.allowedCategoryIds ?? (existing.allowedCategoryIds as string[]);
     await this.validatePlanReferences(nextComponentIds, nextCategoryIds);
 
     const previousChannelIds = (existing.allowedChannelIds as string[]) ?? [];
@@ -808,22 +1062,42 @@ export class AdminService {
       where: { id },
       data: {
         ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
-        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
-        ...(dto.grupoUsuarios !== undefined ? { grupoUsuarios: dto.grupoUsuarios } : {}),
+        ...(dto.descripcion !== undefined
+          ? { descripcion: dto.descripcion }
+          : {}),
+        ...(dto.grupoUsuarios !== undefined
+          ? { grupoUsuarios: dto.grupoUsuarios }
+          : {}),
         ...(dto.precio !== undefined ? { precio: dto.precio } : {}),
         ...(dto.moneda !== undefined ? { moneda: dto.moneda } : {}),
-        ...(dto.duracionDias !== undefined ? { duracionDias: dto.duracionDias } : {}),
+        ...(dto.duracionDias !== undefined
+          ? { duracionDias: dto.duracionDias }
+          : {}),
         ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
         ...(dto.maxDevices !== undefined ? { maxDevices: dto.maxDevices } : {}),
-        ...(dto.maxConcurrentStreams !== undefined ? { maxConcurrentStreams: dto.maxConcurrentStreams } : {}),
-        ...(dto.maxProfiles !== undefined ? { maxProfiles: dto.maxProfiles } : {}),
-        ...(dto.videoQuality !== undefined ? { videoQuality: dto.videoQuality } : {}),
-        ...(dto.allowDownloads !== undefined ? { allowDownloads: dto.allowDownloads } : {}),
-        ...(dto.allowCasting !== undefined ? { allowCasting: dto.allowCasting } : {}),
+        ...(dto.maxConcurrentStreams !== undefined
+          ? { maxConcurrentStreams: dto.maxConcurrentStreams }
+          : {}),
+        ...(dto.maxProfiles !== undefined
+          ? { maxProfiles: dto.maxProfiles }
+          : {}),
+        ...(dto.videoQuality !== undefined
+          ? { videoQuality: dto.videoQuality }
+          : {}),
+        ...(dto.allowDownloads !== undefined
+          ? { allowDownloads: dto.allowDownloads }
+          : {}),
+        ...(dto.allowCasting !== undefined
+          ? { allowCasting: dto.allowCasting }
+          : {}),
         ...(dto.hasAds !== undefined ? { hasAds: dto.hasAds } : {}),
         ...(dto.trialDays !== undefined ? { trialDays: dto.trialDays } : {}),
-        ...(dto.gracePeriodDays !== undefined ? { gracePeriodDays: dto.gracePeriodDays } : {}),
-        ...(dto.entitlements ? { entitlements: dto.entitlements as string[] } : {}),
+        ...(dto.gracePeriodDays !== undefined
+          ? { gracePeriodDays: dto.gracePeriodDays }
+          : {}),
+        ...(dto.entitlements
+          ? { entitlements: dto.entitlements as string[] }
+          : {}),
         allowedComponentIds: nextComponentIds,
         allowedCategoryIds: nextCategoryIds,
         allowedChannelIds: nextChannelIds,
@@ -840,7 +1114,10 @@ export class AdminService {
   async togglePlan(id: string) {
     const plan = await this.prisma.plan.findUnique({ where: { id } });
     if (!plan) throw new NotFoundException(`Plan ${id} not found`);
-    return this.prisma.plan.update({ where: { id }, data: { activo: !plan.activo } });
+    return this.prisma.plan.update({
+      where: { id },
+      data: { activo: !plan.activo },
+    });
   }
 
   async deletePlan(id: string) {
@@ -856,32 +1133,67 @@ export class AdminService {
     await this.prisma.plan.delete({ where: { id } });
   }
 
-  private async syncChannelPlanIds(planId: string, removed: string[], added: string[]): Promise<void> {
+  private async syncChannelPlanIds(
+    planId: string,
+    removed: string[],
+    added: string[],
+  ): Promise<void> {
     const toRemove = removed.filter((id) => !added.includes(id));
     const toAdd = added.filter((id) => !removed.includes(id));
 
     for (const channelId of toRemove) {
-      const ch = await this.prisma.channel.findUnique({ where: { id: channelId, deletedAt: null } });
+      const ch = await this.prisma.channel.findUnique({
+        where: { id: channelId, deletedAt: null },
+      });
       if (!ch) continue;
-      const next = (ch.planIds as string[]).filter((pid) => pid !== planId);
-      await this.prisma.channel.update({ where: { id: channelId }, data: { planIds: next } });
+      const next = ch.planIds.filter((pid) => pid !== planId);
+      await this.prisma.channel.update({
+        where: { id: channelId },
+        data: { planIds: next },
+      });
     }
 
     for (const channelId of toAdd) {
-      const ch = await this.prisma.channel.findUnique({ where: { id: channelId, deletedAt: null } });
+      const ch = await this.prisma.channel.findUnique({
+        where: { id: channelId, deletedAt: null },
+      });
       if (!ch) continue;
-      const current = ch.planIds as string[];
+      const current = ch.planIds;
       if (!current.includes(planId)) {
-        await this.prisma.channel.update({ where: { id: channelId }, data: { planIds: [...current, planId] } });
+        await this.prisma.channel.update({
+          where: { id: channelId },
+          data: { planIds: [...current, planId] },
+        });
       }
     }
   }
 
   getSliders() {
     return [
-      { id: 'sl-001', titulo: 'Bienvenido a Luki Play', subtitulo: 'Tu entretenimiento sin límites', imagen: '', orden: 1, activo: true },
-      { id: 'sl-002', titulo: 'Contenido 4K',          subtitulo: 'La mejor calidad de imagen',      imagen: '', orden: 2, activo: true },
-      { id: 'sl-003', titulo: 'Deportes en Vivo',       subtitulo: 'No te pierdas ningún partido',   imagen: '', orden: 3, activo: false },
+      {
+        id: 'sl-001',
+        titulo: 'Bienvenido a Luki Play',
+        subtitulo: 'Tu entretenimiento sin límites',
+        imagen: '',
+        orden: 1,
+        activo: true,
+      },
+      {
+        id: 'sl-002',
+        titulo: 'Contenido 4K',
+        subtitulo: 'La mejor calidad de imagen',
+        imagen: '',
+        orden: 2,
+        activo: true,
+      },
+      {
+        id: 'sl-003',
+        titulo: 'Deportes en Vivo',
+        subtitulo: 'No te pierdas ningún partido',
+        imagen: '',
+        orden: 3,
+        activo: false,
+      },
     ];
   }
 
@@ -907,7 +1219,10 @@ export class AdminService {
     // Check if channel name/slug already exists
     const existing = await this.prisma.channel.findFirst({
       where: {
-        OR: [{ nombre: dto.nombre }, { slug: dto.slug || this.autoSlug(dto.nombre) }],
+        OR: [
+          { nombre: dto.nombre },
+          { slug: dto.slug || this.autoSlug(dto.nombre) },
+        ],
         deletedAt: null,
       },
     });
@@ -942,7 +1257,12 @@ export class AdminService {
 
     // Ensure ChannelCategory junction row exists for the primary category
     await this.prisma.channelCategory.upsert({
-      where: { channelId_categoryId: { channelId: channel.id, categoryId: dto.categoryId } },
+      where: {
+        channelId_categoryId: {
+          channelId: channel.id,
+          categoryId: dto.categoryId,
+        },
+      },
       update: {},
       create: { channelId: channel.id, categoryId: dto.categoryId },
     });
@@ -997,30 +1317,42 @@ export class AdminService {
     if (dto.logoUrl !== undefined) updateData.logoUrl = dto.logoUrl;
     if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
     if (dto.epgSourceId !== undefined) updateData.epgSourceId = dto.epgSourceId;
-    if (dto.status !== undefined) updateData.status = this.mapStatusToDb(dto.status);
-    if (dto.streamProtocol !== undefined) updateData.streamProtocol = this.mapProtocolToDb(dto.streamProtocol);
+    if (dto.status !== undefined)
+      updateData.status = this.mapStatusToDb(dto.status);
+    if (dto.streamProtocol !== undefined)
+      updateData.streamProtocol = this.mapProtocolToDb(dto.streamProtocol);
     if (dto.resolution !== undefined) updateData.resolution = dto.resolution;
     if (dto.bitrateKbps !== undefined) updateData.bitrateKbps = dto.bitrateKbps;
-    if (dto.isDrmProtected !== undefined) updateData.isDrmProtected = dto.isDrmProtected;
-    if (dto.geoRestriction !== undefined) updateData.geoRestriction = dto.geoRestriction;
+    if (dto.isDrmProtected !== undefined)
+      updateData.isDrmProtected = dto.isDrmProtected;
+    if (dto.geoRestriction !== undefined)
+      updateData.geoRestriction = dto.geoRestriction;
     if (dto.sortOrder !== undefined) updateData.sortOrder = dto.sortOrder;
     if (dto.planIds !== undefined) updateData.planIds = dto.planIds;
-    if (dto.requiereControlParental !== undefined) updateData.requiereControlParental = dto.requiereControlParental;
+    if (dto.requiereControlParental !== undefined)
+      updateData.requiereControlParental = dto.requiereControlParental;
 
-    return this.prisma.channel.update({
-      where: { id },
-      data: updateData,
-      include: { category: true },
-    }).then(async (updated) => {
-      // Sync ChannelCategory junction: if categoryId changed, upsert the new junction row
-      const resolvedCategoryId = dto.categoryId ?? updated.categoryId;
-      await this.prisma.channelCategory.upsert({
-        where: { channelId_categoryId: { channelId: id, categoryId: resolvedCategoryId } },
-        update: {},
-        create: { channelId: id, categoryId: resolvedCategoryId },
+    return this.prisma.channel
+      .update({
+        where: { id },
+        data: updateData,
+        include: { category: true },
+      })
+      .then(async (updated) => {
+        // Sync ChannelCategory junction: if categoryId changed, upsert the new junction row
+        const resolvedCategoryId = dto.categoryId ?? updated.categoryId;
+        await this.prisma.channelCategory.upsert({
+          where: {
+            channelId_categoryId: {
+              channelId: id,
+              categoryId: resolvedCategoryId,
+            },
+          },
+          update: {},
+          create: { channelId: id, categoryId: resolvedCategoryId },
+        });
+        return updated;
       });
-      return updated;
-    });
   }
 
   async toggleCanal(id: string) {
@@ -1031,7 +1363,10 @@ export class AdminService {
       throw new NotFoundException(`Channel ${id} not found`);
     }
 
-    const newStatus = channel.status === ChannelStatus.ACTIVE ? ChannelStatus.INACTIVE : ChannelStatus.ACTIVE;
+    const newStatus =
+      channel.status === ChannelStatus.ACTIVE
+        ? ChannelStatus.INACTIVE
+        : ChannelStatus.ACTIVE;
     return this.prisma.channel.update({
       where: { id },
       data: { status: newStatus },
@@ -1056,14 +1391,26 @@ export class AdminService {
 
   // ---- Categorias CRUD (Prisma persistence) ---------------------------------
 
-  async getCategorias(query?: { active?: string; search?: string; limit?: string; offset?: string }): Promise<any[]> {
+  async getCategorias(query?: {
+    active?: string;
+    search?: string;
+    limit?: string;
+    offset?: string;
+  }): Promise<any[]> {
     const where: any = { deletedAt: null };
     if (query?.active === 'true') where.activo = true;
     if (query?.active === 'false') where.activo = false;
-    if (query?.search) where.nombre = { contains: query.search, mode: 'insensitive' };
+    if (query?.search)
+      where.nombre = { contains: query.search, mode: 'insensitive' };
     return this.prisma.category.findMany({
       where,
-      include: { channelCategories: { include: { channel: { select: { id: true, nombre: true, status: true } } } } },
+      include: {
+        channelCategories: {
+          include: {
+            channel: { select: { id: true, nombre: true, status: true } },
+          },
+        },
+      },
       orderBy: { displayOrder: 'asc' },
       ...(query?.limit ? { take: parseInt(query.limit, 10) } : {}),
       ...(query?.offset ? { skip: parseInt(query.offset, 10) } : {}),
@@ -1073,7 +1420,13 @@ export class AdminService {
   async getCategoriaById(id: string): Promise<any> {
     const category = await this.prisma.category.findFirst({
       where: { id, deletedAt: null },
-      include: { channelCategories: { include: { channel: { select: { id: true, nombre: true, status: true } } } } },
+      include: {
+        channelCategories: {
+          include: {
+            channel: { select: { id: true, nombre: true, status: true } },
+          },
+        },
+      },
     });
     if (!category) throw new NotFoundException(`Category ${id} not found`);
     return category;
@@ -1086,7 +1439,10 @@ export class AdminService {
     const existing = await this.prisma.category.findFirst({
       where: { OR: [{ nombre: normalizedName }, { slug }], deletedAt: null },
     });
-    if (existing) throw new ConflictException(`Category "${normalizedName}" already exists`);
+    if (existing)
+      throw new ConflictException(
+        `Category "${normalizedName}" already exists`,
+      );
 
     const category = await this.prisma.category.create({
       data: {
@@ -1109,7 +1465,9 @@ export class AdminService {
   }
 
   async updateCategoria(id: string, dto: UpdateCategoriaDto): Promise<any> {
-    const category = await this.prisma.category.findFirst({ where: { id, deletedAt: null } });
+    const category = await this.prisma.category.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!category) throw new NotFoundException(`Category ${id} not found`);
 
     if (dto.nombre) {
@@ -1118,19 +1476,28 @@ export class AdminService {
         const duplicate = await this.prisma.category.findFirst({
           where: { nombre: normalizedName, deletedAt: null, id: { not: id } },
         });
-        if (duplicate) throw new ConflictException(`Category "${normalizedName}" already exists`);
+        if (duplicate)
+          throw new ConflictException(
+            `Category "${normalizedName}" already exists`,
+          );
       }
     }
 
     const updateData: any = {};
-    if (dto.nombre !== undefined) { updateData.nombre = dto.nombre.trim(); updateData.slug = dto.slug?.trim() || this.autoSlug(dto.nombre.trim()); }
+    if (dto.nombre !== undefined) {
+      updateData.nombre = dto.nombre.trim();
+      updateData.slug = dto.slug?.trim() || this.autoSlug(dto.nombre.trim());
+    }
     if (dto.slug !== undefined) updateData.slug = dto.slug.trim();
-    if (dto.descripcion !== undefined) updateData.descripcion = dto.descripcion.trim();
+    if (dto.descripcion !== undefined)
+      updateData.descripcion = dto.descripcion.trim();
     if (dto.icono !== undefined) updateData.icono = dto.icono.trim();
     if (dto.accentColor !== undefined) updateData.accentColor = dto.accentColor;
-    if (dto.displayOrder !== undefined) updateData.displayOrder = dto.displayOrder;
+    if (dto.displayOrder !== undefined)
+      updateData.displayOrder = dto.displayOrder;
     if (dto.activo !== undefined) updateData.activo = dto.activo;
-    if (dto.esContenidoAdulto !== undefined) updateData.esContenidoAdulto = dto.esContenidoAdulto;
+    if (dto.esContenidoAdulto !== undefined)
+      updateData.esContenidoAdulto = dto.esContenidoAdulto;
 
     await this.prisma.category.update({ where: { id }, data: updateData });
 
@@ -1142,25 +1509,40 @@ export class AdminService {
   }
 
   async toggleCategoria(id: string): Promise<any> {
-    const category = await this.prisma.category.findFirst({ where: { id, deletedAt: null } });
+    const category = await this.prisma.category.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!category) throw new NotFoundException(`Category ${id} not found`);
-    return this.prisma.category.update({ where: { id }, data: { activo: !category.activo } });
+    return this.prisma.category.update({
+      where: { id },
+      data: { activo: !category.activo },
+    });
   }
 
   async deleteCategoria(id: string): Promise<void> {
-    const category = await this.prisma.category.findFirst({ where: { id, deletedAt: null } });
+    const category = await this.prisma.category.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!category) throw new NotFoundException(`Category ${id} not found`);
 
     // Protect base categories (displayOrder <= 5)
     if (category.displayOrder <= 5) {
-      throw new ConflictException(`Cannot delete base category "${category.nombre}". Deactivate it instead.`);
+      throw new ConflictException(
+        `Cannot delete base category "${category.nombre}". Deactivate it instead.`,
+      );
     }
 
     // Soft delete
-    await this.prisma.category.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.prisma.category.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 
-  async syncCategoryChannels(categoryId: string, channelIds: string[]): Promise<void> {
+  async syncCategoryChannels(
+    categoryId: string,
+    channelIds: string[],
+  ): Promise<void> {
     // Remove existing associations
     await this.prisma.channelCategory.deleteMany({ where: { categoryId } });
     if (!channelIds.length) return;
@@ -1178,13 +1560,25 @@ export class AdminService {
     }
   }
 
-  async removeCategoryChannel(categoryId: string, channelId: string): Promise<void> {
-    await this.prisma.channelCategory.deleteMany({ where: { categoryId, channelId } });
+  async removeCategoryChannel(
+    categoryId: string,
+    channelId: string,
+  ): Promise<void> {
+    await this.prisma.channelCategory.deleteMany({
+      where: { categoryId, channelId },
+    });
   }
 
-  async bulkReorderCategorias(items: { id: string; displayOrder: number }[]): Promise<void> {
+  async bulkReorderCategorias(
+    items: { id: string; displayOrder: number }[],
+  ): Promise<void> {
     await this.prisma.$transaction(
-      items.map((item) => this.prisma.category.update({ where: { id: item.id }, data: { displayOrder: item.displayOrder } })),
+      items.map((item) =>
+        this.prisma.category.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder },
+        }),
+      ),
     );
   }
 
@@ -1217,26 +1611,67 @@ export class AdminService {
     return mapping[protocol || 'HLS'] || StreamProtocol.HLS;
   }
 
-
   getBlog() {
     return [
-      { id: 'blog-001', titulo: 'Luki Play llega a toda Colombia',  contenido: '', autor: 'admin@lukiplay.com', publicadoEn: '2026-03-01', activo: true },
-      { id: 'blog-002', titulo: 'Nuevos canales de deportes',        contenido: '', autor: 'admin@lukiplay.com', publicadoEn: '2026-03-15', activo: true },
-      { id: 'blog-003', titulo: 'Actualización de la app móvil',     contenido: '', autor: 'admin@lukiplay.com', publicadoEn: '2026-04-01', activo: true },
+      {
+        id: 'blog-001',
+        titulo: 'Luki Play llega a toda Colombia',
+        contenido: '',
+        autor: 'admin@lukiplay.com',
+        publicadoEn: '2026-03-01',
+        activo: true,
+      },
+      {
+        id: 'blog-002',
+        titulo: 'Nuevos canales de deportes',
+        contenido: '',
+        autor: 'admin@lukiplay.com',
+        publicadoEn: '2026-03-15',
+        activo: true,
+      },
+      {
+        id: 'blog-003',
+        titulo: 'Actualización de la app móvil',
+        contenido: '',
+        autor: 'admin@lukiplay.com',
+        publicadoEn: '2026-04-01',
+        activo: true,
+      },
     ];
   }
 
   getImpuestos() {
     return [
-      { id: 'imp-001', nombre: 'IVA',     porcentaje: 19, aplicaA: 'Planes OTT',     activo: true },
-      { id: 'imp-002', nombre: 'ICA',     porcentaje: 1,  aplicaA: 'Servicios',       activo: true },
-      { id: 'imp-003', nombre: 'ReteICA', porcentaje: 0.5, aplicaA: 'Contratos ISP', activo: false },
+      {
+        id: 'imp-001',
+        nombre: 'IVA',
+        porcentaje: 19,
+        aplicaA: 'Planes OTT',
+        activo: true,
+      },
+      {
+        id: 'imp-002',
+        nombre: 'ICA',
+        porcentaje: 1,
+        aplicaA: 'Servicios',
+        activo: true,
+      },
+      {
+        id: 'imp-003',
+        nombre: 'ReteICA',
+        porcentaje: 0.5,
+        aplicaA: 'Contratos ISP',
+        activo: false,
+      },
     ];
   }
 
   // ---- Helpers -------------------------------------------------------------
 
-  private async validatePlanReferences(componentIds: string[], categoryIds: string[]): Promise<void> {
+  private async validatePlanReferences(
+    componentIds: string[],
+    categoryIds: string[],
+  ): Promise<void> {
     const [components, categorias] = await Promise.all([
       this.prisma.component.findMany({ select: { id: true } }),
       this.prisma.category.findMany({ select: { id: true } }),
@@ -1244,19 +1679,30 @@ export class AdminService {
     const validComponentIds = new Set(components.map((item) => item.id));
     const validCategoryIds = new Set(categorias.map((item) => item.id));
 
-    const invalidComponents = componentIds.filter((id) => !validComponentIds.has(id));
-    const invalidCategories = categoryIds.filter((id) => !validCategoryIds.has(id));
+    const invalidComponents = componentIds.filter(
+      (id) => !validComponentIds.has(id),
+    );
+    const invalidCategories = categoryIds.filter(
+      (id) => !validCategoryIds.has(id),
+    );
 
     if (invalidComponents.length > 0) {
-      throw new BadRequestException(`Invalid component ids: ${invalidComponents.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid component ids: ${invalidComponents.join(', ')}`,
+      );
     }
 
     if (invalidCategories.length > 0) {
-      throw new BadRequestException(`Invalid category ids: ${invalidCategories.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid category ids: ${invalidCategories.join(', ')}`,
+      );
     }
   }
 
-  private extractNames(fullName?: string): { firstName: string | null; lastName: string | null } {
+  private extractNames(fullName?: string): {
+    firstName: string | null;
+    lastName: string | null;
+  } {
     const normalized = fullName?.trim();
     if (!normalized) return { firstName: null, lastName: null };
     const parts = normalized.split(/\s+/).filter(Boolean);
@@ -1271,7 +1717,10 @@ export class AdminService {
 
   private buildContractNumber(contractNumber?: string): string {
     if (contractNumber?.trim()) return contractNumber.trim().toUpperCase();
-    const suffix = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+    const suffix = String(Math.floor(Math.random() * 1_000_000)).padStart(
+      6,
+      '0',
+    );
     return `OTT-${suffix}`;
   }
 
@@ -1280,19 +1729,25 @@ export class AdminService {
       where: { customerId, deletedAt: null },
       select: { id: true },
     });
-    const contractIds = contracts.map(c => c.id);
+    const contractIds = contracts.map((c) => c.id);
     if (contractIds.length === 0) return 0;
     return this.prisma.session.count({
-      where: { contractId: { in: contractIds }, revokedAt: null, expiresAt: { gt: new Date() } },
+      where: {
+        contractId: { in: contractIds },
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
     });
   }
 
-  private async revokeAllSessionsForCustomer(customerId: string): Promise<void> {
+  private async revokeAllSessionsForCustomer(
+    customerId: string,
+  ): Promise<void> {
     const contracts = await this.prisma.contract.findMany({
       where: { customerId },
       select: { id: true },
     });
-    const contractIds = contracts.map(c => c.id);
+    const contractIds = contracts.map((c) => c.id);
     if (contractIds.length > 0) {
       await this.prisma.session.updateMany({
         where: { contractId: { in: contractIds }, revokedAt: null },
@@ -1309,7 +1764,9 @@ export class AdminService {
     return role.toUpperCase() as PrismaUserRole;
   }
 
-  private toPrismaSessionLimitPolicy(policy?: SessionLimitPolicy): PrismaSessionLimitPolicy {
+  private toPrismaSessionLimitPolicy(
+    policy?: SessionLimitPolicy,
+  ): PrismaSessionLimitPolicy {
     if (!policy) return PrismaSessionLimitPolicy.BLOCK_NEW;
     return policy.toUpperCase() as PrismaSessionLimitPolicy;
   }
@@ -1331,27 +1788,45 @@ export class AdminService {
   }
 
   async getRegistrationRequest(id: string) {
-    const req = await this.prisma.registrationRequest.findUnique({ where: { id } });
+    const req = await this.prisma.registrationRequest.findUnique({
+      where: { id },
+    });
     if (!req) throw new NotFoundException(`Solicitud ${id} no encontrada`);
     return req;
   }
 
-  async approveRegistrationRequest(id: string, contractNumber: string, maxDevices = 2, actorId: string) {
-    const req = await this.prisma.registrationRequest.findUnique({ where: { id } });
+  async approveRegistrationRequest(
+    id: string,
+    contractNumber: string,
+    maxDevices = 2,
+    actorId: string,
+  ) {
+    const req = await this.prisma.registrationRequest.findUnique({
+      where: { id },
+    });
     if (!req) throw new NotFoundException(`Solicitud ${id} no encontrada`);
-    if (req.status !== 'PENDING') throw new BadRequestException('La solicitud ya fue procesada');
+    if (req.status !== 'PENDING')
+      throw new BadRequestException('La solicitud ya fue procesada');
 
     // Verificar que no exista ya un cliente con esa cédula
-    const existing = await this.prisma.customer.findUnique({ where: { idNumber: req.idNumber } });
-    if (existing) throw new ConflictException('Ya existe un cliente con esa cédula');
+    const existing = await this.prisma.customer.findUnique({
+      where: { idNumber: req.idNumber },
+    });
+    if (existing)
+      throw new ConflictException('Ya existe un cliente con esa cédula');
 
     // Verificar contractNumber único
-    const existingContract = await this.prisma.contract.findUnique({ where: { contractNumber } });
-    if (existingContract) throw new ConflictException('El número de contrato ya está en uso');
+    const existingContract = await this.prisma.contract.findUnique({
+      where: { contractNumber },
+    });
+    if (existingContract)
+      throw new ConflictException('El número de contrato ya está en uso');
 
     const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let activationCode = '';
-    for (let i = 0; i < 6; i++) activationCode += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    for (let i = 0; i < 6; i++)
+      activationCode +=
+        CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
 
     const [customer, contract] = await this.prisma.$transaction(async (tx) => {
       const newCustomer = await tx.customer.create({
@@ -1393,24 +1868,42 @@ export class AdminService {
 
       await tx.registrationRequest.update({
         where: { id },
-        data: { status: 'APPROVED', reviewedBy: actorId, reviewedAt: new Date() },
+        data: {
+          status: 'APPROVED',
+          reviewedBy: actorId,
+          reviewedAt: new Date(),
+        },
       });
 
       return [newCustomer, contract];
     });
 
-    this.logger.log(`Registration request ${id} approved by ${actorId} — customer ${customer.id}`);
-    return { customer: toAdminUser({ ...customer, contracts: [contract] }), activationCode, contractNumber: contract.contractNumber };
+    this.logger.log(
+      `Registration request ${id} approved by ${actorId} — customer ${customer.id}`,
+    );
+    return {
+      customer: toAdminUser({ ...customer, contracts: [contract] }),
+      activationCode,
+      contractNumber: contract.contractNumber,
+    };
   }
 
   async rejectRegistrationRequest(id: string, reason: string, actorId: string) {
-    const req = await this.prisma.registrationRequest.findUnique({ where: { id } });
+    const req = await this.prisma.registrationRequest.findUnique({
+      where: { id },
+    });
     if (!req) throw new NotFoundException(`Solicitud ${id} no encontrada`);
-    if (req.status !== 'PENDING') throw new BadRequestException('La solicitud ya fue procesada');
+    if (req.status !== 'PENDING')
+      throw new BadRequestException('La solicitud ya fue procesada');
 
     await this.prisma.registrationRequest.update({
       where: { id },
-      data: { status: 'REJECTED', reviewedBy: actorId, reviewedAt: new Date(), reviewNotes: reason },
+      data: {
+        status: 'REJECTED',
+        reviewedBy: actorId,
+        reviewedAt: new Date(),
+        reviewNotes: reason,
+      },
     });
 
     this.logger.log(`Registration request ${id} rejected by ${actorId}`);

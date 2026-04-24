@@ -24,15 +24,20 @@ export class RegisterAppUseCase {
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(OTP_SERVICE) private readonly otpService: OtpService,
     @Inject(TOKEN_SERVICE) private readonly tokenService: TokenService,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
   ) {}
 
-  async execute(dto: RegisterAppDto): Promise<{ message: string; loginToken: string; otpRequired: boolean }> {
+  async execute(
+    dto: RegisterAppDto,
+  ): Promise<{ message: string; loginToken: string; otpRequired: boolean }> {
     const normalizedEmail = dto.email.trim().toLowerCase();
 
     const existing = await this.userRepo.findByEmail(normalizedEmail);
     if (existing) {
-      throw new ConflictException('Ya existe una cuenta con ese correo electrónico.');
+      throw new ConflictException(
+        'Ya existe una cuenta con ese correo electrónico.',
+      );
     }
 
     const nameParts = dto.nombre.trim().split(/\s+/);
@@ -58,15 +63,17 @@ export class RegisterAppUseCase {
 
     await this.userRepo.save(user);
 
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(),
-      actorId: user.id,
-      action: 'user.self_registered',
-      targetId: user.id,
-      targetType: 'user',
-      metadata: { email: normalizedEmail },
-      createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: user.id,
+        action: 'user.self_registered',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: { email: normalizedEmail },
+        createdAt: new Date(),
+      }),
+    );
 
     // Send OTP and generate loginToken to continue into the verify-otp flow
     await this.otpService.generateAndSend(user.id, normalizedEmail);
@@ -76,9 +83,12 @@ export class RegisterAppUseCase {
       aud: Audience.APP,
     });
 
-    this.logger.log(`New subscriber registered: ${normalizedEmail} (${user.id})`);
+    this.logger.log(
+      `New subscriber registered: ${normalizedEmail} (${user.id})`,
+    );
     return {
-      message: 'Cuenta creada. Revisa tu correo para el código de verificación.',
+      message:
+        'Cuenta creada. Revisa tu correo para el código de verificación.',
       loginToken,
       otpRequired: true,
     };

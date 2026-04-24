@@ -30,7 +30,10 @@ export class CreateComponenteDto {
   @MaxLength(80)
   nombre: string;
 
-  @ApiPropertyOptional({ example: 'Descripción visible en el CMS', default: '' })
+  @ApiPropertyOptional({
+    example: 'Descripción visible en el CMS',
+    default: '',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)

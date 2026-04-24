@@ -31,17 +31,23 @@ export class CreateCmsUserUseCase {
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
-    @Inject(FIRST_ACCESS_TOKEN_REPOSITORY) private readonly tokenRepo: FirstAccessTokenRepository,
+    @Inject(FIRST_ACCESS_TOKEN_REPOSITORY)
+    private readonly tokenRepo: FirstAccessTokenRepository,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
     private readonly configService: ConfigService,
   ) {}
 
   async execute(dto: CreateCmsUserDto): Promise<{ id: string; email: string }> {
-    const existing = await this.userRepo.findByEmail(dto.email.trim().toLowerCase());
+    const existing = await this.userRepo.findByEmail(
+      dto.email.trim().toLowerCase(),
+    );
     if (existing) {
-      throw new ConflictException('Ya existe un usuario con ese correo electrónico.');
+      throw new ConflictException(
+        'Ya existe un usuario con ese correo electrónico.',
+      );
     }
 
     // Set a well-known initial password. User is required to change it on first login.
@@ -80,19 +86,27 @@ export class CreateCmsUserUseCase {
 
     await this.tokenRepo.save(accessToken);
 
-    await this.emailService.sendGeneratedPassword(user.email, INITIAL_CMS_PASSWORD, user.displayName());
+    await this.emailService.sendGeneratedPassword(
+      user.email,
+      INITIAL_CMS_PASSWORD,
+      user.displayName(),
+    );
 
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(),
-      actorId: dto.createdBy,
-      action: 'user.created',
-      targetId: user.id,
-      targetType: 'user',
-      metadata: { role: dto.role, email: user.email },
-      createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: dto.createdBy,
+        action: 'user.created',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: { role: dto.role, email: user.email },
+        createdAt: new Date(),
+      }),
+    );
 
-    this.logger.log(`CMS user created: ${user.id} (${dto.role}) by ${dto.createdBy}`);
+    this.logger.log(
+      `CMS user created: ${user.id} (${dto.role}) by ${dto.createdBy}`,
+    );
     return { id: user.id, email: user.email };
   }
 }

@@ -12,7 +12,10 @@ export class ContractLoginDto {
   @MinLength(6)
   password: string;
 
-  @ApiProperty({ example: 'device-abc-123', description: 'ID único del dispositivo' })
+  @ApiProperty({
+    example: 'device-abc-123',
+    description: 'ID único del dispositivo',
+  })
   @IsString()
   @IsNotEmpty()
   deviceId: string;

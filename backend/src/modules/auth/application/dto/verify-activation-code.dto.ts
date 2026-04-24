@@ -6,7 +6,10 @@ export class VerifyActivationCodeDto {
   @IsUUID()
   customerId: string;
 
-  @ApiProperty({ description: 'Código alfanumérico de 6 caracteres', example: 'A1B2C3' })
+  @ApiProperty({
+    description: 'Código alfanumérico de 6 caracteres',
+    example: 'A1B2C3',
+  })
   @IsString()
   @Length(6, 6)
   code: string;

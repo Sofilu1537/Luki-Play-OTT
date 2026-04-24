@@ -1,4 +1,9 @@
-import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
 import { USER_REPOSITORY } from '../../domain/interfaces/user.repository';
 import type { UserRepository } from '../../domain/interfaces/user.repository';
@@ -14,7 +19,7 @@ import { AUDIT_LOG_REPOSITORY } from '../../domain/interfaces/audit-log.reposito
 import type { AuditLogRepository } from '../../domain/interfaces/audit-log.repository';
 import { AuditLog } from '../../domain/entities/audit-log.entity';
 import { Audience, Session } from '../../domain/entities/session.entity';
-import { getPermissionsForRole } from '../../../access-control/domain/permissions';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthTokensResponse } from '../dto/auth-response.dto';
 
 @Injectable()
@@ -23,31 +28,46 @@ export class CompleteFirstAccessUseCase {
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
-    @Inject(FIRST_ACCESS_TOKEN_REPOSITORY) private readonly tokenRepo: FirstAccessTokenRepository,
+    @Inject(FIRST_ACCESS_TOKEN_REPOSITORY)
+    private readonly tokenRepo: FirstAccessTokenRepository,
     @Inject(SESSION_REPOSITORY) private readonly sessionRepo: SessionRepository,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(TOKEN_SERVICE) private readonly tokenService: TokenService,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
-  async execute(rawToken: string, newPassword: string, deviceId: string): Promise<AuthTokensResponse> {
+  async execute(
+    rawToken: string,
+    newPassword: string,
+    deviceId: string,
+  ): Promise<AuthTokensResponse> {
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
     const token = await this.tokenRepo.findByTokenHash(tokenHash);
 
     if (!token || !token.isValid()) {
-      throw new BadRequestException('El enlace de activación es inválido o ha expirado.');
+      throw new BadRequestException(
+        'El enlace de activación es inválido o ha expirado.',
+      );
     }
 
     const user = await this.userRepo.findById(token.userId);
     if (!user || !user.isActive()) {
-      throw new BadRequestException('El enlace de activación es inválido o ha expirado.');
+      throw new BadRequestException(
+        'El enlace de activación es inválido o ha expirado.',
+      );
     }
 
     const newHash = await this.hashService.hash(newPassword);
     await this.userRepo.updatePassword(user.id, newHash);
     await this.tokenRepo.markUsed(token.id);
 
-    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
+    // Resolve permissions from cms_roles table (RBAC: permissions belong to the role, not the user)
+    const roleRecord = await this.prisma.cmsRole.findUnique({
+      where: { key: user.role.toUpperCase() as any },
+    });
+    const permissions = roleRecord?.permissions ?? [];
     const tokenPair = await this.tokenService.generateTokenPair({
       sub: user.id,
       role: user.role,
@@ -57,7 +77,9 @@ export class CompleteFirstAccessUseCase {
       entitlements: [],
     });
 
-    const refreshTokenHash = await this.hashService.hash(tokenPair.refreshToken);
+    const refreshTokenHash = await this.hashService.hash(
+      tokenPair.refreshToken,
+    );
     const session = new Session({
       id: randomUUID(),
       userId: user.id,
@@ -69,17 +91,24 @@ export class CompleteFirstAccessUseCase {
     });
     await this.sessionRepo.save(session);
 
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(),
-      actorId: user.id,
-      action: 'user.first_access_completed',
-      targetId: user.id,
-      targetType: 'user',
-      metadata: {},
-      createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: user.id,
+        action: 'user.first_access_completed',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: {},
+        createdAt: new Date(),
+      }),
+    );
 
     this.logger.log(`First access completed for user ${user.id}`);
-    return { accessToken: tokenPair.accessToken, refreshToken: tokenPair.refreshToken, canAccessOtt: true, restrictionMessage: null };
+    return {
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      canAccessOtt: true,
+      restrictionMessage: null,
+    };
   }
 }

@@ -45,7 +45,9 @@ export class LoginAppUseCase {
       ? await this.userRepo.findByEmail(dto.email)
       : await this.userRepo.findByContractNumber(dto.contractNumber!);
     if (!user) {
-      this.logger.warn(`Login failed: user not found ${dto.email ?? dto.contractNumber}`);
+      this.logger.warn(
+        `Login failed: user not found ${dto.email ?? dto.contractNumber}`,
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 

@@ -94,7 +94,10 @@ import { PrismaModule } from '../prisma/prisma.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_ACCESS_SECRET', 'dev-access-secret'),
+        secret: configService.get<string>(
+          'JWT_ACCESS_SECRET',
+          'dev-access-secret',
+        ),
         signOptions: {
           expiresIn: configService.get<StringValue>('JWT_ACCESS_EXPIRY', '15m'),
         },
@@ -107,18 +110,30 @@ import { PrismaModule } from '../prisma/prisma.module';
   controllers: [AuthController],
   providers: [
     // Infrastructure bindings
-    { provide: USER_REPOSITORY,                  useClass: PrismaUserRepository },
-    { provide: SESSION_REPOSITORY,               useClass: PrismaSessionRepository },
-    { provide: ACCOUNT_REPOSITORY,               useClass: PrismaAccountRepository },
-    { provide: PASSWORD_RESET_TOKEN_REPOSITORY,  useClass: InMemoryPasswordResetTokenRepository },
-    { provide: FIRST_ACCESS_TOKEN_REPOSITORY,    useClass: InMemoryFirstAccessTokenRepository },
-    { provide: LOGIN_ATTEMPT_REPOSITORY,         useClass: InMemoryLoginAttemptRepository },
-    { provide: AUDIT_LOG_REPOSITORY,             useClass: InMemoryAuditLogRepository },
-    { provide: TEMPORARY_CODE_REPOSITORY,        useClass: InMemoryTemporaryCodeRepository },
-    { provide: TOKEN_SERVICE,                    useClass: JwtTokenService },
-    { provide: HASH_SERVICE,                     useClass: BcryptHashService },
-    { provide: OTP_SERVICE,                      useClass: MockOtpService },
-    { provide: EMAIL_SERVICE,                    useClass: NodemailerEmailService },
+    { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
+    { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
+    { provide: ACCOUNT_REPOSITORY, useClass: PrismaAccountRepository },
+    {
+      provide: PASSWORD_RESET_TOKEN_REPOSITORY,
+      useClass: InMemoryPasswordResetTokenRepository,
+    },
+    {
+      provide: FIRST_ACCESS_TOKEN_REPOSITORY,
+      useClass: InMemoryFirstAccessTokenRepository,
+    },
+    {
+      provide: LOGIN_ATTEMPT_REPOSITORY,
+      useClass: InMemoryLoginAttemptRepository,
+    },
+    { provide: AUDIT_LOG_REPOSITORY, useClass: InMemoryAuditLogRepository },
+    {
+      provide: TEMPORARY_CODE_REPOSITORY,
+      useClass: InMemoryTemporaryCodeRepository,
+    },
+    { provide: TOKEN_SERVICE, useClass: JwtTokenService },
+    { provide: HASH_SERVICE, useClass: BcryptHashService },
+    { provide: OTP_SERVICE, useClass: MockOtpService },
+    { provide: EMAIL_SERVICE, useClass: NodemailerEmailService },
     JwtStrategy,
 
     // Use Cases

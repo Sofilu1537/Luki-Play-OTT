@@ -47,18 +47,29 @@ export class SubmitRegistrationRequestUseCase {
       },
     });
 
-    this.logger.log(`Registration request submitted: ${request.id} (cédula: ${dto.idNumber})`);
+    this.logger.log(
+      `Registration request submitted: ${request.id} (cédula: ${dto.idNumber})`,
+    );
 
-    this.emailService.sendRegistrationRequest({
-      nombres: request.nombres,
-      apellidos: request.apellidos,
-      idNumber: request.idNumber,
-      telefono: request.telefono,
-      email: request.email ?? undefined,
-      direccion: request.direccion ?? undefined,
-      requestId: request.id,
-    }).catch((err) => this.logger.warn(`Email notification failed for request ${request.id}: ${err.message}`));
+    this.emailService
+      .sendRegistrationRequest({
+        nombres: request.nombres,
+        apellidos: request.apellidos,
+        idNumber: request.idNumber,
+        telefono: request.telefono,
+        email: request.email ?? undefined,
+        direccion: request.direccion ?? undefined,
+        requestId: request.id,
+      })
+      .catch((err) =>
+        this.logger.warn(
+          `Email notification failed for request ${request.id}: ${err.message}`,
+        ),
+      );
 
-    return { message: 'Tu solicitud ha sido enviada. Te contactaremos pronto.', id: request.id };
+    return {
+      message: 'Tu solicitud ha sido enviada. Te contactaremos pronto.',
+      id: request.id,
+    };
   }
 }

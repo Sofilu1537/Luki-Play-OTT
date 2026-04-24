@@ -36,8 +36,8 @@ export interface HlsValidatorOptions {
 // ---------------------------------------------------------------------------
 
 const DEFAULTS: Required<HlsValidatorOptions> = {
-  timeoutMs:    8_000,
-  retries:      2,
+  timeoutMs: 8_000,
+  retries: 2,
   probeSegment: true,
 };
 
@@ -132,11 +132,11 @@ export class HlsValidatorService {
     // 1. Structural URL check
     if (!isValidUrl(streamUrl)) {
       return {
-        status:      'INVALID',
+        status: 'INVALID',
         isReachable: false,
         hasPlaylist: false,
         hasSegments: false,
-        error:       'Malformed URL — must start with http:// or https://',
+        error: 'Malformed URL — must start with http:// or https://',
       };
     }
 
@@ -148,22 +148,22 @@ export class HlsValidatorService {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`[HLS] Unreachable: ${streamUrl} — ${msg}`);
       return {
-        status:      'INVALID',
+        status: 'INVALID',
         isReachable: false,
         hasPlaylist: false,
         hasSegments: false,
-        error:       msg,
+        error: msg,
       };
     }
 
     // 3. Confirm it is an HLS playlist
     if (!body.trimStart().startsWith('#EXTM3U')) {
       return {
-        status:      'INVALID',
+        status: 'INVALID',
         isReachable: true,
         hasPlaylist: false,
         hasSegments: false,
-        error:       'Response body is not a valid HLS playlist (missing #EXTM3U)',
+        error: 'Response body is not a valid HLS playlist (missing #EXTM3U)',
       };
     }
 
@@ -172,11 +172,11 @@ export class HlsValidatorService {
 
     if (!hasSegments) {
       return {
-        status:      'NO_SIGNAL',
+        status: 'NO_SIGNAL',
         isReachable: true,
         hasPlaylist: true,
         hasSegments: false,
-        error:       'Playlist contains no .ts segments or EXTINF entries',
+        error: 'Playlist contains no .ts segments or EXTINF entries',
       };
     }
 
@@ -187,7 +187,7 @@ export class HlsValidatorService {
     }
 
     return {
-      status:      'VALID',
+      status: 'VALID',
       isReachable: true,
       hasPlaylist: true,
       hasSegments: true,
@@ -242,7 +242,9 @@ export class HlsValidatorService {
         const res = await fetch(url, {
           method: 'GET',
           signal: controller.signal,
-          headers: { 'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*' },
+          headers: {
+            Accept: 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
+          },
         });
 
         if (!res.ok) {
@@ -292,11 +294,11 @@ export class HlsValidatorService {
         method: 'HEAD',
         signal: controller.signal,
         // Some CDNs reject HEAD for .ts files; accept partial content too
-        headers: { 'Range': 'bytes=0-0' },
+        headers: { Range: 'bytes=0-0' },
       });
 
       return {
-        url:       resolvedUrl,
+        url: resolvedUrl,
         reachable: res.ok || res.status === 206,
       };
     } catch {

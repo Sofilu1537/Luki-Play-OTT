@@ -15,9 +15,10 @@ export class InMemoryLoginAttemptRepository implements LoginAttemptRepository {
   async countRecentFailures(email: string, sinceMs: number): Promise<number> {
     const since = new Date(Date.now() - sinceMs);
     return this.attempts.filter(
-      (a) => a.email.toLowerCase() === email.toLowerCase() &&
-             !a.succeeded &&
-             a.createdAt > since,
+      (a) =>
+        a.email.toLowerCase() === email.toLowerCase() &&
+        !a.succeeded &&
+        a.createdAt > since,
     ).length;
   }
 }

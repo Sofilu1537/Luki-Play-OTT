@@ -1,4 +1,9 @@
-import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { USER_REPOSITORY } from '../../domain/interfaces/user.repository';
 import type { UserRepository } from '../../domain/interfaces/user.repository';
@@ -19,25 +24,38 @@ export class ActivateAccountUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
-    @Inject(TEMPORARY_CODE_REPOSITORY) private readonly codeRepo: TemporaryCodeRepository,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(TEMPORARY_CODE_REPOSITORY)
+    private readonly codeRepo: TemporaryCodeRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
   ) {}
 
-  async execute(email: string, rawCode: string, newPassword: string): Promise<{ message: string }> {
+  async execute(
+    email: string,
+    rawCode: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Buscar y validar código
-    const codes = await this.codeRepo.findByEmailAndType(normalizedEmail, TemporaryCodeType.ACTIVATION);
+    const codes = await this.codeRepo.findByEmailAndType(
+      normalizedEmail,
+      TemporaryCodeType.ACTIVATION,
+    );
     const match = codes.find((c) => c.isValid() && c.matchesCode(rawCode));
 
     if (!match) {
-      throw new BadRequestException('Código inválido, expirado o ya utilizado.');
+      throw new BadRequestException(
+        'Código inválido, expirado o ya utilizado.',
+      );
     }
 
     // Buscar usuario
     const user = await this.userRepo.findByEmail(normalizedEmail);
     if (!user) {
-      throw new BadRequestException('No se encontró una cuenta asociada a ese correo.');
+      throw new BadRequestException(
+        'No se encontró una cuenta asociada a ese correo.',
+      );
     }
 
     // Hashear password y activar cuenta
@@ -51,17 +69,23 @@ export class ActivateAccountUseCase {
     await this.codeRepo.markUsed(match.id);
 
     // Auditoría
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(),
-      actorId: user.id,
-      action: 'user.account_activated',
-      targetId: user.id,
-      targetType: 'user',
-      metadata: { email: normalizedEmail },
-      createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: user.id,
+        action: 'user.account_activated',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: { email: normalizedEmail },
+        createdAt: new Date(),
+      }),
+    );
 
-    this.logger.log(`Account activated for ${normalizedEmail} (user ${user.id})`);
-    return { message: 'Cuenta activada exitosamente. Ya puedes iniciar sesión.' };
+    this.logger.log(
+      `Account activated for ${normalizedEmail} (user ${user.id})`,
+    );
+    return {
+      message: 'Cuenta activada exitosamente. Ya puedes iniciar sesión.',
+    };
   }
 }

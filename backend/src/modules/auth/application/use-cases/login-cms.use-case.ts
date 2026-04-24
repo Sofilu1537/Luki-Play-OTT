@@ -44,15 +44,23 @@ export class LoginCmsUseCase {
     @Inject(SESSION_REPOSITORY) private readonly sessionRepo: SessionRepository,
     @Inject(TOKEN_SERVICE) private readonly tokenService: TokenService,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
-    @Inject(LOGIN_ATTEMPT_REPOSITORY) private readonly attemptRepo: LoginAttemptRepository,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(LOGIN_ATTEMPT_REPOSITORY)
+    private readonly attemptRepo: LoginAttemptRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 
-  async execute(dto: LoginCmsDto, ipAddress?: string): Promise<AuthTokensResponse> {
+  async execute(
+    dto: LoginCmsDto,
+    ipAddress?: string,
+  ): Promise<AuthTokensResponse> {
     const email = dto.email.trim().toLowerCase();
 
-    const recentFailures = await this.attemptRepo.countRecentFailures(email, FAILURE_WINDOW_MS);
+    const recentFailures = await this.attemptRepo.countRecentFailures(
+      email,
+      FAILURE_WINDOW_MS,
+    );
     if (recentFailures >= MAX_FAILURES) {
       this.logger.warn(`CMS login blocked (rate limit): ${email}`);
       throw new UnauthorizedException(
@@ -61,10 +69,16 @@ export class LoginCmsUseCase {
     }
 
     const recordFailure = (reason: string) =>
-      this.attemptRepo.save(new LoginAttempt({
-        id: randomUUID(), email, ipAddress: ipAddress ?? null,
-        succeeded: false, failureReason: reason, createdAt: new Date(),
-      }));
+      this.attemptRepo.save(
+        new LoginAttempt({
+          id: randomUUID(),
+          email,
+          ipAddress: ipAddress ?? null,
+          succeeded: false,
+          failureReason: reason,
+          createdAt: new Date(),
+        }),
+      );
 
     const user = await this.userRepo.findByEmail(email);
     if (!user) {
@@ -75,7 +89,9 @@ export class LoginCmsUseCase {
 
     if (!user.isActive()) {
       await recordFailure('account_inactive');
-      throw new UnauthorizedException('Tu cuenta está inactiva. Contacta al administrador.');
+      throw new UnauthorizedException(
+        'Tu cuenta está inactiva. Contacta al administrador.',
+      );
     }
 
     if (!user.isCmsUser()) {
@@ -83,27 +99,44 @@ export class LoginCmsUseCase {
       throw new UnauthorizedException('Correo o contraseña incorrectos.');
     }
 
-    const passwordValid = await this.hashService.compare(dto.password, user.passwordHash);
+    const passwordValid = await this.hashService.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!passwordValid) {
       await recordFailure('invalid_password');
-      this.logger.warn(`CMS login failed: invalid password for user ${user.id}`);
+      this.logger.warn(
+        `CMS login failed: invalid password for user ${user.id}`,
+      );
       throw new UnauthorizedException('Correo o contraseña incorrectos.');
     }
 
-    await this.attemptRepo.save(new LoginAttempt({
-      id: randomUUID(), email, ipAddress: ipAddress ?? null,
-      succeeded: true, createdAt: new Date(),
-    }));
+    await this.attemptRepo.save(
+      new LoginAttempt({
+        id: randomUUID(),
+        email,
+        ipAddress: ipAddress ?? null,
+        succeeded: true,
+        createdAt: new Date(),
+      }),
+    );
     user.lastLoginAt = new Date();
     user.failedAttempts = 0;
     user.lockedUntil = null;
     await this.userRepo.save(user);
 
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(), actorId: user.id, action: 'auth.login',
-      targetId: user.id, targetType: 'user',
-      metadata: { role: user.role }, ipAddress: ipAddress ?? null, createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: user.id,
+        action: 'auth.login',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: { role: user.role },
+        ipAddress: ipAddress ?? null,
+        createdAt: new Date(),
+      }),
+    );
 
     // Resolve permissions from cms_roles table (RBAC: permissions belong to the role, not the user)
     const roleRecord = await this.prisma.cmsRole.findUnique({
@@ -112,17 +145,28 @@ export class LoginCmsUseCase {
     const permissions = roleRecord?.permissions ?? [];
 
     const tokenPair = await this.tokenService.generateTokenPair({
-      sub: user.id, role: user.role, permissions,
-      aud: Audience.CMS, accountId: null, entitlements: [],
+      sub: user.id,
+      role: user.role,
+      permissions,
+      aud: Audience.CMS,
+      accountId: null,
+      entitlements: [],
     });
 
-    const refreshTokenHash = await this.hashService.hash(tokenPair.refreshToken);
-    await this.sessionRepo.save(new Session({
-      id: randomUUID(), userId: user.id, deviceId: dto.deviceId,
-      audience: Audience.CMS, refreshTokenHash,
-      expiresAt: new Date(Date.now() + SESSION_TTL_MS),
-      createdAt: new Date(),
-    }));
+    const refreshTokenHash = await this.hashService.hash(
+      tokenPair.refreshToken,
+    );
+    await this.sessionRepo.save(
+      new Session({
+        id: randomUUID(),
+        userId: user.id,
+        deviceId: dto.deviceId,
+        audience: Audience.CMS,
+        refreshTokenHash,
+        expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+        createdAt: new Date(),
+      }),
+    );
 
     this.logger.log(`CMS user ${user.id} (${user.role}) logged in`);
     return {

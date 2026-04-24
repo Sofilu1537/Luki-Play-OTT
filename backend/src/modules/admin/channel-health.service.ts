@@ -50,10 +50,12 @@ export class ChannelHealthService {
     this.logger.log(`Health-checking ${channels.length} active channel(s)…`);
 
     const results = await Promise.allSettled(
-      channels.map((ch) => this.checkOne(ch.id, ch.streamUrl, ch.uptimePercent)),
+      channels.map((ch) =>
+        this.checkOne(ch.id, ch.streamUrl, ch.uptimePercent),
+      ),
     );
 
-    const ok  = results.filter((r) => r.status === 'fulfilled').length;
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
     const err = results.filter((r) => r.status === 'rejected').length;
     this.logger.log(`Health check complete — ${ok} ok, ${err} errors`);
   }
@@ -67,7 +69,9 @@ export class ChannelHealthService {
     streamUrl: string,
     currentUptime: number,
   ): Promise<void> {
-    const result = await this.hlsValidator.validate(streamUrl, { probeSegment: false });
+    const result = await this.hlsValidator.validate(streamUrl, {
+      probeSegment: false,
+    });
 
     // Map HLS validation result to DB health status
     let healthStatus: 'HEALTHY' | 'DEGRADED' | 'OFFLINE';
@@ -75,17 +79,17 @@ export class ChannelHealthService {
 
     switch (result.status) {
       case 'VALID':
-        healthStatus  = 'HEALTHY';
-        uptimeSample  = 100;
+        healthStatus = 'HEALTHY';
+        uptimeSample = 100;
         break;
       case 'NO_SIGNAL':
         // Reachable and a valid playlist, but no segments — stream is degraded
-        healthStatus  = 'DEGRADED';
-        uptimeSample  = 0;
+        healthStatus = 'DEGRADED';
+        uptimeSample = 0;
         break;
       default:
-        healthStatus  = 'OFFLINE';
-        uptimeSample  = 0;
+        healthStatus = 'OFFLINE';
+        uptimeSample = 0;
         break;
     }
 
@@ -96,7 +100,7 @@ export class ChannelHealthService {
       data: {
         healthStatus,
         lastHealthCheckAt: new Date(),
-        uptimePercent:     newUptime,
+        uptimePercent: newUptime,
       },
     });
   }
@@ -107,7 +111,7 @@ export class ChannelHealthService {
 
   private rollingAverage(current: number, sample: number): number {
     const n = ChannelHealthService.ROLLING_SAMPLES;
-    const next = ((current * (n - 1)) + sample) / n;
+    const next = (current * (n - 1) + sample) / n;
     return Math.round(next * 100) / 100; // 2 decimal places
   }
 }

@@ -58,6 +58,12 @@ describe('CompleteLoginUseCase', () => {
     getCustomerRecord: jest.fn(),
   };
 
+  const mockPrisma = {
+    cmsRole: {
+      findUnique: jest.fn().mockResolvedValue({ permissions: ['app:playback', 'app:profiles'] }),
+    },
+  };
+
   let useCase: CompleteLoginUseCase;
 
   const activeClient = new User({
@@ -114,6 +120,7 @@ describe('CompleteLoginUseCase', () => {
       mockHashService as any,
       mockOtpService as any,
       mockBillingGateway as any,
+      mockPrisma as any,
     );
   });
 

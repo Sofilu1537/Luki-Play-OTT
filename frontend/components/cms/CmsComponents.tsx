@@ -261,6 +261,7 @@ export function TextInputField({
   multiline = false,
   keyboardType = 'default',
   monospace = false,
+  secureTextEntry = false,
 }: {
   value: string;
   onChangeText: (text: string) => void;
@@ -269,6 +270,7 @@ export function TextInputField({
   multiline?: boolean;
   keyboardType?: 'default' | 'number-pad' | 'decimal-pad';
   monospace?: boolean;
+  secureTextEntry?: boolean;
 }) {
   const { theme } = useTheme();
   const webInput =
@@ -296,6 +298,7 @@ export function TextInputField({
       editable={!disabled}
       multiline={multiline}
       keyboardType={keyboardType as any}
+      secureTextEntry={secureTextEntry}
     />
   );
 }

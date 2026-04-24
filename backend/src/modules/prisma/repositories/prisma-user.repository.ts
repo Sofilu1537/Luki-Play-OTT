@@ -1,8 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { UserRepository } from '../../auth/domain/interfaces/user.repository.js';
-import { User, UserRole, UserStatus } from '../../auth/domain/entities/user.entity.js';
-import { UserRole as PrismaUserRole, UserStatus as PrismaUserStatus } from '@prisma/client';
+import {
+  User,
+  UserRole,
+  UserStatus,
+} from '../../auth/domain/entities/user.entity.js';
+import {
+  UserRole as PrismaUserRole,
+  UserStatus as PrismaUserStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -42,9 +49,10 @@ export class PrismaUserRepository implements UserRepository {
 
   async save(user: User): Promise<User> {
     const data = {
-      nombre: user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user.email,
+      nombre:
+        user.firstName && user.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       idNumber: user.idNumber,

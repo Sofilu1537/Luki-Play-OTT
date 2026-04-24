@@ -5,6 +5,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell from '../../components/cms/CmsShell';
 import { PrimaryButton, SecondaryButton, TextInputField } from '../../components/cms/CmsComponents';
 import { adminUpdateUser } from '../../services/api/adminApi';
+import { cmsChangePassword } from '../../services/api/cmsApi';
 import { useCmsStore } from '../../services/cmsStore';
 import { useTheme } from '../../hooks/useTheme';
 import { FONT_FAMILY } from '../../styles/typography';
@@ -41,6 +42,13 @@ export default function CmsProfileScreen() {
   const [email, setEmail] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
+  const [pwdFeedback, setPwdFeedback] = useState<Feedback>(null);
 
   useEffect(() => {
     if (!profile) {
@@ -80,6 +88,31 @@ export default function CmsProfileScreen() {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo actualizar el perfil.' });
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  const canChangePwd = useMemo(() => {
+    return Boolean(
+      currentPassword.trim() &&
+      newPassword.length >= 8 &&
+      newPassword === confirmPassword,
+    );
+  }, [currentPassword, newPassword, confirmPassword]);
+
+  async function handleChangePassword() {
+    if (!accessToken || !canChangePwd) return;
+    setIsChangingPwd(true);
+    setPwdFeedback(null);
+    try {
+      await cmsChangePassword(accessToken, currentPassword, newPassword);
+      setPwdFeedback({ type: 'success', message: 'Contraseña actualizada. Todas las sesiones han sido cerradas. Vuelve a iniciar sesión.' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      setPwdFeedback({ type: 'error', message: error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.' });
+    } finally {
+      setIsChangingPwd(false);
     }
   }
 
@@ -177,6 +210,97 @@ export default function CmsProfileScreen() {
               <PrimaryButton label={isSaving ? 'Guardando...' : 'Guardar cambios'} icon="save" onPress={handleSave} disabled={!canSave || isSaving} />
               <SecondaryButton label="Volver" icon="arrow-left" onPress={() => router.back()} disabled={isSaving} />
               {isSaving && <ActivityIndicator size="small" color={theme.accent} style={{ alignSelf: 'center' }} />}
+            </View>
+          </View>
+
+          {/* ── Cambio de contraseña ── */}
+          <View
+            style={{
+              backgroundColor: isDark ? theme.cardBgInner : '#FFFFFF',
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: isDark ? theme.border : 'rgba(36,0,70,0.10)',
+              padding: 22,
+              gap: 18,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(209,16,90,0.10)', borderWidth: 1, borderColor: 'rgba(209,16,90,0.20)', alignItems: 'center', justifyContent: 'center' }}>
+                <FontAwesome name="lock" size={15} color="#D1105A" />
+              </View>
+              <View>
+                <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 18, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>
+                  Cambiar contraseña
+                </Text>
+                <Text style={{ color: isDark ? theme.textSec : 'rgba(36,0,70,0.65)', fontSize: 12, marginTop: 2, fontFamily: FONT_FAMILY.body }}>
+                  Al guardar, todas tus sesiones activas serán cerradas.
+                </Text>
+              </View>
+            </View>
+
+            {pwdFeedback && (
+              <View style={{ backgroundColor: pwdFeedback.type === 'success' ? 'rgba(23,209,198,0.12)' : 'rgba(209,16,90,0.12)', borderRadius: 12, borderWidth: 1, borderColor: pwdFeedback.type === 'success' ? 'rgba(23,209,198,0.24)' : 'rgba(209,16,90,0.22)', padding: 12 }}>
+                <Text style={{ color: pwdFeedback.type === 'success' ? '#17D1C6' : '#FF7AA2', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                  {pwdFeedback.message}
+                </Text>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <ProfileField label="Contraseña actual" required>
+                  <TextInputField
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    placeholder="••••••••"
+                    secureTextEntry
+                  />
+                </ProfileField>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <ProfileField label="Nueva contraseña" required>
+                  <TextInputField
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Mínimo 8 caracteres"
+                    secureTextEntry
+                  />
+                </ProfileField>
+              </View>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <ProfileField label="Confirmar nueva contraseña" required>
+                  <TextInputField
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Repite la nueva contraseña"
+                    secureTextEntry
+                  />
+                </ProfileField>
+              </View>
+            </View>
+
+            {newPassword.length > 0 && newPassword.length < 8 && (
+              <Text style={{ color: theme.danger, fontSize: 12, fontFamily: FONT_FAMILY.body }}>
+                La contraseña debe tener al menos 8 caracteres.
+              </Text>
+            )}
+            {newPassword.length >= 8 && confirmPassword.length > 0 && newPassword !== confirmPassword && (
+              <Text style={{ color: theme.danger, fontSize: 12, fontFamily: FONT_FAMILY.body }}>
+                Las contraseñas no coinciden.
+              </Text>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+              <PrimaryButton
+                label={isChangingPwd ? 'Actualizando...' : 'Actualizar contraseña'}
+                icon="key"
+                onPress={handleChangePassword}
+                disabled={!canChangePwd || isChangingPwd}
+              />
+              {isChangingPwd && <ActivityIndicator size="small" color={theme.accent} style={{ alignSelf: 'center' }} />}
             </View>
           </View>
         </View>

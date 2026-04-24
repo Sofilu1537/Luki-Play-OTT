@@ -150,11 +150,6 @@ async function main() {
         firstName: 'Paula',
         lastName: 'Gestion',
         idNumber: '0102030407',
-        permissions: [
-          'cms:dashboard', 'cms:users', 'cms:users:read', 'cms:users:write',
-          'cms:canales', 'cms:categorias',
-          'cms:content:read', 'cms:content:write',
-        ],
         isCmsUser: true,
         isSubscriber: false,
         isAccountActivated: true,
@@ -168,11 +163,6 @@ async function main() {
         passwordHash: defaultPasswordHash,
         role: 'ADMIN',
         status: 'ACTIVE',
-        permissions: [
-          'cms:dashboard', 'cms:users', 'cms:users:read', 'cms:users:write',
-          'cms:canales', 'cms:categorias',
-          'cms:content:read', 'cms:content:write',
-        ],
         isCmsUser: true,
         isSubscriber: false,
         isAccountActivated: true,

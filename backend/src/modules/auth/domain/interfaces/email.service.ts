@@ -11,9 +11,21 @@ export interface RegistrationRequestData {
 }
 
 export interface EmailService {
-  sendPasswordReset(to: string, resetLink: string, displayName: string): Promise<void>;
-  sendFirstAccess(to: string, accessLink: string, displayName: string): Promise<void>;
-  sendGeneratedPassword(to: string, password: string, displayName: string): Promise<void>;
+  sendPasswordReset(
+    to: string,
+    resetLink: string,
+    displayName: string,
+  ): Promise<void>;
+  sendFirstAccess(
+    to: string,
+    accessLink: string,
+    displayName: string,
+  ): Promise<void>;
+  sendGeneratedPassword(
+    to: string,
+    password: string,
+    displayName: string,
+  ): Promise<void>;
   sendRecoveryCode(to: string, code: string, name?: string): Promise<void>;
   sendActivationCode(to: string, code: string): Promise<void>;
   sendRegistrationRequest(data: RegistrationRequestData): Promise<void>;
