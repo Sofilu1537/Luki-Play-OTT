@@ -39,7 +39,7 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
                 onError={() => setImgError(true)}
             >
                 <LinearGradient
-                    colors={['transparent', APP.tabBar]}
+                    colors={['transparent', '#000000']}
                     style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' }}
                 />
 
@@ -61,7 +61,7 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
                             <Text className="text-black font-bold text-lg">Play</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity className="bg-luki-surface/80 flex-row items-center px-6 py-3 rounded-md w-36 justify-center">
+                        <TouchableOpacity className="bg-gray-600/80 flex-row items-center px-6 py-3 rounded-md w-36 justify-center">
                             <Ionicons name="information-circle-outline" size={22} color="white" style={{ marginRight: 6 }} />
                             <Text className="text-white font-bold text-lg">Info</Text>
                         </TouchableOpacity>
