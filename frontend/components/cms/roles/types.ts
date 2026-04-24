@@ -28,22 +28,13 @@ export const CMS_MODULES: CmsModule[] = [
   { key: 'cms:roles',           label: 'Roles',                 icon: 'shield',       path: '/cms/roles' },
 ];
 
-/** Toggleable modules (excludes cms:roles which is SUPERADMIN-only and not toggleable). */
+/** Toggleable modules (excludes cms:roles which is SUPERADMIN-only). */
 export const TOGGLEABLE_MODULES = CMS_MODULES.filter((m) => m.key !== 'cms:roles');
-
-/** Default permissions for the SOPORTE role (fixed, not editable). */
-export const SOPORTE_DEFAULT_PERMISSIONS: string[] = [
-  'cms:dashboard',
-  'cms:users',
-  'cms:canales',
-  'cms:monitor',
-  'cms:analitica',
-];
 
 /** Role display metadata. */
 export const ROLE_META: Record<string, { label: string; color: string; icon: FAIconName; description: string }> = {
   superadmin: { label: 'Super Admin',    color: '#FFB800', icon: 'user-secret',  description: 'Control total del sistema. Todos los permisos, gestión de roles.' },
-  admin:      { label: 'Administrador',  color: '#B490FF', icon: 'user-plus',    description: 'Gestión operativa. Permisos configurables por Super Admin.' },
+  admin:      { label: 'Administrador',  color: '#B490FF', icon: 'user-plus',    description: 'Gestión operativa. Permisos configurables por el Super Admin.' },
   soporte:    { label: 'Soporte',        color: '#10B981', icon: 'headphones',   description: 'Atención al cliente. Lectura en módulos asignados.' },
   cliente:    { label: 'Cliente',        color: '#8B72B2', icon: 'user',         description: 'Suscriptor/Abonado. Solo acceso a la app OTT.' },
 };
@@ -61,8 +52,7 @@ export interface PermissionToggleItem {
 }
 
 /**
- * Content operation permissions — separate from module-visibility keys.
- * These control what API operations (read/write) are allowed on content.
+ * Content operation permissions — controls what API operations are allowed.
  */
 export const CONTENT_PERM_DEFS = [
   {
@@ -79,13 +69,40 @@ export const CONTENT_PERM_DEFS = [
   },
 ];
 
+/** Build module toggle items for a given role and its current permissions. */
+export function buildToggleItems(
+  role: string,
+  currentPermissions: string[],
+  editable = false,
+): PermissionToggleItem[] {
+  const isSuperadmin = role === 'superadmin';
+  const isCliente = role === 'cliente';
+
+  return TOGGLEABLE_MODULES.map((mod) => ({
+    key: mod.key,
+    label: mod.label,
+    icon: mod.icon,
+    path: mod.path,
+    enabled: isSuperadmin || currentPermissions.includes(mod.key),
+    locked: isSuperadmin || isCliente || !editable,
+    lockReason: isSuperadmin
+      ? 'Super Admin tiene todos los permisos'
+      : isCliente
+        ? 'Clientes no tienen acceso al CMS'
+        : !editable
+          ? undefined
+          : undefined,
+  }));
+}
+
 /** Build content-permission toggle items for a given role and its current permissions. */
 export function buildContentPermItems(
   role: string,
   currentPermissions: string[],
+  editable = false,
 ): PermissionToggleItem[] {
   const isSuperadmin = role === 'superadmin';
-  const isSoporte = role === 'soporte';
+  const isCliente = role === 'cliente';
 
   return CONTENT_PERM_DEFS.map((def) => ({
     key: def.key,
@@ -93,37 +110,11 @@ export function buildContentPermItems(
     description: def.description,
     icon: def.icon,
     enabled: isSuperadmin || currentPermissions.includes(def.key),
-    locked: isSuperadmin || isSoporte,
+    locked: isSuperadmin || isCliente || !editable,
     lockReason: isSuperadmin
       ? 'Super Admin tiene todos los permisos'
-      : isSoporte
-        ? 'No disponible para Soporte'
+      : isCliente
+        ? 'No disponible para Clientes'
         : undefined,
   }));
-}
-
-/** Build toggle items for a given role and its current permissions. */
-export function buildToggleItems(
-  role: string,
-  currentPermissions: string[],
-): PermissionToggleItem[] {
-  return TOGGLEABLE_MODULES.map((mod) => {
-    const isSuperadmin = role === 'superadmin';
-    const isSoporte = role === 'soporte';
-    const soporteHas = SOPORTE_DEFAULT_PERMISSIONS.includes(mod.key);
-
-    return {
-      key: mod.key,
-      label: mod.label,
-      icon: mod.icon,
-      path: mod.path,
-      enabled: isSuperadmin || currentPermissions.includes(mod.key) || (isSoporte && soporteHas),
-      locked: isSuperadmin || isSoporte,
-      lockReason: isSuperadmin
-        ? 'Super Admin tiene todos los permisos'
-        : isSoporte
-          ? (soporteHas ? 'Permiso fijo para Soporte' : 'No disponible para Soporte')
-          : undefined,
-    };
-  });
 }

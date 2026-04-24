@@ -1,4 +1,4 @@
-import { IsArray, IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole, UserStatus } from '../../auth/domain/entities/user.entity';
 import { SessionLimitPolicy } from '../../auth/domain/entities/account.entity';
@@ -80,12 +80,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
-
-  @ApiPropertyOptional({ description: 'Dynamic CMS permissions for ADMIN role.', example: ['cms:dashboard', 'cms:users'] })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  permissions?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

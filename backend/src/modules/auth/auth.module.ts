@@ -73,6 +73,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
 // External modules
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 /**
  * Authentication and session management module.
@@ -101,6 +102,7 @@ import { CrmModule } from '../crm/crm.module';
     }),
     BillingModule,
     CrmModule,
+    PrismaModule,
   ],
   controllers: [AuthController],
   providers: [

@@ -56,6 +56,15 @@ enum ChannelHealthStatus {
 
 // ─── Models ──────────────────────────────────────────────
 
+model CmsRole {
+  id          String   @id @default(uuid())
+  key         UserRole @unique
+  permissions String[] @default([])
+  updatedAt   DateTime @updatedAt
+
+  @@map("cms_roles")
+}
+
 model Customer {
   id                 String     @id @default(uuid())
   nombre             String
@@ -77,7 +86,6 @@ model Customer {
   isCmsUser          Boolean    @default(false)
   isSubscriber       Boolean    @default(true)
   isAccountActivated Boolean    @default(false)
-  permissions        String[]   @default([])
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   deletedAt          DateTime?

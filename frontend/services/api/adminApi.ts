@@ -362,8 +362,13 @@ export interface CmsUserPayload {
   email: string;
   telefono?: string;
   role: 'admin' | 'soporte';
-  permissions?: string[];
   password?: string;
+}
+
+/** A CMS role with its assigned permission keys. */
+export interface CmsRole {
+  key: 'superadmin' | 'admin' | 'soporte' | 'cliente';
+  permissions: string[];
 }
 
 export async function adminListCmsUsers(accessToken: string): Promise<AdminUser[]> {
@@ -382,18 +387,21 @@ export async function adminCreateCmsUser(
       email: data.email,
       telefono: data.telefono,
       role: data.role,
-      permissions: data.permissions,
       password: data.password ?? 'TempPass2025!',
     }),
   });
 }
 
-export async function adminUpdateCmsUserPermissions(
+export async function adminGetRoles(accessToken: string): Promise<CmsRole[]> {
+  return apiFetch<CmsRole[]>('/admin/roles', accessToken);
+}
+
+export async function adminUpdateRolePermissions(
   accessToken: string,
-  userId: string,
+  roleKey: string,
   permissions: string[],
-): Promise<AdminUser> {
-  return apiFetch<AdminUser>(`/admin/users/${userId}`, accessToken, {
+): Promise<CmsRole> {
+  return apiFetch<CmsRole>(`/admin/roles/${roleKey}/permissions`, accessToken, {
     method: 'PATCH',
     body: JSON.stringify({ permissions }),
   });

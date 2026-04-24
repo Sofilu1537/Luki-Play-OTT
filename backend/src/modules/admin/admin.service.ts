@@ -28,7 +28,7 @@ import { UpdateCategoriaDto } from './dto/update-categoria.dto.js';
 import { CreatePlanDto, PlanEntitlementDto, PlanUserGroupDto, PlanVideoQualityDto } from './dto/create-plan.dto.js';
 import { UpdateCanalDto } from './dto/update-canal.dto.js';
 import { UpdatePlanDto } from './dto/update-plan.dto.js';
-import { CMS_MODULES } from '../access-control/domain/permissions.js';
+import { CMS_MODULES, sanitizePermissions } from '../access-control/domain/permissions.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // ---------------------------------------------------------------------------
@@ -721,7 +721,32 @@ export class AdminService {
     };
   }
 
-  // ---- Permissions -----------------------------------------------------------
+  // ---- Roles & Permissions ---------------------------------------------------
+
+  async getCmsRoles(): Promise<Array<{ key: string; permissions: string[] }>> {
+    const roles = await this.prisma.cmsRole.findMany({ orderBy: { key: 'asc' } });
+    return roles.map((r) => ({ key: r.key.toLowerCase(), permissions: r.permissions }));
+  }
+
+  async updateCmsRolePermissions(
+    roleKey: string,
+    permissions: string[],
+  ): Promise<{ key: string; permissions: string[] }> {
+    const key = roleKey.toUpperCase() as PrismaUserRole;
+    if (key === PrismaUserRole.SUPERADMIN || key === PrismaUserRole.CLIENTE) {
+      throw new BadRequestException('Los permisos de SUPERADMIN y CLIENTE no se pueden editar.');
+    }
+
+    const role = await this.prisma.cmsRole.findUnique({ where: { key } });
+    if (!role) throw new NotFoundException(`Rol ${roleKey} no encontrado.`);
+
+    const cleaned = sanitizePermissions(permissions);
+    const updated = await this.prisma.cmsRole.update({
+      where: { key },
+      data: { permissions: cleaned },
+    });
+    return { key: updated.key.toLowerCase(), permissions: updated.permissions };
+  }
 
   getPermissionModules() {
     return CMS_MODULES.map((m) => ({ key: m.key, label: m.label }));

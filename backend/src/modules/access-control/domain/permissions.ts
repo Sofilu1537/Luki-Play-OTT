@@ -1,5 +1,3 @@
-import { UserRole } from '../../auth/domain/entities/user.entity';
-
 /**
  * CMS module definitions — single source of truth for sidebar items and permission keys.
  */
@@ -19,60 +17,28 @@ export const CMS_MODULES = [
   { key: 'cms:roles',           label: 'Roles',                 icon: 'shield',       path: '/cms/roles' },
 ] as const;
 
-/** Default permissions for SOPORTE role (read-only on select modules). */
-export const SOPORTE_DEFAULT_PERMISSIONS: string[] = [
-  'cms:dashboard',
-  'cms:users',
-  'cms:canales',
-  'cms:monitor',
-  'cms:analitica',
+/**
+ * All valid permission keys accepted by the system.
+ * Used to sanitize permission arrays before persisting them.
+ */
+export const VALID_CMS_PERMISSIONS: string[] = [
+  ...CMS_MODULES.map((m) => m.key),
+  'cms:*',
+  'cms:users:read',
+  'cms:users:write',
+  'cms:content:read',
+  'cms:content:write',
+  'cms:analytics:read',
+  'cms:settings:read',
+  'cms:settings:write',
+  'app:playback',
+  'app:profiles',
 ];
 
 /**
- * Static mapping from each {@link UserRole} to its base permission strings.
- *
- * - SUPERADMIN: `cms:*` wildcard grants all CMS permissions.
- * - ADMIN: empty base — actual permissions stored in Customer.permissions (BD).
- * - SOPORTE: fixed read-only modules.
- * - CLIENTE: app-only permissions.
+ * Filters a permission array to only include valid, known permission keys.
  */
-export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  [UserRole.SUPERADMIN]: [
-    'cms:*',
-    'cms:users:read',
-    'cms:users:write',
-    'cms:content:read',
-    'cms:content:write',
-    'cms:analytics:read',
-    'cms:settings:read',
-    'cms:settings:write',
-    'app:playback',
-    'app:profiles',
-  ],
-  [UserRole.ADMIN]: [],
-  [UserRole.SOPORTE]: [
-    ...SOPORTE_DEFAULT_PERMISSIONS,
-    'cms:users:read',
-    'cms:content:read',
-    'cms:analytics:read',
-  ],
-  [UserRole.CLIENTE]: ['app:playback', 'app:profiles'],
-};
-
-/**
- * Returns the resolved permissions for a user.
- *
- * - SUPERADMIN/SOPORTE/CLIENTE: static from ROLE_PERMISSIONS.
- * - ADMIN: merges base ROLE_PERMISSIONS with dynamic permissions from the database.
- *
- * @param role - The user role.
- * @param dynamicPermissions - Permissions stored in Customer.permissions (for ADMIN role).
- */
-export function getPermissionsForRole(role: UserRole, dynamicPermissions?: string[]): string[] {
-  const base = ROLE_PERMISSIONS[role] ?? [];
-  if (role === UserRole.ADMIN && dynamicPermissions?.length) {
-    const merged = new Set([...base, ...dynamicPermissions]);
-    return Array.from(merged);
-  }
-  return base;
+export function sanitizePermissions(permissions: string[]): string[] {
+  const valid = new Set(VALID_CMS_PERMISSIONS);
+  return [...new Set(permissions.filter((p) => valid.has(p)))];
 }

@@ -16,7 +16,6 @@ import CmsUserDetailModal from './CmsUserDetailModal';
 import {
   adminListCmsUsers,
   adminCreateCmsUser,
-  adminUpdateCmsUserPermissions,
   adminDeleteUser,
 } from '../../../services/api/adminApi';
 import type { AdminUser, CmsUserPayload } from '../../../services/api/adminApi';
@@ -64,7 +63,6 @@ export default function CmsUsersTab() {
     email: string;
     phone?: string;
     role: 'admin' | 'soporte';
-    permissions: string[];
   }) => {
     if (!accessToken) return;
     await adminCreateCmsUser(accessToken, {
@@ -72,14 +70,7 @@ export default function CmsUsersTab() {
       email: data.email,
       telefono: data.phone,
       role: data.role,
-      permissions: data.permissions,
     });
-    await loadUsers();
-  };
-
-  const handleSavePermissions = async (userId: string, permissions: string[]) => {
-    if (!accessToken) return;
-    await adminUpdateCmsUserPermissions(accessToken, userId, permissions);
     await loadUsers();
   };
 
@@ -164,7 +155,6 @@ export default function CmsUsersTab() {
             <Text style={hdr(2.5)}>Email</Text>
             <Text style={hdr(1)}>Rol</Text>
             <Text style={hdr(1)}>Estado</Text>
-            <Text style={hdr(0.8)}>Permisos</Text>
             <Text style={hdr(0.7)}>Acciones</Text>
           </View>
 
@@ -201,7 +191,6 @@ export default function CmsUsersTab() {
                     </Text>
                   </View>
                 </View>
-                <Text style={{ flex: 0.8, color: isDark ? theme.textSec : '#240046', fontSize: 12 }}>{user.permissions?.length ?? 0}</Text>
                 <View style={{ flex: 0.7, flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity onPress={() => { setEditUser(user); setFormVisible(true); }}>
                     <FontAwesome name="pencil" size={13} color={theme.accent} />
@@ -227,11 +216,8 @@ export default function CmsUsersTab() {
         visible={!!detailUser}
         user={detailUser}
         onClose={() => setDetailUser(null)}
-        onSavePermissions={handleSavePermissions}
         onDelete={handleDelete}
       />
     </View>
   );
 }
-
-

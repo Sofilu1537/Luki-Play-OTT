@@ -19,7 +19,7 @@ import type { OtpService } from '../../domain/interfaces/otp.service';
 import { BILLING_GATEWAY } from '../../../billing/domain/interfaces/billing.gateway';
 import type { BillingGateway } from '../../../billing/domain/interfaces/billing.gateway';
 import { Audience, Session } from '../../domain/entities/session.entity';
-import { getPermissionsForRole } from '../../../access-control/domain/permissions';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { VerifyLoginOtpDto } from '../dto/otp.dto';
 import { AuthTokensResponse } from '../dto/auth-response.dto';
 import { randomUUID } from 'crypto';
@@ -29,6 +29,8 @@ import { randomUUID } from 'crypto';
  *
  * Phase 1 (LoginAppUseCase): validates credentials → sends OTP → returns loginToken
  * Phase 2 (this use case):   verifies loginToken + OTP → issues JWT + creates session
+ *
+ * Permissions are resolved from the cms_roles table at login time (RBAC).
  */
 @Injectable()
 export class CompleteLoginUseCase {
@@ -42,6 +44,7 @@ export class CompleteLoginUseCase {
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(OTP_SERVICE) private readonly otpService: OtpService,
     @Inject(BILLING_GATEWAY) private readonly billingGateway: BillingGateway,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(dto: VerifyLoginOtpDto): Promise<AuthTokensResponse> {
@@ -91,8 +94,12 @@ export class CompleteLoginUseCase {
       }
     }
 
-    // 5. Generate JWT token pair
-    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
+    // 5. Resolve permissions from cms_roles table (RBAC: permissions belong to the role)
+    const roleRecord = await this.prisma.cmsRole.findUnique({
+      where: { key: user.role.toUpperCase() as any },
+    });
+    const permissions = roleRecord?.permissions ?? [];
+
     const tokenPair = await this.tokenService.generateTokenPair({
       sub: user.id,
       role: user.role,
@@ -112,7 +119,7 @@ export class CompleteLoginUseCase {
       deviceId: challenge.deviceId,
       audience: challenge.aud as Audience,
       refreshTokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       createdAt: new Date(),
     });
     await this.sessionRepo.save(session);

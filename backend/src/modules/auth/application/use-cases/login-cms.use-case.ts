@@ -20,22 +20,20 @@ import type { AuditLogRepository } from '../../domain/interfaces/audit-log.repos
 import { Audience, Session } from '../../domain/entities/session.entity';
 import { LoginAttempt } from '../../domain/entities/login-attempt.entity';
 import { AuditLog } from '../../domain/entities/audit-log.entity';
-import { getPermissionsForRole } from '../../../access-control/domain/permissions';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { LoginCmsDto } from '../dto/login-cms.dto';
 import { AuthTokensResponse } from '../dto/auth-response.dto';
 
 const MAX_FAILURES = 5;
-const FAILURE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Single-phase CMS login for admin/support staff.
  *
  * Validates email + password, verifies the user has a CMS role
- * (SUPERADMIN or SOPORTE), and issues a JWT token pair.
- * No OTP step is required for CMS access.
- *
- * @throws UnauthorizedException when credentials are invalid or role is CLIENTE.
+ * (SUPERADMIN, ADMIN, or SOPORTE), and issues a JWT token pair.
+ * Permissions are resolved from the cms_roles table at login time.
  */
 @Injectable()
 export class LoginCmsUseCase {
@@ -48,12 +46,12 @@ export class LoginCmsUseCase {
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(LOGIN_ATTEMPT_REPOSITORY) private readonly attemptRepo: LoginAttemptRepository,
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(dto: LoginCmsDto, ipAddress?: string): Promise<AuthTokensResponse> {
     const email = dto.email.trim().toLowerCase();
 
-    // 1. Rate-limit check (anti-enumeration: check before user lookup)
     const recentFailures = await this.attemptRepo.countRecentFailures(email, FAILURE_WINDOW_MS);
     if (recentFailures >= MAX_FAILURES) {
       this.logger.warn(`CMS login blocked (rate limit): ${email}`);
@@ -68,7 +66,6 @@ export class LoginCmsUseCase {
         succeeded: false, failureReason: reason, createdAt: new Date(),
       }));
 
-    // 2. Find user
     const user = await this.userRepo.findByEmail(email);
     if (!user) {
       await recordFailure('user_not_found');
@@ -86,7 +83,6 @@ export class LoginCmsUseCase {
       throw new UnauthorizedException('Correo o contraseña incorrectos.');
     }
 
-    // 3. Verify password
     const passwordValid = await this.hashService.compare(dto.password, user.passwordHash);
     if (!passwordValid) {
       await recordFailure('invalid_password');
@@ -94,7 +90,6 @@ export class LoginCmsUseCase {
       throw new UnauthorizedException('Correo o contraseña incorrectos.');
     }
 
-    // 4. Record success + update user stats
     await this.attemptRepo.save(new LoginAttempt({
       id: randomUUID(), email, ipAddress: ipAddress ?? null,
       succeeded: true, createdAt: new Date(),
@@ -104,15 +99,18 @@ export class LoginCmsUseCase {
     user.lockedUntil = null;
     await this.userRepo.save(user);
 
-    // 5. Audit
     await this.auditRepo.save(new AuditLog({
       id: randomUUID(), actorId: user.id, action: 'auth.login',
       targetId: user.id, targetType: 'user',
       metadata: { role: user.role }, ipAddress: ipAddress ?? null, createdAt: new Date(),
     }));
 
-    // 6. Generate session
-    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
+    // Resolve permissions from cms_roles table (RBAC: permissions belong to the role, not the user)
+    const roleRecord = await this.prisma.cmsRole.findUnique({
+      where: { key: user.role.toUpperCase() as any },
+    });
+    const permissions = roleRecord?.permissions ?? [];
+
     const tokenPair = await this.tokenService.generateTokenPair({
       sub: user.id, role: user.role, permissions,
       aud: Audience.CMS, accountId: null, entitlements: [],
