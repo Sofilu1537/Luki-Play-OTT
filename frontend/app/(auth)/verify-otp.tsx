@@ -1,4 +1,3 @@
-// @ts-nocheck 
 import { View, Text, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
@@ -7,6 +6,8 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import LukiPlayLogo from '../../components/LukiPlayLogo';
+import { APP } from '../../styles/theme';
 
 /**
  * OTP verification screen.
@@ -51,25 +52,17 @@ export default function VerifyOtp() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 justify-center">
 
             <View className="items-center mb-12">
-                <View className="flex-row items-center">
-                    {/* Logo Placeholder Simulation */}
-                    <View className="mr-2">
-                        <View className="w-4 h-4 rounded-full bg-luki-accent mb-1 ml-4" />
-                        <View className="w-4 h-4 rounded-full bg-luki-accent mb-1 text-right" />
-                        <View className="w-4 h-4 rounded-full bg-luki-accent" />
-                    </View>
-                    <Text className="text-6xl font-extrabold text-white tracking-tighter">luki</Text>
-                </View>
-                <Text className="text-gray-300 text-lg tracking-widest uppercase mt-2">tu hogar digital</Text>
+                <LukiPlayLogo variant="full" size={120} />
+                <Text className="text-luki-gray text-lg tracking-widest uppercase mt-4">tu hogar digital</Text>
             </View>
 
             <View className="bg-black/20 p-6 rounded-2xl backdrop-blur-lg">
                 <Text className="text-2xl font-bold text-white mb-2 text-center">Verificación OTP</Text>
-                <Text className="text-gray-300 text-sm text-center mb-6">
+                <Text className="text-luki-gray text-sm text-center mb-6">
                     Ingresa el código de 6 dígitos enviado a tu correo
                 </Text>
 
-                {error ? <Text className="text-red-500 mb-4 text-center bg-red-500/10 p-2 rounded">{error}</Text> : null}
+                {error ? <Text className="text-luki-danger mb-4 text-center bg-luki-danger/10 p-2 rounded">{error}</Text> : null}
 
                 <Input
                     placeholder="Código de 6 dígitos"
@@ -84,12 +77,12 @@ export default function VerifyOtp() {
 
                 <View className="mt-6 items-center">
                     <Text
-                        className="text-gray-400 underline"
+                        className="text-luki-gray underline"
                         onPress={() => router.replace('/(auth)/login')}
                     >
                         Volver al login
                     </Text>
-                    <Text className="text-gray-400 mt-4 text-xs">Versión v1.0.0</Text>
+                    <Text className="text-luki-gray mt-4 text-xs">Versión v1.0.0</Text>
                 </View>
             </View>
 
@@ -98,7 +91,7 @@ export default function VerifyOtp() {
 
     return (
         <LinearGradient
-            colors={['#240046', '#140026']}
+            colors={[APP.gradientStart, APP.surface]}
             style={{ flex: 1, justifyContent: 'center', padding: 20 }}
         >
             <StatusBar style="light" />

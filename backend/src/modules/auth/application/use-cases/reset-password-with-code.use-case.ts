@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
 import { USER_REPOSITORY } from '../../domain/interfaces/user.repository';
 import type { UserRepository } from '../../domain/interfaces/user.repository';
@@ -19,27 +25,48 @@ export class ResetPasswordWithCodeUseCase {
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
-    @Inject(TEMPORARY_CODE_REPOSITORY) private readonly codeRepo: TemporaryCodeRepository,
+    @Inject(TEMPORARY_CODE_REPOSITORY)
+    private readonly codeRepo: TemporaryCodeRepository,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
     @Inject(SESSION_REPOSITORY) private readonly sessionRepo: SessionRepository,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
   ) {}
 
-  async execute(email: string, rawCode: string, newPassword: string): Promise<void> {
+  async execute(
+    email: string,
+    rawCode: string,
+    newPassword: string,
+    requireCms = false,
+  ): Promise<void> {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Find valid recovery codes for this email
-    const codes = await this.codeRepo.findByEmailAndType(normalizedEmail, TemporaryCodeType.RESET_PASSWORD);
+    const codes = await this.codeRepo.findByEmailAndType(
+      normalizedEmail,
+      TemporaryCodeType.RESET_PASSWORD,
+    );
     const match = codes.find((c) => c.isValid() && c.matchesCode(rawCode));
 
     if (!match) {
-      throw new BadRequestException('Código inválido, expirado o ya utilizado.');
+      throw new BadRequestException(
+        'Código inválido, expirado o ya utilizado.',
+      );
     }
 
     // Find user
     const user = await this.userRepo.findByEmail(normalizedEmail);
     if (!user) {
-      throw new BadRequestException('No se encontró un usuario con este correo.');
+      throw new BadRequestException(
+        'No se encontró un usuario con este correo.',
+      );
+    }
+
+    // CMS-only path: reject non-internal users
+    if (requireCms && !user.isCmsUser()) {
+      throw new ForbiddenException(
+        'Este correo no pertenece a un usuario interno autorizado.',
+      );
     }
 
     // Hash new password and update
@@ -53,16 +80,20 @@ export class ResetPasswordWithCodeUseCase {
     await this.sessionRepo.deleteAllByUserId(user.id);
 
     // Audit log
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(),
-      actorId: user.id,
-      action: 'user.password_reset_with_code',
-      targetId: user.id,
-      targetType: 'user',
-      metadata: { email: normalizedEmail },
-      createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: user.id,
+        action: 'user.password_reset_with_code',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: { email: normalizedEmail },
+        createdAt: new Date(),
+      }),
+    );
 
-    this.logger.log(`Password reset via code for ${normalizedEmail} (user ${user.id})`);
+    this.logger.log(
+      `Password reset via code for ${normalizedEmail} (user ${user.id})`,
+    );
   }
 }

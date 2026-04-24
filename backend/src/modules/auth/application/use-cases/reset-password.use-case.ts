@@ -1,4 +1,9 @@
-import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
 import { USER_REPOSITORY } from '../../domain/interfaces/user.repository';
 import type { UserRepository } from '../../domain/interfaces/user.repository';
@@ -18,10 +23,12 @@ export class ResetPasswordUseCase {
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
-    @Inject(PASSWORD_RESET_TOKEN_REPOSITORY) private readonly tokenRepo: PasswordResetTokenRepository,
+    @Inject(PASSWORD_RESET_TOKEN_REPOSITORY)
+    private readonly tokenRepo: PasswordResetTokenRepository,
     @Inject(SESSION_REPOSITORY) private readonly sessionRepo: SessionRepository,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
-    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditRepo: AuditLogRepository,
+    @Inject(AUDIT_LOG_REPOSITORY)
+    private readonly auditRepo: AuditLogRepository,
   ) {}
 
   async execute(rawToken: string, newPassword: string): Promise<void> {
@@ -29,12 +36,16 @@ export class ResetPasswordUseCase {
     const token = await this.tokenRepo.findByTokenHash(tokenHash);
 
     if (!token || !token.isValid()) {
-      throw new BadRequestException('El enlace de recuperación es inválido o ha expirado.');
+      throw new BadRequestException(
+        'El enlace de recuperación es inválido o ha expirado.',
+      );
     }
 
     const user = await this.userRepo.findById(token.userId);
     if (!user || !user.isActive()) {
-      throw new BadRequestException('El enlace de recuperación es inválido o ha expirado.');
+      throw new BadRequestException(
+        'El enlace de recuperación es inválido o ha expirado.',
+      );
     }
 
     const newHash = await this.hashService.hash(newPassword);
@@ -42,16 +53,20 @@ export class ResetPasswordUseCase {
     await this.tokenRepo.markUsed(token.id);
     await this.sessionRepo.deleteAllByUserId(user.id);
 
-    await this.auditRepo.save(new AuditLog({
-      id: randomUUID(),
-      actorId: user.id,
-      action: 'password.reset',
-      targetId: user.id,
-      targetType: 'user',
-      metadata: { method: 'recovery_link' },
-      createdAt: new Date(),
-    }));
+    await this.auditRepo.save(
+      new AuditLog({
+        id: randomUUID(),
+        actorId: user.id,
+        action: 'password.reset',
+        targetId: user.id,
+        targetType: 'user',
+        metadata: { method: 'recovery_link' },
+        createdAt: new Date(),
+      }),
+    );
 
-    this.logger.log(`Password reset completed for user ${user.id}, all sessions revoked`);
+    this.logger.log(
+      `Password reset completed for user ${user.id}, all sessions revoked`,
+    );
   }
 }

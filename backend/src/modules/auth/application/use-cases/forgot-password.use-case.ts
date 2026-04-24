@@ -16,7 +16,8 @@ export class ForgotPasswordUseCase {
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
-    @Inject(PASSWORD_RESET_TOKEN_REPOSITORY) private readonly tokenRepo: PasswordResetTokenRepository,
+    @Inject(PASSWORD_RESET_TOKEN_REPOSITORY)
+    private readonly tokenRepo: PasswordResetTokenRepository,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
     private readonly configService: ConfigService,
   ) {}
@@ -41,7 +42,10 @@ export class ForgotPasswordUseCase {
 
       await this.tokenRepo.save(token);
 
-      const cmsUrl = this.configService.get<string>('CMS_URL', 'http://localhost:3001');
+      const cmsUrl = this.configService.get<string>(
+        'CMS_URL',
+        'http://localhost:3001',
+      );
       const resetLink = `${cmsUrl}/reset-password?token=${rawToken}`;
 
       await this.emailService.sendPasswordReset(

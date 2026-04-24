@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import { EmailService, RegistrationRequestData } from '../../domain/interfaces/email.service';
+import {
+  EmailService,
+  RegistrationRequestData,
+} from '../../domain/interfaces/email.service';
 
 @Injectable()
 export class NodemailerEmailService implements EmailService {
@@ -26,17 +29,29 @@ export class NodemailerEmailService implements EmailService {
     });
   }
 
-  async sendPasswordReset(to: string, resetLink: string, displayName: string): Promise<void> {
-    await this.send(to, 'Recupera tu contraseña — Luki Play', `
+  async sendPasswordReset(
+    to: string,
+    resetLink: string,
+    displayName: string,
+  ): Promise<void> {
+    await this.send(
+      to,
+      'Recupera tu contraseña — Luki Play',
+      `
       <h2>Hola ${displayName},</h2>
       <p>Recibimos una solicitud para restablecer tu contraseña.</p>
       <p><a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Restablecer contraseña</a></p>
       <p>Este enlace es válido por 1 hora y solo puede usarse una vez.</p>
       <p>Si no solicitaste este cambio, ignora este correo.</p>
-    `);
+    `,
+    );
   }
 
-  async sendFirstAccess(to: string, accessLink: string, displayName: string): Promise<void> {
+  async sendFirstAccess(
+    to: string,
+    accessLink: string,
+    displayName: string,
+  ): Promise<void> {
     const content = `
       <div style="background-color: #f8fafc; padding: 20px; border-left: 4px solid #6366f1; margin: 25px 0;">
         <p style="margin-top: 0; font-size: 15px; color: #444;">Tu cuenta ha sido creada exitosamente. Para empezar a usar la plataforma, necesitas activar tu cuenta haciendo clic en el siguiente enlace:</p>
@@ -46,10 +61,18 @@ export class NodemailerEmailService implements EmailService {
         <p style="font-size: 13px; color: #666; margin-bottom: 0;">Este enlace de activación es válido por 24 horas y es de un solo uso.</p>
       </div>
     `;
-    await this.send(to, 'Activa tu cuenta — luki net', this.buildLukiEmail(displayName, content));
+    await this.send(
+      to,
+      'Activa tu cuenta — luki net',
+      this.buildLukiEmail(displayName, content),
+    );
   }
 
-  async sendGeneratedPassword(to: string, password: string, displayName: string): Promise<void> {
+  async sendGeneratedPassword(
+    to: string,
+    password: string,
+    displayName: string,
+  ): Promise<void> {
     const content = `
       <div style="background-color: #f8fafc; padding: 20px; border-left: 4px solid #6366f1; margin: 25px 0;">
         <p style="margin-top: 0; font-size: 15px; color: #444;">Se ha generado una contraseña temporal para tu cuenta:</p>
@@ -57,12 +80,20 @@ export class NodemailerEmailService implements EmailService {
         <p style="font-size: 13px; color: #666; margin-bottom: 0;">Por seguridad, te pediremos que la cambies después de iniciar sesión la próxima vez.</p>
       </div>
     `;
-    await this.send(to, 'Clave temporal — luki net', this.buildLukiEmail(displayName, content));
+    await this.send(
+      to,
+      'Clave temporal — luki net',
+      this.buildLukiEmail(displayName, content),
+    );
   }
 
-  async sendRecoveryCode(to: string, code: string, name?: string): Promise<void> {
+  async sendRecoveryCode(
+    to: string,
+    code: string,
+    name?: string,
+  ): Promise<void> {
     const greetingName = name || 'Usuario';
-    
+
     // Logo block for the header
     const logoHtml = `
       <div style="text-align: center; display: inline-block;">
@@ -128,13 +159,17 @@ export class NodemailerEmailService implements EmailService {
     await this.send(to, 'Recuperación de Acceso — Luki Play', html);
   }
 
-  private buildLukiEmail(name: string, content: string, isWelcome: boolean = false): string {
+  private buildLukiEmail(
+    name: string,
+    content: string,
+    isWelcome: boolean = false,
+  ): string {
     const greetingName = name || 'Usuario';
-    const welcomeText = isWelcome 
-      ? '<span style="font-family: Georgia, serif; font-size: 32px; padding: 0;">Bienvenido a</span>' 
+    const welcomeText = isWelcome
+      ? '<span style="font-family: Georgia, serif; font-size: 32px; padding: 0;">Bienvenido a</span>'
       : '<span style="font-family: Georgia, serif; font-size: 28px; padding: 0;">Notificación de</span>';
 
-    const welcomeParagraph = isWelcome 
+    const welcomeParagraph = isWelcome
       ? `<p style="font-size: 16px; margin-bottom: 30px;">Es un gusto tenerte con nosotros. Desde hoy, todo nuestro equipo está comprometido en brindarte el mejor servicio, porque para nosotros <strong>tú eres el centro de nuestra operación</strong>.</p>`
       : '';
 
@@ -204,7 +239,11 @@ export class NodemailerEmailService implements EmailService {
         <p style="font-size: 13px; color: #666; margin-bottom: 0;">Este código de activación es válido por 24 horas y solo puede usarse una vez.<br/>Al activarlo, se te pedirá establecer tu contraseña personal.</p>
       </div>
     `;
-    await this.send(to, 'Código de activación — luki net', this.buildLukiEmail(greetingName, content, true));
+    await this.send(
+      to,
+      'Código de activación — luki net',
+      this.buildLukiEmail(greetingName, content, true),
+    );
   }
 
   async sendRegistrationRequest(data: RegistrationRequestData): Promise<void> {
@@ -246,15 +285,93 @@ export class NodemailerEmailService implements EmailService {
         </div>
       </div>
     `;
-    await this.send(INTERNAL, `Nueva solicitud de alta — ${data.nombres} ${data.apellidos}`, html);
+    await this.send(
+      INTERNAL,
+      `Nueva solicitud de alta — ${data.nombres} ${data.apellidos}`,
+      html,
+    );
+  }
+
+  // ─── Subscription lifecycle notifications ─────────────────────────────────
+
+  async sendSubscriptionReminder(
+    to: string,
+    displayName: string,
+    expirationDate: Date,
+  ): Promise<void> {
+    const formatted = expirationDate.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const content = `
+      <div style="background-color: #fff8e1; padding: 20px; border-left: 4px solid #ffb700; margin: 25px 0; border-radius: 4px;">
+        <p style="margin-top: 0; font-size: 15px; color: #444;">Tu suscripción a <strong>Luki Play</strong> vence el <strong>${formatted}</strong>.</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">Para continuar disfrutando sin interrupciones, renueva antes de esa fecha.</p>
+      </div>
+    `;
+    await this.send(
+      to,
+      'Tu suscripción vence pronto — Luki Play',
+      this.buildLukiEmail(displayName, content),
+    );
+  }
+
+  async sendSubscriptionExpired(
+    to: string,
+    displayName: string,
+    graceDeadline: Date,
+  ): Promise<void> {
+    const formatted = graceDeadline.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const content = `
+      <div style="background-color: #fef2f2; padding: 20px; border-left: 4px solid #ef4444; margin: 25px 0; border-radius: 4px;">
+        <p style="margin-top: 0; font-size: 15px; color: #444;">Tu suscripción a <strong>Luki Play</strong> ha vencido.</p>
+        <p style="font-size: 14px; color: #666;">Tienes hasta el <strong>${formatted}</strong> para renovar y mantener el acceso.</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">Si no renuevas antes de esa fecha, tu cuenta será suspendida automáticamente.</p>
+      </div>
+    `;
+    await this.send(
+      to,
+      'Tu suscripción ha vencido — Luki Play',
+      this.buildLukiEmail(displayName, content),
+    );
+  }
+
+  async sendSubscriptionSuspended(
+    to: string,
+    displayName: string,
+  ): Promise<void> {
+    const content = `
+      <div style="background-color: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; margin: 25px 0; border-radius: 4px;">
+        <p style="margin-top: 0; font-size: 15px; color: #444;">Tu acceso a <strong>Luki Play</strong> ha sido suspendido por falta de renovación.</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">Contacta a soporte o renueva tu plan para reactivar tu cuenta.</p>
+      </div>
+    `;
+    await this.send(
+      to,
+      'Tu cuenta ha sido suspendida — Luki Play',
+      this.buildLukiEmail(displayName, content),
+    );
   }
 
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      const info = await this.transporter.sendMail({ from: this.from, to, subject, html });
+      const info = await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject,
+        html,
+      });
       this.logger.log(`Email sent to ${to} — messageId: ${info.messageId}`);
     } catch (error) {
-      this.logger.error(`Failed to send email to ${to}`, (error as Error).stack);
+      this.logger.error(
+        `Failed to send email to ${to}`,
+        (error as Error).stack,
+      );
       throw error;
     }
   }

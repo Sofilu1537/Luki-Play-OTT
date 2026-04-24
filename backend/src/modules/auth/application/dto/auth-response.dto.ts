@@ -44,6 +44,15 @@ export class UserProfileResponse {
   id: string;
 
   @ApiPropertyOptional()
+  firstName: string | null;
+
+  @ApiPropertyOptional()
+  lastName: string | null;
+
+  @ApiPropertyOptional()
+  idNumber: string | null;
+
+  @ApiPropertyOptional()
   contractNumber: string | null;
 
   @ApiProperty()
@@ -69,6 +78,12 @@ export class UserProfileResponse {
 
   @ApiPropertyOptional()
   restrictionMessage: string | null;
+
+  @ApiPropertyOptional()
+  lastLoginAt: string | null;
+
+  @ApiPropertyOptional()
+  mustChangePassword: boolean;
 
   @ApiProperty({ type: [String] })
   permissions: string[];

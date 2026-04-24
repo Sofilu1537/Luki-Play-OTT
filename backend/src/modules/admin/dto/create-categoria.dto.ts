@@ -17,7 +17,10 @@ export class CreateCategoriaDto {
   @MaxLength(60)
   nombre: string;
 
-  @ApiPropertyOptional({ example: 'deportes', description: 'Auto-generated from nombre if omitted' })
+  @ApiPropertyOptional({
+    example: 'deportes',
+    description: 'Auto-generated from nombre if omitted',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(80)
@@ -38,7 +41,9 @@ export class CreateCategoriaDto {
   @ApiPropertyOptional({ example: '#FFB800', description: 'Hex accent color' })
   @IsOptional()
   @IsString()
-  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'accentColor must be a valid hex color (e.g. #FFB800)' })
+  @Matches(/^#[0-9A-Fa-f]{6}$/, {
+    message: 'accentColor must be a valid hex color (e.g. #FFB800)',
+  })
   accentColor?: string;
 
   @ApiPropertyOptional({ example: 5, default: 99 })
@@ -52,7 +57,18 @@ export class CreateCategoriaDto {
   @IsBoolean()
   activo?: boolean;
 
-  @ApiPropertyOptional({ example: ['uuid-1', 'uuid-2'], description: 'Channel IDs to associate' })
+  @ApiPropertyOptional({
+    default: false,
+    description: 'Mark category as adult content (enables parental control)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  esContenidoAdulto?: boolean;
+
+  @ApiPropertyOptional({
+    example: ['uuid-1', 'uuid-2'],
+    description: 'Channel IDs to associate',
+  })
   @IsOptional()
   @IsString({ each: true })
   channelIds?: string[];

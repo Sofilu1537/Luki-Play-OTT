@@ -63,7 +63,8 @@ export class Account {
     this.serviceStatus = props.serviceStatus;
     this.maxDevices = props.maxDevices;
     this.sessionDurationDays = props.sessionDurationDays ?? 30;
-    this.sessionLimitPolicy = props.sessionLimitPolicy ?? SessionLimitPolicy.BLOCK_NEW;
+    this.sessionLimitPolicy =
+      props.sessionLimitPolicy ?? SessionLimitPolicy.BLOCK_NEW;
   }
 
   isSubscriptionActive(): boolean {

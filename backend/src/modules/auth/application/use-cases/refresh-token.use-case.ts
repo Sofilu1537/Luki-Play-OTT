@@ -18,7 +18,7 @@ import type { UserRepository } from '../../domain/interfaces/user.repository';
 import { ACCOUNT_REPOSITORY } from '../../domain/interfaces/account.repository';
 import type { AccountRepository } from '../../domain/interfaces/account.repository';
 import { Audience, Session } from '../../domain/entities/session.entity';
-import { getPermissionsForRole } from '../../../access-control/domain/permissions';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { BILLING_GATEWAY } from '../../../billing/domain/interfaces/billing.gateway';
 import type { BillingGateway } from '../../../billing/domain/interfaces/billing.gateway';
 import { AuthTokensResponse } from '../dto/auth-response.dto';
@@ -43,6 +43,7 @@ export class RefreshTokenUseCase {
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
     @Inject(ACCOUNT_REPOSITORY) private readonly accountRepo: AccountRepository,
     @Inject(BILLING_GATEWAY) private readonly billingGateway: BillingGateway,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(refreshToken: string): Promise<AuthTokensResponse> {
@@ -85,7 +86,11 @@ export class RefreshTokenUseCase {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
+    // Resolve permissions from cms_roles table (RBAC: permissions belong to the role, not the user)
+    const roleRecord = await this.prisma.cmsRole.findUnique({
+      where: { key: user.role.toUpperCase() as any },
+    });
+    const permissions = roleRecord?.permissions ?? [];
 
     let entitlements: string[] = [];
     let canAccessOtt = true;

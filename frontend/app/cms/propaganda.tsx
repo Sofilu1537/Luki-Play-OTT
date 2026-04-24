@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function PropagandaPage() {
+  const { theme } = useTheme();
   const features = [
     'Programación con fecha y hora de activación/desactivación automática',
     'Segmentación por plan contratado, canal o categoría',
@@ -18,23 +20,17 @@ export default function PropagandaPage() {
         <View style={{
           width: 72, height: 72,
           borderRadius: 20,
-          backgroundColor: `${C.rose}18`,
+          backgroundColor: `${theme.danger}18`,
           borderWidth: 1,
-          borderColor: `${C.rose}40`,
+          borderColor: `${theme.danger}40`,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: 24,
         }}>
-          <FontAwesome name="bullhorn" size={26} color={C.rose} />
+          <FontAwesome name="bullhorn" size={26} color={theme.danger} />
         </View>
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginBottom: 10 }}>
-          Propaganda
-        </Text>
-        <Text style={{ color: C.textSec, fontSize: 14, textAlign: 'center', maxWidth: 420, lineHeight: 22, marginBottom: 32 }}>
-          Gestor de anuncios y campañas segmentadas con programación automática de activación.
-        </Text>
 
-        <View style={{ width: '100%', maxWidth: 480 }}>
+        <View style={{ width: '100%', maxWidth: 480, marginBottom: 32 }}>
           {features.map((f, i) => (
             <View key={i} style={{
               flexDirection: 'row',
@@ -42,27 +38,15 @@ export default function PropagandaPage() {
               gap: 12,
               paddingVertical: 12,
               borderBottomWidth: i < features.length - 1 ? 1 : 0,
-              borderBottomColor: C.border,
+              borderBottomColor: theme.border,
             }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.rose, marginTop: 5 }} />
-              <Text style={{ color: C.textSec, fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.danger, marginTop: 5 }} />
+              <Text style={{ color: theme.textSec, fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
             </View>
           ))}
         </View>
 
-        <View style={{
-          marginTop: 32,
-          backgroundColor: C.surface,
-          borderRadius: 10,
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          borderWidth: 1,
-          borderColor: C.border,
-        }}>
-          <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
-            EN DESARROLLO
-          </Text>
-        </View>
+
       </ScrollView>
     </CmsShell>
   );

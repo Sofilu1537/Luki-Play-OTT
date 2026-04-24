@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { TOKEN_SERVICE } from '../../domain/interfaces/token.service.js';
 import type { TokenService } from '../../domain/interfaces/token.service.js';
@@ -45,11 +51,15 @@ export class SwitchContractUseCase {
         deviceId: 'switch-device',
         audience: 'app',
         refreshToken: tokenPair.refreshToken,
-        expiresAt: new Date(Date.now() + contract.sessionDurationDays * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(
+          Date.now() + contract.sessionDurationDays * 24 * 60 * 60 * 1000,
+        ),
       },
     });
 
-    this.logger.log(`Contract switched: customer ${customerId} → contract ${contractId}`);
+    this.logger.log(
+      `Contract switched: customer ${customerId} → contract ${contractId}`,
+    );
 
     return {
       accessToken: tokenPair.accessToken,

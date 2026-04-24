@@ -1,106 +1,139 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import StatusBadge from '../ui/StatusBadge';
 import { FONT_FAMILY } from '../../../styles/typography';
-import { C } from '../CmsShell';
+import { useTheme } from '../../../hooks/useTheme';
 
-interface ContentItem {
-  id: string;
-  title: string;
-  type: 'vod' | 'live';
-  views: number;
-  addedAt: string;
+interface StatsSnapshot {
+  totalUsers:        number;
+  totalSubscribers:  number;
+  dau:               number;
+  churned:           number;
+  byStatus: {
+    active:    number;
+    suspended: number;
+    inactive:  number;
+    pending:   number;
+  };
 }
 
-const MOCK_CONTENT: ContentItem[] = [
-  { id: '1', title: 'Resumen Copa América 2025',       type: 'vod',  views: 4821, addedAt: 'Hace 2h'     },
-  { id: '2', title: 'Noticias Ecuador — Edición noche',type: 'live', views: 1102, addedAt: 'Hace 4h'     },
-  { id: '3', title: 'Documental: Fútbol Ecuatoriano',  type: 'vod',  views: 3290, addedAt: 'Ayer'        },
-  { id: '4', title: 'Highlights Liga Pro Semana 14',   type: 'vod',  views: 7830, addedAt: 'Ayer'        },
-  { id: '5', title: 'Show de Noticias — Mañana',       type: 'live', views: 540,  addedAt: 'Hace 3 días' },
-];
+interface UserBehaviorProps {
+  stats:     StatsSnapshot | null;
+  isLoading: boolean;
+}
 
-export default function RecentContent() {
+interface Row {
+  label:  string;
+  value:  number;
+  color:  string;
+  icon:   React.ComponentProps<typeof FontAwesome>['name'];
+}
+
+export default function RecentContent({ stats, isLoading }: UserBehaviorProps) {
+  const { isDark, theme } = useTheme();
+  const warningColor = theme.warning;
+  const totalForPct = stats?.totalUsers ?? 0;
+
+  const rows: Row[] = [
+    { label: 'Activos',     value: stats?.byStatus.active    ?? 0, color: '#17D1C6', icon: 'check-circle' },
+    { label: 'Suscritos',   value: stats?.totalSubscribers   ?? 0, color: '#1E96FC', icon: 'star'         },
+    { label: 'DAU hoy',     value: stats?.dau                ?? 0, color: warningColor, icon: 'bolt'      },
+    { label: 'Suspendidos', value: stats?.byStatus.suspended ?? 0, color: '#FF7900', icon: 'ban'          },
+    { label: 'Inactivos',   value: stats?.byStatus.inactive  ?? 0, color: '#D1105A', icon: 'times-circle' },
+    { label: 'Pendientes',  value: stats?.byStatus.pending   ?? 0, color: '#B07CC6', icon: 'clock-o'      },
+  ];
+
   return (
-    <View
-      style={{
-        backgroundColor: C.surface,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: C.border,
-        overflow: 'hidden',
-      }}
-    >
+    <View style={{
+      backgroundColor: theme.cardBg,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+      overflow: 'hidden',
+    }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 18,
-          paddingVertical: 14,
-          borderBottomWidth: 1,
-          borderBottomColor: C.border,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <FontAwesome name="play-circle" size={13} color={C.muted} />
-          <Text style={{ color: C.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
-            Contenido reciente
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 18,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? theme.border : theme.iconBorderSoft,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <FontAwesome name="users" size={12} color={theme.chevron} />
+          <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+            Usuarios y comportamiento
           </Text>
         </View>
-        <TouchableOpacity activeOpacity={0.7}>
-          <Text style={{ color: C.accent, fontSize: 11, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
-            Ver todo
+        {!isLoading && totalForPct > 0 && (
+          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: FONT_FAMILY.body }}>
+            {totalForPct} total
           </Text>
-        </TouchableOpacity>
+        )}
       </View>
 
-      {/* List */}
-      <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
-        {MOCK_CONTENT.map((item, index) => (
-          <View
-            key={item.id}
-            style={{
-              paddingHorizontal: 8,
-              paddingVertical: 11,
-              borderBottomWidth: index < MOCK_CONTENT.length - 1 ? 1 : 0,
-              borderBottomColor: C.border,
-            }}
-          >
-            <Text
-              style={{
-                color: C.text,
-                fontSize: 12,
-                fontWeight: '600',
-                marginBottom: 6,
-                fontFamily: FONT_FAMILY.bodySemiBold,
-              }}
-              numberOfLines={1}
-            >
-              {item.title}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <StatusBadge
-                  variant={item.type === 'vod' ? 'vod' : 'live'}
-                  label={item.type.toUpperCase()}
-                />
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                  <FontAwesome name="eye" size={9} color={C.muted} />
-                  <Text style={{ color: C.muted, fontSize: 10, fontWeight: '500', fontFamily: FONT_FAMILY.bodySemiBold }}>
-                    {item.views.toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-              <Text style={{ color: C.muted, fontSize: 10, fontWeight: '500', fontFamily: FONT_FAMILY.bodySemiBold }}>
-                {item.addedAt}
-              </Text>
-            </View>
+      {/* Rows */}
+      <View style={{ paddingHorizontal: 14, paddingVertical: 10 }}>
+        {isLoading ? (
+          <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: FONT_FAMILY.body }}>Cargando…</Text>
           </View>
-        ))}
+        ) : (
+          rows.map((row, index) => {
+            const pct = totalForPct > 0 ? Math.min(100, Math.round((row.value / totalForPct) * 100)) : 0;
+            return (
+              <View key={row.label} style={{
+                flexDirection:     'row',
+                alignItems:        'center',
+                paddingVertical:   10,
+                borderBottomWidth: index < rows.length - 1 ? 1 : 0,
+                borderBottomColor: theme.border,
+                gap:               12,
+              }}>
+                {/* Icon badge */}
+                <View style={{
+                  width:           30,
+                  height:          30,
+                  borderRadius:    8,
+                  backgroundColor: `${row.color}18`,
+                  alignItems:      'center',
+                  justifyContent:  'center',
+                  borderWidth:     1,
+                  borderColor:     `${row.color}30`,
+                }}>
+                  <FontAwesome name={row.icon} size={12} color={row.color} />
+                </View>
+
+                {/* Label + progress bar */}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                    {row.label}
+                  </Text>
+                  <View style={{ height: 3, backgroundColor: theme.border, borderRadius: 2, marginTop: 5, flexDirection: 'row', overflow: 'hidden' }}>
+                    {pct > 0 && <View style={{ height: 3, flex: pct, backgroundColor: row.color, borderRadius: 2 }} />}
+                    {pct < 100 && <View style={{ flex: Math.max(0, 100 - pct) }} />}
+                  </View>
+                </View>
+
+                {/* Value */}
+                <Text style={{
+                  color:      row.color,
+                  fontSize:   15,
+                  fontWeight: '800',
+                  fontFamily: FONT_FAMILY.bodyBold,
+                  minWidth:   36,
+                  textAlign:  'right',
+                }}>
+                  {row.value.toLocaleString()}
+                </Text>
+              </View>
+            );
+          })
+        )}
       </View>
     </View>
   );
 }
+

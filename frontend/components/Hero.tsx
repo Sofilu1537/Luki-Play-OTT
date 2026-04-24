@@ -1,4 +1,5 @@
 import { View, Text, ImageBackground, TouchableOpacity, Dimensions } from 'react-native';
+import { APP } from '../styles/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Movie } from '../services/contentStore';
@@ -32,13 +33,13 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
         <View className="w-full relative" style={{ height: height * 0.6 }}>
             <ImageBackground
                 source={(!imgError && movie.backdrop) ? { uri: movie.backdrop } : undefined}
-                style={{ backgroundColor: '#141414' }}
+                style={{ backgroundColor: APP.surfaceElevated }}
                 className="w-full h-full justify-end"
                 resizeMode="cover"
                 onError={() => setImgError(true)}
             >
                 <LinearGradient
-                    colors={['transparent', '#000000']}
+                    colors={['transparent', APP.tabBar]}
                     style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' }}
                 />
 
@@ -47,7 +48,7 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
 
                     <View className="flex-row items-center mb-6 space-x-4">
                         {movie.tags?.map((tag, index) => (
-                            <Text key={index} className="text-gray-300 text-sm mx-2">• {tag}</Text>
+                            <Text key={index} className="text-luki-gray text-sm mx-2">• {tag}</Text>
                         ))}
                     </View>
 
@@ -60,7 +61,7 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
                             <Text className="text-black font-bold text-lg">Play</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity className="bg-gray-600/80 flex-row items-center px-6 py-3 rounded-md w-36 justify-center">
+                        <TouchableOpacity className="bg-luki-surface/80 flex-row items-center px-6 py-3 rounded-md w-36 justify-center">
                             <Ionicons name="information-circle-outline" size={22} color="white" style={{ marginRight: 6 }} />
                             <Text className="text-white font-bold text-lg">Info</Text>
                         </TouchableOpacity>

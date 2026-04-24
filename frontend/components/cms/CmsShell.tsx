@@ -14,76 +14,9 @@ import { useRouter, usePathname } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../LukiPlayLogo';
-import { ThemeProvider, useTheme } from '../../hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 import { SIDEBAR } from '../../styles/theme';
 import { FONT_FAMILY } from '../../styles/typography';
-
-// ---------------------------------------------------------------------------
-// Backward-compatible C export — pages still importing C get dark theme values
-// ---------------------------------------------------------------------------
-export const C = {
-  // Dark backgrounds (from .jsx COLORS.dark)
-  bg:          '#0A0A12',
-  bgSecondary: '#111122',
-  bgTertiary:  '#1A1A2E',
-
-  // Surfaces & panels (with violet tint)
-  panel:       'rgba(20,20,36,0.92)',
-  sidebar:     'rgba(17,17,30,0.96)',
-  surface:     'rgba(26,26,46,0.85)',
-  surfaceAlt:  'rgba(30,30,50,0.90)',
-  surfaceSoft: 'transparent',
-  lift:        'rgba(34,34,54,0.96)',
-  tableHead:   'rgba(34,34,54,0.96)',
-
-  // Borders (purple/violet tint)
-  border:      'rgba(96,38,158,0.20)',
-  borderMid:   'rgba(96,38,158,0.45)',
-  borderHover: 'rgba(96,38,158,0.45)',
-
-  // Accent (yellow - primary action)
-  accent:      '#FFB800',
-  accentLight: '#FFDA6B',
-  accentSoft:  'rgba(255,184,0,0.12)',
-  accentBorder:'rgba(255,184,0,0.30)',
-  accentGlow:  'rgba(255,184,0,0.04)',
-  accentFaint: 'rgba(255,184,0,0.10)',
-
-  // Purple & Violet palette
-  purple:      '#60269E',
-  purpleDeep:  '#240046',
-  purpleLight: '#7303C0',
-  violet:      '#B07CC6',
-
-  // Status colors
-  cyan:        '#17D1C6',
-  cyanSoft:    'rgba(23,209,198,0.12)',
-  green:       '#17D1C6',
-  greenSoft:   'rgba(23,209,198,0.14)',
-  amber:       '#FFB800',
-  amberSoft:   'rgba(255,121,0,0.12)',
-  rose:        '#D1105A',
-  roseSoft:    'rgba(209,16,90,0.14)',
-  success:     '#17D1C6',
-  danger:      '#D1105A',
-  warning:     '#FF7900',
-  info:        '#1E96FC',
-
-  // Text
-  text:        '#FAF6E7',
-  textSec:     'rgba(250,246,231,0.65)',
-  textDim:     'rgba(250,246,231,0.50)',
-  muted:       'rgba(250,246,231,0.40)',
-
-  // Sidebar active states
-  sidebarActive: 'linear-gradient(135deg, rgba(255,184,0,0.14), rgba(255,184,0,0.03))',
-  sidebarHover: 'rgba(255,184,0,0.06)',
-
-  // Special
-  void:        '#060606',
-  dimmed:      '#030303',
-  cardGlow:    'rgba(255,184,0,0.04)',
-};
 
 // ---------------------------------------------------------------------------
 // Nav definition
@@ -129,7 +62,19 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
 
 function hasPermission(permissions: string[] | undefined, key: string): boolean {
   if (!permissions) return true;
-  return permissions.includes('cms:*') || permissions.includes(key);
+  return (
+    permissions.includes('cms:*') ||
+    permissions.includes(key) ||
+    permissions.some((p) => p.startsWith(key + ':'))
+  );
+}
+
+function getActiveNavItem(pathname: string | null | undefined): NavItem | undefined {
+  if (!pathname) return undefined;
+
+  return NAV_ITEMS.find(
+    (item) => pathname === item.path || pathname.startsWith(`${item.path}/`),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +129,19 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                 letterSpacing: 0.5,
               }}
             >
-              LUKI PLAY
+              LUKIPLAY
+            </Text>
+            <Text
+              style={{
+                color: SIDEBAR.textMuted,
+                fontSize: 8,
+                fontWeight: '800',
+                letterSpacing: 2.2,
+                textTransform: 'uppercase',
+                fontFamily: FONT_FAMILY.bodyBold,
+              }}
+            >
+              CONTROL CENTER
             </Text>
           </View>
         )}
@@ -193,8 +150,22 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         )}
       </TouchableOpacity>
 
+      {/* Section label */}
       {!collapsed && (
-        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 16, marginBottom: 8 }} />
+        <Text
+          style={{
+            color: SIDEBAR.sectionLabel,
+            fontSize: 9,
+            fontWeight: '800',
+            letterSpacing: 2.2,
+            marginHorizontal: 18,
+            marginBottom: 6,
+            textTransform: 'uppercase',
+            fontFamily: FONT_FAMILY.bodySemiBold,
+          }}
+        >
+          NAVEGACIÓN
+        </Text>
       )}
 
       {/* Nav items */}
@@ -296,30 +267,33 @@ function TopBar({
 }) {
   const { profile } = useCmsStore();
   const { isDark, theme, toggleTheme } = useTheme();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-  const firstName = profile?.email?.split('@')[0] ?? 'admin';
-  const initials  = firstName.slice(0, 2).toUpperCase();
-  const pageTitle = breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
-
-  const fecha = new Date().toLocaleDateString('es-EC', {
-    weekday: 'long',
-    day:     'numeric',
-    month:   'long',
-    year:    'numeric',
-  });
+  const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim();
+  const displayName = (fullName || profile?.email?.split('@')[0] || 'admin').toUpperCase();
+  const initials  = displayName.slice(0, 2);
+  const activeNavItem = getActiveNavItem(pathname);
+  const pageTitle = activeNavItem?.labelFull ?? breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Panel';
+  const activePageIcon = activeNavItem?.icon ?? pageIcon;
+  const isDashboard = pathname === '/cms/dashboard' || pathname?.startsWith('/cms/dashboard/');
+  const topBarChipBackground = isDashboard ? 'rgba(96,38,158,0.12)' : 'rgba(96,38,158,0.25)';
+  const topBarChipBorder     = isDashboard ? 'rgba(96,38,158,0.28)' : 'rgba(96,38,158,0.60)';
 
   return (
-    <View
+    <LinearGradient
+      colors={[SIDEBAR.bg1, SIDEBAR.bg2]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
       style={{
         flexDirection:  'row',
         alignItems:     'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
         paddingVertical:   14,
-        backgroundColor:   '#240046',
         borderBottomWidth: 0,
+        borderBottomColor: 'transparent',
         zIndex:    50,
         elevation: 50,
       }}
@@ -327,8 +301,8 @@ function TopBar({
       {/* Left: page title + date */}
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {pageIcon ? (
-            <FontAwesome name={pageIcon as any} size={16} color="#FFFFFF" />
+          {activePageIcon ? (
+            <FontAwesome name={activePageIcon as any} size={16} color="#FFFFFF" />
           ) : null}
           <Text
             style={{
@@ -342,22 +316,33 @@ function TopBar({
             {pageTitle}
           </Text>
         </View>
-        <Text
-          style={{
-            color:     theme.textMuted,
-            fontSize:  11,
-            fontWeight:'500',
-            marginTop: 1,
-            textTransform: 'capitalize',
-            fontFamily: FONT_FAMILY.body,
-          }}
-        >
-          {fecha}
-        </Text>
       </View>
 
       {/* Right: theme toggle + avatar */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View
+          style={{
+            backgroundColor: 'rgba(96,38,158,0.25)',
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: 'rgba(96,38,158,0.60)',
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: '#FFFFFF',
+              fontSize: 12,
+              fontWeight: '800',
+              letterSpacing: 0.9,
+              textTransform: 'uppercase',
+              fontFamily: FONT_FAMILY.bodyBold,
+            }}
+          >
+            ⚡ FIFA WORLD CUP 2026
+          </Text>
+        </View>
 
         {/* Dark / Light toggle */}
         <TouchableOpacity
@@ -367,17 +352,17 @@ function TopBar({
             width:           38,
             height:          38,
             borderRadius:    10,
-            backgroundColor: theme.surfaceBg,
+            backgroundColor: topBarChipBackground,
             borderWidth:     1,
-            borderColor:     theme.border,
+            borderColor:     topBarChipBorder,
             alignItems:      'center',
             justifyContent:  'center',
           }}
         >
           <FontAwesome
             name={isDark ? 'sun-o' : 'moon-o'}
-            size={15}
-            color={isDark ? theme.accent : theme.textMuted}
+            size={16}
+            color={theme.accent}
           />
         </TouchableOpacity>
 
@@ -390,10 +375,10 @@ function TopBar({
               flexDirection:   'row',
               alignItems:      'center',
               gap:             8,
-              backgroundColor: theme.surfaceBg,
+              backgroundColor: topBarChipBackground,
               borderRadius:    12,
               borderWidth:     1,
-              borderColor:     theme.border,
+              borderColor:     topBarChipBorder,
               paddingHorizontal: 8,
               paddingVertical:   6,
             }}
@@ -405,22 +390,22 @@ function TopBar({
                 borderRadius:    8,
                 alignItems:      'center',
                 justifyContent:  'center',
-                backgroundColor: theme.accentSoft,
+                backgroundColor: 'rgba(255,255,255,0.10)',
                 borderWidth:     1,
-                borderColor:     theme.accentBorder,
+                borderColor:     'rgba(255,255,255,0.24)',
               }}
             >
-              <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '800' }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800' }}>
                 {initials}
               </Text>
             </View>
-            <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
-              {firstName}
+              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+              {displayName}
             </Text>
             <FontAwesome
               name={menuOpen ? 'chevron-up' : 'chevron-down'}
               size={9}
-              color={theme.textMuted}
+              color='#FFFFFF'
             />
           </TouchableOpacity>
 
@@ -431,28 +416,29 @@ function TopBar({
                 top:             46,
                 right:           0,
                 minWidth:        160,
-                backgroundColor: theme.cardBg,
+                backgroundColor: '#FFFFFF',
                 borderRadius:    12,
                 borderWidth:     1,
-                borderColor:     theme.border,
+                borderColor:     'rgba(36,0,70,0.12)',
                 overflow:        'hidden',
                 zIndex:    60,
                 elevation: 60,
                 shadowColor:   '#000',
-                shadowOpacity: 0.25,
-                shadowRadius:  16,
-                shadowOffset:  { width: 0, height: 8 },
+                shadowOpacity: 0.16,
+                shadowRadius:  18,
+                shadowOffset:  { width: 0, height: 10 },
+                ...({ boxShadow: '0px 14px 30px rgba(24,39,75,0.16)' } as any),
               }}
             >
               <TouchableOpacity
                 onPress={() => { setMenuOpen(false); onShowProfile(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
               >
-                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                <Text style={{ color: '#240046', fontSize: 13, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
                   Perfil
                 </Text>
               </TouchableOpacity>
-              <View style={{ height: 1, backgroundColor: theme.border }} />
+              <View style={{ height: 1, backgroundColor: 'rgba(36,0,70,0.10)' }} />
               <TouchableOpacity
                 onPress={() => { setMenuOpen(false); onLogout(); }}
                 style={{ paddingHorizontal: 14, paddingVertical: 12 }}
@@ -465,7 +451,7 @@ function TopBar({
           )}
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -476,16 +462,25 @@ function ProfileModal({
   visible,
   onClose,
   onLogout,
+  onEditProfile,
 }: {
   visible: boolean;
   onClose: () => void;
   onLogout: () => void;
+  onEditProfile: () => void;
 }) {
   const { profile } = useCmsStore();
   if (!profile) return null;
 
-  const displayName = profile.email?.split('@')[0].toUpperCase() ?? 'USUARIO';
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim();
+  const displayName = (fullName || profile.email?.split('@')[0] || 'USUARIO').toUpperCase();
   const initials    = displayName.slice(0, 2);
+  const lastLoginLabel = profile.lastLoginAt
+    ? new Date(profile.lastLoginAt).toLocaleString('es-EC', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : 'Sin registros';
 
   const roleMeta: Record<string, { label: string; color: string; bg: string }> = {
     superadmin: { label: 'SUPERADMIN', color: '#FFB800', bg: 'rgba(255,184,0,0.12)'     },
@@ -503,11 +498,12 @@ function ProfileModal({
   const status = statusMeta[profile.status] ?? statusMeta.active;
 
   const infoRows: { label: string; value: string; icon: React.ComponentProps<typeof FontAwesome>['name'] }[] = [
-    { label: 'Correo electrónico', value: profile.email,                              icon: 'envelope'    },
-    { label: 'ID de usuario',      value: profile.id,                                 icon: 'id-badge'    },
-    { label: 'Rol',                value: role.label,                                 icon: 'shield'      },
-    { label: 'Estado',             value: status.label,                               icon: 'circle'      },
-    { label: 'Contrato',           value: profile.contractNumber ?? 'N/A — Interno',  icon: 'file-text-o' },
+    { label: 'Nombres completos',  value: fullName || 'No especificado',                  icon: 'user'         },
+    { label: 'Cédula de identidad',value: profile.idNumber ?? 'No especificada',          icon: 'credit-card'  },
+    { label: 'Correo electrónico', value: profile.email,                                  icon: 'envelope'     },
+    { label: 'Rol',                value: role.label,                                     icon: 'shield'      },
+    { label: 'Último inicio de sesión', value: lastLoginLabel,                            icon: 'clock-o'      },
+    { label: 'Estado',             value: status.label,                                   icon: 'circle'       },
   ];
 
   return (
@@ -538,6 +534,26 @@ function ProfileModal({
           }}
           onPress={() => {}}
         >
+          <TouchableOpacity
+            onPress={onClose}
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.12)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2,
+            }}
+          >
+            <FontAwesome name="close" size={14} color="#FAF6E7" />
+          </TouchableOpacity>
+
           {/* Header gradient */}
           <LinearGradient
             colors={['rgba(36,0,70,0.97)', 'rgba(96,38,158,0.88)']}
@@ -594,20 +610,34 @@ function ProfileModal({
             </View>
           </LinearGradient>
 
-          {/* Info rows */}
-          <View style={{ padding: 20 }}>
-            <Text
-              style={{
-                color:         'rgba(255,255,255,0.35)',
-                fontSize:      10,
-                fontWeight:    '800',
-                letterSpacing: 1.5,
-                marginBottom:  12,
-                fontFamily:    FONT_FAMILY.bodyBold,
-              }}
-            >
-              INFORMACIÓN DE LA CUENTA
-            </Text>
+          <ScrollView style={{ maxHeight: 440 }} contentContainerStyle={{ padding: 20, paddingBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <Text
+                style={{
+                  color:         'rgba(255,255,255,0.35)',
+                  fontSize:      10,
+                  fontWeight:    '800',
+                  letterSpacing: 1.5,
+                  fontFamily:    FONT_FAMILY.bodyBold,
+                }}
+              >
+                INFORMACIÓN DE LA CUENTA
+              </Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 8,
+                  borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
+                  backgroundColor: '#FFB800',
+                  overflow: 'hidden',
+                }}
+                onPress={() => { onClose(); onEditProfile(); }}
+              >
+                <FontAwesome name="pencil" size={13} color="#1A1A2E" />
+                <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 16, fontFamily: FONT_FAMILY.bodySemiBold }}>
+                  Editar perfil
+                </Text>
+              </TouchableOpacity>
+            </View>
             {infoRows.map((row, i) => (
               <View
                 key={row.label}
@@ -646,59 +676,58 @@ function ProfileModal({
                   </Text>
                   <Text
                     style={{ color: '#FAF6E7', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}
-                    numberOfLines={1}
                   >
                     {row.value}
                   </Text>
                 </View>
               </View>
             ))}
-          </View>
 
-          {/* Permissions */}
-          {profile.permissions && profile.permissions.length > 0 && (
-            <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-              <Text
-                style={{
-                  color:         'rgba(255,255,255,0.35)',
-                  fontSize:      10,
-                  fontWeight:    '800',
-                  letterSpacing: 1.5,
-                  marginBottom:  10,
-                  fontFamily:    FONT_FAMILY.bodyBold,
-                }}
-              >
-                PERMISOS ASIGNADOS
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {profile.permissions.map((p) => (
-                  <View
-                    key={p}
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      borderRadius:    6,
-                      paddingHorizontal: 8,
-                      paddingVertical:   4,
-                      borderWidth:     1,
-                      borderColor:     'rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
-                      {p}
-                    </Text>
-                  </View>
-                ))}
+            {profile.entitlements && profile.entitlements.length > 0 && (
+              <View style={{ paddingTop: 18 }}>
+                <Text
+                  style={{
+                    color:         'rgba(255,255,255,0.35)',
+                    fontSize:      10,
+                    fontWeight:    '800',
+                    letterSpacing: 1.5,
+                    marginBottom:  10,
+                    fontFamily:    FONT_FAMILY.bodyBold,
+                  }}
+                >
+                  ENTITLEMENTS
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {profile.entitlements.map((entitlement) => (
+                    <View
+                      key={entitlement}
+                      style={{
+                        backgroundColor: 'rgba(255,184,0,0.10)',
+                        borderRadius:    6,
+                        paddingHorizontal: 8,
+                        paddingVertical:   4,
+                        borderWidth:     1,
+                        borderColor:     'rgba(255,184,0,0.22)',
+                      }}
+                    >
+                      <Text style={{ color: '#FFDA6B', fontSize: 10, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>
+                        {entitlement}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </ScrollView>
 
           {/* Actions */}
-          <View style={{ padding: 20, paddingTop: 4, gap: 8 }}>
+          <View style={{ padding: 20, paddingTop: 4, alignItems: 'flex-end' }}>
             <TouchableOpacity
               onPress={() => { onClose(); onLogout(); }}
               style={{
                 backgroundColor: 'rgba(209,16,90,0.12)',
                 borderRadius:    12,
+                paddingHorizontal: 16,
                 paddingVertical: 12,
                 alignItems:      'center',
                 borderWidth:     1,
@@ -711,21 +740,6 @@ function ProfileModal({
                   Cerrar sesión
                 </Text>
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                borderRadius:    12,
-                paddingVertical: 12,
-                alignItems:      'center',
-                borderWidth:     1,
-                borderColor:     'rgba(255,255,255,0.08)',
-              }}
-            >
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '600', fontSize: 13, fontFamily: FONT_FAMILY.bodySemiBold }}>
-                Cerrar
-              </Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -767,58 +781,60 @@ function CmsShellInner({ breadcrumbs, pageIcon, children }: CmsShellProps) {
     <View
       style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bodyBg, overflow: 'hidden' }}
     >
-      {/* Purple gradient background (dark mode) */}
-      {isDark && (
-        <LinearGradient
-          colors={[
-            'rgba(36,0,70,0.4)',    // Dark purple top-left
-            'rgba(96,38,158,0.25)', // Purple mid
-            'rgba(115,3,192,0.12)', // Purple-blue bottom
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 0,
-          }}
-        />
-      )}
+      {/* Decorative background behind cards */}
+      <LinearGradient
+        colors={isDark
+          ? [
+              'rgba(36,0,70,0.4)',
+              'rgba(96,38,158,0.25)',
+              'rgba(115,3,192,0.12)',
+            ]
+          : [
+              'rgba(255,255,255,1)',
+              'rgba(255,255,255,0.98)',
+              'rgba(255,255,255,1)',
+            ]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 0,
+        }}
+      />
 
-      {/* Yellow radial orbs — dark mode only */}
-      {isDark && (
-        <>
-          <View
-            style={{
-              position:        'absolute',
-              top:             -140,
-              left:            -140,
-              width:           500,
-              height:          500,
-              borderRadius:    250,
-              backgroundColor: 'rgba(255,198,41,0.08)',
-              zIndex: 1,
-            }}
-            pointerEvents="none"
-          />
-          <View
-            style={{
-              position:        'absolute',
-              top:             -80,
-              right:           '4%',
-              width:           320,
-              height:          320,
-              borderRadius:    160,
-              backgroundColor: 'rgba(255,213,77,0.04)',
-              zIndex: 1,
-            }}
-            pointerEvents="none"
-          />
-        </>
-      )}
+      {/* Radial orbs */}
+      <>
+        <View
+          style={{
+            position:        'absolute',
+            top:             -140,
+            left:            -140,
+            width:           500,
+            height:          500,
+            borderRadius:    250,
+            backgroundColor: isDark ? 'rgba(255,198,41,0.08)' : 'rgba(120,120,120,0.10)',
+            zIndex: 1,
+          }}
+          pointerEvents="none"
+        />
+        <View
+          style={{
+            position:        'absolute',
+            top:             -80,
+            right:           '4%',
+            width:           320,
+            height:          320,
+            borderRadius:    160,
+            backgroundColor: isDark ? 'rgba(255,213,77,0.04)' : 'rgba(120,120,120,0.06)',
+            zIndex: 1,
+          }}
+          pointerEvents="none"
+        />
+      </>
 
       {/* Sidebar — always dark, hide below 640px */}
       {width >= 640 && (
@@ -847,18 +863,17 @@ function CmsShellInner({ breadcrumbs, pageIcon, children }: CmsShellProps) {
         visible={showProfile}
         onClose={() => setShowProfile(false)}
         onLogout={handleLogout}
+        onEditProfile={() => router.push('/cms/profile' as never)}
       />
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// CmsShell — public export, provides ThemeProvider
+// CmsShell — public export, ThemeProvider now lives in _layout.tsx
 // ---------------------------------------------------------------------------
 export default function CmsShell({ breadcrumbs, pageIcon, children }: CmsShellProps) {
   return (
-    <ThemeProvider>
-      <CmsShellInner breadcrumbs={breadcrumbs} pageIcon={pageIcon}>{children}</CmsShellInner>
-    </ThemeProvider>
+    <CmsShellInner breadcrumbs={breadcrumbs} pageIcon={pageIcon}>{children}</CmsShellInner>
   );
 }

@@ -192,6 +192,44 @@ describe('Auth (e2e)', () => {
     expect(res.body.canAccessOtt).toBe(true);
   });
 
+  it('GET /auth/me - returns expanded CMS profile after CMS login', async () => {
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/cms/login')
+      .send({
+        email: 'admin@lukiplay.com',
+        password: 'password123',
+        deviceId: 'cms-browser-profile',
+      })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
+      .expect(200);
+
+    expect(res.body.email).toBe('admin@lukiplay.com');
+    expect(res.body.firstName).toBeDefined();
+    expect(res.body.lastName).toBeDefined();
+    expect(res.body.idNumber).toBeDefined();
+    expect(res.body.role).toBe('superadmin');
+    expect(res.body.lastLoginAt).toBeDefined();
+  });
+
+  it('POST /auth/cms/login - admin role can authenticate directly', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/cms/login')
+      .send({
+        email: 'gestion@lukiplay.com',
+        password: 'password123',
+        deviceId: 'cms-browser-admin',
+      })
+      .expect(200);
+
+    expect(res.body.accessToken).toBeDefined();
+    expect(res.body.refreshToken).toBeDefined();
+    expect(res.body.canAccessOtt).toBe(true);
+  });
+
   // ── Authenticated endpoints ───────────────────────────────────────
 
   it('GET /auth/me - requires authentication', () => {

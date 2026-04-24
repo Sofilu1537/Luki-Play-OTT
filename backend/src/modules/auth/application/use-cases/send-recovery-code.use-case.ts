@@ -6,7 +6,10 @@ import { EMAIL_SERVICE } from '../../domain/interfaces/email.service';
 import type { EmailService } from '../../domain/interfaces/email.service';
 import { TEMPORARY_CODE_REPOSITORY } from '../../domain/interfaces/temporary-code.repository';
 import type { TemporaryCodeRepository } from '../../domain/interfaces/temporary-code.repository';
-import { TemporaryCode, TemporaryCodeType } from '../../domain/entities/temporary-code.entity';
+import {
+  TemporaryCode,
+  TemporaryCodeType,
+} from '../../domain/entities/temporary-code.entity';
 
 @Injectable()
 export class SendRecoveryCodeUseCase {
@@ -15,7 +18,8 @@ export class SendRecoveryCodeUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
-    @Inject(TEMPORARY_CODE_REPOSITORY) private readonly codeRepo: TemporaryCodeRepository,
+    @Inject(TEMPORARY_CODE_REPOSITORY)
+    private readonly codeRepo: TemporaryCodeRepository,
   ) {}
 
   /**
@@ -31,15 +35,22 @@ export class SendRecoveryCodeUseCase {
     // CMS recovery: reject non-internal users with a clear message
     if (requireCms) {
       if (!user) {
-        throw new ForbiddenException('No se encontró un usuario interno con este correo.');
+        throw new ForbiddenException(
+          'No se encontró un usuario interno con este correo.',
+        );
       }
       if (!user.isCmsUser()) {
-        throw new ForbiddenException('Este correo no pertenece a un usuario interno autorizado.');
+        throw new ForbiddenException(
+          'Este correo no pertenece a un usuario interno autorizado.',
+        );
       }
     }
 
     // Invalidate previous recovery codes for this email
-    await this.codeRepo.invalidateByEmailAndType(normalizedEmail, TemporaryCodeType.RESET_PASSWORD);
+    await this.codeRepo.invalidateByEmailAndType(
+      normalizedEmail,
+      TemporaryCodeType.RESET_PASSWORD,
+    );
 
     // Persist the code (hashed) so it can be verified later
     const codeHash = createHash('sha256').update(rawCode).digest('hex');
@@ -57,9 +68,15 @@ export class SendRecoveryCodeUseCase {
     this.logger.log(`Recovery code generated for ${normalizedEmail}`);
 
     try {
-      await this.emailService.sendRecoveryCode(normalizedEmail, rawCode, (user as any)?.nombre || (user as any)?.firstName || '');
+      await this.emailService.sendRecoveryCode(
+        normalizedEmail,
+        rawCode,
+        (user as any)?.nombre || (user as any)?.firstName || '',
+      );
     } catch (err) {
-      this.logger.warn(`SMTP error for ${normalizedEmail}: ${(err as Error).message}`);
+      this.logger.warn(
+        `SMTP error for ${normalizedEmail}: ${(err as Error).message}`,
+      );
     }
 
     return rawCode;

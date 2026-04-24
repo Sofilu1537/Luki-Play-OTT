@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function NotificacionesAdminPage() {
+  const { theme } = useTheme();
   const features = [
     'Alertas por exceso de dispositivos por usuario',
     'Planes próximos a vencer o ya vencidos',
@@ -19,23 +21,17 @@ export default function NotificacionesAdminPage() {
         <View style={{
           width: 72, height: 72,
           borderRadius: 20,
-          backgroundColor: `${C.amber}18`,
+          backgroundColor: `${theme.warning}18`,
           borderWidth: 1,
-          borderColor: `${C.amber}40`,
+          borderColor: `${theme.warning}40`,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: 24,
         }}>
-          <FontAwesome name="bell" size={28} color={C.amber} />
+          <FontAwesome name="bell" size={28} color={theme.warning} />
         </View>
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginBottom: 10 }}>
-          Notificaciones al Administrador
-        </Text>
-        <Text style={{ color: C.textSec, fontSize: 14, textAlign: 'center', maxWidth: 420, lineHeight: 22, marginBottom: 32 }}>
-          Centro de alertas internas y monitoreo de eventos críticos del sistema.
-        </Text>
 
-        <View style={{ width: '100%', maxWidth: 480 }}>
+        <View style={{ width: '100%', maxWidth: 480, marginBottom: 32 }}>
           {features.map((f, i) => (
             <View key={i} style={{
               flexDirection: 'row',
@@ -43,27 +39,15 @@ export default function NotificacionesAdminPage() {
               gap: 12,
               paddingVertical: 12,
               borderBottomWidth: i < features.length - 1 ? 1 : 0,
-              borderBottomColor: C.border,
+              borderBottomColor: theme.border,
             }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.amber, marginTop: 5 }} />
-              <Text style={{ color: C.textSec, fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.warning, marginTop: 5 }} />
+              <Text style={{ color: theme.textSec, fontSize: 13, flex: 1, lineHeight: 20 }}>{f}</Text>
             </View>
           ))}
         </View>
 
-        <View style={{
-          marginTop: 32,
-          backgroundColor: C.surface,
-          borderRadius: 10,
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          borderWidth: 1,
-          borderColor: C.border,
-        }}>
-          <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
-            EN DESARROLLO
-          </Text>
-        </View>
+
       </ScrollView>
     </CmsShell>
   );

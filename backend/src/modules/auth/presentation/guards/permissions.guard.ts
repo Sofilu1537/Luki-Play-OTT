@@ -26,12 +26,19 @@ export class PermissionsGuard implements CanActivate {
       .getRequest<{ user: { permissions: string[] } }>();
     const userPermissions: string[] = user?.permissions ?? [];
 
-    // Wildcard support: cms:* grants all cms: permissions
+    // Permission matching rules (first match wins):
+    //   1. Exact match:            cms:users:read  satisfies  cms:users:read
+    //   2. Wildcard suffix:        cms:*           satisfies  cms:users:write
+    //   3. Parent module match:    cms:users       satisfies  cms:users:read / cms:users:write
+    //      A coarse module permission (e.g. cms:users) is considered to imply
+    //      all sub-operation permissions (cms:users:<anything>), because the
+    //      CMS roles editor assigns module-level keys, not granular ones.
     return requiredPermissions.every((perm) =>
       userPermissions.some(
         (up: string) =>
           up === perm ||
-          (up.endsWith(':*') && perm.startsWith(up.replace(':*', ':'))),
+          (up.endsWith(':*') && perm.startsWith(up.replace(':*', ':'))) ||
+          perm.startsWith(up + ':'),
       ),
     );
   }

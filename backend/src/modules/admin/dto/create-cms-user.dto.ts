@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 import { UserRole } from '../../auth/domain/entities/user.entity';
 
 export class CreateCmsUserDto {
@@ -17,8 +23,12 @@ export class CreateCmsUserDto {
   @MinLength(2)
   lastName: string;
 
-  @ApiProperty({ enum: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SOPORTE] })
-  @IsEnum([UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SOPORTE], { message: 'Rol inválido.' })
+  @ApiProperty({
+    enum: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SOPORTE],
+  })
+  @IsEnum([UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SOPORTE], {
+    message: 'Rol inválido.',
+  })
   role: UserRole.SUPERADMIN | UserRole.ADMIN | UserRole.SOPORTE;
 
   @ApiProperty({ required: false })

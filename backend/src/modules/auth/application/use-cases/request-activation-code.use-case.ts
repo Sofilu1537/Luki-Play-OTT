@@ -57,9 +57,13 @@ export class RequestActivationCodeUseCase {
       const displayName = customer.firstName ?? customer.nombre;
       try {
         await this.emailService.sendActivationCode(dto.email, code);
-        this.logger.log(`Activation code sent to ${dto.email} for customer ${dto.customerId}`);
+        this.logger.log(
+          `Activation code sent to ${dto.email} for customer ${dto.customerId}`,
+        );
       } catch {
-        this.logger.warn(`SMTP error sending activation code to ${dto.email} — code: ${code}`);
+        this.logger.warn(
+          `SMTP error sending activation code to ${dto.email} — code: ${code}`,
+        );
       }
       return { sent: true, message: `Código enviado a ${dto.email}` };
     }

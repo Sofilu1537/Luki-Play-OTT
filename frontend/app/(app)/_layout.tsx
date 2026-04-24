@@ -1,7 +1,8 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuthStore } from '../../services/authStore';
 import { useEffect } from 'react';
+import { APP } from '../../styles/theme';
 
 /**
  * Layout for the authenticated (app) route group.
@@ -12,7 +13,7 @@ import { useEffect } from 'react';
  * - **Buscar** (`search`)  — search screen (placeholder).
  * - **Mi Lista** (`favorites`) — saved content list (placeholder).
  *
- * Tab bar styling follows modern OTT design system.
+ * Tab bar styling follows the LUKI dark-purple design system.
  */
 export default function AppLayout() {
     const accessToken = useAuthStore((state) => state.accessToken);
@@ -29,36 +30,35 @@ export default function AppLayout() {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: '#140026',
-                    borderTopWidth: 1,
-                    borderTopColor: 'rgba(96, 38, 158, 0.4)',
+                    backgroundColor: APP.tabBar,
+                    borderTopWidth: 0,
                     height: 60,
                     paddingBottom: 8,
                     paddingTop: 8,
                 },
-                tabBarActiveTintColor: '#FFB800', 
-                tabBarInactiveTintColor: '#B07CC6',
+                tabBarActiveTintColor: APP.accent,
+                tabBarInactiveTintColor: APP.textMuted,
             }}
         >
             <Tabs.Screen
                 name="home"
                 options={{
                     title: 'Inicio',
-                    tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />,
+                    tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="search"
                 options={{
                     title: 'Buscar',
-                    tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={color} />,
+                    tabBarIcon: ({ color }) => <FontAwesome name="search" size={24} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="favorites"
                 options={{
                     title: 'Mi Lista',
-                    tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'list' : 'list-outline'} size={24} color={color} />,
+                    tabBarIcon: ({ color }) => <FontAwesome name="list" size={24} color={color} />,
                 }}
             />
         </Tabs>

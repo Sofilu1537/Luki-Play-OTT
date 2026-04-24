@@ -95,7 +95,7 @@ docker compose ps
 ```bash
 cd backend
 npx prisma migrate dev      # Aplica todas las migraciones pendientes
-npx prisma db seed           # Carga datos de prueba (47 suscriptores + 2 CMS + plan)
+npx prisma db seed           # Carga datos de prueba (47 suscriptores + 3 CMS + plan)
 ```
 
 ### Migraciones (Producción)
@@ -111,9 +111,15 @@ npx prisma migrate deploy   # Solo aplica migraciones, sin generar nuevas
 npx prisma studio           # Abre interfaz web para inspeccionar la BD
 ```
 
-> **Datos del seed**: 47 suscriptores ISP con contratos reales, 2 usuarios CMS
-> (admin@lukiplay.com / soporte@lukiplay.com), 1 plan "LUKI PLAY" y contratos
-> asociados. Contraseña por defecto: `password123`.
+> **Datos del seed**: 47 suscriptores ISP con contratos reales, 3 usuarios CMS:
+>
+> | Email | Rol | Contraseña |
+> |-------|-----|-----------|
+> | `admin@lukiplay.com` | SUPERADMIN | `password123` |
+> | `gestion@lukiplay.com` | ADMIN | `password123` |
+> | `soporte@lukiplay.com` | SOPORTE | `password123` |
+>
+> También incluye 1 plan "LUKI PLAY" y contratos asociados a los suscriptores.
 
 ---
 
@@ -253,19 +259,34 @@ sudo systemctl reload nginx
 | PostgreSQL 15          | `PrismaModule`               | `PrismaService` + PrismaPg adapter |
 | Hash de contraseñas    | `HashService`                | `BcryptHashService` (real)      |
 | Tokens JWT             | `TokenService`               | `JwtTokenService` (real)        |
+| Email / SMTP           | `EmailService`               | `NodemailerEmailService` (real) |
 
-### Mock (Para desarrollo)
+### Mock (Para desarrollo — sin integración real)
 
 | Servicio               | Interfaz                     | Mock actual                     |
 |------------------------|------------------------------|---------------------------------|
-| Email / OTP            | `OtpService`                 | `MockOtpService` (código fijo)  |
 | Facturación ISP        | `BillingGateway`             | `MockBillingGateway`            |
 | CRM                    | `CrmGateway`                 | `MockCrmGateway`                |
+
+### Configuración SMTP (Desarrollo)
+
+El servicio de email usa `NodemailerEmailService`. Para desarrollo local, configurar Mailtrap en `backend/.env`:
+
+```env
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USER=<tu_usuario_mailtrap>
+SMTP_PASS=<tu_password_mailtrap>
+SMTP_FROM=noreply@lukiplay.com
+```
+
+> **Mailtrap**: Crear cuenta en [mailtrap.io](https://mailtrap.io) → Email Testing → SMTP Settings → copiar credenciales.
+> Todos los correos enviados en desarrollo quedan capturados en el inbox de Mailtrap (no llegan a destinatarios reales).
 
 ### Para Producción Completa
 
 - **Redis**: Caché de sesiones y tokens (configurado, no habilitado aún)
-- **Proveedor SMTP**: AWS SES, SendGrid o similar para envío real de OTP
+- **Proveedor SMTP**: AWS SES, SendGrid o similar para envío real de OTP y activaciones
 - **CDN de Video**: Integración con proveedor de streaming real
 - **Pasarela de Pagos**: Para gestión de suscripciones OTT-only
 

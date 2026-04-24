@@ -11,7 +11,8 @@ import {
   ScrollView, Platform, ViewStyle, TextStyle,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { C } from './CmsShell';
+import { useTheme } from '../../hooks/useTheme';
+import { FONT_FAMILY } from '../../styles/typography';
 
 // ─── StatCard ───────────────────────────────────────────────
 /**
@@ -26,62 +27,38 @@ export function StatCard({
   value,
   icon,
   color,
+  bg,
 }: {
   label: string;
   value: string | number;
   icon: string;
   color: string;
+  bg?: string;
 }) {
+  const { isDark, theme } = useTheme();
   return (
-    <View
-      style={{
-        flex: 1,
-        minWidth: 140,
-        backgroundColor: C.surface,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: C.border,
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: 8,
-      }}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          backgroundColor: `${color}18`,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <FontAwesome name={icon as any} size={18} color={color} />
+    <View style={{
+      flex: 1, minWidth: 180,
+      backgroundColor: theme.cardBg,
+      borderRadius: 14, padding: 16,
+      borderWidth: 1,
+      borderColor: isDark ? theme.softUiBorderDark : theme.softUiBorder,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      shadowColor: theme.cardShadow,
+      shadowOpacity: isDark ? 0.34 : 0.18,
+      shadowRadius: isDark ? 16 : 12,
+      shadowOffset: { width: isDark ? 8 : 6, height: isDark ? 8 : 6 },
+      elevation: isDark ? 10 : 6,
+      ...(Platform.OS === 'web' && !isDark ? { boxShadow: theme.softUiShadow } as any : {}),
+      ...(Platform.OS === 'web' &&  isDark ? { boxShadow: theme.softUiShadowDark } as any : {}),
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: bg ?? `${color}18`, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? `${color}35` : theme.iconBorderSoft }}>
+          <FontAwesome name={icon as any} size={16} color={color} />
+        </View>
+        <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 15, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{label}</Text>
       </View>
-      <View>
-        <Text
-          style={{
-            color: C.muted,
-            fontSize: 10,
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}
-        >
-          {label}
-        </Text>
-        <Text
-          style={{
-            color: C.text,
-            fontSize: 22,
-            fontWeight: '800',
-            marginTop: 2,
-          }}
-        >
-          {value}
-        </Text>
-      </View>
+      <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 30, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{value}</Text>
     </View>
   );
 }
@@ -143,6 +120,7 @@ export function PrimaryButton({
   disabled?: boolean;
   style?: ViewStyle;
 }) {
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       disabled={disabled}
@@ -154,7 +132,7 @@ export function PrimaryButton({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 10,
-        backgroundColor: disabled ? C.muted : C.accent,
+        backgroundColor: disabled ? theme.textMuted : theme.accent,
         opacity: disabled ? 0.5 : 1,
         ...style,
       }}
@@ -196,6 +174,7 @@ export function SecondaryButton({
   disabled?: boolean;
   style?: ViewStyle;
 }) {
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       disabled={disabled}
@@ -208,18 +187,18 @@ export function SecondaryButton({
         paddingVertical: 9,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: C.border,
+        borderColor: theme.border,
         backgroundColor: 'transparent',
         opacity: disabled ? 0.5 : 1,
         ...style,
       }}
     >
       {icon && (
-        <FontAwesome name={icon as any} size={12} color={C.textDim} />
+        <FontAwesome name={icon as any} size={12} color={theme.textSec} />
       )}
       <Text
         style={{
-          color: C.textDim,
+          color: theme.textSec,
           fontWeight: '600',
           fontSize: 13,
         }}
@@ -245,11 +224,12 @@ export function FormField({
   hint?: string;
   children: ReactNode;
 }) {
+  const { theme } = useTheme();
   return (
     <View style={{ marginBottom: 14 }}>
       <Text
         style={{
-          color: C.muted,
+          color: theme.textMuted,
           fontSize: 10,
           fontWeight: '700',
           textTransform: 'uppercase',
@@ -257,11 +237,11 @@ export function FormField({
           marginBottom: 6,
         }}
       >
-        {label} {required && <Text style={{ color: C.danger }}>*</Text>}
+        {label} {required && <Text style={{ color: theme.danger }}>*</Text>}
       </Text>
       {children}
       {hint && (
-        <Text style={{ color: C.muted, fontSize: 10, marginTop: 4 }}>
+        <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 4 }}>
           {hint}
         </Text>
       )}
@@ -281,6 +261,7 @@ export function TextInputField({
   multiline = false,
   keyboardType = 'default',
   monospace = false,
+  secureTextEntry = false,
 }: {
   value: string;
   onChangeText: (text: string) => void;
@@ -289,20 +270,22 @@ export function TextInputField({
   multiline?: boolean;
   keyboardType?: 'default' | 'number-pad' | 'decimal-pad';
   monospace?: boolean;
+  secureTextEntry?: boolean;
 }) {
+  const { theme } = useTheme();
   const webInput =
     Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
   return (
     <TextInput
       style={{
-        backgroundColor: C.lift,
+        backgroundColor: theme.liftBg,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: C.border,
+        borderColor: theme.border,
         paddingHorizontal: 12,
         paddingVertical: 10,
-        color: C.text,
+        color: theme.text,
         fontSize: 13,
         fontFamily: monospace && Platform.OS === 'web' ? 'monospace' : undefined,
         minHeight: multiline ? 100 : 'auto',
@@ -311,10 +294,11 @@ export function TextInputField({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={C.muted}
+      placeholderTextColor={theme.textMuted}
       editable={!disabled}
       multiline={multiline}
       keyboardType={keyboardType as any}
+      secureTextEntry={secureTextEntry}
     />
   );
 }
@@ -327,13 +311,15 @@ export function SelectPill({
   label,
   selected = false,
   onPress,
-  color = C.accent,
+  color,
 }: {
   label: string;
   selected?: boolean;
   onPress: () => void;
   color?: string;
 }) {
+  const { theme } = useTheme();
+  const effectiveColor = color ?? theme.accent;
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -342,13 +328,13 @@ export function SelectPill({
         paddingVertical: 8,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: selected ? color : C.border,
-        backgroundColor: selected ? `${color}20` : C.lift,
+        borderColor: selected ? effectiveColor : theme.border,
+        backgroundColor: selected ? `${effectiveColor}20` : theme.liftBg,
       }}
     >
       <Text
         style={{
-          color: selected ? color : C.textDim,
+          color: selected ? effectiveColor : theme.textSec,
           fontSize: 12,
           fontWeight: '700',
         }}
@@ -376,13 +362,14 @@ export function EmptyState({
   action?: () => void;
   actionLabel?: string;
 }) {
+  const { theme } = useTheme();
   return (
     <View
       style={{
-        backgroundColor: C.surface,
+        backgroundColor: theme.cardBg,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: C.border,
+        borderColor: theme.border,
         padding: 48,
         alignItems: 'center',
         gap: 14,
@@ -393,16 +380,16 @@ export function EmptyState({
           width: 60,
           height: 60,
           borderRadius: 14,
-          backgroundColor: C.accentSoft,
+          backgroundColor: theme.accentSoft,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <FontAwesome name={icon as any} size={26} color={C.accent} />
+        <FontAwesome name={icon as any} size={26} color={theme.accent} />
       </View>
       <Text
         style={{
-          color: C.text,
+          color: theme.text,
           fontSize: 15,
           fontWeight: '800',
         }}
@@ -411,7 +398,7 @@ export function EmptyState({
       </Text>
       <Text
         style={{
-          color: C.muted,
+          color: theme.textMuted,
           fontSize: 13,
           textAlign: 'center',
           lineHeight: 20,
@@ -443,6 +430,7 @@ export function FeedbackBanner({
   type: 'success' | 'error';
   message: string;
 }) {
+  const { theme } = useTheme();
   const isSuccess = type === 'success';
 
   return (
@@ -454,19 +442,19 @@ export function FeedbackBanner({
         padding: 14,
         borderRadius: 10,
         marginBottom: 16,
-        backgroundColor: isSuccess ? 'rgba(23,209,198,0.12)' : C.roseSoft,
+        backgroundColor: isSuccess ? 'rgba(23,209,198,0.12)' : theme.dangerSoft,
         borderWidth: 1,
-        borderColor: isSuccess ? '#17D1C6' : C.danger,
+        borderColor: isSuccess ? '#17D1C6' : theme.danger,
       }}
     >
       <FontAwesome
         name={isSuccess ? 'check-circle' : 'exclamation-circle'}
         size={14}
-        color={isSuccess ? '#17D1C6' : C.danger}
+        color={isSuccess ? '#17D1C6' : theme.danger}
       />
       <Text
         style={{
-          color: isSuccess ? '#17D1C6' : C.danger,
+          color: isSuccess ? '#17D1C6' : theme.danger,
           fontSize: 13,
           flex: 1,
         }}
@@ -486,6 +474,7 @@ export function TableHeader({
 }: {
   columns: { label: string; flex: number }[];
 }) {
+  const { theme } = useTheme();
   return (
     <View
       style={{
@@ -493,8 +482,8 @@ export function TableHeader({
         paddingHorizontal: 18,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: C.border,
-        backgroundColor: C.lift,
+        borderBottomColor: theme.border,
+        backgroundColor: theme.liftBg,
       }}
     >
       {columns.map((col, i) => (
@@ -502,7 +491,7 @@ export function TableHeader({
           key={i}
           style={{
             flex: col.flex,
-            color: C.muted,
+            color: theme.textMuted,
             fontSize: 9,
             fontWeight: '700',
             textTransform: 'uppercase',
@@ -530,6 +519,7 @@ export function TableRow({
   onPress?: () => void;
   isLast?: boolean;
 }) {
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -540,7 +530,7 @@ export function TableRow({
         paddingVertical: 14,
         alignItems: 'center',
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: C.border,
+        borderBottomColor: theme.border,
       }}
     >
       {cells.map((cell, i) => (
@@ -561,7 +551,7 @@ export function ConfirmModal({
   title,
   message,
   icon = 'exclamation-circle',
-  iconColor = C.danger,
+  iconColor,
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   onConfirm,
@@ -579,6 +569,8 @@ export function ConfirmModal({
   onCancel: () => void;
   loading?: boolean;
 }) {
+  const { theme } = useTheme();
+  const effectiveIconColor = iconColor ?? theme.danger;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View
@@ -594,10 +586,10 @@ export function ConfirmModal({
           style={{
             width: '100%',
             maxWidth: 380,
-            backgroundColor: C.surface,
+            backgroundColor: theme.cardBg,
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: C.border,
+            borderColor: theme.border,
             padding: 28,
             alignItems: 'center',
           }}
@@ -607,17 +599,17 @@ export function ConfirmModal({
               width: 46,
               height: 46,
               borderRadius: 12,
-              backgroundColor: `${iconColor}20`,
+              backgroundColor: `${effectiveIconColor}20`,
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 16,
             }}
           >
-            <FontAwesome name={icon as any} size={20} color={iconColor} />
+            <FontAwesome name={icon as any} size={20} color={effectiveIconColor} />
           </View>
           <Text
             style={{
-              color: C.text,
+              color: theme.text,
               fontSize: 16,
               fontWeight: '800',
               marginBottom: 8,
@@ -627,7 +619,7 @@ export function ConfirmModal({
           </Text>
           <Text
             style={{
-              color: C.muted,
+              color: theme.textMuted,
               fontSize: 13,
               textAlign: 'center',
               lineHeight: 20,
@@ -647,7 +639,7 @@ export function ConfirmModal({
               onPress={onConfirm}
               disabled={loading}
               style={{
-                backgroundColor: iconColor,
+                backgroundColor: effectiveIconColor,
               }}
             />
           </View>

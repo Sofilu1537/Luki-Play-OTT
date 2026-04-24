@@ -6,25 +6,26 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import LukiPlayLogo from '../../components/LukiPlayLogo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { APP } from '../../styles/theme';
 
 type Screen = 'login' | 'first-access' | 'request-code' | 'verify-code' | 'activate' | 'forgot' | 'register-request';
 
 const P = {
-    bg: ['#240046', '#140026'] as const,
-    card: 'rgba(96, 38, 158, 0.15)',
-    cardBorder: 'rgba(255, 184, 0, 0.15)',
-    input: 'rgba(255, 255, 255, 0.08)',
-    inputBorder: 'rgba(255, 255, 255, 0.12)',
-    inputFocus: 'rgba(255, 184, 0, 0.4)',
-    accent: '#FFB800',
-    accentSoft: 'rgba(255, 184, 0, 0.15)',
-    text: '#FAF6E7',
+    bg: [APP.gradientStart, APP.gradientEnd] as const,
+    card: 'rgba(36, 0, 70, 0.65)',
+    cardBorder: 'rgba(96, 38, 158, 0.24)',
+    input: 'rgba(255,255,255,0.07)',
+    inputBorder: 'rgba(255,255,255,0.12)',
+    inputFocus: 'rgba(255,184,0,0.4)',
+    accent: APP.accent,
+    accentSoft: 'rgba(255,184,0,0.12)',
+    text: '#FFFFFF',
     textSec: '#D0C4E8',
-    muted: '#B07CC6',
-    error: '#D1105A',
-    errorBg: 'rgba(209, 16, 90, 0.15)',
-    success: '#10B981',
-    successBg: 'rgba(16,185,129,0.12)',
+    muted: '#8B72B2',
+    error: APP.danger,
+    errorBg: 'rgba(209,16,90,0.12)',
+    success: APP.success,
+    successBg: 'rgba(23,209,198,0.12)',
 };
 
 function AuthInput({ label, placeholder, value, onChangeText, secure, keyboardType, autoCapitalize }: {
@@ -68,7 +69,7 @@ function PrimaryButton({ title, onPress, isLoading, disabled }: { title: string;
 
 function ErrorBox({ msg }: { msg: string }) {
     return (
-        <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)' }}>
+        <View style={{ backgroundColor: P.errorBg, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(209,16,90,0.2)' }}>
             <Text style={{ color: P.error, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>{msg}</Text>
         </View>
     );
@@ -361,7 +362,7 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             ) : (
                 <>
                     <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
-                        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+                        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
                             <FontAwesome name="check" size={24} color={P.success} />
                         </View>
                         <Text style={{ color: P.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>Contraseña actualizada</Text>
@@ -414,7 +415,7 @@ function RegisterRequestForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Solicitar acceso</Text>
             {done ? (
                 <View style={{ alignItems: 'center', marginTop: 8 }}>
-                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
                         <FontAwesome name="check" size={24} color={P.success} />
                     </View>
                     <Text style={{ color: P.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>Solicitud enviada</Text>
@@ -451,7 +452,7 @@ export default function Login() {
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
                 <View style={{ alignItems: 'center', marginBottom: 32 }}>
-                    <LukiPlayLogo variant="full" size={120} />
+                    <LukiPlayLogo variant="icon" size={120} />
                     <Text style={{ color: P.muted, fontSize: 13, letterSpacing: 3, marginTop: 12, textTransform: 'uppercase', fontWeight: '600' }}>tu hogar digital</Text>
                 </View>
                 <View style={{ backgroundColor: P.card, borderRadius: 20, borderWidth: 1, borderColor: P.cardBorder, padding: 28, maxWidth: 420, width: '100%', alignSelf: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 12 } }}>

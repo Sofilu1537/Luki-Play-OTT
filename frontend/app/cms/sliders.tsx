@@ -23,7 +23,8 @@ import {
   adminUpdateSlider,
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import CmsShell, { C } from '../../components/cms/CmsShell';
+import CmsShell from '../../components/cms/CmsShell';
+import { useTheme } from '../../hooks/useTheme';
 
 function emptyForm(): AdminSliderPayload {
   return {
@@ -53,6 +54,7 @@ function sanitizeSlider(slider: AdminSlider): AdminSlider {
 }
 
 export default function CmsSliders() {
+  const { isDark, theme } = useTheme();
   const { profile, accessToken } = useCmsStore();
   const router = useRouter();
   const [sliders, setSliders] = useState<AdminSlider[]>([]);
@@ -89,11 +91,11 @@ export default function CmsSliders() {
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const formInputStyle = {
-    backgroundColor: C.lift,
+    backgroundColor: theme.liftBg,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: C.border,
-    color: C.text,
+    borderColor: theme.border,
+    color: theme.text,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 13,
@@ -253,7 +255,7 @@ export default function CmsSliders() {
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
-          borderColor: C.border,
+          borderColor: theme.border,
         }}
         onPress={onPress}
       >
@@ -265,53 +267,46 @@ export default function CmsSliders() {
   return (
     <CmsShell breadcrumbs={[{ label: 'Sliders' }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 18 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <View>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Sliders / Banners</Text>
-            <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>
-              Curaduría visual del hero del player con enfoque OTT y control editorial.
-            </Text>
-          </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.accent, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, overflow: 'hidden' }}
             onPress={openCreateModal}
           >
-            <FontAwesome name="plus" size={13} color="white" />
-            <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Nuevo Slider</Text>
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, overflow: 'hidden' }}>
+              <View style={{ flex: 1, backgroundColor: theme.accent }} />
+            </View>
+            <FontAwesome name="plus" size={13} color="#1A1A2E" />
+            <Text style={{ color: '#1A1A2E', fontWeight: '700', fontSize: 13, fontFamily: 'Montserrat-SemiBold' }}>Nuevo Slider</Text>
           </TouchableOpacity>
         </View>
 
         {feedback ? (
-          <View style={{ borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)', backgroundColor: feedback.type === 'success' ? C.greenSoft : C.roseSoft, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Text style={{ color: feedback.type === 'success' ? C.green : C.rose, fontSize: 12, fontWeight: '700' }}>{feedback.message}</Text>
+          <View style={{ borderWidth: 1, borderColor: feedback.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)', backgroundColor: feedback.type === 'success' ? theme.successSoft : theme.dangerSoft, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
+            <Text style={{ color: feedback.type === 'success' ? theme.success : theme.danger, fontSize: 12, fontWeight: '700' }}>{feedback.message}</Text>
           </View>
         ) : null}
 
         <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-          <View style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>TOTAL BANNERS</Text>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '900' }}>{stats.total}</Text>
-          </View>
-          <View style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>PUBLICADOS</Text>
-            <Text style={{ color: C.green, fontSize: 22, fontWeight: '900' }}>{stats.activos}</Text>
-          </View>
-          <View style={{ minWidth: 150, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <Text style={{ color: C.muted, fontSize: 10, fontWeight: '800', marginBottom: 4 }}>BORRADORES</Text>
-            <Text style={{ color: C.amber, fontSize: 22, fontWeight: '900' }}>{stats.draft}</Text>
-          </View>
-        </View>
-
-        <View style={{ backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, padding: 16 }}>
-          <Text style={{ color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 }}>Vista editorial</Text>
-          <Text style={{ color: C.textDim, fontSize: 12, lineHeight: 18 }}>
-            Reordena banners arrastrando las cards en web. El título y subtítulo se renderizan sobre la imagen para simular la experiencia del hero en una plataforma de streaming.
-          </Text>
+          {[
+            { label: 'Total banners', value: stats.total,   icon: 'image'        as const, color: theme.text,    bg: `${theme.text}18`    },
+            { label: 'Publicados',    value: stats.activos, icon: 'check-circle' as const, color: theme.success,  bg: theme.successSoft    },
+            { label: 'Borradores',    value: stats.draft,   icon: 'pencil'       as const, color: theme.warning,  bg: theme.warningSoft    },
+          ].map((item) => (
+            <View key={item.label} style={{ flex: 1, minWidth: 180, backgroundColor: theme.cardBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={item.icon} size={16} color={item.color} />
+                </View>
+                <Text style={{ color: theme.textSec, fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+              </View>
+              <Text style={{ color: item.color, fontSize: 22, fontWeight: '800' }}>{item.value}</Text>
+            </View>
+          ))}
         </View>
 
         {loading ? (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <ActivityIndicator color={C.accent} size="large" />
+            <ActivityIndicator color={theme.accent} size="large" />
           </View>
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
@@ -357,8 +352,8 @@ export default function CmsSliders() {
                     borderRadius: 22,
                     overflow: 'hidden',
                     borderWidth: 1,
-                    borderColor: isDropTarget ? C.accentBorder : C.border,
-                    backgroundColor: C.surface,
+                    borderColor: isDropTarget ? theme.accentBorder : theme.border,
+                    backgroundColor: theme.cardBg,
                     opacity: isDragging ? 0.58 : 1,
                     transform: [{ scale: isDragging ? 0.98 : 1 }],
                     shadowColor: '#000',
@@ -373,21 +368,21 @@ export default function CmsSliders() {
                     <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(3,7,18,0.20)' }} />
                     <View style={{ position: 'absolute', left: 16, right: 16, top: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: slider.activo ? 'rgba(16,185,129,0.18)' : 'rgba(245,158,11,0.18)', borderWidth: 1, borderColor: slider.activo ? 'rgba(16,185,129,0.26)' : 'rgba(245,158,11,0.26)' }}>
-                        <Text style={{ color: slider.activo ? C.green : C.amber, fontSize: 10, fontWeight: '800' }}>
+                        <Text style={{ color: slider.activo ? theme.success : theme.warning, fontSize: 10, fontWeight: '800' }}>
                           {slider.activo ? 'PUBLICADO' : 'BORRADOR'}
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {renderActionButton(slider.activo ? 'eye-slash' : 'eye', slider.activo ? C.amber : C.green, 'rgba(22,0,53,0.72)', () => handleToggle(slider))}
-                        {renderActionButton('pencil', C.cyan, 'rgba(22,0,53,0.72)', () => openEditModal(slider))}
-                        {renderActionButton('trash', C.rose, 'rgba(22,0,53,0.72)', () => handleDelete(slider))}
+                        {renderActionButton(slider.activo ? 'eye-slash' : 'eye', slider.activo ? theme.warning : theme.success, 'rgba(22,0,53,0.72)', () => handleToggle(slider))}
+                        {renderActionButton('pencil', theme.success, 'rgba(22,0,53,0.72)', () => openEditModal(slider))}
+                        {renderActionButton('trash', theme.danger, 'rgba(22,0,53,0.72)', () => handleDelete(slider))}
                       </View>
                     </View>
                     <View style={{ position: 'absolute', left: 16, right: 16, bottom: 16 }}>
                       <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(13,0,32,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                        <Text style={{ color: C.text, fontSize: 18, fontWeight: '900' }}>{slider.orden}</Text>
+                        <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900' }}>{slider.orden}</Text>
                       </View>
-                      <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', lineHeight: 26, marginBottom: 6 }} numberOfLines={2}>
+                      <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 4 }} numberOfLines={1}>
                         {slider.titulo}
                       </Text>
                       <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 13, lineHeight: 18 }} numberOfLines={2}>
@@ -398,12 +393,12 @@ export default function CmsSliders() {
 
                   <View style={{ paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: C.textDim, fontSize: 11, fontWeight: '700', marginBottom: 3 }}>BANNER HERO</Text>
-                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{slider.titulo}</Text>
+                      <Text style={{ color: theme.textSec, fontSize: 11, fontWeight: '700', marginBottom: 3 }}>BANNER HERO</Text>
+                      <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{slider.titulo}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <FontAwesome name="arrows" size={12} color={C.muted} />
-                      <Text style={{ color: C.muted, fontSize: 11, fontWeight: '700' }}>Drag & drop</Text>
+                      <FontAwesome name="arrows" size={12} color={theme.textMuted} />
+                      <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '700' }}>Drag &amp; drop</Text>
                     </View>
                   </View>
                 </View>
@@ -415,36 +410,36 @@ export default function CmsSliders() {
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
         <View style={{ flex: 1, backgroundColor: 'rgba(13,0,32,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ width: '100%', maxWidth: 720, backgroundColor: C.surface, borderRadius: 18, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-            <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ width: '100%', maxWidth: 720, backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
+            <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>
-                <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{editingSlider ? 'Editar slider' : 'Crear slider'}</Text>
-                <Text style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>Gestiona banners visuales del hero principal del player.</Text>
+                <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }}>{editingSlider ? 'Editar slider' : 'Crear slider'}</Text>
+                <Text style={{ color: theme.textSec, fontSize: 12, marginTop: 4 }}>Gestiona banners visuales del hero principal del player.</Text>
               </View>
               <TouchableOpacity onPress={closeModal}>
-                <FontAwesome name="times" size={18} color={C.muted} />
+                <FontAwesome name="times" size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
-              <Text style={{ color: C.textDim, fontSize: 12 }}>TITULO</Text>
-              <TextInput style={formInputStyle} value={form.titulo} onChangeText={(value) => updateField('titulo', value)} placeholder="Ej: Estrenos destacados" placeholderTextColor={C.muted} />
+              <Text style={{ color: theme.textSec, fontSize: 12 }}>TITULO</Text>
+              <TextInput style={formInputStyle} value={form.titulo} onChangeText={(value) => updateField('titulo', value)} placeholder="Ej: Estrenos destacados" placeholderTextColor={theme.textMuted} />
 
-              <Text style={{ color: C.textDim, fontSize: 12 }}>SUBTITULO</Text>
-              <TextInput style={formInputStyle} value={form.subtitulo} onChangeText={(value) => updateField('subtitulo', value)} placeholder="Ej: Lo mejor del catálogo esta semana" placeholderTextColor={C.muted} />
+              <Text style={{ color: theme.textSec, fontSize: 12 }}>SUBTITULO</Text>
+              <TextInput style={formInputStyle} value={form.subtitulo} onChangeText={(value) => updateField('subtitulo', value)} placeholder="Ej: Lo mejor del catálogo esta semana" placeholderTextColor={theme.textMuted} />
 
-              <Text style={{ color: C.textDim, fontSize: 12 }}>IMAGEN DEL BANNER</Text>
-              <TextInput style={formInputStyle} value={form.imagen} onChangeText={(value) => updateField('imagen', value)} placeholder="https://.../banner.jpg" placeholderTextColor={C.muted} autoCapitalize="none" />
+              <Text style={{ color: theme.textSec, fontSize: 12 }}>IMAGEN DEL BANNER</Text>
+              <TextInput style={formInputStyle} value={form.imagen} onChangeText={(value) => updateField('imagen', value)} placeholder="https://.../banner.jpg" placeholderTextColor={theme.textMuted} autoCapitalize="none" />
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: form.activo ? C.greenSoft : C.lift, borderWidth: 1, borderColor: form.activo ? 'rgba(16,185,129,0.28)' : C.border }} onPress={() => updateField('activo', !form.activo)}>
-                  <FontAwesome name={form.activo ? 'toggle-on' : 'toggle-off'} size={16} color={form.activo ? C.green : C.textDim} />
-                  <Text style={{ color: form.activo ? C.green : C.textDim, fontSize: 12, fontWeight: '700' }}>{form.activo ? 'Publicado' : 'Borrador'}</Text>
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: form.activo ? theme.successSoft : theme.liftBg, borderWidth: 1, borderColor: form.activo ? 'rgba(16,185,129,0.28)' : theme.border }} onPress={() => updateField('activo', !form.activo)}>
+                  <FontAwesome name={form.activo ? 'toggle-on' : 'toggle-off'} size={16} color={form.activo ? theme.success : theme.textSec} />
+                  <Text style={{ color: form.activo ? theme.success : theme.textSec, fontSize: 12, fontWeight: '700' }}>{form.activo ? 'Publicado' : 'Borrador'}</Text>
                 </TouchableOpacity>
               </View>
 
               {form.imagen?.trim() ? (
-                <View style={{ marginTop: 6, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
+                <View style={{ marginTop: 6, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.border }}>
                   <View style={{ aspectRatio: 16 / 7, backgroundColor: '#160035' }}>
                     <Image source={{ uri: form.imagen.trim() }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
@@ -455,14 +450,14 @@ export default function CmsSliders() {
                 </View>
               ) : null}
 
-              {formError ? <Text style={{ color: C.rose, fontSize: 12, fontWeight: '700' }}>{formError}</Text> : null}
+              {formError ? <Text style={{ color: theme.danger, fontSize: 12, fontWeight: '700' }}>{formError}</Text> : null}
             </ScrollView>
 
-            <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.lift }} onPress={closeModal}>
-                <Text style={{ color: C.textDim, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
+            <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: theme.border, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.liftBg }} onPress={closeModal}>
+                <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: C.accent, opacity: busy ? 0.7 : 1 }} onPress={handleSave} disabled={busy}>
+              <TouchableOpacity style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: theme.accent, opacity: busy ? 0.7 : 1 }} onPress={handleSave} disabled={busy}>
                 {busy ? <ActivityIndicator color="white" size="small" /> : <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>{editingSlider ? 'Guardar cambios' : 'Crear slider'}</Text>}
               </TouchableOpacity>
             </View>

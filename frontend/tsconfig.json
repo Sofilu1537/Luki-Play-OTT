@@ -3,10 +3,11 @@
   "compilerOptions": {
     "jsxImportSource": "nativewind",
     "strict": true,
+
+    "moduleResolution": "bundler",
+
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [

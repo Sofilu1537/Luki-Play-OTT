@@ -2,7 +2,19 @@ import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../services/authStore';
 import { useEffect, useState } from 'react';
+import { APP } from '../styles/theme';
 
+/**
+ * Application entry-point / auth-redirect gate.
+ *
+ * On mount it calls {@link useAuthStore.restoreSession} to rehydrate any
+ * persisted session (tokens in localStorage / memory fallback). Once the
+ * restore attempt completes it redirects to the appropriate route:
+ * - Authenticated user (has accessToken) → `/(app)/home`
+ * - Unauthenticated user → `/(auth)/login`
+ *
+ * Shows an activity indicator while the session is being restored.
+ */
 export default function Index() {
     const accessToken = useAuthStore((state) => state.accessToken);
     const restoreSession = useAuthStore((state) => state.restoreSession);
@@ -26,8 +38,8 @@ export default function Index() {
     }, [restored, accessToken]);
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#140026' }}>
-            <ActivityIndicator size="large" color="#FFB800" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: APP.surface }}>
+            <ActivityIndicator size="large" color={APP.accent} />
         </View>
     );
 }

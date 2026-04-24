@@ -158,6 +158,7 @@ export interface AdminCanal {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  lastHealthCheckAt?: string | null;
 }
 
 export type AdminCanalPayload = {
@@ -188,6 +189,7 @@ export interface AdminCategoria {
   accentColor?: string;
   displayOrder?: number;
   activo: boolean;
+  esContenidoAdulto?: boolean;
   channelCategories?: Array<{ channel: { id: string; nombre: string; status: string } }>;
   createdAt?: string;
   updatedAt?: string;
@@ -228,14 +230,30 @@ async function apiFetch<T>(
   accessToken: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers ?? {}),
-    },
-  });
+  const doRequest = (token: string) =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(options.headers ?? {}),
+      },
+    });
+
+  let res = await doRequest(accessToken);
+
+  // On 401, attempt a silent token refresh and retry once
+  if (res.status === 401) {
+    try {
+      const { useCmsStore } = await import('../cmsStore');
+      const newToken = await useCmsStore.getState().refreshAccessToken();
+      if (newToken) {
+        res = await doRequest(newToken);
+      }
+    } catch {
+      // Refresh failed — fall through and throw the 401 below
+    }
+  }
 
   // Throw on non-ok responses
   if (!res.ok) {
@@ -245,6 +263,11 @@ async function apiFetch<T>(
         ? String((data as Record<string, unknown>).message)
         : `HTTP ${res.status}`;
     throw new Error(msg);
+  }
+
+  // 204 No Content or empty body — return undefined without parsing
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T;
   }
 
   return res.json() as Promise<T>;
@@ -339,8 +362,13 @@ export interface CmsUserPayload {
   email: string;
   telefono?: string;
   role: 'admin' | 'soporte';
-  permissions?: string[];
   password?: string;
+}
+
+/** A CMS role with its assigned permission keys. */
+export interface CmsRole {
+  key: 'superadmin' | 'admin' | 'soporte' | 'cliente';
+  permissions: string[];
 }
 
 export async function adminListCmsUsers(accessToken: string): Promise<AdminUser[]> {
@@ -359,18 +387,21 @@ export async function adminCreateCmsUser(
       email: data.email,
       telefono: data.telefono,
       role: data.role,
-      permissions: data.permissions,
       password: data.password ?? 'TempPass2025!',
     }),
   });
 }
 
-export async function adminUpdateCmsUserPermissions(
+export async function adminGetRoles(accessToken: string): Promise<CmsRole[]> {
+  return apiFetch<CmsRole[]>('/admin/roles', accessToken);
+}
+
+export async function adminUpdateRolePermissions(
   accessToken: string,
-  userId: string,
+  roleKey: string,
   permissions: string[],
-): Promise<AdminUser> {
-  return apiFetch<AdminUser>(`/admin/users/${userId}`, accessToken, {
+): Promise<CmsRole> {
+  return apiFetch<CmsRole>(`/admin/roles/${roleKey}/permissions`, accessToken, {
     method: 'PATCH',
     body: JSON.stringify({ permissions }),
   });
@@ -541,9 +572,13 @@ export async function adminListCanales(accessToken: string): Promise<AdminCanal[
 }
 
 export async function adminCreateCanal(accessToken: string, data: AdminCanalPayload): Promise<AdminCanal> {
+  // Strip empty optional URL fields so backend @IsUrl validation is not triggered
+  const payload = { ...data };
+  if (!payload.backupUrl) delete (payload as Partial<AdminCanalPayload>).backupUrl;
+  if (!payload.logoUrl) delete (payload as Partial<AdminCanalPayload>).logoUrl;
   return apiFetch<AdminCanal>('/admin/canales', accessToken, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -560,6 +595,67 @@ export async function adminToggleCanal(accessToken: string, id: string): Promise
 
 export async function adminDeleteCanal(accessToken: string, id: string): Promise<void> {
   return apiFetch<void>(`/admin/canales/${id}`, accessToken, { method: 'DELETE' });
+}
+
+// ---------------------------------------------------------------------------
+// HLS stream validation
+// ---------------------------------------------------------------------------
+
+export type HlsStatus = 'VALID' | 'NO_SIGNAL' | 'INVALID';
+
+export interface HlsValidationResult {
+  status: HlsStatus;
+  isReachable: boolean;
+  hasPlaylist: boolean;
+  hasSegments: boolean;
+  segmentProbe?: { url: string; reachable: boolean };
+  error?: string;
+}
+
+export async function adminValidateStream(
+  accessToken: string,
+  url: string,
+): Promise<HlsValidationResult> {
+  return apiFetch<HlsValidationResult>('/admin/canales/validate-stream', accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
+
+export async function adminUploadChannelLogo(accessToken: string, file: File): Promise<string> {
+  const doUpload = async (token: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${API_BASE_URL}/admin/canales/upload-logo`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  };
+
+  let res = await doUpload(accessToken);
+
+  // On 401, attempt a silent token refresh and retry once
+  if (res.status === 401) {
+    try {
+      const { useCmsStore } = await import('../cmsStore');
+      const newToken = await useCmsStore.getState().refreshAccessToken();
+      if (newToken) {
+        res = await doUpload(newToken);
+      }
+    } catch {
+      // Refresh failed — fall through and throw the 401 below
+    }
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.message ?? `Upload failed (${res.status})`);
+  }
+  const data = await res.json() as { url: string };
+  // Return the relative path (/uploads/logos/...) so it is environment-agnostic
+  // when stored in the DB. Use resolveLogoUrl() on the frontend to render it.
+  return data.url;
 }
 
 // ---------------------------------------------------------------------------
@@ -768,6 +864,61 @@ export async function adminToggleComponente(accessToken: string, id: string): Pr
     if (comp) comp.activo = !comp.activo;
     return comp ? { ...comp } : mockComponentes[0];
   }
+}
+
+export async function adminReorderComponentes(
+  accessToken: string,
+  ids: string[],
+): Promise<AdminComponente[]> {
+  try {
+    return await apiFetch<AdminComponente[]>('/admin/componentes/reorder', accessToken, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  } catch {
+    // optimistic: return mock sorted by provided order
+    return ids.map((id, i) => {
+      const comp = mockComponentes.find((c) => c.id === id) ?? mockComponentes[0];
+      return { ...comp, orden: i + 1 };
+    });
+  }
+}
+
+export interface CreateComponentePayload {
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  tipo: string;
+  activo?: boolean;
+  orden?: number;
+}
+
+export async function adminCreateComponente(
+  accessToken: string,
+  data: CreateComponentePayload,
+): Promise<AdminComponente> {
+  return apiFetch<AdminComponente>('/admin/componentes', accessToken, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateComponente(
+  accessToken: string,
+  id: string,
+  data: Partial<CreateComponentePayload>,
+): Promise<AdminComponente> {
+  return apiFetch<AdminComponente>(`/admin/componentes/${id}`, accessToken, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteComponente(
+  accessToken: string,
+  id: string,
+): Promise<void> {
+  await apiFetch<void>(`/admin/componentes/${id}`, accessToken, { method: 'DELETE' });
 }
 
 export async function adminSyncComponenteCategorias(

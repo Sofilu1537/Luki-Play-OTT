@@ -137,7 +137,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new subscriber account' })
   @ApiResponse({ status: 201, type: LoginChallengeResponse })
   @ApiResponse({ status: 409, description: 'El correo ya está registrado' })
-  async registerApp(@Body() dto: RegisterAppDto): Promise<{ message: string; loginToken: string; otpRequired: boolean }> {
+  async registerApp(
+    @Body() dto: RegisterAppDto,
+  ): Promise<{ message: string; loginToken: string; otpRequired: boolean }> {
     return this.registerAppUseCase.execute(dto);
   }
 
@@ -153,7 +155,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Phase 2: Verify OTP and complete login' })
   @ApiResponse({ status: 200, type: AuthTokensResponse })
-  async completeLogin(@Body() dto: VerifyLoginOtpDto): Promise<AuthTokensResponse> {
+  async completeLogin(
+    @Body() dto: VerifyLoginOtpDto,
+  ): Promise<AuthTokensResponse> {
     return this.completeLoginUseCase.execute(dto);
   }
 
@@ -161,36 +165,63 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'CMS login — email + password. Rate limited.' })
   @ApiResponse({ status: 200, type: AuthTokensResponse })
-  @ApiResponse({ status: 401, description: 'Credenciales inválidas o cuenta bloqueada' })
-  async loginCms(@Body() dto: LoginCmsDto, @Req() req: Request): Promise<AuthTokensResponse> {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip;
+  @ApiResponse({
+    status: 401,
+    description: 'Credenciales inválidas o cuenta bloqueada',
+  })
+  async loginCms(
+    @Body() dto: LoginCmsDto,
+    @Req() req: Request,
+  ): Promise<AuthTokensResponse> {
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip;
     return this.loginCmsUseCase.execute(dto, ip);
   }
 
   @Post('cms/forgot-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Request password recovery email (anti-enumeration: always 200)' })
+  @ApiOperation({
+    summary: 'Request password recovery email (anti-enumeration: always 200)',
+  })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<MessageResponse> {
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<MessageResponse> {
     await this.forgotPasswordUseCase.execute(dto.email);
-    return { message: 'Si el correo está registrado, recibirás las instrucciones en breve.' };
+    return {
+      message:
+        'Si el correo está registrado, recibirás las instrucciones en breve.',
+    };
   }
 
   @Post('send-recovery-code')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send recovery code to user email' })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async sendRecoveryCode(@Body() dto: SendRecoveryCodeDto): Promise<{ message: string }> {
+  async sendRecoveryCode(
+    @Body() dto: SendRecoveryCodeDto,
+  ): Promise<{ message: string }> {
     await this.sendRecoveryCodeUseCase.execute(dto.email);
-    return { message: 'Si el correo está registrado, recibirás un código de recuperación.' };
+    return {
+      message:
+        'Si el correo está registrado, recibirás un código de recuperación.',
+    };
   }
 
   @Post('cms/send-recovery-code')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send recovery code — CMS internal users only (SUPERADMIN/SOPORTE)' })
+  @ApiOperation({
+    summary:
+      'Send recovery code — CMS internal users only (SUPERADMIN/SOPORTE)',
+  })
   @ApiResponse({ status: 200, type: MessageResponse })
-  @ApiResponse({ status: 403, description: 'El correo no pertenece a un usuario interno' })
-  async cmsSendRecoveryCode(@Body() dto: SendRecoveryCodeDto): Promise<{ message: string }> {
+  @ApiResponse({
+    status: 403,
+    description: 'El correo no pertenece a un usuario interno',
+  })
+  async cmsSendRecoveryCode(
+    @Body() dto: SendRecoveryCodeDto,
+  ): Promise<{ message: string }> {
     await this.sendRecoveryCodeUseCase.execute(dto.email, true);
     return { message: 'Código de recuperación enviado a tu correo.' };
   }
@@ -206,9 +237,13 @@ export class AuthController {
 
   @Post('cms/first-access')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Complete first access — set password and get session' })
+  @ApiOperation({
+    summary: 'Complete first access — set password and get session',
+  })
   @ApiResponse({ status: 200, type: AuthTokensResponse })
-  async completeFirstAccess(@Body() dto: CompleteFirstAccessDto): Promise<AuthTokensResponse> {
+  async completeFirstAccess(
+    @Body() dto: CompleteFirstAccessDto,
+  ): Promise<AuthTokensResponse> {
     return this.completeFirstAccessUseCase.execute(
       dto.token,
       dto.newPassword,
@@ -230,7 +265,10 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout and revoke session' })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async logout(@CurrentUser() user: JwtPayload, @Body() dto: RefreshTokenDto): Promise<MessageResponse> {
+  async logout(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RefreshTokenDto,
+  ): Promise<MessageResponse> {
     await this.logoutUseCase.execute(user.sub, dto.refreshToken);
     return { message: 'Sesión cerrada exitosamente.' };
   }
@@ -248,11 +286,18 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Change current user password (requires current password)' })
+  @ApiOperation({
+    summary: 'Change current user password (requires current password)',
+  })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto): Promise<MessageResponse> {
+  async changePassword(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<MessageResponse> {
     await this.changePasswordUseCase.execute(user.sub, dto);
-    return { message: 'Contraseña actualizada. Todas las sesiones han sido cerradas.' };
+    return {
+      message: 'Contraseña actualizada. Todas las sesiones han sido cerradas.',
+    };
   }
 
   @Get('sessions')
@@ -270,7 +315,10 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke a specific session' })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async revokeSession(@CurrentUser() user: JwtPayload, @Param('id') sessionId: string): Promise<MessageResponse> {
+  async revokeSession(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') sessionId: string,
+  ): Promise<MessageResponse> {
     await this.revokeSessionUseCase.execute(user.sub, sessionId);
     return { message: 'Sesión revocada.' };
   }
@@ -297,7 +345,11 @@ export class AuthController {
   async generateActivationCode(
     @Body() dto: GenerateActivationCodeDto,
   ): Promise<{ message: string; code: string }> {
-    const result = await this.generateActivationCodeUseCase.execute(dto.userId, dto.email, 'admin');
+    const result = await this.generateActivationCodeUseCase.execute(
+      dto.userId,
+      dto.email,
+      'admin',
+    );
     return { message: 'Código de activación enviado.', code: result.code };
   }
 
@@ -305,11 +357,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Activate account with code and set password' })
   @ApiResponse({ status: 200, type: MessageResponse })
-  async activateAccount(@Body() dto: ActivateAccountDto): Promise<MessageResponse> {
+  async activateAccount(
+    @Body() dto: ActivateAccountDto,
+  ): Promise<MessageResponse> {
     if (dto.newPassword !== dto.confirmPassword) {
       return { message: 'Las contraseñas no coinciden.' };
     }
-    return this.activateAccountUseCase.execute(dto.email, dto.code, dto.newPassword);
+    return this.activateAccountUseCase.execute(
+      dto.email,
+      dto.code,
+      dto.newPassword,
+    );
   }
 
   @Post('app/reset-with-code')
@@ -317,12 +375,54 @@ export class AuthController {
   @ApiOperation({ summary: 'Reset password using recovery code sent to email' })
   @ApiResponse({ status: 200, type: MessageResponse })
   async resetWithCode(
-    @Body() dto: { email: string; code: string; newPassword: string; confirmPassword: string },
+    @Body()
+    dto: {
+      email: string;
+      code: string;
+      newPassword: string;
+      confirmPassword: string;
+    },
   ): Promise<MessageResponse> {
     if (dto.newPassword !== dto.confirmPassword) {
       return { message: 'Las contraseñas no coinciden.' };
     }
-    await this.resetPasswordWithCodeUseCase.execute(dto.email, dto.code, dto.newPassword);
+    await this.resetPasswordWithCodeUseCase.execute(
+      dto.email,
+      dto.code,
+      dto.newPassword,
+    );
+    return { message: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
+  }
+
+  @Post('cms/reset-with-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Reset password using recovery code — CMS internal users only (SUPERADMIN/ADMIN/SOPORTE)',
+  })
+  @ApiResponse({ status: 200, type: MessageResponse })
+  @ApiResponse({
+    status: 403,
+    description: 'El correo no pertenece a un usuario interno',
+  })
+  async cmsResetWithCode(
+    @Body()
+    dto: {
+      email: string;
+      code: string;
+      newPassword: string;
+      confirmPassword: string;
+    },
+  ): Promise<MessageResponse> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      return { message: 'Las contraseñas no coinciden.' };
+    }
+    await this.resetPasswordWithCodeUseCase.execute(
+      dto.email,
+      dto.code,
+      dto.newPassword,
+      true,
+    );
     return { message: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
   }
 
@@ -330,7 +430,9 @@ export class AuthController {
 
   @Post('app/contract-login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login con número de contrato + contraseña (sin OTP)' })
+  @ApiOperation({
+    summary: 'Login con número de contrato + contraseña (sin OTP)',
+  })
   async contractLogin(@Body() dto: ContractLoginDto) {
     return this.contractLoginUseCase.execute(dto);
   }
@@ -354,7 +456,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cambiar al contrato seleccionado' })
-  async switchContract(@CurrentUser() user: JwtPayload, @Body() dto: SwitchContractDto) {
+  async switchContract(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: SwitchContractDto,
+  ) {
     return this.switchContractUseCase.execute(user.sub, dto.contractId);
   }
 
@@ -374,7 +479,9 @@ export class AuthController {
 
   @Post('app/verify-activation-code')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verificar código de activación antes de crear contraseña' })
+  @ApiOperation({
+    summary: 'Verificar código de activación antes de crear contraseña',
+  })
   async verifyActivationCode(@Body() dto: VerifyActivationCodeDto) {
     return this.verifyActivationCodeUseCase.execute(dto);
   }

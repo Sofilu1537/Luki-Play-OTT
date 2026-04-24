@@ -268,41 +268,59 @@ y canales en vivo. El sistema incluye:
 | Rol | Código | Tipo | Acceso CMS | Permisos |
 |-----|--------|------|:----------:|----------|
 | **Super Admin** | `SUPERADMIN` | Estático | ✅ | `cms:*` — inmutable, todos los permisos |
-| **Administrador** | `ADMIN` | Dinámico | ✅ | Configurables por SUPERADMIN vía toggles |
-| **Soporte** | `SOPORTE` | Estático | ✅ | Fijos: dashboard, usuarios, canales, monitor, analítica |
+| **Administrador** | `ADMIN` | Dinámico | ✅ | Configurables por SUPERADMIN vía matriz de permisos |
+| **Soporte** | `SOPORTE` | Dinámico | ✅ | Configurables por SUPERADMIN; defaults: dashboard, usuarios, canales (read), monitor, notif. abonado |
 | **Cliente** | `CLIENTE` | Estático | ❌ | `app:playback`, `app:profiles` |
 
-### Permisos por Módulo del CMS
+### Permisos Granulares por Módulo
 
-| Permiso | Módulo | SUPERADMIN | ADMIN | SOPORTE |
-|---------|--------|:----------:|:-----:|:-------:|
-| `cms:dashboard` | Dashboard | ✅ siempre | 🔧 toggle | ✅ fijo |
-| `cms:users` | Usuarios | ✅ siempre | 🔧 toggle | ✅ fijo |
-| `cms:componentes` | Componentes | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:planes` | Planes | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:canales` | Canales | ✅ siempre | 🔧 toggle | ✅ fijo |
-| `cms:categorias` | Categorías | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:sliders` | Sliders | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:monitor` | Monitor | ✅ siempre | 🔧 toggle | ✅ fijo |
-| `cms:notif-admin` | Notif. Admin | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:analitica` | Analítica | ✅ siempre | 🔧 toggle | ✅ fijo |
-| `cms:propaganda` | Propaganda | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:notif-abonado` | Notif. Abonado | ✅ siempre | 🔧 toggle | ❌ |
-| `cms:roles` | Roles | ✅ siempre | ❌ nunca | ❌ nunca |
+Cada módulo expone hasta dos operaciones: `read` (lectura) y `write` (escritura/edición).
+Las claves de permiso siguen el patrón `cms:<módulo>:<operación>`.
+
+| Módulo | Clave base | Operaciones | SUPERADMIN | ADMIN (default) | SOPORTE (default) |
+|--------|-----------|:-----------:|:----------:|:---------------:|:-----------------:|
+| Dashboard | `cms:dashboard` | read | ✅ siempre | ✅ | ✅ |
+| Usuarios | `cms:users` | read, write | ✅ siempre | ✅ | ✅ |
+| Componentes | `cms:componentes` | read, write | ✅ siempre | ✅ | ❌ |
+| Planes | `cms:planes` | read, write | ✅ siempre | ✅ | ❌ |
+| Canales | `cms:canales` | read, write | ✅ siempre | ✅ | read only |
+| Categorías | `cms:categorias` | read, write | ✅ siempre | ✅ | ❌ |
+| Sliders | `cms:sliders` | read, write | ✅ siempre | ✅ | ❌ |
+| Monitor | `cms:monitor` | read | ✅ siempre | ✅ | ✅ |
+| Notif. Admin | `cms:notif-admin` | write | ✅ siempre | ✅ | ❌ |
+| Analítica | `cms:analitica` | read | ✅ siempre | ✅ | ❌ |
+| Propaganda | `cms:propaganda` | write | ✅ siempre | ✅ | ❌ |
+| Notif. Abonado | `cms:notif-abonado` | write | ✅ siempre | ✅ | ✅ |
+| Roles | `cms:roles` | — | ✅ siempre | ❌ nunca | ❌ nunca |
+
+> Los permisos de ADMIN y SOPORTE son los **defaults del seed**. El SUPERADMIN puede
+> modificarlos en cualquier momento desde el módulo Roles (`PATCH /admin/roles/:key/permissions`).
 
 ### Resolución de Permisos
 
-- **SUPERADMIN**: `cms:*` wildcard, hardcoded, no se almacena en BD
-- **ADMIN**: `Customer.permissions[]` en PostgreSQL, configurable por SUPERADMIN
-- **SOPORTE**: Permisos fijos en código (`SOPORTE_DEFAULT_PERMISSIONS`)
-- Los permisos se incluyen en el JWT y se refrescan en cada login/refresh
-- El sidebar CMS se filtra dinámicamente según `profile.permissions`
+- **SUPERADMIN**: `cms:*` wildcard, hardcoded. No editable desde el CMS.
+- **ADMIN / SOPORTE**: permisos almacenados en la tabla `cms_roles` (PostgreSQL), configurables por SUPERADMIN.
+- Los permisos se embeben en el JWT en el momento del login y se validan en cada request por `PermissionsGuard`.
+- El sidebar CMS se filtra dinámicamente según `profile.permissions` en `NAV_PERMISSION_MAP` (`CmsShell.tsx`).
+- Los cambios de permisos de rol **aplican en el próximo inicio de sesión** del usuario afectado (JWT TTL: 15 min).
 
 ### Módulo Roles (`/cms/roles`)
 
-- **Pestaña "Roles"**: Vista general de roles con permisos (read-only)
-- **Pestaña "Usuarios CMS"**: CRUD de usuarios internos con toggles de permisos
-- Solo accesible para SUPERADMIN (`cms:roles` permission)
+Solo accesible para SUPERADMIN (`cms:roles` permission).
+
+- **Pestaña "Roles y permisos"**: Tarjetas resumen de los 3 roles CMS. El SUPERADMIN puede expandir
+  cada rol (ADMIN o SOPORTE) para ver y editar la matriz de permisos read/write por módulo inline.
+  SUPERADMIN muestra badge "FIJO" y no es editable.
+- **Pestaña "Usuarios internos"**: Lista de todos los usuarios CMS con búsqueda, filtro por rol y acciones.
+  - SUPERADMIN: puede crear usuarios, activar/desactivar estado, editar datos básicos, eliminar.
+  - ADMIN / SOPORTE: solo lectura.
+
+### Perfil de Usuario CMS (`/cms/profile`)
+
+Todos los usuarios CMS (SUPERADMIN, ADMIN, SOPORTE) pueden:
+- **Editar datos básicos**: nombre, apellidos, cédula, email.
+- **Cambiar contraseña**: requiere contraseña actual. Al guardar, **todas las sesiones activas son revocadas**
+  en el servidor y el usuario es redirigido al login automáticamente.
 
 ### Control de Acceso OTT
 
@@ -314,6 +332,38 @@ y canales en vivo. El sistema incluye:
 ---
 
 ## Endpoints REST — Módulos Recientes
+
+### Autenticación (`/auth`)
+
+| Método | Ruta | Requiere JWT | Descripción |
+|--------|------|:------------:|-------------|
+| POST | `/auth/cms/login` | ❌ | Login CMS (email + contraseña) → JWT pair |
+| POST | `/auth/app/login` | ❌ | Fase 1 App OTT → envía OTP, devuelve loginToken |
+| POST | `/auth/app/complete-login` | ❌ | Fase 2 App OTT → verifica OTP → JWT pair |
+| POST | `/auth/refresh` | ❌ | Renueva access token con refresh token |
+| POST | `/auth/logout` | ✅ | Revoca sesión actual |
+| POST | `/auth/change-password` | ✅ | Cambia contraseña + revoca TODAS las sesiones activas |
+
+### Roles y Permisos CMS (`/admin/roles`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/admin/roles` | Lista los 4 roles CMS con sus permisos actuales |
+| PATCH | `/admin/roles/:key/permissions` | Actualiza permisos de ADMIN o SOPORTE (solo SUPERADMIN) |
+| GET | `/admin/permissions/modules` | Lista todos los módulos CMS disponibles |
+
+### Usuarios CMS (`/admin/users`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/admin/users` | Lista todos los usuarios (CMS + suscriptores) |
+| POST | `/admin/users` | Crea usuario CMS (envía email de activación) |
+| GET | `/admin/users/:id` | Obtiene usuario por ID |
+| PATCH | `/admin/users/:id` | Actualiza datos básicos del usuario |
+| PATCH | `/admin/users/:id/status` | Activa / desactiva usuario |
+| DELETE | `/admin/users/:id` | Elimina usuario (solo SUPERADMIN) |
+
+> `adminListCmsUsers()` en el frontend filtra por `isCmsUser: true` sobre la respuesta de `GET /admin/users`.
 
 ### Categorías (`/admin/categorias`)
 
@@ -354,5 +404,6 @@ y canales en vivo. El sistema incluye:
 - **Rate limiting**: 20 peticiones por minuto por IP (ThrottlerModule)
 - **Validación**: class-validator en todos los DTOs de entrada
 - **Guards**: JwtAuthGuard + RolesGuard + PermissionsGuard + AudienceGuard
-- **CORS**: Habilitado globalmente
+- **CORS**: Configuración explícita — `origin: true`, métodos `GET HEAD PUT PATCH POST DELETE OPTIONS`, headers `Content-Type Authorization Accept`
 - **Filtro de excepciones**: Respuestas sanitizadas (no expone stack traces)
+- **Cambio de contraseña**: Revoca todas las sesiones activas del usuario en el servidor (`POST /auth/change-password`)

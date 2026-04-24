@@ -7,6 +7,46 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [0.4.0-beta] — 2026-04
+
+### Añadido
+
+#### Backend
+- **auth**: Endpoint `POST /auth/change-password` — cambia contraseña y revoca **todas** las sesiones activas del usuario
+- **main**: Configuración CORS explícita — `origin: true`, métodos `GET HEAD PUT PATCH POST DELETE OPTIONS`, headers `Content-Type Authorization Accept`
+
+#### Frontend — Perfil de usuario CMS
+- **cms/profile**: Sección "Cambiar contraseña" con 3 campos (actual, nueva, confirmar), validación inline y feedback auto-dismiss
+- **cms/profile**: Títulos y subtítulos de perfil diferenciados por rol (Super Admin / Administrador / Soporte)
+- **cms/profile**: Al cambiar contraseña exitosamente → logout automático y redirección al login (sesiones revocadas server-side)
+- **cmsApi**: Función `cmsChangePassword(accessToken, currentPassword, newPassword)`
+- **CmsComponents**: Prop `secureTextEntry` en `TextInputField`
+
+#### Frontend — Módulo Roles (rediseño completo)
+- **roles/types.ts**: Función `buildModulePermissions()` — genera matriz read/write por módulo con `permGranted()` que soporta wildcard, coincidencia exacta y permisos padre-hijo
+- **roles/types.ts**: `MODULE_OPS` — mapa de operaciones soportadas por módulo (`read`/`write`)
+- **roles/types.ts**: `ADMIN_DEFAULT_PERMISSIONS` y `SOPORTE_DEFAULT_PERMISSIONS` — arrays de permisos por defecto
+- **roles/types.ts**: Interfaces `ModulePermissionRow`, `ModuleOp` para la nueva matriz de permisos
+- **roles/PermissionToggles**: Rediseñado — muestra tabla con columnas LECTURA / ESCRITURA como chips interactivos (`OpChip`)
+- **roles/RolesOverviewTab**: Rediseño completo — tarjetas de los 3 roles CMS, panel inline de edición de permisos (solo SUPERADMIN), badge "FIJO" para SUPERADMIN, aviso read-only para no-SUPERADMIN
+- **roles/RolesOverviewTab**: Sincronización de clave de módulo (`cms:canales`) al activar/desactivar operaciones granulares (`cms:canales:read`, `cms:canales:write`)
+- **roles/CmsUsersTab**: Rediseño completo — tabla con búsqueda + filtro por rol, stats bar, acciones por rol (toggle estado, editar, ver detalle), aviso read-only para no-SUPERADMIN
+- **app/cms/roles**: Tabs renombrados: "Roles y permisos" (icono shield) + "Usuarios internos" (icono users)
+
+### Corregido
+- **roles/types.ts**: `buildToggleItems()` y `buildContentPermItems()` (legacy) — guard defensivo `Array.isArray()` para evitar crash cuando `currentPermissions` es `undefined` o `null`
+- **roles/RolesOverviewTab**: `getPermissions()` — normalización de clave de rol (maneja uppercase/lowercase desde la API) y fallback a `[]` cuando `permissions` es `null`
+- **cms/profile**: Eliminado `router.replace('/cms/login')` del `useEffect` — evitaba triple-redirect al hacer logout (el `_layout.tsx` es la única autoridad de navegación)
+- **roles/RolesOverviewTab**: Error "No se pudo conectar con el servidor" con mensaje descriptivo en lugar de "Failed to fetch"
+
+### Cambiado
+- **auth.module.ts**: `EMAIL_SERVICE` cambiado de `MockEmailService` a `NodemailerEmailService` (emails reales via SMTP)
+- **CmsUserFormModal**: Ícono y subtítulo del header diferenciados entre crear (`user-plus` verde) y editar (`pencil` accent)
+- **CmsUserFormModal**: Selector de rol bloqueado en modo edición con ícono de candado
+- **feedback**: Mensajes de éxito auto-dismiss en 2s, errores en 4s (perfil + roles)
+
+---
+
 ## [0.3.0-beta] — 2026-04
 
 ### Añadido
@@ -177,5 +217,6 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+[0.4.0-beta]: https://github.com/Sofilu1537/Luki-Play-OTT/compare/v0.3.0-beta...v0.4.0-beta
 [0.2.0-beta]: https://github.com/Sofilu1537/Luki-Play-OTT/compare/v0.1.0-alpha...v0.2.0-beta
 [0.1.0-alpha]: https://github.com/Sofilu1537/Luki-Play-OTT/releases/tag/v0.1.0-alpha

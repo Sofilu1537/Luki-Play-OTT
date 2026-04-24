@@ -6,7 +6,9 @@ export class RequestActivationCodeDto {
   @IsUUID()
   customerId: string;
 
-  @ApiPropertyOptional({ description: 'Email para enviar el código (opcional)' })
+  @ApiPropertyOptional({
+    description: 'Email para enviar el código (opcional)',
+  })
   @IsOptional()
   @IsEmail()
   email?: string;

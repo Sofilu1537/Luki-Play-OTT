@@ -5,7 +5,7 @@ import { ACCOUNT_REPOSITORY } from '../../domain/interfaces/account.repository';
 import type { AccountRepository } from '../../domain/interfaces/account.repository';
 import { BILLING_GATEWAY } from '../../../billing/domain/interfaces/billing.gateway';
 import type { BillingGateway } from '../../../billing/domain/interfaces/billing.gateway';
-import { getPermissionsForRole } from '../../../access-control/domain/permissions';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { UserProfileResponse } from '../dto/auth-response.dto';
 
 /**
@@ -20,6 +20,7 @@ export class GetCurrentUserUseCase {
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
     @Inject(ACCOUNT_REPOSITORY) private readonly accountRepo: AccountRepository,
     @Inject(BILLING_GATEWAY) private readonly billingGateway: BillingGateway,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(userId: string): Promise<UserProfileResponse> {
@@ -28,7 +29,11 @@ export class GetCurrentUserUseCase {
       throw new NotFoundException('User not found');
     }
 
-    const permissions = getPermissionsForRole(user.role, user.dynamicPermissions);
+    // Resolve permissions from cms_roles table (RBAC: permissions belong to the role, not the user)
+    const roleRecord = await this.prisma.cmsRole.findUnique({
+      where: { key: user.role.toUpperCase() as any },
+    });
+    const permissions = roleRecord?.permissions ?? [];
     let entitlements: string[] = [];
     let canAccessOtt = true;
     let restrictionMessage: string | null = null;
@@ -54,6 +59,9 @@ export class GetCurrentUserUseCase {
 
     return {
       id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      idNumber: user.idNumber,
       contractNumber: user.contractNumber,
       email: user.email,
       role: user.role,
@@ -63,6 +71,8 @@ export class GetCurrentUserUseCase {
       serviceStatus,
       canAccessOtt,
       restrictionMessage,
+      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      mustChangePassword: user.mustChangePassword,
       permissions,
       entitlements,
     };

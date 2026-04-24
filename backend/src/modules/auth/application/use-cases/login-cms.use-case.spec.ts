@@ -46,6 +46,12 @@ describe('LoginCmsUseCase', () => {
     findByActorId: jest.fn(),
   };
 
+  const mockPrisma = {
+    cmsRole: {
+      findUnique: jest.fn().mockResolvedValue({ permissions: ['cms:*'] }),
+    },
+  };
+
   let useCase: LoginCmsUseCase;
 
   const cmsUser = new User({
@@ -73,6 +79,7 @@ describe('LoginCmsUseCase', () => {
       mockHashService as any,
       mockAttemptRepo as any,
       mockAuditRepo as any,
+      mockPrisma as any,
     );
   });
 

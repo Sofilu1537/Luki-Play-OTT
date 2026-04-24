@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { SessionRepository } from '../../auth/domain/interfaces/session.repository.js';
-import { Session as DomainSession, Audience } from '../../auth/domain/entities/session.entity.js';
+import {
+  Session as DomainSession,
+  Audience,
+} from '../../auth/domain/entities/session.entity.js';
 
 @Injectable()
 export class PrismaSessionRepository implements SessionRepository {
@@ -18,10 +21,7 @@ export class PrismaSessionRepository implements SessionRepository {
   async findByUserId(userId: string): Promise<DomainSession[]> {
     const sessions = await this.prisma.session.findMany({
       where: {
-        OR: [
-          { contract: { customerId: userId } },
-          { customerId: userId },
-        ],
+        OR: [{ contract: { customerId: userId } }, { customerId: userId }],
       },
       include: { contract: true },
     });
@@ -39,7 +39,9 @@ export class PrismaSessionRepository implements SessionRepository {
   async save(session: DomainSession): Promise<DomainSession> {
     const contractId = await this.resolveContractId(session.userId);
 
-    const existing = await this.prisma.session.findUnique({ where: { id: session.id } });
+    const existing = await this.prisma.session.findUnique({
+      where: { id: session.id },
+    });
 
     let saved: any;
     if (existing) {
@@ -82,10 +84,7 @@ export class PrismaSessionRepository implements SessionRepository {
   async deleteAllByUserId(userId: string): Promise<void> {
     await this.prisma.session.deleteMany({
       where: {
-        OR: [
-          { contract: { customerId: userId } },
-          { customerId: userId },
-        ],
+        OR: [{ contract: { customerId: userId } }, { customerId: userId }],
       },
     });
   }

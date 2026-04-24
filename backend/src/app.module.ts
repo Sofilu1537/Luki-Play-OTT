@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
 import { AuthModule } from './modules/auth/auth.module';
 import { AccessControlModule } from './modules/access-control/access-control.module';
@@ -9,6 +10,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PublicModule } from './modules/public/public.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 /**
  * Root application module.
@@ -21,6 +23,7 @@ import { PublicModule } from './modules/public/public.module';
  * - {@link BillingModule} — ISP billing gateway
  * - {@link CrmModule} — customer relationship management gateway
  * - {@link ProfilesModule} — user profiles (placeholder)
+ * - {@link SubscriptionModule} — subscription lifecycle, payments, notifications
  */
 @Module({
   imports: [
@@ -34,6 +37,7 @@ import { PublicModule } from './modules/public/public.module';
         limit: 20,
       },
     ]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     AccessControlModule,
@@ -42,6 +46,7 @@ import { PublicModule } from './modules/public/public.module';
     ProfilesModule,
     AdminModule,
     PublicModule,
+    SubscriptionModule,
   ],
 })
 export class AppModule {}

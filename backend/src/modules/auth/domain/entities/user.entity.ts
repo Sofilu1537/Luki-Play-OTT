@@ -34,6 +34,7 @@ export class User {
   // Extended security fields
   firstName: string | null;
   lastName: string | null;
+  idNumber: string | null;
   mustChangePassword: boolean;
   mfaEnabled: boolean;
   lockedUntil: Date | null;
@@ -54,6 +55,7 @@ export class User {
     createdAt: Date;
     firstName?: string | null;
     lastName?: string | null;
+    idNumber?: string | null;
     mustChangePassword?: boolean;
     mfaEnabled?: boolean;
     lockedUntil?: Date | null;
@@ -73,6 +75,7 @@ export class User {
     this.createdAt = props.createdAt;
     this.firstName = props.firstName ?? null;
     this.lastName = props.lastName ?? null;
+    this.idNumber = props.idNumber ?? null;
     this.mustChangePassword = props.mustChangePassword ?? false;
     this.mfaEnabled = props.mfaEnabled ?? false;
     this.lockedUntil = props.lockedUntil ?? null;
@@ -94,7 +97,11 @@ export class User {
 
   /** Whether this user can access the CMS panel (SUPERADMIN, ADMIN, or SOPORTE). */
   isCmsUser(): boolean {
-    return this.role === UserRole.SUPERADMIN || this.role === UserRole.ADMIN || this.role === UserRole.SOPORTE;
+    return (
+      this.role === UserRole.SUPERADMIN ||
+      this.role === UserRole.ADMIN ||
+      this.role === UserRole.SOPORTE
+    );
   }
 
   isLocked(): boolean {
@@ -107,7 +114,8 @@ export class User {
   }
 
   displayName(): string {
-    if (this.firstName && this.lastName) return `${this.firstName} ${this.lastName}`;
+    if (this.firstName && this.lastName)
+      return `${this.firstName} ${this.lastName}`;
     if (this.firstName) return this.firstName;
     return this.email.split('@')[0];
   }

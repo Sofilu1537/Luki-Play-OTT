@@ -1,4 +1,5 @@
 import { TextInput, View, Text, KeyboardTypeOptions } from 'react-native';
+import { APP } from '../styles/theme';
 
 /**
  * Props for the {@link Input} component.
@@ -31,11 +32,11 @@ interface InputProps {
  */
 export const Input = ({ value, onChangeText, placeholder, secureTextEntry, label, keyboardType, maxLength }: InputProps) => (
     <View className="mb-4 w-full">
-        {label && <Text className="text-gray-300 mb-2 ml-1 font-medium">{label}</Text>}
+        {label && <Text className="text-luki-gray mb-2 ml-1 font-medium">{label}</Text>}
         <TextInput
             className="bg-white/10 text-white p-4 rounded-lg border border-white/20 focus:border-luki-accent font-medium"
             placeholder={placeholder}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={APP.textMuted}
             value={value}
             onChangeText={onChangeText}
             secureTextEntry={secureTextEntry}

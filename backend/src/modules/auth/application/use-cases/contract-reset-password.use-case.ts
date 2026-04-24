@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { HASH_SERVICE } from '../../domain/interfaces/hash.service.js';
 import type { HashService } from '../../domain/interfaces/hash.service.js';
@@ -43,7 +49,7 @@ export class ContractResetPasswordUseCase {
 
     await this.prisma.session.updateMany({
       where: {
-        contractId: { in: contractIds.map(c => c.id) },
+        contractId: { in: contractIds.map((c) => c.id) },
         revokedAt: null,
       },
       data: { revokedAt: new Date() },

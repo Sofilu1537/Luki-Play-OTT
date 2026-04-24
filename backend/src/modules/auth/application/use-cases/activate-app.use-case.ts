@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { TOKEN_SERVICE } from '../../domain/interfaces/token.service.js';
 import type { TokenService } from '../../domain/interfaces/token.service.js';
@@ -28,7 +34,9 @@ export class ActivateAppUseCase2 {
     }
 
     if (customer.isAccountActivated) {
-      throw new BadRequestException('La cuenta ya fue activada. Use su contrato y contraseña para iniciar sesión.');
+      throw new BadRequestException(
+        'La cuenta ya fue activada. Use su contrato y contraseña para iniciar sesión.',
+      );
     }
 
     // Validar código de activación
@@ -85,7 +93,9 @@ export class ActivateAppUseCase2 {
         deviceId: 'activation-device',
         audience: 'app',
         refreshToken: tokenPair.refreshToken,
-        expiresAt: new Date(Date.now() + contract.sessionDurationDays * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(
+          Date.now() + contract.sessionDurationDays * 24 * 60 * 60 * 1000,
+        ),
       },
     });
 

@@ -9,29 +9,30 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
-import { cmsSendRecoveryCode, cmsResetWithCode } from '../../services/api/cmsApi';
+import { cmsSendRecoveryCode, cmsResetWithCode, cmsChangePassword } from '../../services/api/cmsApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import LukiPlayLogo from '../../components/LukiPlayLogo';
 
-type Screen = 'login' | 'forgot';
+type Screen = 'login' | 'forgot' | 'change-password';
 
 // ---------------------------------------------------------------------------
-// Design tokens — limpio, dark only
+// Design tokens — Nebula Dark + Luki Play gold
 // ---------------------------------------------------------------------------
 const T = {
-  bg: '#160030',
-  card: 'rgba(30, 10, 60, 0.96)',
-  cardBorder: 'rgba(255,255,255,0.09)',
-  input: 'rgba(50, 18, 100, 0.80)',
+  bg: ['#1a0040', '#2e0a6e', '#4a18a0', '#2e0a6e'] as const,
+  card: 'rgba(42, 14, 90, 0.88)',
+  cardBorder: 'rgba(255,255,255,0.10)',
+  input: 'rgba(70, 28, 130, 0.92)',
   inputBorder: 'rgba(255,255,255,0.10)',
-  inputFocus: 'rgba(255,184,0,0.35)',
+  inputFocus: 'rgba(255,184,0,0.4)',
   accent: '#FFB800',
   accentSoft: 'rgba(255,184,0,0.12)',
   text: '#FFFFFF',
-  textSec: '#C9B8E0',
-  muted: '#7A60A0',
+  textSec: '#D0C4E8',
+  muted: '#8B72B2',
   error: '#F43F5E',
   errorBg: 'rgba(244,63,94,0.12)',
   success: '#10B981',
@@ -194,10 +195,14 @@ function CmsPrimaryButton({
     <TouchableOpacity
       style={{
         backgroundColor: T.accent,
-        borderRadius: 12,
-        paddingVertical: 14,
+        borderRadius: 16,
+        paddingVertical: 15,
         alignItems: 'center',
-        opacity: isLoading || disabled ? 0.65 : 1,
+        opacity: isLoading || disabled ? 0.7 : 1,
+        shadowColor: T.accent,
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 6 },
         marginTop: 4,
       }}
       onPress={onPress}
@@ -259,6 +264,10 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     }
     try {
       await login({ email: email.trim().toLowerCase(), password });
+      // Check if user must change password on first login
+      if (useCmsStore.getState().profile?.mustChangePassword) {
+        onSwitch('change-password');
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Credenciales inválidas');
     }
@@ -323,6 +332,106 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
           Acceso restringido a personal autorizado
         </Text>
       </View>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ForceChangePasswordForm — shown on first login when mustChangePassword=true
+// ---------------------------------------------------------------------------
+function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const { accessToken, logout } = useCmsStore();
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!currentPassword) { setError('Ingresa tu contraseña actual (password123)'); return; }
+    if (!newPassword) { setError('Ingresa tu nueva contraseña'); return; }
+    if (newPassword.length < 8) { setError('La nueva contraseña debe tener al menos 8 caracteres'); return; }
+    if (newPassword === currentPassword) { setError('La nueva contraseña debe ser diferente a la actual'); return; }
+    if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
+
+    setLoading(true);
+    try {
+      await cmsChangePassword(accessToken!, currentPassword, newPassword);
+      setDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo cambiar la contraseña');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <>
+        <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
+          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: T.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+            <FontAwesome name="check" size={24} color={T.success} />
+          </View>
+          <Text style={{ color: T.text, fontSize: 18, fontWeight: '800', marginBottom: 8 }}>
+            ¡Contraseña actualizada!
+          </Text>
+          <Text style={{ color: T.muted, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+            Tu contraseña ha sido cambiada. Inicia sesión con tu nueva contraseña.
+          </Text>
+        </View>
+        <CmsPrimaryButton
+          title="Ir al inicio de sesión"
+          onPress={() => { logout(); onSwitch('login'); }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,184,0,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+          <FontAwesome name="lock" size={20} color={T.accent} />
+        </View>
+        <Text style={{ color: T.text, fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
+          Cambio de contraseña requerido
+        </Text>
+        <Text style={{ color: T.muted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+          Tu cuenta fue creada con una contraseña temporal. Debes establecer una contraseña personal antes de continuar.
+        </Text>
+      </View>
+
+      <ErrorBanner message={error} />
+
+      <CmsInput
+        label="CONTRASEÑA ACTUAL"
+        placeholder="password123"
+        value={currentPassword}
+        onChangeText={(t) => { setCurrentPassword(t); setError(''); }}
+        secure
+        errorHighlight={!!error && !currentPassword}
+      />
+      <CmsInput
+        label="NUEVA CONTRASEÑA"
+        placeholder="••••••••"
+        value={newPassword}
+        onChangeText={(t) => { setNewPassword(t); setError(''); }}
+        secure
+        errorHighlight={!!error && !newPassword}
+      />
+      <PasswordStrength password={newPassword} />
+      <CmsInput
+        label="CONFIRMAR NUEVA CONTRASEÑA"
+        placeholder="••••••••"
+        value={confirmPassword}
+        onChangeText={(t) => { setConfirmPassword(t); setError(''); }}
+        secure
+        errorHighlight={!!error && newPassword !== confirmPassword}
+      />
+
+      <CmsPrimaryButton title="Cambiar contraseña" onPress={handleSubmit} isLoading={loading} />
     </>
   );
 }
@@ -690,7 +799,48 @@ export default function CmsLogin() {
   const [screen, setScreen] = useState<Screen>('login');
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <LinearGradient
+      colors={T.bg}
+      locations={[0, 0.4, 0.7, 1]}
+      start={{ x: 0.2, y: 0 }}
+      end={{ x: 0.8, y: 1 }}
+      style={{ flex: 1 }}
+    >
+      {/* Bokeh orbs */}
+      <View
+        style={{
+          position: 'absolute',
+          top: -80,
+          right: -60,
+          width: 400,
+          height: 400,
+          borderRadius: 200,
+          backgroundColor: 'rgba(123,47,190,0.25)',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -40,
+          left: -80,
+          width: 300,
+          height: 300,
+          borderRadius: 150,
+          backgroundColor: 'rgba(90,30,158,0.20)',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: '40%',
+          left: '10%',
+          width: 200,
+          height: 200,
+          borderRadius: 100,
+          backgroundColor: 'rgba(255,184,0,0.06)',
+        }}
+      />
+
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         style={{ flex: 1 }}
@@ -707,20 +857,21 @@ export default function CmsLogin() {
           }}
         >
           {/* Logo */}
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
-            <LukiPlayLogo variant="full" size={90} />
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <LukiPlayLogo variant="icon" size={120} />
             <Text
               style={{
                 color: T.text,
-                fontSize: 22,
-                fontWeight: '700',
-                marginTop: 14,
+                fontSize: 26,
+                fontWeight: '800',
+                letterSpacing: -0.5,
+                marginTop: 16,
               }}
             >
-              Luki Play CMS
+              LUKIPLAY CMS
             </Text>
-            <Text style={{ color: T.muted, fontSize: 13, marginTop: 5 }}>
-              Panel de administración interna
+            <Text style={{ color: T.muted, fontSize: 13, marginTop: 6 }}>
+              Sistema de Administración de Contenido
             </Text>
           </View>
 
@@ -730,14 +881,19 @@ export default function CmsLogin() {
               width: '100%',
               maxWidth: 420,
               backgroundColor: T.card,
-              borderRadius: 18,
+              borderRadius: 24,
               padding: 28,
               borderWidth: 1,
               borderColor: T.cardBorder,
+              shadowColor: '#0D0020',
+              shadowOpacity: 0.5,
+              shadowRadius: 40,
+              shadowOffset: { width: 0, height: 20 },
             }}
           >
             {screen === 'login' ? <LoginForm onSwitch={setScreen} /> : null}
             {screen === 'forgot' ? <ForgotPasswordForm onSwitch={setScreen} /> : null}
+            {screen === 'change-password' ? <ForceChangePasswordForm onSwitch={setScreen} /> : null}
           </View>
 
           {/* Version footer */}
@@ -746,14 +902,14 @@ export default function CmsLogin() {
               color: T.muted,
               fontSize: 11,
               textAlign: 'center',
-              marginTop: 20,
-              opacity: 0.55,
+              marginTop: 24,
+              opacity: 0.6,
             }}
           >
-            v1.0.0
+            Versión v1.0.0
           </Text>
         </KeyboardAvoidingView>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }

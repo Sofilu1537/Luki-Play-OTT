@@ -1,4 +1,5 @@
 import { TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { APP } from '../styles/theme';
 
 /**
  * Props for the {@link Button} component.
@@ -28,9 +29,9 @@ export const Button = ({ onPress, title, isLoading }: ButtonProps) => (
         disabled={isLoading}
     >
         {isLoading ? (
-            <ActivityIndicator color="#140026" />
+            <ActivityIndicator color={APP.gradientStart} />
         ) : (
-            <Text className="text-luki-dark font-bold text-lg uppercase tracking-wider">
+            <Text className="text-luki-purple font-bold text-lg uppercase tracking-wider">
                 {title}
             </Text>
         )}

@@ -41,20 +41,35 @@ export interface ThemeTokens {
   warningSoft:  string;
   live:         string;
   tag:          string;
+  softUiBorder: string;
+  softUiShadow: string;
+  softUiBorderDark: string;
+  softUiShadowDark: string;
+  // ── Semantic tokens added for component-level theming ──────────────────────
+  /** Darker inner surface inside cards (e.g. MetricTile inside MonetizationWidget) */
+  cardBgInner:     string;
+  /** Shadow color for elevated cards */
+  cardShadow:      string;
+  /** Chevron / arrow icon color */
+  chevron:         string;
+  /** Soft border for icon containers (alpha badge rings) */
+  iconBorderSoft:  string;
+  /** Uppercase section header label color */
+  sectionLabel:    string;
 }
 
 export const darkTheme: ThemeTokens = {
   // Backgrounds — brand palette: Russian Violet base, Rebecca Purple for surfaces
   bodyBg:       '#240046',                    // Russian Violet — fondo base de pantalla
-  cardBg:       'rgba(96, 38, 158, 0.22)',    // Rebecca Purple 22% — tarjetas sobre bodyBg
+  cardBg:       '#1A1A2E',                    // Dark card color shared across dashboard cards
   surfaceBg:    'rgba(96, 38, 158, 0.14)',    // Rebecca Purple 14% — superficies secundarias
   liftBg:       'rgba(96, 38, 158, 0.34)',    // Rebecca Purple 34% — elementos elevados (modales, popovers)
   headerBg:     '#240046',                    // Russian Violet sólido — navbar y headers
   border:       'rgba(255,255,255,0.08)',
   borderAccent: 'rgba(255,184,0,0.28)',
-  text:         '#FAF6E7',                    // Cosmic Latte — texto primario
-  textSec:      'rgba(250,246,231,0.65)',
-  textMuted:    'rgba(250,246,231,0.45)',      // subido de 0.38 → 0.45 para pasar contraste AA
+  text:         '#FFFFFF',
+  textSec:      'rgba(255,255,255,0.88)',
+  textMuted:    'rgba(255,255,255,0.65)',
   accent:       '#FFB800',                    // Selective Yellow — acción principal
   accentSoft:   'rgba(255,184,0,0.12)',
   accentBorder: 'rgba(255,184,0,0.30)',
@@ -69,16 +84,25 @@ export const darkTheme: ThemeTokens = {
   warningSoft:  'rgba(255,121,0,0.14)',
   live:         '#17D1C6',
   tag:          '#B07CC6',
+  softUiBorder: 'rgba(96,38,158,0.24)',
+  softUiShadow: 'none',
+  softUiBorderDark: 'rgba(96,38,158,0.34)',
+  softUiShadowDark: '8px 8px 18px rgba(0,0,0,0.34), -6px -6px 14px rgba(118,72,170,0.10)',
+  cardBgInner:     '#111122',
+  cardShadow:      '#000000',
+  chevron:         'rgba(255,255,255,0.55)',
+  iconBorderSoft:  'rgba(96,38,158,0.35)',
+  sectionLabel:    'rgba(255,255,255,0.85)',
 };
 
 export const lightTheme: ThemeTokens = {
-  // Backgrounds — brand palette: Cosmic Latte base, Rebecca Purple tint para superficies
-  bodyBg:       '#FAF6E7',                    // Cosmic Latte — fondo base de pantalla
-  cardBg:       '#FFFFFF',                    // Blanco puro — tarjetas principales
-  surfaceBg:    'rgba(96, 38, 158, 0.06)',    // Rebecca Purple 6% tint — superficies secundarias
-  liftBg:       'rgba(96, 38, 158, 0.10)',    // Rebecca Purple 10% tint — elementos elevados
-  headerBg:     'rgba(250, 246, 231, 0.96)',  // Cosmic Latte semitransparente — navbar con blur
-  border:       'rgba(96, 38, 158, 0.12)',    // Borde con tinte de marca (antes era negro neutro)
+  // Backgrounds — light neutral palette: white base + transparent gray surfaces
+  bodyBg:       '#FFFFFF',                    // Blanco puro — fondo base de pantalla
+  cardBg:       '#FFFFFF',                   // Blanco sólido — tarjetas de dashboard en modo claro
+  surfaceBg:    'rgba(120,120,120,0.28)',    // Gris suave — superficies secundarias
+  liftBg:       'rgba(120,120,120,0.40)',    // Gris translúcido más sólido — elementos elevados
+  headerBg:     '#240046',                    // Igual que sidebar en modo claro
+  border:       'rgba(120,120,120,0.16)',    // Borde gris suave
   borderAccent: 'rgba(255,184,0,0.40)',
   text:         '#240046',                    // Russian Violet — texto primario (más on-brand que azul noche)
   textSec:      'rgba(36, 0, 70, 0.62)',
@@ -97,15 +121,69 @@ export const lightTheme: ThemeTokens = {
   warningSoft:  'rgba(255,121,0,0.12)',
   live:         '#17D1C6',
   tag:          '#B07CC6',
+  softUiBorder: 'rgba(236,238,246,0.95)',
+  softUiShadow: '10px 10px 22px rgba(24,39,75,0.13), -10px -10px 22px rgba(255,255,255,0.95)',
+  softUiBorderDark: 'rgba(236,238,246,0.95)',
+  softUiShadowDark: 'none',
+  cardBgInner:     '#FFFFFF',
+  cardShadow:      '#A8B0C7',
+  chevron:         '#240046',
+  iconBorderSoft:  'rgba(130,130,130,0.18)',
+  sectionLabel:    '#240046',
 };
+
+/**
+ * Spacing scale — use these instead of magic numbers.
+ * Import as: import { spacing } from '../styles/theme';
+ */
+export const spacing = {
+  xs:  4,
+  sm:  8,
+  md:  16,
+  lg:  24,
+  xl:  32,
+  xxl: 48,
+} as const;
+
+/**
+ * Border radius scale — use these instead of magic numbers.
+ * Import as: import { radius } from '../styles/theme';
+ */
+export const radius = {
+  sm:   8,
+  md:   12,
+  card: 14,
+  lg:   16,
+  xl:   18,
+  full: 999,
+} as const;
+
+/**
+ * OTT app–side color constants.
+ * Always dark — the user-facing OTT experience is never light-themed.
+ * Import these in NativeWind app/auth screens that need inline style values.
+ */
+export const APP = {
+  bodyBg:          '#050B17',               // App home background (nebula dark)
+  surface:         '#1A052E',               // Card surface / admin panel bg
+  surfaceElevated: '#2A0E47',               // Elevated surface for cards/panels
+  tabBar:          '#0F041C',               // Tab bar bg & gradient end
+  gradientStart:   COLORS.russianViolet,    // '#240046' — auth screen gradient top
+  gradientEnd:     '#0D001A',               // Auth screen gradient bottom (ultra-dark)
+  accent:          COLORS.selectiveYellow,  // '#FFB800'
+  danger:          COLORS.roseRed,          // '#D1105A'
+  dangerSurface:   'rgba(209,16,90,0.22)',  // Warning/restriction banner background
+  success:         COLORS.robinEggBlue,     // '#17D1C6'
+  textMuted:       '#94A3B8',               // Slate-400 — muted labels on dark bg
+} as const;
 
 /**
  * Sidebar tokens — always violet-dark regardless of app theme.
  * bg1/bg2 form the vertical LinearGradient (#240046 → #1a0033).
  */
 export const SIDEBAR = {
-  bg1:          '#240046',   // Russian Violet — igual que header
-  bg2:          '#240046',   // Russian Violet — flat, sin degradado
+  bg1:          '#240046',   // Russian Violet original (inicio)
+  bg2:          '#3A0A68',   // Variación del mismo tono para degradado sutil
   border:       'rgba(255,255,255,0.10)',
   sectionLabel: 'rgba(250,246,231,0.28)',
   text:         '#FAF6E7',

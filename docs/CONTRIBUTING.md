@@ -36,6 +36,7 @@ Este proyecto usa [Conventional Commits](https://www.conventionalcommits.org/es/
 | `auth`         | Módulo de autenticación                 |
 | `admin`        | Panel de administración                 |
 | `cms`          | Panel CMS                               |
+| `roles`        | Módulo de roles, permisos y usuarios CMS|
 | `player`       | Reproductor de video                    |
 | `billing`      | Facturación e ISP                       |
 | `crm`          | CRM e información de clientes          |

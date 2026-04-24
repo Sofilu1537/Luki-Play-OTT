@@ -16,15 +16,18 @@ module.exports = {
     extend: {
       colors: {
         luki: {
-          purple: '#240046', // Russian Violet
-          lightPurple: '#60269E', // Rebecca Purple 
-          accent: '#FFB800', // Selective Yellow
-          background: '#0D001A', // Deep background
-          dark: '#140026', // Dark background
-          surface: '#1A0033', // Cards surface
-          white: '#FAF6E7', // Cosmic Latte
-          gray: '#B07CC6', // African Violet
-          gold: '#FFB800', // Selective Yellow
+          purple: '#240046',      // COLORS.russianViolet (was #4A148C)
+          lightPurple: '#7c43bd',
+          accent: '#FFB800',      // COLORS.selectiveYellow (was #FFC107)
+          background: '#050B17',  // APP.bodyBg — Nebula Dark
+          dark: '#0F041C',        // APP.tabBar — tab bar & gradient end (was #070E1D)
+          surface: '#1A052E',     // APP.surface — card/panel surface (was #0C1829)
+          white: '#ffffff',
+          gray: '#94A3B8',        // APP.textMuted — muted labels
+          gold: '#FFB800',        // same as accent (explicit semantic alias)
+          danger: '#D1105A',      // COLORS.roseRed
+          success: '#17D1C6',     // COLORS.robinEggBlue
+          info: '#1E96FC',        // COLORS.dodgerBlue
         }
       }
     },

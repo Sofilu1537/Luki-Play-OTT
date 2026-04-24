@@ -38,6 +38,8 @@ interface CmsState {
   logout: () => void;
   bootstrapSession: () => Promise<void>;
   restoreSession: (token: string) => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,6 +55,7 @@ interface CmsState {
  *
  * Credentials:
  *   soporte@lukiplay.com / password123  (SUPPORT)
+ *   gestion@lukiplay.com / password123  (ADMIN)
  *   admin@lukiplay.com   / password123  (SUPERADMIN)
  */
 export const useCmsStore = create<CmsState>((set, get) => ({
@@ -88,7 +91,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
   /**
    * Log out the current CMS user.
-   * Calls the logout endpoint (best-effort) and clears all stored tokens.
+   * Calls the logout endpoint (best-effort), clears all stored tokens,
+   * and resets hasRestored so the layout bootstraps cleanly on re-entry.
    */
   logout: () => {
     const { accessToken } = get();
@@ -96,7 +100,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       cmsLogout(accessToken);
     }
     clearTokens();
-    set({ profile: null, accessToken: null });
+    set({ profile: null, accessToken: null, hasRestored: false });
   },
 
   /**
@@ -170,6 +174,31 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     } catch {
       await clearTokens();
       set({ profile: null, accessToken: null, isLoading: false, isRestoring: false, hasRestored: true });
+    }
+  },
+
+  refreshProfile: async () => {
+    const { accessToken } = get();
+    if (!accessToken) return;
+    const profile = await cmsGetMe(accessToken);
+    set({ profile });
+  },
+
+  /**
+   * Use the stored refresh token to obtain a fresh access token.
+   * Updates the store and storage on success.
+   * Returns the new access token or null if refresh fails.
+   */
+  refreshAccessToken: async (): Promise<string | null> => {
+    try {
+      const storedRefreshToken = await getRefreshToken();
+      if (!storedRefreshToken) return null;
+      const tokens = await cmsRefreshToken(storedRefreshToken);
+      await saveTokens(tokens.accessToken, tokens.refreshToken);
+      set({ accessToken: tokens.accessToken });
+      return tokens.accessToken;
+    } catch {
+      return null;
     }
   },
 }));

@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const LOGO_ICON = require('../assets/branding/logo.jpeg');
 
 /**
  * LukiPlayLogo — Replica visual del logo de Luki Play.
@@ -38,23 +40,11 @@ export default function LukiPlayLogo({ variant = 'full', size = 120 }: Props) {
   if (variant === 'icon') {
     return (
       <View style={{ width: size, height: size, borderRadius: size * 0.22, overflow: 'hidden' }}>
-        <LinearGradient
-          colors={['#7B2FBE', '#5A1E9E', '#3A0C6E']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', width: size, height: size }}
+        <Image
+          source={LOGO_ICON}
+          style={{ width: size, height: size }}
+          resizeMode="cover"
         />
-        {/* Bokeh circles */}
-        <BokehCircle top={-5 * scale} left={-10 * scale} diameter={70 * scale} color="rgba(123,47,190,0.25)" />
-        <BokehCircle top={55 * scale} left={65 * scale} diameter={60 * scale} color="rgba(90,30,158,0.20)" />
-        <BokehCircle top={2 * scale} left={67 * scale} diameter={36 * scale} color="rgba(140,60,200,0.15)" />
-        {/* Text overlay */}
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: size * 0.28, fontWeight: '900', letterSpacing: -1, marginBottom: size * 0.02 }}>luki</Text>
-          <View style={{ backgroundColor: '#FFB800', borderRadius: size * 0.06, paddingHorizontal: size * 0.08, paddingVertical: size * 0.02 }}>
-            <Text style={{ color: '#fff', fontSize: size * 0.16, fontWeight: '800' }}>play</Text>
-          </View>
-        </View>
       </View>
     );
   }

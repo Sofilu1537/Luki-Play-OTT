@@ -1,8 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { UserRepository } from '../../auth/domain/interfaces/user.repository.js';
-import { User, UserRole, UserStatus } from '../../auth/domain/entities/user.entity.js';
-import { UserRole as PrismaUserRole, UserStatus as PrismaUserStatus } from '@prisma/client';
+import {
+  User,
+  UserRole,
+  UserStatus,
+} from '../../auth/domain/entities/user.entity.js';
+import {
+  UserRole as PrismaUserRole,
+  UserStatus as PrismaUserStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -42,11 +49,13 @@ export class PrismaUserRepository implements UserRepository {
 
   async save(user: User): Promise<User> {
     const data = {
-      nombre: user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user.email,
+      nombre:
+        user.firstName && user.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      idNumber: user.idNumber,
       email: user.email || null,
       telefono: user.phone,
       passwordHash: user.passwordHash,
@@ -56,6 +65,7 @@ export class PrismaUserRepository implements UserRepository {
       mfaEnabled: user.mfaEnabled,
       lockedUntil: user.lockedUntil,
       lastLoginAt: user.lastLoginAt,
+      isCmsUser: user.isCmsUser(),
     };
 
     const customer = await this.prisma.customer.upsert({
@@ -71,7 +81,7 @@ export class PrismaUserRepository implements UserRepository {
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     await this.prisma.customer.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { passwordHash, mustChangePassword: false },
     });
   }
 
@@ -91,6 +101,7 @@ export class PrismaUserRepository implements UserRepository {
       createdAt: customer.createdAt,
       firstName: customer.firstName,
       lastName: customer.lastName,
+      idNumber: customer.idNumber,
       mustChangePassword: customer.mustChangePassword,
       mfaEnabled: customer.mfaEnabled,
       lockedUntil: customer.lockedUntil,

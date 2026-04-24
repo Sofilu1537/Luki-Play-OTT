@@ -1,4 +1,12 @@
-import { IsArray, IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole, UserStatus } from '../../auth/domain/entities/user.entity';
 import { SessionLimitPolicy } from '../../auth/domain/entities/account.entity';
@@ -54,19 +62,29 @@ export class CreateUserDto {
   @IsString()
   contrato?: string;
 
-  @ApiPropertyOptional({ description: 'Número máximo de sesiones o dispositivos simultáneos permitidos.', default: 3 })
+  @ApiPropertyOptional({
+    description:
+      'Número máximo de sesiones o dispositivos simultáneos permitidos.',
+    default: 3,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
   maxDevices?: number;
 
-  @ApiPropertyOptional({ description: 'Duración máxima de la sesión en días.', default: 30 })
+  @ApiPropertyOptional({
+    description: 'Duración máxima de la sesión en días.',
+    default: 30,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
   sessionDurationDays?: number;
 
-  @ApiPropertyOptional({ enum: SessionLimitPolicy, default: SessionLimitPolicy.BLOCK_NEW })
+  @ApiPropertyOptional({
+    enum: SessionLimitPolicy,
+    default: SessionLimitPolicy.BLOCK_NEW,
+  })
   @IsOptional()
   @IsEnum(SessionLimitPolicy)
   sessionLimitPolicy?: SessionLimitPolicy;
@@ -80,12 +98,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
-
-  @ApiPropertyOptional({ description: 'Dynamic CMS permissions for ADMIN role.', example: ['cms:dashboard', 'cms:users'] })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  permissions?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

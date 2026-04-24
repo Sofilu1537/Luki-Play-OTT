@@ -9,3 +9,17 @@ export const API_BASE_URL =
   typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? `${window.location.protocol}//${window.location.host}`
     : 'http://localhost:3000';
+
+/**
+ * Resolves a channel logo URL to an absolute URL suitable for rendering.
+ *
+ * Handles three cases:
+ *  - Already absolute (http/https) — returned as-is (legacy records uploaded before this fix)
+ *  - Relative path (/uploads/logos/...) — prepended with API_BASE_URL
+ *  - Empty/null — returns empty string
+ */
+export function resolveLogoUrl(logoUrl: string | null | undefined): string {
+  if (!logoUrl) return '';
+  if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) return logoUrl;
+  return `${API_BASE_URL}${logoUrl}`;
+}

@@ -11,12 +11,23 @@ import {
   HttpCode,
   HttpStatus,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/presentation/guards/permissions.guard';
 import { Permissions } from '../auth/presentation/decorators/permissions.decorator';
 import { AdminService } from './admin.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { CreateSubscriptionDto } from '../subscription/dto/create-subscription.dto';
+import { ProcessPaymentDto } from '../subscription/dto/process-payment.dto';
 import { CreateCanalDto } from './dto/create-canal.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
@@ -25,15 +36,22 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateComponenteDto } from './dto/create-componente.dto';
+import { UpdateComponenteDto } from './dto/update-componente.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { HlsValidatorService } from './hls-validator.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly hlsValidator: HlsValidatorService,
+    private readonly subscriptionService: SubscriptionService,
+  ) {}
 
   // ---- Users ---------------------------------------------------------------
 
@@ -76,18 +94,26 @@ export class AdminController {
   @ApiOperation({ summary: 'Update user status (admin)' })
   @Permissions('cms:users:write')
   @Patch('users/:id/status')
-  async updateUserStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserStatusDto,
+  ) {
     return this.adminService.updateUserStatus(id, dto.status);
   }
 
   @ApiOperation({ summary: 'Reset or change a user password (admin)' })
   @Permissions('cms:users:write')
   @Post('users/:id/password')
-  async setUserPassword(@Param('id') id: string, @Body() dto: SetUserPasswordDto) {
+  async setUserPassword(
+    @Param('id') id: string,
+    @Body() dto: SetUserPasswordDto,
+  ) {
     return this.adminService.setUserPassword(id, dto);
   }
 
-  @ApiOperation({ summary: 'Auto-generate a secure password and send it by email (admin)' })
+  @ApiOperation({
+    summary: 'Auto-generate a secure password and send it by email (admin)',
+  })
   @Permissions('cms:users:write')
   @Post('users/:id/generate-password')
   @HttpCode(HttpStatus.OK)
@@ -95,11 +121,17 @@ export class AdminController {
     return this.adminService.generateAndSendPassword(id);
   }
 
-  @ApiOperation({ summary: 'Generate a 6-character recovery code and send it by email (admin)' })
+  @ApiOperation({
+    summary:
+      'Generate a 6-character recovery code and send it by email (admin)',
+  })
   @Permissions('cms:users:write')
   @Post('users/:id/recovery-code')
   @HttpCode(HttpStatus.OK)
-  async sendRecoveryCode(@Param('id') id: string, @Body() body: { email?: string }) {
+  async sendRecoveryCode(
+    @Param('id') id: string,
+    @Body() body: { email?: string },
+  ) {
     return this.adminService.sendRecoveryCode(id, body.email);
   }
 
@@ -114,7 +146,10 @@ export class AdminController {
   @Permissions('cms:users:write')
   @Delete('users/:id/sessions/:sessionId')
   @HttpCode(HttpStatus.OK)
-  async revokeUserSession(@Param('id') id: string, @Param('sessionId') sessionId: string) {
+  async revokeUserSession(
+    @Param('id') id: string,
+    @Param('sessionId') sessionId: string,
+  ) {
     return this.adminService.revokeUserSession(id, sessionId);
   }
 
@@ -133,11 +168,23 @@ export class AdminController {
     return this.adminService.getUserPlan(id);
   }
 
-  @ApiOperation({ summary: 'Update CMS user permissions (SUPERADMIN only)' })
+  @ApiOperation({ summary: 'List all CMS roles with their permissions' })
   @Permissions('cms:roles')
-  @Patch('users/:id/permissions')
-  async updateUserPermissions(@Param('id') id: string, @Body() body: { permissions: string[] }) {
-    return this.adminService.updateUser(id, { permissions: body.permissions });
+  @Get('roles')
+  async getCmsRoles() {
+    return this.adminService.getCmsRoles();
+  }
+
+  @ApiOperation({
+    summary: 'Update permissions for a CMS role (ADMIN or SOPORTE only)',
+  })
+  @Permissions('cms:roles')
+  @Patch('roles/:key/permissions')
+  async updateRolePermissions(
+    @Param('key') key: string,
+    @Body() body: { permissions: string[] },
+  ) {
+    return this.adminService.updateCmsRolePermissions(key, body.permissions);
   }
 
   @ApiOperation({ summary: 'Get available CMS permission modules' })
@@ -150,6 +197,7 @@ export class AdminController {
   // ---- Monitor -------------------------------------------------------------
 
   @ApiOperation({ summary: 'Get system monitor stats' })
+  @Permissions('cms:monitor:read')
   @Get('monitor')
   async getMonitorStats() {
     return this.adminService.getMonitorStats();
@@ -157,55 +205,99 @@ export class AdminController {
 
   // ---- Stub routes for future modules --------------------------------------
 
+  @Permissions('cms:planes:read')
   @Get('planes')
-  getPlanes() { return this.adminService.getPlanes(); }
+  getPlanes() {
+    return this.adminService.getPlanes();
+  }
 
+  @Permissions('cms:planes:write')
   @Post('planes')
   createPlan(@Body() dto: CreatePlanDto) {
     return this.adminService.createPlan(dto);
   }
 
+  @Permissions('cms:planes:write')
   @Patch('planes/:id')
   updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto) {
     return this.adminService.updatePlan(id, dto);
   }
 
+  @Permissions('cms:planes:write')
   @Post('planes/:id/toggle')
   @HttpCode(HttpStatus.OK)
   togglePlan(@Param('id') id: string) {
     return this.adminService.togglePlan(id);
   }
 
+  @Permissions('cms:planes:write')
   @Delete('planes/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deletePlan(@Param('id') id: string) {
     return this.adminService.deletePlan(id);
   }
 
+  @Permissions('cms:sliders:read')
   @Get('sliders')
-  getSliders() { return this.adminService.getSliders(); }
+  getSliders() {
+    return this.adminService.getSliders();
+  }
 
   @ApiOperation({ summary: 'List all channels' })
-  @Permissions('cms:content:read')
+  @Permissions('cms:canales:read')
   @Get('canales')
-  getCanales() { return this.adminService.getCanales(); }
+  getCanales(@Request() req: any) {
+    const perms: string[] = req.user?.permissions ?? [];
+    const canSeeUrls =
+      perms.includes('cms:*') ||
+      perms.includes('cms:canales:write') ||
+      perms.includes('cms:canales');
+    return this.adminService.getCanales(canSeeUrls);
+  }
+
+  @ApiOperation({ summary: 'Upload a channel logo image' })
+  @Permissions('cms:canales:write')
+  @Post('canales/upload-logo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const dir = join(process.cwd(), 'uploads', 'logos');
+          fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, `${uuidv4()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new BadRequestException('Only image files are allowed'), false);
+      },
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  uploadChannelLogo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return { url: `/uploads/logos/${file.filename}` };
+  }
 
   @ApiOperation({ summary: 'Create a channel' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:canales:write')
   @Post('canales')
   createCanal(@Body() dto: CreateCanalDto) {
     return this.adminService.createCanal(dto);
   }
 
   @ApiOperation({ summary: 'Update a channel' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:canales:write')
   @Patch('canales/:id')
   updateCanal(@Param('id') id: string, @Body() dto: UpdateCanalDto) {
     return this.adminService.updateCanal(id, dto);
   }
 
   @ApiOperation({ summary: 'Toggle channel active state' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:canales:write')
   @Post('canales/:id/toggle')
   @HttpCode(HttpStatus.OK)
   toggleCanal(@Param('id') id: string) {
@@ -213,43 +305,55 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Delete a channel' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:canales:write')
   @Delete('canales/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteCanal(@Param('id') id: string) {
     return this.adminService.deleteCanal(id);
   }
 
+  @ApiOperation({ summary: 'Validate an HLS stream URL' })
+  @Permissions('cms:canales:read')
+  @Post('canales/validate-stream')
+  validateStream(@Body() body: { url: string }) {
+    return this.hlsValidator.validate(body.url);
+  }
+
   @ApiOperation({ summary: 'List all categories' })
-  @Permissions('cms:content:read')
+  @Permissions('cms:categorias:read')
   @Get('categorias')
-  getCategorias(@Query('active') active?: string, @Query('search') search?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
+  getCategorias(
+    @Query('active') active?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
     return this.adminService.getCategorias({ active, search, limit, offset });
   }
 
   @ApiOperation({ summary: 'Get single category by ID' })
-  @Permissions('cms:content:read')
+  @Permissions('cms:categorias:read')
   @Get('categorias/:id')
   getCategoriaById(@Param('id') id: string) {
     return this.adminService.getCategoriaById(id);
   }
 
   @ApiOperation({ summary: 'Create a category' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Post('categorias')
   createCategoria(@Body() dto: CreateCategoriaDto) {
     return this.adminService.createCategoria(dto);
   }
 
   @ApiOperation({ summary: 'Update a category' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Patch('categorias/:id')
   updateCategoria(@Param('id') id: string, @Body() dto: UpdateCategoriaDto) {
     return this.adminService.updateCategoria(id, dto);
   }
 
   @ApiOperation({ summary: 'Toggle category active state' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Post('categorias/:id/toggle')
   @HttpCode(HttpStatus.OK)
   toggleCategoria(@Param('id') id: string) {
@@ -257,31 +361,39 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Sync channels for a category' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Post('categorias/:id/canales')
   @HttpCode(HttpStatus.OK)
-  syncCategoriaCanales(@Param('id') id: string, @Body() body: { channelIds: string[] }) {
+  syncCategoriaCanales(
+    @Param('id') id: string,
+    @Body() body: { channelIds: string[] },
+  ) {
     return this.adminService.syncCategoryChannels(id, body.channelIds ?? []);
   }
 
   @ApiOperation({ summary: 'Remove a channel from a category' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Delete('categorias/:id/canales/:channelId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeCategoriaCanal(@Param('id') id: string, @Param('channelId') channelId: string) {
+  removeCategoriaCanal(
+    @Param('id') id: string,
+    @Param('channelId') channelId: string,
+  ) {
     return this.adminService.removeCategoryChannel(id, channelId);
   }
 
   @ApiOperation({ summary: 'Bulk reorder categories' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Patch('categorias/reorder/bulk')
   @HttpCode(HttpStatus.OK)
-  bulkReorderCategorias(@Body() body: { items: { id: string; displayOrder: number }[] }) {
+  bulkReorderCategorias(
+    @Body() body: { items: { id: string; displayOrder: number }[] },
+  ) {
     return this.adminService.bulkReorderCategorias(body.items ?? []);
   }
 
   @ApiOperation({ summary: 'Delete a category (soft delete)' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:categorias:write')
   @Delete('categorias/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteCategoria(@Param('id') id: string) {
@@ -289,18 +401,49 @@ export class AdminController {
   }
 
   @Get('blog')
-  getBlog() { return this.adminService.getBlog(); }
+  getBlog() {
+    return this.adminService.getBlog();
+  }
 
   @Get('impuestos')
-  getImpuestos() { return this.adminService.getImpuestos(); }
+  getImpuestos() {
+    return this.adminService.getImpuestos();
+  }
 
   // ---- Componentes (content types visible to subscribers) ------------------
 
   @ApiOperation({ summary: 'List all OTT components' })
+  @Permissions('cms:componentes:read')
   @Get('componentes')
-  getComponentes() { return this.adminService.getComponentes(); }
+  getComponentes() {
+    return this.adminService.getComponentes();
+  }
+
+  @ApiOperation({ summary: 'Create a new OTT component' })
+  @Permissions('cms:componentes:write')
+  @Post('componentes')
+  @HttpCode(HttpStatus.CREATED)
+  createComponente(@Body() body: CreateComponenteDto) {
+    return this.adminService.createComponente(body);
+  }
+
+  @ApiOperation({ summary: 'Update an OTT component' })
+  @Permissions('cms:componentes:write')
+  @Patch('componentes/:id')
+  updateComponente(@Param('id') id: string, @Body() body: UpdateComponenteDto) {
+    return this.adminService.updateComponente(id, body);
+  }
+
+  @ApiOperation({ summary: 'Delete an OTT component' })
+  @Permissions('cms:componentes:write')
+  @Delete('componentes/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteComponente(@Param('id') id: string) {
+    return this.adminService.deleteComponente(id);
+  }
 
   @ApiOperation({ summary: 'Toggle a component active/inactive' })
+  @Permissions('cms:componentes:write')
   @Post('componentes/:id/toggle')
   @HttpCode(HttpStatus.OK)
   toggleComponente(@Param('id') id: string) {
@@ -308,6 +451,7 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Update component order' })
+  @Permissions('cms:componentes:write')
   @Post('componentes/reorder')
   @HttpCode(HttpStatus.OK)
   reorderComponentes(@Body() body: { ids: string[] }) {
@@ -315,18 +459,24 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Get categories assigned to a component' })
-  @Permissions('cms:content:read')
+  @Permissions('cms:componentes:read')
   @Get('componentes/:id/categorias')
   getComponenteCategorias(@Param('id') id: string) {
     return this.adminService.getComponenteById(id);
   }
 
   @ApiOperation({ summary: 'Sync categories for a component' })
-  @Permissions('cms:content:write')
+  @Permissions('cms:componentes:write')
   @Post('componentes/:id/categorias')
   @HttpCode(HttpStatus.OK)
-  syncComponenteCategorias(@Param('id') id: string, @Body() body: { categoryIds: string[] }) {
-    return this.adminService.syncComponentCategories(id, body.categoryIds ?? []);
+  syncComponenteCategorias(
+    @Param('id') id: string,
+    @Body() body: { categoryIds: string[] },
+  ) {
+    return this.adminService.syncComponentCategories(
+      id,
+      body.categoryIds ?? [],
+    );
   }
 
   // ---- Componentes: public endpoint (no auth required) --------------------
@@ -355,7 +505,10 @@ export class AdminController {
     return this.adminService.getRegistrationRequest(id);
   }
 
-  @ApiOperation({ summary: 'Aprobar solicitud: crea customer + contract + código de activación' })
+  @ApiOperation({
+    summary:
+      'Aprobar solicitud: crea customer + contract + código de activación',
+  })
   @Permissions('cms:users:write')
   @Post('registration-requests/:id/approve')
   @HttpCode(HttpStatus.OK)
@@ -365,7 +518,12 @@ export class AdminController {
     @Request() req: any,
   ) {
     const actorId = req.user?.sub ?? 'system';
-    return this.adminService.approveRegistrationRequest(id, body.contractNumber, body.maxDevices, actorId);
+    return this.adminService.approveRegistrationRequest(
+      id,
+      body.contractNumber,
+      body.maxDevices,
+      actorId,
+    );
   }
 
   @ApiOperation({ summary: 'Rechazar solicitud de registro' })
@@ -378,6 +536,57 @@ export class AdminController {
     @Request() req: any,
   ) {
     const actorId = req.user?.sub ?? 'system';
-    return this.adminService.rejectRegistrationRequest(id, body.reason, actorId);
+    return this.adminService.rejectRegistrationRequest(
+      id,
+      body.reason,
+      actorId,
+    );
+  }
+
+  // ─── Subscriptions ────────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Crear suscripción manual para un cliente' })
+  @Permissions('cms:subscriptions:create')
+  @Post('subscriptions')
+  @HttpCode(HttpStatus.CREATED)
+  createSubscription(@Body() dto: CreateSubscriptionDto) {
+    return this.subscriptionService.createSubscription(dto);
+  }
+
+  @ApiOperation({ summary: 'Obtener suscripciones de un cliente' })
+  @Permissions('cms:subscriptions:read')
+  @Get('subscriptions/customer/:customerId')
+  listCustomerSubscriptions(@Param('customerId') customerId: string) {
+    return this.subscriptionService.listCustomerSubscriptions(customerId);
+  }
+
+  @ApiOperation({ summary: 'Verificar acceso de un cliente' })
+  @Permissions('cms:subscriptions:read')
+  @Get('subscriptions/access/:customerId')
+  checkSubscriptionAccess(@Param('customerId') customerId: string) {
+    return this.subscriptionService.checkAccess(customerId);
+  }
+
+  @ApiOperation({ summary: 'Ver detalle de suscripción' })
+  @Permissions('cms:subscriptions:read')
+  @Get('subscriptions/:id')
+  getSubscription(@Param('id') id: string) {
+    return this.subscriptionService.getSubscriptionById(id);
+  }
+
+  @ApiOperation({ summary: 'Registrar pago / renovar suscripción' })
+  @Permissions('cms:subscriptions:renew')
+  @Post('subscriptions/:id/payment')
+  @HttpCode(HttpStatus.OK)
+  processPayment(@Param('id') id: string, @Body() dto: ProcessPaymentDto) {
+    return this.subscriptionService.processPayment(id, dto);
+  }
+
+  @ApiOperation({ summary: 'Cancelar suscripción' })
+  @Permissions('cms:subscriptions:cancel')
+  @Post('subscriptions/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  cancelSubscription(@Param('id') id: string) {
+    return this.subscriptionService.cancelSubscription(id);
   }
 }
