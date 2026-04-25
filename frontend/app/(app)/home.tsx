@@ -9,6 +9,14 @@ import { useChannels, getCurrentProgram } from '../../services/useChannels';
 import type { Channel } from '../../services/channelTypes';
 import { Hero } from '../../components/Hero';
 import { MediaRow } from '../../components/MediaRow';
+import { API_BASE_URL } from '../../services/api/config';
+
+function resolveLogoUri(logo: string): string | null {
+    if (!logo || logo === '📺') return null;
+    if (logo.startsWith('http')) return logo;
+    if (logo.startsWith('/')) return `${API_BASE_URL}${logo}`;
+    return null; // emoji u otro string no-URL
+}
 
 // Order in which tag rows appear when present
 const TAG_ORDER = [
@@ -77,18 +85,18 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
                 contentContainerStyle={{ gap: 12 }}
                 renderItem={({ item }) => {
                     const prog = getCurrentProgram(item);
+                    const logoUri = resolveLogoUri(item.logo);
+                    const progLabel = prog.title && prog.title !== item.name ? prog.title : 'En vivo';
                     return (
                         <TouchableOpacity
                             style={{ width: 150, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}
                             onPress={() => onSelectChannel(item)}
                         >
                             <View style={{ height: 84, backgroundColor: '#240046', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                                {(!item.logo || item.logo === '📺') ? (
-                                    <Ionicons name="tv-outline" size={36} color="rgba(255,255,255,0.8)" />
-                                ) : item.logo.startsWith('http') ? (
-                                    <Image source={{ uri: item.logo }} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+                                {logoUri ? (
+                                    <Image source={{ uri: logoUri }} style={{ width: 64, height: 64, resizeMode: 'contain' }} />
                                 ) : (
-                                    <Text style={{ fontSize: 32 }}>{item.logo}</Text>
+                                    <Ionicons name="tv-outline" size={36} color="rgba(255,255,255,0.8)" />
                                 )}
                                 <View style={{ position: 'absolute', width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
                                     <Ionicons name="play" size={14} color="#fff" style={{ marginLeft: 2 }} />
@@ -102,7 +110,7 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
                                 <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '700', width: 18 }}>{item.number}</Text>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{item.name}</Text>
-                                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 }} numberOfLines={1}>{prog.title}</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 }} numberOfLines={1}>{progLabel}</Text>
                                 </View>
                                 {item.isFavorite && <Ionicons name="heart" size={14} color="#E53935" />}
                             </View>
@@ -131,14 +139,20 @@ function FavoritesRow({ channels, onSelectChannel }: { channels: Channel[]; onSe
                 contentContainerStyle={{ gap: 12 }}
                 renderItem={({ item }) => {
                     const prog = getCurrentProgram(item);
+                    const logoUri = resolveLogoUri(item.logo);
+                    const progLabel = prog.title && prog.title !== item.name ? prog.title : 'En vivo';
                     return (
                         <TouchableOpacity
                             style={{ width: 120, alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.20)' }}
                             onPress={() => onSelectChannel(item)}
                         >
-                            <Text style={{ fontSize: 36 }}>{item.logo}</Text>
+                            {logoUri ? (
+                                <Image source={{ uri: logoUri }} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+                            ) : (
+                                <Ionicons name="tv-outline" size={36} color="rgba(255,255,255,0.8)" />
+                            )}
                             <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>{item.name}</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center' }} numberOfLines={1}>{prog.title}</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center' }} numberOfLines={1}>{progLabel}</Text>
                         </TouchableOpacity>
                     );
                 }}
