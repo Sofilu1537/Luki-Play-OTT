@@ -1,7 +1,6 @@
 import { View, Text, ImageBackground, TouchableOpacity, Dimensions } from 'react-native';
-import { APP } from '../styles/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
 import { Movie } from '../services/contentStore';
 import { useState } from 'react';
 
@@ -33,13 +32,13 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
         <View className="w-full relative" style={{ height: height * 0.6 }}>
             <ImageBackground
                 source={(!imgError && movie.backdrop) ? { uri: movie.backdrop } : undefined}
-                style={{ backgroundColor: APP.surfaceElevated }}
+                style={{ backgroundColor: '#141414' }}
                 className="w-full h-full justify-end"
                 resizeMode="cover"
                 onError={() => setImgError(true)}
             >
                 <LinearGradient
-                    colors={['transparent', APP.tabBar]}
+                    colors={['transparent', '#000000']}
                     style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' }}
                 />
 
@@ -48,7 +47,7 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
 
                     <View className="flex-row items-center mb-6 space-x-4">
                         {movie.tags?.map((tag, index) => (
-                            <Text key={index} className="text-luki-gray text-sm mx-2">• {tag}</Text>
+                            <Text key={index} className="text-gray-300 text-sm mx-2">• {tag}</Text>
                         ))}
                     </View>
 
@@ -57,12 +56,12 @@ export const Hero = ({ movie, onPlay }: HeroProps) => {
                             className="bg-white flex-row items-center px-6 py-3 rounded-md w-36 justify-center"
                             onPress={onPlay}
                         >
-                            <FontAwesome name="play" size={20} color="black" style={{ marginRight: 8 }} />
+                            <Ionicons name="play" size={20} color="black" style={{ marginRight: 8 }} />
                             <Text className="text-black font-bold text-lg">Play</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity className="bg-luki-surface/80 flex-row items-center px-6 py-3 rounded-md w-36 justify-center">
-                            <FontAwesome name="info-circle" size={20} color="white" style={{ marginRight: 8 }} />
+                        <TouchableOpacity className="bg-gray-600/80 flex-row items-center px-6 py-3 rounded-md w-36 justify-center">
+                            <Ionicons name="information-circle-outline" size={22} color="white" style={{ marginRight: 6 }} />
                             <Text className="text-white font-bold text-lg">Info</Text>
                         </TouchableOpacity>
                     </View>
