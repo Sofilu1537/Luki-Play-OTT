@@ -10,8 +10,7 @@
  * standalone Luki-Play-Player). This hook is the CMS-specific adaptation.
  */
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import { Channel, STATIC_CHANNELS, getCurrentProgram, getProgressPercent } from './channelTypes';
+import { Channel, getCurrentProgram, getProgressPercent } from './channelTypes';
 import { API_BASE_URL } from './api/config';
 
 export type { Channel };
@@ -88,21 +87,18 @@ async function fetchChannels() {
         isFromBackend: true,
       };
     } else {
-      // DEV FALLBACK ONLY — backend has no channels configured yet
-      if (__DEV__) console.warn('[useChannels] Backend returned 0 canales — usando STATIC_CHANNELS de desarrollo. Crea canales en /cms/canales para verlos aquí.');
       _store = {
-        channels: STATIC_CHANNELS,
+        channels: [],
         loading: false,
         error: null,
         isFromBackend: false,
       };
     }
   } catch (error) {
-    if (__DEV__) console.warn('[useChannels] No se pudo conectar a /public/canales — usando STATIC_CHANNELS de desarrollo.', error);
     _store = {
-      channels: STATIC_CHANNELS,
+      channels: [],
       loading: false,
-      error: 'No se pudo conectar al servidor. Mostrando canales demo.',
+      error: 'No se pudo conectar al servidor.',
       isFromBackend: false,
     };
   }
