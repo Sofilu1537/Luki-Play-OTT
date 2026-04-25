@@ -10,6 +10,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { PublicModule } from './modules/public/public.module';
 
 /**
  * Root application module.
@@ -45,6 +46,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     ProfilesModule,
     AdminModule,
     SubscriptionModule,
+    PublicModule,
   ],
 })
 export class AppModule {}
