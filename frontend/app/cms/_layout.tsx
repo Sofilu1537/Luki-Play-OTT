@@ -50,23 +50,23 @@ export default function CmsLayout() {
     }
   }, [profile, hasRestored, isRestoring, pathname, rootNavigationState?.key, router]);
 
-  if (!rootNavigationState?.key || !hasRestored || isRestoring) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24004D' }}>
-        <ActivityIndicator size="large" color="#FFB800" />
-      </View>
-    );
-  }
+  const isReady = rootNavigationState?.key && hasRestored && !isRestoring;
 
   return (
     <ThemeProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#24004D' },
-        }}
-      />
+      {!isReady ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24004D' }}>
+          <ActivityIndicator size="large" color="#FFB800" />
+        </View>
+      ) : (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            contentStyle: { backgroundColor: '#24004D' },
+          }}
+        />
+      )}
     </ThemeProvider>
   );
 }

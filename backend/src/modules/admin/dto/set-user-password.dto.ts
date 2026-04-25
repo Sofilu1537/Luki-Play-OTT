@@ -6,7 +6,7 @@ export class SetUserPasswordDto {
     description: 'Nueva contraseña temporal o definitiva para el usuario.',
   })
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   newPassword: string;
 
   @ApiPropertyOptional({

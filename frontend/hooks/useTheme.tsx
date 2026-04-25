@@ -47,5 +47,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useTheme(): ThemeContextValue {
-  return useContext(ThemeContext);
+  const ctx = useContext(ThemeContext);
+  return {
+    isDark: ctx?.isDark ?? true,
+    theme: ctx?.theme ?? darkTheme,
+    toggleTheme: ctx?.toggleTheme ?? (() => {}),
+  };
 }

@@ -1,10 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import {
-  EMAIL_SERVICE,
-  EmailService,
-} from '../../auth/domain/interfaces/email.service';
+import { EMAIL_SERVICE } from '../../auth/domain/interfaces/email.service';
+import type { EmailService } from '../../auth/domain/interfaces/email.service';
 
 /**
  * SubscriptionNotificationWorker

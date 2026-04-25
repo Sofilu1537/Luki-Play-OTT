@@ -1157,7 +1157,7 @@ function UserDetailModal({
                           <FieldCard label="Estado" value={statusMeta?.label} error={user.status !== 'active'} style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Tipo" value={userTypeMeta?.label} style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Rol" value="Usuario" style={{ flex: 1, minWidth: 200 }} />
-                          <FieldCard label="Fecha de creación" value={fmtDate(user.createdAt)} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Fecha de creación" value={fmtDate(user.fechaInicio)} style={{ flex: 1, minWidth: 200 }} />
                         </View>
                       </>
                     )}
@@ -1285,7 +1285,7 @@ function UserDetailModal({
                     ) : (
                       <View>
                         {/* Plan card */}
-                        <View style={{ background: undefined, backgroundColor: isDark ? 'rgba(96,38,158,0.15)' : '#fff', borderWidth: 1, borderColor: isDark ? 'rgba(96,38,158,0.25)' : 'rgba(130,130,130,0.18)', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 12 }}>
+                        <View style={{ backgroundColor: isDark ? 'rgba(96,38,158,0.15)' : '#fff', borderWidth: 1, borderColor: isDark ? 'rgba(96,38,158,0.25)' : 'rgba(130,130,130,0.18)', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 12 }}>
                           <Text style={{ color: isDark ? '#FAF6E7' : '#240046', fontSize: 18, fontWeight: '800', letterSpacing: -0.2, marginBottom: 2 }}>{plan?.nombre ?? 'LUKI PLAY'}</Text>
                           <Text style={{ color: isDark ? 'rgba(250,246,231,0.3)' : '#240046', fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier', letterSpacing: 0.5, marginBottom: 12 }}>Contrato #{user.contrato ?? '—'}</Text>
                           {plan ? (
@@ -1495,7 +1495,7 @@ export default function CmsUsers() {
           getStatusMeta(user.status, theme).label,
           user.plan ?? '—',
           `${user.sesiones}/${user.maxDevices}`,
-          fmtDate(user.createdAt),
+          fmtDate(user.fechaInicio),
         ]),
         [],
         [`Luki Play CMS · ${dateStr} · Documento confidencial de uso interno`],
@@ -1925,7 +1925,6 @@ export default function CmsUsers() {
                     <TouchableOpacity
                       style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,184,0,0.28)', backgroundColor: 'rgba(255,184,0,0.07)', alignItems: 'center', justifyContent: 'center' }}
                       onPress={() => { setDetailUserId(user.id); setShowDetailModal(true); }}
-                      title="Ver y Editar"
                     >
                       <FontAwesome name="eye" size={12} color="#FFB800" />
                     </TouchableOpacity>
@@ -1934,14 +1933,12 @@ export default function CmsUsers() {
                         <TouchableOpacity
                           style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,121,0,0.3)', backgroundColor: 'rgba(255,121,0,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => setRecoveryUser(user)}
-                          title="Recuperar contraseña"
                         >
                           <FontAwesome name="lock" size={12} color="#FF7900" />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: user.status === 'active' ? 'rgba(209,16,90,0.3)' : 'rgba(23,209,198,0.3)', backgroundColor: user.status === 'active' ? 'rgba(209,16,90,0.08)' : 'rgba(23,209,198,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => handleDeactivate(user)}
-                          title={user.status === 'active' ? 'Suspender' : 'Activar'}
                         >
                           <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? '#D1105A' : '#17D1C6'} />
                         </TouchableOpacity>
