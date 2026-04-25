@@ -23,7 +23,10 @@ export interface Channel {
 }
 
 // ─────────────────────────────────────────────
-// Fallback static channels (used when backend has no channels yet)
+// DEV FALLBACK ONLY — Canales estáticos de prueba.
+// Solo se usan cuando el backend no tiene canales configurados.
+// Para ver canales reales: crea canales en /cms/canales (CMS Admin).
+// En producción, /public/canales siempre debe devolver canales reales.
 // ─────────────────────────────────────────────
 
 const S_MUX     = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';

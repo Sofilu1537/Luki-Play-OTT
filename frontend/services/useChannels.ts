@@ -88,7 +88,8 @@ async function fetchChannels() {
         isFromBackend: true,
       };
     } else {
-      // Backend has no channels yet — use static fallback
+      // DEV FALLBACK ONLY — backend has no channels configured yet
+      if (__DEV__) console.warn('[useChannels] Backend returned 0 canales — usando STATIC_CHANNELS de desarrollo. Crea canales en /cms/canales para verlos aquí.');
       _store = {
         channels: STATIC_CHANNELS,
         loading: false,
@@ -97,7 +98,7 @@ async function fetchChannels() {
       };
     }
   } catch (error) {
-    console.error("fetchChannels failed:", error);
+    if (__DEV__) console.warn('[useChannels] No se pudo conectar a /public/canales — usando STATIC_CHANNELS de desarrollo.', error);
     _store = {
       channels: STATIC_CHANNELS,
       loading: false,
