@@ -11,6 +11,7 @@ export interface AdminUser {
   planId: string | null;
   fechaInicio: string;
   fechaFin: string;
+  createdAt: string;
   sesiones: number;
   contrato: string | null;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
@@ -48,6 +49,7 @@ export function toAdminUser(
     planId: contract?.planId ?? null,
     fechaInicio: contract?.fechaInicio?.toISOString().slice(0, 10) ?? '',
     fechaFin: contract?.fechaFin?.toISOString().slice(0, 10) ?? '',
+    createdAt: customer.createdAt?.toISOString().slice(0, 10) ?? '',
     sesiones: activeSessions,
     contrato: contract?.contractNumber ?? null,
     status: customer.status.toLowerCase() as AdminUser['status'],

@@ -142,7 +142,8 @@ function getDeviceSummary(sessions: AdminUserSession[]) {
 }
 
 function generateTemporaryPassword() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
@@ -1157,7 +1158,7 @@ function UserDetailModal({
                           <FieldCard label="Estado" value={statusMeta?.label} error={user.status !== 'active'} style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Tipo" value={userTypeMeta?.label} style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Rol" value="Usuario" style={{ flex: 1, minWidth: 200 }} />
-                          <FieldCard label="Fecha de creación" value={fmtDate(user.fechaInicio)} style={{ flex: 1, minWidth: 200 }} />
+                          <FieldCard label="Fecha de creación" value={fmtDate(user.createdAt)} style={{ flex: 1, minWidth: 200 }} />
                         </View>
                       </>
                     )}
@@ -1495,7 +1496,7 @@ export default function CmsUsers() {
           getStatusMeta(user.status, theme).label,
           user.plan ?? '—',
           `${user.sesiones}/${user.maxDevices}`,
-          fmtDate(user.fechaInicio),
+          fmtDate(user.createdAt),
         ]),
         [],
         [`Luki Play CMS · ${dateStr} · Documento confidencial de uso interno`],

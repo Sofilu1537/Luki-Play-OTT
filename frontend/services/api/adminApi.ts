@@ -22,6 +22,7 @@ export interface AdminUser {
   planId: string | null;
   fechaInicio: string;
   fechaFin: string;
+  createdAt: string;
   sesiones: number;
   contrato: string | null;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
