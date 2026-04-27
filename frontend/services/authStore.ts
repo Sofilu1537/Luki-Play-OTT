@@ -5,7 +5,7 @@ const API_BASE_URL =
     ? `${window.location.protocol}//${window.location.host}`
     : 'http://localhost:3000';
 
-const DEV_DEVICE_ID = 'luki-web-dev-device-001';
+export const DEV_DEVICE_ID = 'luki-web-dev-device-001';
 
 export interface User {
     id: string;

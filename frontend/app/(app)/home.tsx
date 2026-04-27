@@ -4,8 +4,8 @@ import { useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useContentStore, Movie } from '../../services/contentStore';
 import { useAdminStore } from '../../services/adminStore';
-import { useAuthStore } from '../../services/authStore';
-import { useChannels, getCurrentProgram } from '../../services/useChannels';
+import { useAuthStore, DEV_DEVICE_ID } from '../../services/authStore';
+import { useChannels, getCurrentProgram, toggleFavorite } from '../../services/useChannels';
 import type { Channel } from '../../services/channelTypes';
 import { Hero } from '../../components/Hero';
 import { MediaRow } from '../../components/MediaRow';
@@ -62,7 +62,7 @@ function LiveHeroBanner({ onWatchLive }: { onWatchLive: () => void }) {
 // ─────────────────────────────────────────────
 // Channel Grid Row
 // ─────────────────────────────────────────────
-function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSelectChannel: (ch: Channel) => void }) {
+function ChannelRow({ channels, onSelectChannel, onToggleFavorite }: { channels: Channel[]; onSelectChannel: (ch: Channel) => void; onToggleFavorite: (ch: Channel) => void }) {
     return (
         <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -112,10 +112,15 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
                                     <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{item.name}</Text>
                                     <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 }} numberOfLines={1}>{progLabel}</Text>
                                 </View>
-                                {item.isFavorite && <Ionicons name="heart" size={14} color="#E53935" />}
+                                <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); onToggleFavorite(item); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                    <Ionicons
+                                        name={item.isFavorite ? 'heart' : 'heart-outline'}
+                                        size={16}
+                                        color={item.isFavorite ? '#E53935' : 'rgba(255,255,255,0.35)'}
+                                    />
+                                </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-                    );
+                        </TouchableOpacity>                    );
                 }}
             />
         </View>
@@ -125,7 +130,7 @@ function ChannelRow({ channels, onSelectChannel }: { channels: Channel[]; onSele
 // ─────────────────────────────────────────────
 // Favorites Row
 // ─────────────────────────────────────────────
-function FavoritesRow({ channels, onSelectChannel }: { channels: Channel[]; onSelectChannel: (ch: Channel) => void }) {
+function FavoritesRow({ channels, onSelectChannel, onToggleFavorite }: { channels: Channel[]; onSelectChannel: (ch: Channel) => void; onToggleFavorite: (ch: Channel) => void }) {
     const favs = channels.filter(c => c.isFavorite);
     if (!favs.length) return null;
     return (
@@ -142,18 +147,20 @@ function FavoritesRow({ channels, onSelectChannel }: { channels: Channel[]; onSe
                     const logoUri = resolveLogoUri(item.logo);
                     const progLabel = prog.title && prog.title !== item.name ? prog.title : 'En vivo';
                     return (
-                        <TouchableOpacity
-                            style={{ width: 120, alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.20)' }}
-                            onPress={() => onSelectChannel(item)}
-                        >
-                            {logoUri ? (
-                                <Image source={{ uri: logoUri }} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
-                            ) : (
-                                <Ionicons name="tv-outline" size={36} color="rgba(255,255,255,0.8)" />
-                            )}
-                            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>{item.name}</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center' }} numberOfLines={1}>{progLabel}</Text>
-                        </TouchableOpacity>
+                        <View style={{ width: 120, alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.20)' }}>
+                            <TouchableOpacity onPress={() => onSelectChannel(item)} style={{ alignItems: 'center', gap: 6 }}>
+                                {logoUri ? (
+                                    <Image source={{ uri: logoUri }} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+                                ) : (
+                                    <Ionicons name="tv-outline" size={36} color="rgba(255,255,255,0.8)" />
+                                )}
+                                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>{item.name}</Text>
+                                <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center' }} numberOfLines={1}>{progLabel}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => onToggleFavorite(item)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                                <Ionicons name="heart" size={14} color="#E53935" />
+                            </TouchableOpacity>
+                        </View>
                     );
                 }}
             />
@@ -194,7 +201,14 @@ export default function Home() {
     const canAccessOtt = authState.canAccessOtt ?? true;
     const restrictionMessage = authState.restrictionMessage ?? null;
     const { channels: liveChannels, reload: reloadChannels } = useChannels();
+    const accessToken = useAuthStore((s) => s.accessToken);
     const router = useRouter();
+
+    const handleToggleFavorite = useCallback((ch: Channel) => {
+        if (accessToken) {
+            toggleFavorite(ch.id, !ch.isFavorite, accessToken, DEV_DEVICE_ID);
+        }
+    }, [accessToken]);
 
     // Load channels from IndexedDB once on mount
     useEffect(() => {
@@ -312,8 +326,8 @@ export default function Home() {
                 {liveChannels.length > 0 && (
                     <>
                         <LiveHeroBanner onWatchLive={() => openPlayer(liveChannels[0]!)} />
-                        <ChannelRow channels={liveChannels} onSelectChannel={openPlayer} />
-                        <FavoritesRow channels={liveChannels} onSelectChannel={openPlayer} />
+                        <ChannelRow channels={liveChannels} onSelectChannel={openPlayer} onToggleFavorite={handleToggleFavorite} />
+                        <FavoritesRow channels={liveChannels} onSelectChannel={openPlayer} onToggleFavorite={handleToggleFavorite} />
                     </>
                 )}
 

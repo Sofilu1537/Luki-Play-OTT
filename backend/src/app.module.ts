@@ -11,6 +11,7 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { PublicModule } from './modules/public/public.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 
 /**
  * Root application module.
@@ -47,6 +48,7 @@ import { PublicModule } from './modules/public/public.module';
     AdminModule,
     SubscriptionModule,
     PublicModule,
+    FavoritesModule,
   ],
 })
 export class AppModule {}

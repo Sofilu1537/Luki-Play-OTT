@@ -21,12 +21,13 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useChannels, getCurrentProgram, getProgressPercent } from '../../services/useChannels';
+import { useChannels, getCurrentProgram, getProgressPercent, toggleFavorite } from '../../services/useChannels';
 import { HlsVideoPlayer } from '../../components/HlsVideoPlayer';
 import type { Channel } from '../../services/channelTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import { resolveLogoUrl } from '../../services/api/config';
+import { useAuthStore, DEV_DEVICE_ID } from '../../services/authStore';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -255,6 +256,7 @@ export default function LivePlayer() {
   const insets = useSafeAreaInsets();
 
   const { channels, setChannels, loading: channelsLoading, error: channelsError } = useChannels();
+  const accessToken = useAuthStore((s) => s.accessToken);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -431,7 +433,13 @@ export default function LivePlayer() {
             channel={activeChannel} 
             isFavorite={activeChannel.isFavorite} 
             opacity={controlsOpacity} 
-            onFavorite={() => setChannels(channels.map((c, i) => i === activeIndex ? { ...c, isFavorite: !c.isFavorite } : c))}
+            onFavorite={() => {
+              if (accessToken) {
+                toggleFavorite(activeChannel.id, !activeChannel.isFavorite, accessToken, DEV_DEVICE_ID);
+              } else {
+                setChannels(channels.map((c, i) => i === activeIndex ? { ...c, isFavorite: !c.isFavorite } : c));
+              }
+            }}
             onFullscreen={toggleFullscreen}
             isFullscreen={isFullscreen}
             onVolumeChange={handleVolumeChange}

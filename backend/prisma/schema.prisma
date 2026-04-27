@@ -118,6 +118,7 @@ model Customer {
   subscriptions   Subscription[]
   payments        Payment[]
   notifications   Notification[]
+  favorites       ChannelFavorite[]
 
   @@map("customers")
 }
@@ -368,11 +369,28 @@ model Channel {
   deletedAt               DateTime?
 
   channelCategories ChannelCategory[]
+  favorites         ChannelFavorite[]
 
   @@index([categoryId])
   @@index([status])
   @@index([isLive])
   @@map("channels")
+}
+
+model ChannelFavorite {
+  id         String   @id @default(uuid())
+  customerId String
+  channelId  String
+  deviceId   String
+  profileId  String   @default("__default__")
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel  Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, channelId, deviceId, profileId])
+  @@index([customerId, deviceId, profileId])
+  @@map("channel_favorites")
 }
 
 model Component {
