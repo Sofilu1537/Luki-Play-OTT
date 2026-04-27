@@ -1237,27 +1237,35 @@ export class AdminService {
     const slug = dto.slug || this.autoSlug(dto.nombre);
     const status = this.mapStatusToDb(dto.status);
 
-    const channel = await this.prisma.channel.create({
-      data: {
-        nombre: dto.nombre,
-        slug,
-        streamUrl: dto.streamUrl,
-        backupUrl: dto.backupUrl,
-        logoUrl: dto.logoUrl,
-        categoryId: dto.categoryId,
-        epgSourceId: dto.epgSourceId,
-        status: status ?? ChannelStatus.ACTIVE,
-        streamProtocol: this.mapProtocolToDb(dto.streamProtocol),
-        resolution: dto.resolution ?? '1080p',
-        bitrateKbps: dto.bitrateKbps ?? 5000,
-        isDrmProtected: dto.isDrmProtected ?? false,
-        geoRestriction: dto.geoRestriction,
-        sortOrder: dto.sortOrder ?? 99,
-        planIds: dto.planIds ?? [],
-        requiereControlParental: dto.requiereControlParental ?? false,
-      },
-      include: { category: true },
-    });
+    let channel: Awaited<ReturnType<typeof this.prisma.channel.create>>;
+    try {
+      channel = await this.prisma.channel.create({
+        data: {
+          nombre: dto.nombre,
+          slug,
+          streamUrl: dto.streamUrl,
+          backupUrl: dto.backupUrl,
+          logoUrl: dto.logoUrl,
+          categoryId: dto.categoryId,
+          epgSourceId: dto.epgSourceId,
+          status: status ?? ChannelStatus.ACTIVE,
+          streamProtocol: this.mapProtocolToDb(dto.streamProtocol),
+          resolution: dto.resolution ?? '1080p',
+          bitrateKbps: dto.bitrateKbps ?? 5000,
+          isDrmProtected: dto.isDrmProtected ?? false,
+          geoRestriction: dto.geoRestriction,
+          sortOrder: dto.sortOrder ?? 99,
+          planIds: dto.planIds ?? [],
+          requiereControlParental: dto.requiereControlParental ?? false,
+        },
+        include: { category: true },
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        throw new ConflictException(`Ya existe un canal con el nombre "${dto.nombre}"`);
+      }
+      throw e;
+    }
 
     // Ensure ChannelCategory junction row exists for the primary category
     await this.prisma.channelCategory.upsert({
