@@ -14,17 +14,10 @@ export default function SplashIntro({ onFinish }: Props) {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      const fadeOut = setTimeout(() => {
-        const el = document.getElementById('luki-splash-overlay');
-        if (el) {
-          el.style.transition = 'opacity 0.6s ease';
-          el.style.opacity = '0';
-          setTimeout(() => onFinish(), 650);
-        } else {
-          onFinish();
-        }
-      }, 1600);
-      return () => clearTimeout(fadeOut);
+      // The splash overlay is injected via app/+html.tsx and removed by an
+      // inline script after 3 s. We just need to call onFinish in sync.
+      const t = setTimeout(() => onFinish(), 3100);
+      return () => clearTimeout(t);
     }
 
     // Native: full Animated sequence
@@ -43,37 +36,10 @@ export default function SplashIntro({ onFinish }: Props) {
   }, []);
 
   if (Platform.OS === 'web') {
-    const logoUri = Image.resolveAssetSource(LOGO)?.uri ?? '';
-    return (
-      <>
-        <style>{`
-          #luki-splash-overlay {
-            position: fixed;
-            inset: 0;
-            background: #0A0014;
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          @keyframes lukiSplashIn {
-            0%   { opacity: 0; transform: scale(0.55); }
-            40%  { opacity: 1; transform: scale(1);    }
-            80%  { opacity: 1; transform: scale(1);    }
-            100% { opacity: 0; transform: scale(1.15); }
-          }
-          #luki-splash-logo {
-            width: min(42vw, 190px);
-            height: min(42vw, 190px);
-            animation: lukiSplashIn 2.2s ease forwards;
-            object-fit: contain;
-          }
-        `}</style>
-        <div id="luki-splash-overlay">
-          <img id="luki-splash-logo" src={logoUri} alt="LUKI Play" />
-        </div>
-      </>
-    );
+    // On web, the splash is rendered directly in app/+html.tsx (HTML template)
+    // before React loads. Nothing to render here — just call onFinish after the
+    // CSS animation completes so the app can mount normally.
+    return null;
   }
 
   const { width } = Dimensions.get('window');
