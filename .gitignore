@@ -66,3 +66,6 @@ ehthumbs.db
 tmp/
 temp/
 *.pem
+
+# Uploads generados en runtime
+backend/uploads/

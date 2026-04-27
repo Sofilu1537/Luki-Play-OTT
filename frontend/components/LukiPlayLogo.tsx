@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const LOGO_ICON = require('../assets/branding/logo.jpeg');
+const LOGO_ICON = require('../assets/branding/logo.png');
 
 /**
  * LukiPlayLogo — Replica visual del logo de Luki Play.
@@ -39,13 +39,11 @@ export default function LukiPlayLogo({ variant = 'full', size = 120 }: Props) {
 
   if (variant === 'icon') {
     return (
-      <View style={{ width: size, height: size, borderRadius: size * 0.22, overflow: 'hidden' }}>
-        <Image
-          source={LOGO_ICON}
-          style={{ width: size, height: size }}
-          resizeMode="cover"
-        />
-      </View>
+      <Image
+        source={LOGO_ICON}
+        style={{ width: size, height: size }}
+        resizeMode="contain"
+      />
     );
   }
 

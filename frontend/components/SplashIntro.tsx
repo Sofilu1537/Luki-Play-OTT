@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Dimensions, Platform, View } from 'react-native';
-import LukiPlayLogo from './LukiPlayLogo';
+import { Animated, StyleSheet, Dimensions, Platform, View, Image } from 'react-native';
+
+const LOGO = require('../assets/branding/logo.png');
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +49,7 @@ export default function SplashIntro({ onFinish }: Props) {
       <Animated.View style={[styles.overlay, { opacity: bgOpacity }]}>
         {/* Use inline style with CSS animation for web */}
         <View style={webLogoContainerStyle}>
-          <LukiPlayLogo variant="full" size={logoSize} />
+          <Image source={LOGO} style={{ width: logoSize, height: logoSize }} resizeMode="contain" />
         </View>
         <style>{`
           @keyframes lukiSplashIn {
@@ -62,7 +63,7 @@ export default function SplashIntro({ onFinish }: Props) {
           }
         `}</style>
         <div className="luki-splash-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <LukiPlayLogo variant="full" size={logoSize} />
+          <Image source={LOGO} style={{ width: logoSize, height: logoSize }} resizeMode="contain" />
         </div>
       </Animated.View>
     );
@@ -71,7 +72,7 @@ export default function SplashIntro({ onFinish }: Props) {
   return (
     <Animated.View style={[styles.overlay, { opacity: bgOpacity }]}>
       <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
-        <LukiPlayLogo variant="full" size={logoSize} />
+        <Image source={LOGO} style={{ width: logoSize, height: logoSize }} resizeMode="contain" />
       </Animated.View>
     </Animated.View>
   );

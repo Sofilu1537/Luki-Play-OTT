@@ -3,26 +3,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import SplashIntro from '../components/SplashIntro';
 
 SplashScreen.preventAutoHideAsync();
 
-/**
- * Root layout component for the entire application.
- *
- * Responsible for:
- * - Importing global NativeWind CSS.
- * - Preventing the splash screen from hiding automatically.
- * - Hiding the splash screen after a 500 ms grace period.
- * - Defining the root `Stack` navigator with all top-level route groups.
- *
- * Route groups registered:
- * - `index`  — auth redirect gate
- * - `(auth)` — unauthenticated flows (login)
- * - `(app)`  — authenticated main tab area
- * - `admin`  — administration panel
- * - `player` — fullscreen video player
- */
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Heavitas: require('../assets/fonts/Heavitas.ttf'),
@@ -30,13 +15,12 @@ export default function RootLayout() {
     'Montserrat-SemiBold': require('../assets/fonts/Montserrat-SemiBold.ttf'),
     'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
   });
+  const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
-    if (!fontsLoaded) return;
-    const timer = setTimeout(() => {
+    if (fontsLoaded) {
       SplashScreen.hideAsync();
-    }, 500);
-    return () => clearTimeout(timer);
+    }
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
@@ -52,6 +36,7 @@ export default function RootLayout() {
         <Stack.Screen name="player" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
+      {!splashDone && <SplashIntro onFinish={() => setSplashDone(true)} />}
     </>
   );
 }

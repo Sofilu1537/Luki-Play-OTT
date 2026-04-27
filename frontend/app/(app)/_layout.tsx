@@ -1,28 +1,20 @@
 import { Tabs, useRouter } from 'expo-router';
+import { useRootNavigationState } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../services/authStore';
 import { useEffect } from 'react';
 
-/**
- * Layout for the authenticated (app) route group.
- *
- * Redirects to `/(auth)/login` if the user is not authenticated.
- * Renders a bottom tab navigator with three tabs:
- * - **Inicio** (`home`)    — main catalogue screen.
- * - **Buscar** (`search`)  — search screen (placeholder).
- * - **Mi Lista** (`favorites`) — saved content list (placeholder).
- *
- * Tab bar styling follows modern OTT design system.
- */
 export default function AppLayout() {
     const accessToken = useAuthStore((state) => state.accessToken);
     const router = useRouter();
+    const rootNavState = useRootNavigationState();
 
     useEffect(() => {
+        if (!rootNavState?.key) return; // Root Layout not mounted yet
         if (!accessToken) {
             router.replace('/(auth)/login');
         }
-    }, [accessToken, router]);
+    }, [rootNavState?.key, accessToken, router]);
 
     return (
         <Tabs
