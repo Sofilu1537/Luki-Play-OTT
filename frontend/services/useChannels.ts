@@ -149,6 +149,15 @@ export async function toggleFavorite(
   } else {
     await removeFavorite(token, channelId, deviceId, profileId);
   }
+
+  // Sync from server to guarantee UI matches DB (handles API errors and race conditions)
+  const freshIds = await fetchFavorites(token, deviceId, profileId);
+  const freshSet = new Set(freshIds);
+  _store = {
+    ..._store,
+    channels: _store.channels.map((ch) => ({ ...ch, isFavorite: freshSet.has(ch.id) })),
+  };
+  notify();
 }
 
 // ─────────────────────────────────────────────
@@ -165,7 +174,7 @@ export function useChannels() {
   }, []);
 
   const setChannels = (channels: Channel[]) => {
-    _store = { ...state, channels };
+    _store = { ..._store, channels };  // always use latest _store, never stale closure
     notify();
   };
 

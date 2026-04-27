@@ -215,11 +215,10 @@ export default function Home() {
         useAdminStore.getState().init();
     }, []);
 
-    // Re-fetch base content on focus
+    // Re-fetch base content on focus (channels managed by _store singleton — no reload needed)
     useFocusEffect(
         useCallback(() => {
             fetchContent();
-            reloadChannels(true); // Silent reload to keep UI fresh without flash
         }, [])
     );
 
