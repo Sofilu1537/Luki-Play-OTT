@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Dimensions, Platform, View, Image } from 'react-native';
+import { Animated, StyleSheet, Dimensions, Platform, Image } from 'react-native';
 
 const LOGO = require('../assets/branding/logo.png');
-
-const { width } = Dimensions.get('window');
 
 interface Props {
   onFinish: () => void;
@@ -16,14 +14,13 @@ export default function SplashIntro({ onFinish }: Props) {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      // Web: CSS animation handles logo; JS controls bg fade-out
       const fadeOut = setTimeout(() => {
         Animated.timing(bgOpacity, {
           toValue: 0,
           duration: 600,
           useNativeDriver: false,
         }).start(() => onFinish());
-      }, 1600); // hold 1.6s then fade out
+      }, 1600);
       return () => clearTimeout(fadeOut);
     }
 
@@ -42,32 +39,48 @@ export default function SplashIntro({ onFinish }: Props) {
     ]).start(() => onFinish());
   }, []);
 
-  const logoSize = Math.min(width * 0.42, 190);
-
+  // Web: renderizar con puro HTML/CSS para evitar problemas con Dimensions=0 (SSR)
+  // y position:absolute que no cubre el viewport sin padre dimensionado.
   if (Platform.OS === 'web') {
     return (
-      <Animated.View style={[styles.overlay, { opacity: bgOpacity }]}>
-        {/* Use inline style with CSS animation for web */}
-        <View style={webLogoContainerStyle}>
-          <Image source={LOGO} style={{ width: logoSize, height: logoSize }} resizeMode="contain" />
-        </View>
+      <>
         <style>{`
+          #luki-splash-overlay {
+            position: fixed;
+            inset: 0;
+            background: #0A0014;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease;
+          }
+          #luki-splash-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+          }
           @keyframes lukiSplashIn {
             0%   { opacity: 0; transform: scale(0.55); }
-            40%  { opacity: 1; transform: scale(1); }
-            80%  { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(1.2); }
+            40%  { opacity: 1; transform: scale(1);    }
+            80%  { opacity: 1; transform: scale(1);    }
+            100% { opacity: 0; transform: scale(1.15); }
           }
-          .luki-splash-logo {
+          #luki-splash-logo {
+            width: min(42vw, 190px);
+            height: min(42vw, 190px);
             animation: lukiSplashIn 2.2s ease forwards;
+            object-fit: contain;
           }
         `}</style>
-        <div className="luki-splash-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Image source={LOGO} style={{ width: logoSize, height: logoSize }} resizeMode="contain" />
+        <div id="luki-splash-overlay">
+          <img id="luki-splash-logo" src={(LOGO as any).default ?? LOGO} alt="LUKI Play" />
         </div>
-      </Animated.View>
+      </>
     );
   }
+
+  const { width } = Dimensions.get('window');
+  const logoSize = Math.min(width * 0.42, 190);
 
   return (
     <Animated.View style={[styles.overlay, { opacity: bgOpacity }]}>
@@ -77,8 +90,6 @@ export default function SplashIntro({ onFinish }: Props) {
     </Animated.View>
   );
 }
-
-const webLogoContainerStyle = { display: 'none' as const };
 
 const styles = StyleSheet.create({
   overlay: {
@@ -94,3 +105,4 @@ const styles = StyleSheet.create({
     elevation: 99999,
   },
 });
+
