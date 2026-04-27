@@ -26,6 +26,7 @@ import { HlsVideoPlayer } from '../../components/HlsVideoPlayer';
 import type { Channel } from '../../services/channelTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
+import { resolveLogoUrl } from '../../services/api/config';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -50,10 +51,11 @@ function ChannelLogo({ logo, size = 20, style }: { logo: string; size?: number; 
   if (!logo || logo === '📺') {
     return <Ionicons name="tv-outline" size={size} color="#fff" style={style} />;
   }
-  if (logo.startsWith('http')) {
-    return <Image source={{ uri: logo }} style={[{ width: size, height: size, resizeMode: 'contain' }, style]} />;
+  const uri = resolveLogoUrl(logo);
+  if (uri) {
+    return <Image source={{ uri }} style={[{ width: size, height: size, resizeMode: 'contain' }, style]} />;
   }
-  return <Text style={[style, { fontSize: size, lineHeight: size + 4, color: '#fff' }]}>{logo}</Text>;
+  return <Ionicons name="tv-outline" size={size} color="#fff" style={style} />;
 }
 
 // ─────────────────────────────────────────────
