@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 const API_BASE_URL =
-  typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:3000`
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? `${window.location.protocol}//${window.location.host}`
     : 'http://localhost:3000';
 
 const DEV_DEVICE_ID = 'luki-web-dev-device-001';

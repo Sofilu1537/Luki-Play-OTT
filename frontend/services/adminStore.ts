@@ -58,8 +58,8 @@ const ADMIN_PASS = 'luki2024';
  * Expected to respond to GET (load) and POST (save).
  */
 const API_URL =
-  typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:8100/api/channels`
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? `${window.location.protocol}//${window.location.host}/api/channels`
     : 'http://localhost:3000/api/channels';
 
 /**
