@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import SplashIntro from '../components/SplashIntro';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -19,22 +19,25 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
-
+  // No retornar null mientras cargan las fuentes — el SplashIntro cubre
+  // el contenido de todas formas. Retornar null hace que en web el splash
+  // nunca se vea porque React lo monta/desmonta antes del primer frame.
   return (
     <>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(app)" options={{ headerShown: false }} />
-        <Stack.Screen name="admin" options={{ headerShown: false }} />
-        <Stack.Screen name="cms" options={{ headerShown: false }} />
-        <Stack.Screen name="player" options={{ headerShown: false }} />
-      </Stack>
+      {fontsLoaded && (
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(app)" options={{ headerShown: false }} />
+          <Stack.Screen name="admin" options={{ headerShown: false }} />
+          <Stack.Screen name="cms" options={{ headerShown: false }} />
+          <Stack.Screen name="player" options={{ headerShown: false }} />
+        </Stack>
+      )}
       <StatusBar style="auto" />
       {!splashDone && <SplashIntro onFinish={() => setSplashDone(true)} />}
     </>
