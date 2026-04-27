@@ -39,87 +39,95 @@ por correo) y un panel administrativo CMS para administradores y personal de sop
 
 ---
 
-## Instalación Rápida
+## Inicio Rápido
 
-### Requisitos
+> Para la guía completa de despliegue en ambos ambientes, ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-- Node.js 20 LTS
-- npm 10+
-- Git
-- Docker Desktop (para PostgreSQL y Redis)
+---
 
-### 1. Infraestructura (PostgreSQL + Redis)
+### DEV — Desarrollo Local
+
+**Requisitos:** Node.js 20 LTS · npm 10+ · Git · Docker Desktop
 
 ```bash
+# 1. Infraestructura (Docker Desktop debe estar corriendo)
 docker compose up -d postgres redis
-```
 
-Esperar a que PostgreSQL reporte `healthy` antes de continuar.
-
-### 2. Backend
-
-```bash
+# 2. Backend
 cd backend
-cp .env.example .env
+cp .env.example .env          # Editar: SMTP, DB si es necesario
 npm install
-npx prisma migrate dev      # Aplica migraciones a la BD
-npx prisma db seed           # Carga datos de prueba (49 usuarios)
-npm run start:dev
-```
+npx prisma migrate dev        # ⚠️ Solo DEV — crea migración + aplica
+npx prisma db seed            # Carga 47 suscriptores + 3 usuarios CMS + plan
+npm run start:dev             # Hot reload en http://localhost:3000
 
-> **Configuración de correo**: El proyecto usa `NodemailerEmailService` para enviar OTP,
-> códigos de activación y recuperación de contraseña. **Requiere credenciales SMTP** en el `.env`.
->
-> **Desarrollo local** — usar [Mailtrap](https://mailtrap.io) (sandbox gratuito, no envía correos reales):
-> ```
-> SMTP_HOST=sandbox.smtp.mailtrap.io
-> SMTP_PORT=2525
-> SMTP_SECURE=false
-> SMTP_USER=<usuario_mailtrap>
-> SMTP_PASS=<password_mailtrap>
-> SMTP_FROM=noreply@lukiplay.com
-> ```
-> Crear cuenta en mailtrap.io → Email Testing → SMTP Settings → copiar credenciales.
->
-> **Producción** — usar el servidor SMTP real (Titan Email, AWS SES, SendGrid, etc.):
-> ```
-> SMTP_HOST=smtp.titan.email
-> SMTP_PORT=465
-> SMTP_SECURE=true
-> SMTP_USER=noreply@luki.ec
-> SMTP_PASS=<contraseña_real>
-> SMTP_FROM=noreply@luki.ec
-> ```
-
-El backend queda disponible en `http://localhost:3000`.
-Swagger: `http://localhost:3000/api/docs`
-
-### 3. Frontend
-
-```bash
+# 3. Frontend (nueva terminal)
 cd frontend
 npm install
-npx expo start --web
+npx expo start --web          # App en http://localhost:8081
 ```
 
-La app queda disponible en `http://localhost:8081`.
+> **Email en DEV:** usar [Mailtrap](https://mailtrap.io) para capturar OTPs sin enviar correos reales.
+> ```
+> SMTP_HOST=sandbox.smtp.mailtrap.io   SMTP_PORT=2525   SMTP_SECURE=false
+> SMTP_USER=<usuario_mailtrap>         SMTP_PASS=<pass_mailtrap>
+> ```
 
-### URLs de Desarrollo
+| Servicio    | URL DEV                           |
+|-------------|-----------------------------------|
+| App login   | http://localhost:8081/login       |
+| CMS login   | http://localhost:8081/cms/login   |
+| Swagger     | http://localhost:3000/api/docs    |
+| Backend     | http://localhost:3000             |
 
-| Servicio      | URL                                  |
-|---------------|--------------------------------------|
-| App (login)   | http://localhost:8081/login           |
-| CMS (login)   | http://localhost:8081/cms/login       |
-| Swagger API   | http://localhost:3000/api/docs        |
-| Backend API   | http://localhost:3000                 |
+---
 
-### Todo con Docker
+### PRD — Producción (AWS EC2)
+
+**Requisitos en el servidor:** Ubuntu/Debian · Node 20 · PM2 · Docker · Nginx
 
 ```bash
-docker compose up --build
+# 1. Infraestructura (PostgreSQL + Redis — usa compose de producción)
+docker compose -f docker-compose.prod.yml --env-file backend/.env up -d
+
+# 2. Backend
+cd backend
+npm ci                            # ⚠️ ci, no install — reproduce package-lock exacto
+npx prisma migrate deploy         # ⚠️ deploy, no migrate dev — solo aplica, no genera
+npx prisma db seed                # ⚠️ Solo en el PRIMER deploy — cambiar passwords CMS después
+npm run build
+PORT=8100 pm2 start npm --name luki-play-backend -- run start:prod
+pm2 save && pm2 startup           # Autostart al reiniciar el servidor
+
+# 3. Frontend
+cd ../frontend
+npm ci
+npm run build:web
+sudo cp -r dist/* /var/www/luki-play-ott/
 ```
 
-> Para instrucciones detalladas de despliegue, ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+| Servicio  | URL PRD                         |
+|-----------|---------------------------------|
+| App       | http://\<IP_EC2\>:8120          |
+| CMS       | http://\<IP_EC2\>:8120/cms/login |
+| Backend   | http://\<IP_EC2\>:8100          |
+
+---
+
+### Diferencias clave DEV vs PRD
+
+| Aspecto           | DEV                        | PRD                                  |
+|-------------------|----------------------------|--------------------------------------|
+| Compose file      | `docker-compose.yml`       | `docker-compose.prod.yml`            |
+| Runner backend    | `npm run start:dev`        | PM2 + `npm run start:prod`           |
+| Puerto backend    | 3000                       | 8100                                 |
+| Puerto frontend   | Expo dev server (8081)     | Nginx → `/var/www/luki-play-ott`     |
+| Migración DB      | `prisma migrate dev`       | `prisma migrate deploy`              |
+| Seed              | Siempre que se necesite    | **Solo primer deploy**               |
+| Instalar deps     | `npm install`              | `npm ci`                             |
+| NODE\_ENV         | `development`              | `production`                         |
+| JWT secrets       | Valores hardcodeados (dev) | `openssl rand -hex 32` por cada uno  |
+| SMTP              | Mailtrap (sandbox)         | Titan Email real (`noreply@luki.ec`) |
 
 ---
 
@@ -127,20 +135,25 @@ docker compose up --build
 
 > Los datos se cargan con `npx prisma db seed`. Contraseña por defecto: `password123`.
 
-### App de Suscriptores (auth por contrato)
+### App de Suscriptores (auth por cédula)
 
-Los suscriptores se autentican con **número de contrato + contraseña**.
-La primera vez deben completar el flujo de **primer acceso** (`/auth/app/first-access`)
-para activar su cuenta y establecer contraseña.
+Los suscriptores se autentican con **cédula de identidad + contraseña** (`POST /auth/app/id-login`).
+La primera vez deben completar el flujo de **primer acceso** (2 pasos):
+1. `POST /auth/app/first-access` → ingresa cédula → recibe OTP por correo
+2. `POST /auth/app/activate` → ingresa OTP + contraseña → cuenta activada
 
-| Contrato    | Nombre                  | Estado     | Nota                      |
-|-------------|-------------------------|------------|---------------------------|
-| 000000000   | CASTRO DANIEL           | Anulado    | Cuenta cancelada          |
-| 000000002   | DOICELA NEGRETE J.      | Suspendido | Requiere primer acceso    |
-| 000000003   | TOCTE VELASQUE W.       | Suspendido | Requiere primer acceso    |
+| Cédula       | Nombre                     | Estado     | Nota                          |
+|--------------|----------------------------|------------|-------------------------------|
+| 1720289063   | CASTRO DANIEL              | Anulado    | Cuenta cancelada              |
+| 0504130527   | DOICELA NEGRETE J.         | Suspendido | Sin email → OTP no llega      |
+| 0503557068   | PASTUNA CHUSIN MANUEL      | Activo     | Requiere primer acceso        |
+| 1713830626   | CATOTA YUGSI JENNY         | Activo     | Requiere primer acceso        |
+| 0502855224   | AYALA USUNO JOSE NEPTALI   | Activo     | Plan Hogar Super (4 devices)  |
 
-Se incluyen 47 suscriptores del ISP con contratos reales en la BD.
-Todos tienen `mustChangePassword: true` hasta completar primer acceso.
+Se incluyen ~47 suscriptores del ISP en la BD. Todos tienen `mustChangePassword: true`
+y `isAccountActivated: false` hasta completar primer acceso.
+
+> **Recuperación de contraseña:** `POST /auth/app/request-password-otp` → `{ idNumber }` → OTP → `POST /auth/app/reset-with-otp`
 
 ### Panel CMS
 
@@ -149,6 +162,8 @@ Todos tienen `mustChangePassword: true` hasta completar primer acceso.
 | admin@lukiplay.com       | password123  | Super Admin    |
 | gestion@lukiplay.com     | password123  | Admin          |
 | soporte@lukiplay.com     | password123  | Soporte        |
+
+> ⚠️ Cambiar estas contraseñas inmediatamente en producción.
 
 ---
 
@@ -267,6 +282,7 @@ Los cambios a permisos de un rol aplican a **todos los usuarios** con ese rol en
 | 3.6    | Módulo Componentes con M:M categorías y persistencia BD   | ✅ Completado |
 | 3.7    | RBAC por rol: tabla `cms_roles`, permisos editables desde CMS | ✅ Completado |
 | 3.8    | Módulo Roles rediseñado: matriz read/write por módulo, gestión de usuarios CMS, perfil con cambio de contraseña | ✅ Completado |
+| Sprint_1_integracion-player | Auth por cédula: login directo, OTP recovery, activación 2-pasos; canales públicos sin auth; branding logo PNG | ✅ Completado |
 | 4      | Integración billing/CRM real                              | ⏳ Pendiente  |
 
 ---
