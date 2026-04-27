@@ -9,18 +9,23 @@ function headers(token: string) {
   };
 }
 
+/**
+ * Returns the list of favorite channel IDs for the given device+profile.
+ * Returns null (not []) on any network or HTTP error so callers can
+ * distinguish "server returned empty list" from "request failed".
+ */
 export async function fetchFavorites(
   token: string,
   deviceId: string,
   profileId = '__default__',
-): Promise<string[]> {
+): Promise<string[] | null> {
   try {
     const params = new URLSearchParams({ deviceId, profileId });
     const res = await fetch(`${BASE}?${params}`, { headers: headers(token) });
-    if (!res.ok) return [];
+    if (!res.ok) return null;
     return res.json();
   } catch {
-    return [];
+    return null;
   }
 }
 

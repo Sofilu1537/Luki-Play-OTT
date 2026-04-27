@@ -150,14 +150,16 @@ export async function toggleFavorite(
     await removeFavorite(token, channelId, deviceId, profileId);
   }
 
-  // Sync from server to guarantee UI matches DB (handles API errors and race conditions)
+  // Sync from server — only apply if request succeeded (null = network/API error → keep optimistic state)
   const freshIds = await fetchFavorites(token, deviceId, profileId);
-  const freshSet = new Set(freshIds);
-  _store = {
-    ..._store,
-    channels: _store.channels.map((ch) => ({ ...ch, isFavorite: freshSet.has(ch.id) })),
-  };
-  notify();
+  if (freshIds !== null) {
+    const freshSet = new Set(freshIds);
+    _store = {
+      ..._store,
+      channels: _store.channels.map((ch) => ({ ...ch, isFavorite: freshSet.has(ch.id) })),
+    };
+    notify();
+  }
 }
 
 // ─────────────────────────────────────────────
