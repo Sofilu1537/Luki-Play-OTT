@@ -8,7 +8,7 @@ import LukiPlayLogo from '../../components/LukiPlayLogo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { APP } from '../../styles/theme';
 
-type Screen = 'login' | 'first-access' | 'request-code' | 'verify-code' | 'activate' | 'forgot' | 'register-request';
+type Screen = 'login' | 'first-access' | 'activate' | 'forgot' | 'register-request';
 
 const P = {
     bg: [APP.gradientStart, APP.gradientEnd] as const,
@@ -87,18 +87,18 @@ function BackLink({ onPress, label = 'Volver' }: { onPress: () => void; label?: 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
 function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [contractNumber, setContractNumber] = useState('');
+    const [idNumber, setIdNumber] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login, isLoading } = useAuthStore();
+    const { loginWithId, isLoading } = useAuthStore();
     const router = useRouter();
 
     const handleLogin = async () => {
         setError('');
-        if (!contractNumber.trim()) { setError('El número de contrato es requerido'); return; }
+        if (!idNumber.trim()) { setError('La cédula es requerida'); return; }
         if (!password) { setError('La contraseña es requerida'); return; }
         try {
-            await login(contractNumber.trim(), password);
+            await loginWithId(idNumber.trim(), password);
             router.replace('/');
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'Credenciales inválidas');
@@ -108,9 +108,9 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     return (
         <>
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Bienvenido de nuevo</Text>
-            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Inicia sesión con tu número de contrato</Text>
+            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Inicia sesión con tu cédula de identidad</Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Número de contrato" placeholder="Ej: 000000003" value={contractNumber} onChangeText={setContractNumber} />
+            <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
             <AuthInput label="Contraseña" placeholder="••••••••" value={password} onChangeText={setPassword} secure />
             <PrimaryButton title="Iniciar sesión" onPress={handleLogin} isLoading={isLoading} />
             <TouchableOpacity onPress={() => onSwitch('forgot')} style={{ marginTop: 16, alignItems: 'center' }}>
@@ -135,20 +135,18 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 // ─── Paso 1: First Access ─────────────────────────────────────────────────────
 
 function FirstAccessForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [contractNumber, setContractNumber] = useState('');
     const [idNumber, setIdNumber] = useState('');
     const [error, setError] = useState('');
     const { firstAccess, isLoading } = useAuthStore();
 
     const handleFirstAccess = async () => {
         setError('');
-        if (!contractNumber.trim()) { setError('El número de contrato es requerido'); return; }
         if (!idNumber.trim()) { setError('La cédula es requerida'); return; }
         try {
-            await firstAccess(contractNumber.trim(), idNumber.trim());
-            onSwitch('request-code');
+            await firstAccess(idNumber.trim());
+            onSwitch('activate');
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'No se pudo verificar el contrato');
+            setError(e instanceof Error ? e.message : 'No se pudo verificar la cédula');
         }
     };
 
@@ -156,11 +154,12 @@ function FirstAccessForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         <>
             <BackLink onPress={() => onSwitch('login')} label="Volver al inicio de sesión" />
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Activar cuenta</Text>
-            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>Ingresa tu número de contrato y cédula para verificar tu identidad</Text>
+            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                Ingresa tu cédula. Te enviaremos un código al correo registrado.
+            </Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Número de contrato" placeholder="Ej: 000000003" value={contractNumber} onChangeText={setContractNumber} />
-            <AuthInput label="Cédula de identidad" placeholder="Ej: 1720345678" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
-            <PrimaryButton title="Verificar identidad" onPress={handleFirstAccess} isLoading={isLoading} />
+            <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
+            <PrimaryButton title="Enviar código" onPress={handleFirstAccess} isLoading={isLoading} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 6 }}>
                 <Text style={{ color: P.muted, fontSize: 13 }}>¿Ya tienes contraseña?</Text>
                 <TouchableOpacity onPress={() => onSwitch('login')}>
@@ -171,130 +170,29 @@ function FirstAccessForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     );
 }
 
-// ─── Paso 2: Solicitar código ─────────────────────────────────────────────────
-
-function RequestCodeForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [email, setEmail] = useState('');
-    const [error, setError] = useState('');
-    const [needsSupport, setNeedsSupport] = useState(false);
-    const { pendingActivation, requestActivationCode, isLoading } = useAuthStore();
-
-    if (!pendingActivation) {
-        return <><Text style={{ color: P.text, textAlign: 'center', marginBottom: 16 }}>Sesión expirada</Text><PrimaryButton title="Comenzar de nuevo" onPress={() => onSwitch('first-access')} /></>;
-    }
-
-    const handleRequest = async () => {
-        setError('');
-        setNeedsSupport(false);
-        try {
-            const result = await requestActivationCode(pendingActivation.customerId, email.trim() || undefined);
-            if (result.needsSupportCode) {
-                setNeedsSupport(true);
-            } else {
-                onSwitch('verify-code');
-            }
-        } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Error al solicitar el código');
-        }
-    };
-
-    return (
-        <>
-            <BackLink onPress={() => onSwitch('first-access')} />
-            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Código de activación</Text>
-            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 8, lineHeight: 20 }}>
-                Hola, <Text style={{ color: P.accent, fontWeight: '700' }}>{pendingActivation.nombre}</Text>
-            </Text>
-            <Text style={{ color: P.muted, fontSize: 12, textAlign: 'center', marginBottom: 24, lineHeight: 18 }}>
-                Ingresa tu correo para recibir el código. Si no tienes, selecciona "No tengo correo".
-            </Text>
-            {error ? <ErrorBox msg={error} /> : null}
-            {needsSupport ? (
-                <View style={{ backgroundColor: 'rgba(255,184,0,0.1)', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
-                    <Text style={{ color: P.accent, fontSize: 14, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>Contacta a soporte Luki</Text>
-                    <Text style={{ color: P.textSec, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-                        Llama al <Text style={{ fontWeight: '700' }}>1-800-LUKI</Text> y proporciona tu número de contrato. Un agente te dará tu código de activación.
-                    </Text>
-                    <TouchableOpacity onPress={() => { setNeedsSupport(false); onSwitch('verify-code'); }} style={{ marginTop: 14, alignItems: 'center' }}>
-                        <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>Ya tengo el código →</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : null}
-            {!needsSupport ? (
-                <>
-                    <AuthInput label="Correo electrónico (opcional)" placeholder="tu@correo.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
-                    <PrimaryButton title={email.trim() ? 'Enviar código al correo' : 'No tengo correo'} onPress={handleRequest} isLoading={isLoading} />
-                </>
-            ) : null}
-        </>
-    );
-}
-
-// ─── Paso 3: Verificar código ─────────────────────────────────────────────────
-
-function VerifyCodeForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [code, setCode] = useState('');
-    const [error, setError] = useState('');
-    const { pendingActivation, verifyActivationCode, isLoading } = useAuthStore();
-
-    if (!pendingActivation) {
-        return <><Text style={{ color: P.text, textAlign: 'center', marginBottom: 16 }}>Sesión expirada</Text><PrimaryButton title="Comenzar de nuevo" onPress={() => onSwitch('first-access')} /></>;
-    }
-
-    const handleVerify = async () => {
-        setError('');
-        if (code.trim().length !== 6) { setError('El código debe tener 6 caracteres'); return; }
-        try {
-            await verifyActivationCode(pendingActivation.customerId, code.trim());
-            onSwitch('activate');
-        } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Código inválido o expirado');
-        }
-    };
-
-    return (
-        <>
-            <BackLink onPress={() => onSwitch('request-code')} />
-            <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Ingresa tu código</Text>
-            <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
-                Ingresa el código de 6 caracteres que recibiste
-            </Text>
-            {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Código de activación" placeholder="Ej: A1B2C3" value={code} onChangeText={(v) => setCode(v.toUpperCase())} autoCapitalize="characters" />
-            <PrimaryButton title="Verificar código" onPress={handleVerify} isLoading={isLoading} />
-            <TouchableOpacity onPress={() => onSwitch('request-code')} style={{ marginTop: 16, alignItems: 'center' }}>
-                <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿No recibiste el código? Volver</Text>
-            </TouchableOpacity>
-        </>
-    );
-}
-
-// ─── Paso 4: Crear contraseña ─────────────────────────────────────────────────
+// ─── Paso 2: Crear contraseña ─────────────────────────────────────────────────
 
 function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+    const [otpCode, setOtpCode] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [email, setEmail] = useState('');
-    const [code] = useState(''); // El código ya fue verificado, pero lo guardamos en store
     const [error, setError] = useState('');
     const { activate, pendingActivation, isLoading } = useAuthStore();
     const router = useRouter();
 
-    // Recuperar el código verificado del estado local del formulario anterior
-    const [verifiedCode, setVerifiedCode] = useState('');
-
     if (!pendingActivation) {
-        return <><Text style={{ color: P.text, fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 12 }}>Sesión expirada</Text><PrimaryButton title="Verificar contrato" onPress={() => onSwitch('first-access')} /></>;
+        return <><Text style={{ color: P.text, fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 12 }}>Sesión expirada</Text><PrimaryButton title="Comenzar de nuevo" onPress={() => onSwitch('first-access')} /></>;
     }
 
     const handleActivate = async () => {
         setError('');
-        if (!verifiedCode.trim() || verifiedCode.trim().length !== 6) { setError('El código de activación es requerido'); return; }
+        if (otpCode.trim().length !== 6) { setError('El código debe tener 6 dígitos'); return; }
         if (!password) { setError('La contraseña es requerida'); return; }
         if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
         if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
         try {
-            await activate(pendingActivation.customerId, verifiedCode.trim(), password, email.trim() || undefined);
+            await activate(pendingActivation.customerId, otpCode.trim(), password, email.trim() || undefined);
             router.replace('/');
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'No se pudo activar la cuenta');
@@ -303,18 +201,23 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 
     return (
         <>
-            <BackLink onPress={() => onSwitch('verify-code')} />
+            <BackLink onPress={() => onSwitch('first-access')} />
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Crea tu contraseña</Text>
             <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 8 }}>
                 Hola, <Text style={{ color: P.accent, fontWeight: '700' }}>{pendingActivation.nombre}</Text>
             </Text>
-            <Text style={{ color: P.muted, fontSize: 12, textAlign: 'center', marginBottom: 24 }}>Contrato: {pendingActivation.contractNumber}</Text>
+            <Text style={{ color: P.muted, fontSize: 12, textAlign: 'center', marginBottom: 24, lineHeight: 18 }}>
+                Ingresa el código que recibiste en tu correo y crea tu contraseña.
+            </Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Código de activación" placeholder="Ej: A1B2C3" value={verifiedCode} onChangeText={(v) => setVerifiedCode(v.toUpperCase())} autoCapitalize="characters" />
+            <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={setOtpCode} keyboardType="numeric" />
             <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secure />
             <AuthInput label="Confirmar contraseña" placeholder="Repite tu contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
             <AuthInput label="Correo electrónico (opcional)" placeholder="Para notificaciones" value={email} onChangeText={setEmail} keyboardType="email-address" />
             <PrimaryButton title="Activar cuenta" onPress={handleActivate} isLoading={isLoading} />
+            <TouchableOpacity onPress={() => onSwitch('first-access')} style={{ marginTop: 16, alignItems: 'center' }}>
+                <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿No recibiste el código? Volver</Text>
+            </TouchableOpacity>
         </>
     );
 }
@@ -322,23 +225,33 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 // ─── Recuperar contraseña ─────────────────────────────────────────────────────
 
 function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
-    const [step, setStep] = useState<'identity' | 'done'>('identity');
-    const [contractNumber, setContractNumber] = useState('');
+    const [step, setStep] = useState<'request' | 'reset' | 'done'>('request');
     const [idNumber, setIdNumber] = useState('');
+    const [otpCode, setOtpCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const { resetPassword, isLoading } = useAuthStore();
+    const { requestPasswordOtp, resetWithOtp, isLoading } = useAuthStore();
 
-    const handleReset = async () => {
+    const handleRequestOtp = async () => {
         setError('');
-        if (!contractNumber.trim()) { setError('El número de contrato es requerido'); return; }
         if (!idNumber.trim()) { setError('La cédula es requerida'); return; }
+        try {
+            await requestPasswordOtp(idNumber.trim());
+            setStep('reset');
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Error al solicitar el código');
+        }
+    };
+
+    const handleResetWithOtp = async () => {
+        setError('');
+        if (otpCode.trim().length !== 6) { setError('El código debe tener 6 dígitos'); return; }
         if (!newPassword) { setError('La nueva contraseña es requerida'); return; }
         if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
         if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
         try {
-            await resetPassword(contractNumber.trim(), idNumber.trim(), newPassword);
+            await resetWithOtp(idNumber.trim(), otpCode.trim(), newPassword);
             setStep('done');
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
@@ -350,16 +263,30 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             <BackLink onPress={() => onSwitch('login')} label="Volver al inicio de sesión" />
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Recuperar contraseña</Text>
             {error ? <ErrorBox msg={error} /> : null}
-            {step === 'identity' ? (
+            {step === 'request' && (
                 <>
-                    <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>Ingresa tu contrato, cédula y nueva contraseña</Text>
-                    <AuthInput label="Número de contrato" placeholder="Ej: 000000003" value={contractNumber} onChangeText={setContractNumber} />
-                    <AuthInput label="Cédula de identidad" placeholder="Ej: 1720345678" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
+                    <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                        Ingresa tu cédula. Te enviaremos un código al correo registrado.
+                    </Text>
+                    <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
+                    <PrimaryButton title="Enviar código" onPress={handleRequestOtp} isLoading={isLoading} />
+                </>
+            )}
+            {step === 'reset' && (
+                <>
+                    <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                        Ingresa el código que recibiste y tu nueva contraseña.
+                    </Text>
+                    <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={setOtpCode} keyboardType="numeric" />
                     <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={newPassword} onChangeText={setNewPassword} secure />
                     <AuthInput label="Confirmar contraseña" placeholder="Repite tu nueva contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
-                    <PrimaryButton title="Restablecer contraseña" onPress={handleReset} isLoading={isLoading} />
+                    <PrimaryButton title="Restablecer contraseña" onPress={handleResetWithOtp} isLoading={isLoading} />
+                    <TouchableOpacity onPress={() => setStep('request')} style={{ marginTop: 16, alignItems: 'center' }}>
+                        <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿No recibiste el código? Volver</Text>
+                    </TouchableOpacity>
                 </>
-            ) : (
+            )}
+            {step === 'done' && (
                 <>
                     <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
                         <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: P.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
@@ -458,8 +385,6 @@ export default function Login() {
                 <View style={{ backgroundColor: P.card, borderRadius: 20, borderWidth: 1, borderColor: P.cardBorder, padding: 28, maxWidth: 420, width: '100%', alignSelf: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 12 } }}>
                     {screen === 'login'            && <LoginForm onSwitch={setScreen} />}
                     {screen === 'first-access'     && <FirstAccessForm onSwitch={setScreen} />}
-                    {screen === 'request-code'     && <RequestCodeForm onSwitch={setScreen} />}
-                    {screen === 'verify-code'      && <VerifyCodeForm onSwitch={setScreen} />}
                     {screen === 'activate'         && <ActivateForm onSwitch={setScreen} />}
                     {screen === 'forgot'           && <ForgotForm onSwitch={setScreen} />}
                     {screen === 'register-request' && <RegisterRequestForm onSwitch={setScreen} />}

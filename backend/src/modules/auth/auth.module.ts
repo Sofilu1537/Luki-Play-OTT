@@ -66,6 +66,9 @@ import { ContractResetPasswordUseCase } from './application/use-cases/contract-r
 import { RequestActivationCodeUseCase } from './application/use-cases/request-activation-code.use-case.js';
 import { VerifyActivationCodeUseCase } from './application/use-cases/verify-activation-code.use-case.js';
 import { SubmitRegistrationRequestUseCase } from './application/use-cases/submit-registration-request.use-case.js';
+import { IdNumberLoginUseCase } from './application/use-cases/id-number-login.use-case.js';
+import { RequestPasswordOtpUseCase } from './application/use-cases/request-password-otp.use-case.js';
+import { ResetPasswordOtpUseCase } from './application/use-cases/reset-password-otp.use-case.js';
 
 // Presentation
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -168,6 +171,9 @@ import { PrismaModule } from '../prisma/prisma.module';
     RequestActivationCodeUseCase,
     VerifyActivationCodeUseCase,
     SubmitRegistrationRequestUseCase,
+    IdNumberLoginUseCase,
+    RequestPasswordOtpUseCase,
+    ResetPasswordOtpUseCase,
   ],
   exports: [
     TOKEN_SERVICE,

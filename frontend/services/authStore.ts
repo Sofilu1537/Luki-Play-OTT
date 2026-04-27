@@ -17,7 +17,6 @@ export interface User {
 
 interface PendingActivation {
     customerId: string;
-    contractNumber: string;
     nombre: string;
 }
 
@@ -39,11 +38,14 @@ interface AuthState {
     codeVerified: boolean;
 
     login: (contractNumber: string, password: string) => Promise<void>;
-    firstAccess: (contractNumber: string, idNumber: string) => Promise<void>;
+    loginWithId: (idNumber: string, password: string) => Promise<void>;
+    firstAccess: (idNumber: string) => Promise<void>;
     requestActivationCode: (customerId: string, email?: string) => Promise<{ sent: boolean; needsSupportCode?: boolean }>;
     verifyActivationCode: (customerId: string, code: string) => Promise<void>;
-    activate: (customerId: string, code: string, password: string, email?: string) => Promise<void>;
+    activate: (customerId: string, otpCode: string, password: string, email?: string) => Promise<void>;
     resetPassword: (contractNumber: string, idNumber: string, newPassword: string) => Promise<void>;
+    requestPasswordOtp: (idNumber: string) => Promise<void>;
+    resetWithOtp: (idNumber: string, otpCode: string, newPassword: string) => Promise<void>;
     submitRegistrationRequest: (data: RegistrationRequestPayload) => Promise<void>;
     logout: () => void;
     restoreSession: () => Promise<void>;
@@ -88,21 +90,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    firstAccess: async (contractNumber, idNumber) => {
+    loginWithId: async (idNumber, password) => {
+        set({ isLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/app/id-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idNumber, password, deviceId: DEV_DEVICE_ID }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Credenciales inválidas');
+            set({
+                isLoading: false,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+                user: {
+                    id: data.user?.id ?? 'unknown',
+                    name: data.user?.name ?? 'Luki User',
+                    email: data.user?.email ?? '',
+                    plan: data.user?.plan ?? 'lukiplay',
+                },
+                pendingActivation: null,
+                codeVerified: false,
+            });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
+    firstAccess: async (idNumber) => {
         set({ isLoading: true });
         try {
             const res = await fetch(`${API_BASE_URL}/auth/app/first-access`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contractNumber, idNumber }),
+                body: JSON.stringify({ idNumber }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'No se pudo verificar el contrato');
+            if (!res.ok) throw new Error(data.message || 'No se pudo verificar la cédula');
             set({
                 isLoading: false,
                 pendingActivation: {
                     customerId: data.customerId,
-                    contractNumber: data.contractNumber,
                     nombre: data.nombre,
                 },
                 codeVerified: false,
@@ -148,7 +178,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    activate: async (customerId, code, password, email) => {
+    activate: async (customerId, otpCode, password, email) => {
         set({ isLoading: true });
         try {
             const res = await fetch(`${API_BASE_URL}/auth/app/activate`, {
@@ -156,7 +186,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     customerId,
-                    code: code.toUpperCase(),
+                    otpCode,
                     password,
                     ...(email ? { email } : {}),
                 }),
@@ -199,6 +229,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
+    requestPasswordOtp: async (idNumber) => {
+        set({ isLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/app/request-password-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idNumber }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Error al solicitar el código');
+            set({ isLoading: false });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
+    resetWithOtp: async (idNumber, otpCode, newPassword) => {
+        set({ isLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/app/reset-with-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idNumber, otpCode, newPassword }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'No se pudo restablecer la contraseña');
+            set({ isLoading: false });
+        } catch (e) {
+            set({ isLoading: false });
+            throw e;
+        }
+    },
+
     submitRegistrationRequest: async (payload) => {
         set({ isLoading: true });
         try {
@@ -217,11 +281,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     logout: () => {
-        const { accessToken } = get();
-        if (accessToken) {
+        const { accessToken, refreshToken } = get();
+        if (accessToken && refreshToken) {
             fetch(`${API_BASE_URL}/auth/logout`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${accessToken}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+                body: JSON.stringify({ refreshToken }),
             }).catch(() => {});
         }
         set({ user: null, accessToken: null, refreshToken: null, pendingActivation: null, codeVerified: false });

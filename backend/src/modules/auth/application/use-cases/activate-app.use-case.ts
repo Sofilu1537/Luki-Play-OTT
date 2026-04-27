@@ -10,6 +10,8 @@ import { TOKEN_SERVICE } from '../../domain/interfaces/token.service.js';
 import type { TokenService } from '../../domain/interfaces/token.service.js';
 import { HASH_SERVICE } from '../../domain/interfaces/hash.service.js';
 import type { HashService } from '../../domain/interfaces/hash.service.js';
+import { OTP_SERVICE } from '../../domain/interfaces/otp.service.js';
+import type { OtpService } from '../../domain/interfaces/otp.service.js';
 import { ActivateAppDto } from '../dto/activate-app.dto.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,6 +23,7 @@ export class ActivateAppUseCase2 {
     private readonly prisma: PrismaService,
     @Inject(TOKEN_SERVICE) private readonly tokenService: TokenService,
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
+    @Inject(OTP_SERVICE) private readonly otpService: OtpService,
   ) {}
 
   async execute(dto: ActivateAppDto) {
@@ -35,42 +38,27 @@ export class ActivateAppUseCase2 {
 
     if (customer.isAccountActivated) {
       throw new BadRequestException(
-        'La cuenta ya fue activada. Use su contrato y contraseña para iniciar sesión.',
+        'La cuenta ya fue activada. Usa tu cédula y contraseña para iniciar sesión.',
       );
     }
 
-    // Validar código de activación
-    const activation = await this.prisma.activationCode.findFirst({
-      where: {
-        customerId: dto.customerId,
-        code: dto.code.toUpperCase(),
-        usedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-    });
-
-    if (!activation) {
-      throw new BadRequestException('Código de activación inválido o expirado');
+    const otpValid = await this.otpService.verify(customer.id, dto.otpCode);
+    if (!otpValid) {
+      throw new BadRequestException('Código OTP inválido o expirado');
     }
 
     const passwordHash = await this.hashService.hash(dto.password);
 
-    await this.prisma.$transaction([
-      this.prisma.customer.update({
-        where: { id: customer.id },
-        data: {
-          passwordHash,
-          isAccountActivated: true,
-          status: 'ACTIVE',
-          lastLoginAt: new Date(),
-          ...(dto.email ? { email: dto.email } : {}),
-        },
-      }),
-      this.prisma.activationCode.update({
-        where: { id: activation.id },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+    await this.prisma.customer.update({
+      where: { id: customer.id },
+      data: {
+        passwordHash,
+        isAccountActivated: true,
+        status: 'ACTIVE',
+        lastLoginAt: new Date(),
+        ...(dto.email ? { email: dto.email } : {}),
+      },
+    });
 
     const contract = customer.contracts[0];
     if (!contract) {

@@ -19,12 +19,12 @@ export interface ContractLoginRequest {
 }
 
 export interface FirstAccessRequest {
-  contractNumber: string;
   idNumber: string;
 }
 
 export interface ActivateRequest {
   customerId: string;
+  otpCode: string;
   password: string;
   email?: string;
 }
@@ -53,9 +53,7 @@ export interface AuthTokensResponse {
 }
 
 export interface FirstAccessResponse {
-  needsPasswordSetup: boolean;
   customerId: string;
-  contractNumber: string;
   nombre: string;
 }
 
@@ -97,7 +95,7 @@ export async function contractLogin(req: ContractLoginRequest): Promise<AuthToke
   return data as AuthTokensResponse;
 }
 
-/** First access: verify contract + cédula identity. */
+/** First access: find account by cédula and send OTP to registered email. */
 export async function firstAccess(req: FirstAccessRequest): Promise<FirstAccessResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/app/first-access`, {
     method: 'POST',
@@ -192,4 +190,46 @@ export async function getMe(accessToken: string): Promise<UserProfileResponse> {
     throw new Error(data.message || 'No autenticado');
   }
   return data as UserProfileResponse;
+}
+
+/** Login with cédula de identidad + password → JWT tokens. */
+export async function idNumberLogin(req: { idNumber: string; password: string; deviceId: string }): Promise<AuthTokensResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/id-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Credenciales inválidas');
+  }
+  return data as AuthTokensResponse;
+}
+
+/** Request OTP for password recovery via cédula. Anti-enumeration: always 200. */
+export async function requestPasswordResetOtp(idNumber: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/request-password-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idNumber }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al solicitar el código');
+  }
+  return data as { message: string };
+}
+
+/** Reset password using OTP code + cédula. */
+export async function resetPasswordWithOtp(req: { idNumber: string; otpCode: string; newPassword: string }): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/app/reset-with-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'No se pudo restablecer la contraseña');
+  }
+  return data as { message: string };
 }

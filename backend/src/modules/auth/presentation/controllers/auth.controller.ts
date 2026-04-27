@@ -44,6 +44,9 @@ import { ContractResetPasswordUseCase } from '../../application/use-cases/contra
 import { RequestActivationCodeUseCase } from '../../application/use-cases/request-activation-code.use-case.js';
 import { VerifyActivationCodeUseCase } from '../../application/use-cases/verify-activation-code.use-case.js';
 import { SubmitRegistrationRequestUseCase } from '../../application/use-cases/submit-registration-request.use-case.js';
+import { IdNumberLoginUseCase } from '../../application/use-cases/id-number-login.use-case.js';
+import { RequestPasswordOtpUseCase } from '../../application/use-cases/request-password-otp.use-case.js';
+import { ResetPasswordOtpUseCase } from '../../application/use-cases/reset-password-otp.use-case.js';
 import { RegisterAppDto } from '../../application/dto/register-app.dto';
 import { ContractLoginDto } from '../../application/dto/contract-login.dto.js';
 import { FirstAccessAppDto } from '../../application/dto/first-access-app.dto.js';
@@ -53,6 +56,9 @@ import { ContractResetPasswordDto } from '../../application/dto/contract-reset-p
 import { RequestActivationCodeDto } from '../../application/dto/request-activation-code.dto.js';
 import { VerifyActivationCodeDto } from '../../application/dto/verify-activation-code.dto.js';
 import { SubmitRegistrationRequestDto } from '../../application/dto/submit-registration-request.dto.js';
+import { IdNumberLoginDto } from '../../application/dto/id-number-login.dto.js';
+import { RequestPasswordOtpDto } from '../../application/dto/request-password-otp.dto.js';
+import { ResetPasswordOtpDto } from '../../application/dto/reset-password-otp.dto.js';
 import { LoginAppDto } from '../../application/dto/login-app.dto';
 import { LoginCmsDto } from '../../application/dto/login-cms.dto';
 import { RefreshTokenDto } from '../../application/dto/refresh-token.dto';
@@ -130,6 +136,9 @@ export class AuthController {
     private readonly requestActivationCodeUseCase: RequestActivationCodeUseCase,
     private readonly verifyActivationCodeUseCase: VerifyActivationCodeUseCase,
     private readonly submitRegistrationRequestUseCase: SubmitRegistrationRequestUseCase,
+    private readonly idNumberLoginUseCase: IdNumberLoginUseCase,
+    private readonly requestPasswordOtpUseCase: RequestPasswordOtpUseCase,
+    private readonly resetPasswordOtpUseCase: ResetPasswordOtpUseCase,
   ) {}
 
   @Post('app/register')
@@ -491,5 +500,28 @@ export class AuthController {
   @ApiOperation({ summary: 'Solicitar registro para cliente no-ISP (Flujo 3)' })
   async submitRegistrationRequest(@Body() dto: SubmitRegistrationRequestDto) {
     return this.submitRegistrationRequestUseCase.execute(dto);
+  }
+
+  // ─── Autenticación por cédula + OTP recovery ─────────────
+
+  @Post('app/id-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login con cédula de identidad + contraseña' })
+  async idNumberLogin(@Body() dto: IdNumberLoginDto) {
+    return this.idNumberLoginUseCase.execute(dto);
+  }
+
+  @Post('app/request-password-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Solicitar OTP para recuperación de contraseña (por cédula)' })
+  async requestPasswordOtp(@Body() dto: RequestPasswordOtpDto): Promise<{ message: string }> {
+    return this.requestPasswordOtpUseCase.execute(dto);
+  }
+
+  @Post('app/reset-with-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Restablecer contraseña verificando OTP + cédula' })
+  async resetPasswordWithOtp(@Body() dto: ResetPasswordOtpDto): Promise<{ message: string }> {
+    return this.resetPasswordOtpUseCase.execute(dto);
   }
 }

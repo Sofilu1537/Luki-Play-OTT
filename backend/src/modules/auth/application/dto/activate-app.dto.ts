@@ -1,5 +1,4 @@
 import {
-  IsNotEmpty,
   IsString,
   MinLength,
   IsOptional,
@@ -15,12 +14,12 @@ export class ActivateAppDto {
   customerId: string;
 
   @ApiProperty({
-    example: 'A1B2C3',
-    description: 'Código de activación de 6 caracteres',
+    example: '123456',
+    description: 'Código OTP de 6 dígitos enviado al correo',
   })
   @IsString()
   @Length(6, 6)
-  code: string;
+  otpCode: string;
 
   @ApiProperty({
     example: 'myNewPassword123',
