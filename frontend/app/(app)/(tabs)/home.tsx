@@ -133,7 +133,7 @@ function HeroSlider({
     const progressAnim = useRef(new Animated.Value(0)).current;
     const AUTOPLAY_MS = 5500;
 
-    const heroH = Math.min(width * (9 / 16), 600);
+    const heroH = Math.min(width * (628 / 1200), 628);
 
     const startProgress = useCallback(() => {
         progressAnim.setValue(0);
@@ -187,7 +187,7 @@ function HeroSlider({
     // Fallback when no sliders
     if (!sliders.length) {
         return (
-            <View style={{ width, height: heroH, backgroundColor: '#050012' }}>
+            <View style={{ width, height: Math.min(width * (628 / 1200), 628), backgroundColor: '#050012' }}>
                 <LinearGradient colors={['#1a0040', '#050012']} style={{ position: 'absolute', inset: 0 } as any} />
                 <LinearGradient colors={['transparent', 'rgba(5,0,18,0.95)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' } as any} />
                 <View style={{ position: 'absolute', bottom: 48, left: 48 }}>
