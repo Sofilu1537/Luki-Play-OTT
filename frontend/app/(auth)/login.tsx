@@ -34,7 +34,7 @@ function AuthInput({ label, placeholder, value, onChangeText, secure, keyboardTy
 }) {
     const [focused, setFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+    const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none', backgroundColor: 'transparent' } as object) : {};
     return (
         <View style={{ marginBottom: 16 }}>
             <Text style={{ color: P.textSec, fontSize: 12, fontWeight: '600', marginBottom: 6, marginLeft: 2 }}>{label}</Text>
