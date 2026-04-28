@@ -13,6 +13,7 @@ import {
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell from '../../components/cms/CmsShell';
+import { StatCard } from '../../components/cms/CmsComponents';
 import { useTheme } from '../../hooks/useTheme';
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
@@ -751,29 +752,10 @@ export default function CmsSliders() {
         </View>
 
         {/* ── Stats Bar ── */}
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 28 }}>
-          {[
-            { label: 'Total',      value: stats.total,   color: theme.text,    bg: theme.cardBg,    border: theme.border, dot: theme.textMuted },
-            { label: 'Publicados', value: stats.activos, color: '#22C55E',     bg: 'rgba(34,197,94,0.07)', border: 'rgba(34,197,94,0.20)', dot: '#22C55E' },
-            { label: 'Borradores', value: stats.draft,   color: theme.warning, bg: theme.warningSoft, border: 'rgba(255,121,0,0.20)', dot: theme.warning },
-          ].map((s) => (
-            <View key={s.label} style={{
-              backgroundColor: s.bg, borderRadius: 14,
-              paddingHorizontal: 20, paddingVertical: 16,
-              borderWidth: 1, borderColor: s.border,
-              minWidth: 120, gap: 2,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.dot }} />
-                <Text style={{ color: s.color, fontSize: 28, fontWeight: '900', lineHeight: 32 }}>
-                  {s.value}
-                </Text>
-              </View>
-              <Text style={{ color: theme.textMuted, fontSize: 12, fontWeight: '600', marginLeft: 16 }}>
-                {s.label}
-              </Text>
-            </View>
-          ))}
+        <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
+          <StatCard label="Total"      value={stats.total}   icon="image"      color={theme.tag}     />
+          <StatCard label="Publicados" value={stats.activos} icon="eye"        color={theme.success} />
+          <StatCard label="Borradores" value={stats.draft}   icon="pencil"     color={theme.warning} />
         </View>
 
         {/* ── Banner List ── */}
