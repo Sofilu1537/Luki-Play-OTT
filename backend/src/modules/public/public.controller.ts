@@ -35,9 +35,9 @@ export class PublicController {
   @Get('canales/:id/stream')
   async getStreamUrl(@Param('id') id: string) {
     const all = await this.adminService.getCanales(true);
-    const canal = (all ?? []).find((c: any) => c.id === id);
+    const canal = (all ?? []).find((c: any) => c.id === id) as any;
     if (!canal) throw new NotFoundException('Canal no encontrado');
-    return { streamUrl: canal.streamUrl };
+    return { streamUrl: canal.streamUrl as string };
   }
 
   @ApiOperation({ summary: 'Get active OTT components with their categories (public, no auth)' })
