@@ -51,17 +51,11 @@ const HEADER_H = 64;
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
-function HomeHeader({ scrollY, onLogout }: { scrollY: Animated.Value; onLogout: () => void }) {
+function HomeHeader({ onLogout }: { onLogout: () => void }) {
     const [activeNav, setActiveNav] = useState('Inicio');
 
-    const bgOpacity = scrollY.interpolate({
-        inputRange: [0, 120],
-        outputRange: [0, 1],
-        extrapolate: 'clamp',
-    });
-
     return (
-        <Animated.View style={{
+        <View style={{
             position: 'fixed' as any,
             top: 0, left: 0, right: 0,
             height: HEADER_H,
@@ -69,26 +63,8 @@ function HomeHeader({ scrollY, onLogout }: { scrollY: Animated.Value; onLogout: 
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 24,
+            backgroundColor: '#05020C',
         }}>
-            {/* Background: always gradient, opacity 0 → 1 on scroll */}
-            <LinearGradient
-                colors={['rgba(5,2,20,0.95)', 'rgba(5,2,20,0.85)']}
-                style={{
-                    position: 'absolute', inset: 0,
-                    opacity: 1,
-                } as any}
-            />
-            {/* Top gradient when at top */}
-            <Animated.View style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: HEADER_H * 2,
-                opacity: bgOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0] }),
-                pointerEvents: 'none' as any,
-            }}>
-                <LinearGradient
-                    colors={['rgba(5,2,20,0.9)', 'transparent']}
-                    style={{ flex: 1 }}
-                />
-            </Animated.View>
 
             {/* Logo */}
             <LukiPlayLogo variant="compact" size={80} />
@@ -133,7 +109,7 @@ function HomeHeader({ scrollY, onLogout }: { scrollY: Animated.Value; onLogout: 
                     </View>
                 </TouchableOpacity>
             </View>
-        </Animated.View>
+        </View>
     );
 }
 
@@ -227,10 +203,6 @@ function HeroSlider({
                             <Ionicons name="play" size={18} color="#140026" />
                             <Text style={{ color: '#140026', fontWeight: '900', fontSize: 15 }}>Ver ahora</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
-                            <Ionicons name="information-circle-outline" size={18} color="#fff" />
-                            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Más info</Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
@@ -307,10 +279,6 @@ function HeroSlider({
                                             </Text>
                                         </TouchableOpacity>
                                     )}
-                                    <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: width > 768 ? 28 : 18, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' }}>
-                                        <Ionicons name="information-circle-outline" size={16} color="#fff" />
-                                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: width > 768 ? 15 : 14 }}>Más info</Text>
-                                    </TouchableOpacity>
                                 </View>
                             </View>
                         </View>
@@ -545,7 +513,7 @@ export default function Home() {
             <StatusBar barStyle="light-content" />
 
             {/* Sticky Header */}
-            <HomeHeader scrollY={scrollY} onLogout={handleLogout} />
+            <HomeHeader onLogout={handleLogout} />
 
             {/* Restriction banner */}
             {!canAccessOtt && restrictionMessage && (
@@ -561,7 +529,7 @@ export default function Home() {
 
             <Animated.ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ paddingTop: HEADER_H }}
+                contentContainerStyle={{ paddingTop: HEADER_H + 8 }}
                 onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
                 scrollEventThrottle={16}
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor="#FFB800" />}
@@ -619,25 +587,6 @@ export default function Home() {
                         </View>
                     )}
 
-                    {/* Content rows */}
-                    {tagRows.map((row) => (
-                        <View key={row.title} style={{ marginBottom: 36 }}>
-                            <SectionHeader title={row.title} icon="film-outline" />
-                            <FlatList
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                data={row.items}
-                                keyExtractor={(item) => item.id}
-                                contentContainerStyle={{ paddingHorizontal: 24, gap: 14 }}
-                                renderItem={({ item }) => (
-                                    <MediaCard
-                                        item={item}
-                                        onPress={() => router.push({ pathname: '/player/[id]', params: { id: item.id } })}
-                                    />
-                                )}
-                            />
-                        </View>
-                    ))}
                 </View>
             </Animated.ScrollView>
         </View>
