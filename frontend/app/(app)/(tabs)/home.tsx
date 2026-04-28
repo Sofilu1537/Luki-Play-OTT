@@ -1,7 +1,7 @@
 import {
     View, ScrollView, RefreshControl, StatusBar, Text,
     TouchableOpacity, FlatList, Image, Linking, Animated,
-    useWindowDimensions, Platform,
+    useWindowDimensions, Platform, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -153,12 +153,11 @@ function HeroSlider({
     const { width } = useWindowDimensions();
     const [activeIndex, setActiveIndex] = useState(0);
     const [hovered, setHovered] = useState(false);
-    const flatRef = useRef<FlatList>(null);
+    const scrollRef = useRef<ScrollView>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const progressAnim = useRef(new Animated.Value(0)).current;
     const AUTOPLAY_MS = 5500;
 
-    // hero height: full viewport on mobile, capped on desktop
     const heroH = Math.min(width * (9 / 16), 600);
 
     const startProgress = useCallback(() => {
@@ -171,67 +170,60 @@ function HeroSlider({
     }, [progressAnim]);
 
     const goTo = useCallback((index: number) => {
-        flatRef.current?.scrollToIndex({ index, animated: true });
+        scrollRef.current?.scrollTo({ x: width * index, animated: true });
         setActiveIndex(index);
-    }, []);
+        startProgress();
+    }, [width, startProgress]);
+
+    const stopAutoPlay = useCallback(() => {
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        progressAnim.stopAnimation();
+    }, [progressAnim]);
 
     const startAutoPlay = useCallback(() => {
-        if (sliders.length <= 1 || hovered) return;
-        if (timerRef.current) clearInterval(timerRef.current);
+        if (sliders.length <= 1) return;
+        stopAutoPlay();
         startProgress();
         timerRef.current = setInterval(() => {
             setActiveIndex((prev) => {
                 const next = (prev + 1) % sliders.length;
-                flatRef.current?.scrollToIndex({ index: next, animated: true });
+                scrollRef.current?.scrollTo({ x: width * next, animated: true });
                 startProgress();
                 return next;
             });
         }, AUTOPLAY_MS);
-    }, [sliders.length, hovered, startProgress]);
+    }, [sliders.length, width, stopAutoPlay, startProgress]);
 
     useEffect(() => {
         startAutoPlay();
-        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+        return stopAutoPlay;
     }, [startAutoPlay]);
 
-    // Pause on hover
     useEffect(() => {
-        if (hovered && timerRef.current) {
-            clearInterval(timerRef.current);
-            progressAnim.stopAnimation();
-        } else if (!hovered) {
-            startAutoPlay();
-        }
-    }, [hovered, startAutoPlay]);
+        if (hovered) stopAutoPlay();
+        else startAutoPlay();
+    }, [hovered]);
+
+    const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+        if (idx !== activeIndex) setActiveIndex(idx);
+    }, [width, activeIndex]);
 
     // Fallback when no sliders
     if (!sliders.length) {
         return (
             <View style={{ width, height: heroH, backgroundColor: '#050012' }}>
-                <LinearGradient
-                    colors={['#1a0040', '#050012']}
-                    style={{ position: 'absolute', inset: 0 } as any}
-                />
-                <LinearGradient
-                    colors={['transparent', 'rgba(5,0,18,0.95)']}
-                    style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' } as any}
-                />
+                <LinearGradient colors={['#1a0040', '#050012']} style={{ position: 'absolute', inset: 0 } as any} />
+                <LinearGradient colors={['transparent', 'rgba(5,0,18,0.95)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' } as any} />
                 <View style={{ position: 'absolute', bottom: 48, left: 48 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.18)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'flex-start', marginBottom: 14, borderWidth: 1, borderColor: 'rgba(229,57,53,0.35)' }}>
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#E53935' }} />
                         <Text style={{ color: '#E53935', fontWeight: '800', fontSize: 11, letterSpacing: 1.2 }}>EN VIVO</Text>
                     </View>
-                    <Text style={{ color: '#fff', fontSize: width > 600 ? 42 : 28, fontWeight: '900', letterSpacing: -1, marginBottom: 10 }}>
-                        TV en Vivo
-                    </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, marginBottom: 24, lineHeight: 22 }}>
-                        Canales de Ecuador en alta calidad — sin interrupciones
-                    </Text>
+                    <Text style={{ color: '#fff', fontSize: width > 600 ? 42 : 28, fontWeight: '900', letterSpacing: -1, marginBottom: 10 }}>TV en Vivo</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, marginBottom: 24, lineHeight: 22 }}>Canales de Ecuador en alta calidad — sin interrupciones</Text>
                     <View style={{ flexDirection: 'row', gap: 12 }}>
-                        <TouchableOpacity
-                            style={{ backgroundColor: '#FFB800', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 9 }}
-                            onPress={onWatchLive}
-                        >
+                        <TouchableOpacity style={{ backgroundColor: '#FFB800', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 9 }} onPress={onWatchLive}>
                             <Ionicons name="play" size={18} color="#140026" />
                             <Text style={{ color: '#140026', fontWeight: '900', fontSize: 15 }}>Ver ahora</Text>
                         </TouchableOpacity>
@@ -247,97 +239,62 @@ function HeroSlider({
 
     return (
         <View
-            style={{ width, height: heroH }}
+            style={{ width, height: heroH, overflow: 'hidden' }}
             {...(Platform.OS === 'web' ? {
                 onMouseEnter: () => setHovered(true),
                 onMouseLeave: () => setHovered(false),
             } : {})}
         >
-            <FlatList
-                ref={flatRef}
-                data={sliders}
-                keyExtractor={(s) => s.id}
+            <ScrollView
+                ref={scrollRef}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 scrollEventThrottle={16}
-                onMomentumScrollEnd={(e) => {
-                    const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-                    setActiveIndex(idx);
-                    if (!hovered) startAutoPlay();
-                }}
-                renderItem={({ item }) => {
+                onMomentumScrollEnd={handleScroll}
+                onScrollEndDrag={handleScroll}
+                style={{ width, height: heroH }}
+                contentContainerStyle={{ width: width * sliders.length }}
+                scrollEnabled
+            >
+                {sliders.map((item) => {
                     const imageUri = resolveImage(item.imagen);
                     const hasAction = item.actionType !== 'NONE';
                     const textX = width > 768 ? 60 : 24;
 
                     return (
-                        <View style={{ width, height: heroH }}>
-                            {/* Full image — contain preserves proportions */}
-                            <Image
-                                source={{ uri: imageUri }}
-                                style={{ width: '100%', height: '100%' }}
-                                resizeMode="cover"
-                            />
-
-                            {/* Bottom gradient */}
+                        <View key={item.id} style={{ width, height: heroH }}>
+                            <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                             <LinearGradient
                                 colors={['transparent', 'rgba(5,0,18,0.6)', 'rgba(5,0,18,0.97)']}
                                 locations={[0.3, 0.65, 1]}
                                 style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '75%' } as any}
                             />
-                            {/* Left vignette */}
                             <LinearGradient
                                 colors={['rgba(5,0,18,0.55)', 'transparent']}
-                                start={{ x: 0, y: 0.5 }}
-                                end={{ x: 0.55, y: 0.5 }}
+                                start={{ x: 0, y: 0.5 }} end={{ x: 0.55, y: 0.5 }}
                                 style={{ position: 'absolute', inset: 0 } as any}
                             />
-
-                            {/* Content overlay */}
                             <View style={{ position: 'absolute', bottom: 52, left: textX, right: textX * 2 }}>
-                                {/* Badge */}
                                 {hasAction && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,184,0,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'flex-start', marginBottom: 14, borderWidth: 1, borderColor: 'rgba(255,184,0,0.35)' }}>
-                                        <Ionicons
-                                            name={item.actionType === 'PLAY_CHANNEL' ? 'tv-outline' : 'star-outline'}
-                                            size={11} color="#FFB800"
-                                        />
+                                        <Ionicons name={item.actionType === 'PLAY_CHANNEL' ? 'tv-outline' : 'star-outline'} size={11} color="#FFB800" />
                                         <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>
                                             {ACTION_LABEL[item.actionType]?.toUpperCase() ?? 'VER MÁS'}
                                         </Text>
                                     </View>
                                 )}
-
-                                {/* Title */}
                                 <Text
-                                    style={{
-                                        color: '#fff',
-                                        fontSize: width > 768 ? 46 : 28,
-                                        fontWeight: '900',
-                                        letterSpacing: -1,
-                                        lineHeight: width > 768 ? 54 : 34,
-                                        marginBottom: 10,
-                                        textShadowColor: 'rgba(0,0,0,0.6)',
-                                        textShadowOffset: { width: 0, height: 2 },
-                                        textShadowRadius: 12,
-                                    }}
+                                    style={{ color: '#fff', fontSize: width > 768 ? 46 : 28, fontWeight: '900', letterSpacing: -1, lineHeight: width > 768 ? 54 : 34, marginBottom: 10, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 }}
                                     numberOfLines={2}
                                 >
                                     {item.titulo}
                                 </Text>
-
-                                {/* Subtitle */}
                                 {!!item.subtitulo && (
-                                    <Text
-                                        style={{ color: 'rgba(255,255,255,0.68)', fontSize: width > 768 ? 16 : 13, lineHeight: 22, marginBottom: 22, maxWidth: 520 }}
-                                        numberOfLines={3}
-                                    >
+                                    <Text style={{ color: 'rgba(255,255,255,0.68)', fontSize: width > 768 ? 16 : 13, lineHeight: 22, marginBottom: 22, maxWidth: 520 }} numberOfLines={3}>
                                         {item.subtitulo}
                                     </Text>
                                 )}
-
-                                {/* Buttons */}
                                 <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                                     {hasAction && (
                                         <TouchableOpacity
@@ -350,9 +307,7 @@ function HeroSlider({
                                             </Text>
                                         </TouchableOpacity>
                                     )}
-                                    <TouchableOpacity
-                                        style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: width > 768 ? 28 : 18, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' }}
-                                    >
+                                    <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: width > 768 ? 28 : 18, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' }}>
                                         <Ionicons name="information-circle-outline" size={16} color="#fff" />
                                         <Text style={{ color: '#fff', fontWeight: '700', fontSize: width > 768 ? 15 : 14 }}>Más info</Text>
                                     </TouchableOpacity>
@@ -360,25 +315,16 @@ function HeroSlider({
                             </View>
                         </View>
                     );
-                }}
-            />
+                })}
+            </ScrollView>
 
             {/* Dots navigation */}
             {sliders.length > 1 && (
-                <View style={{ position: 'absolute', bottom: 18, left: 0, right: 0, alignItems: 'center' }}>
+                <View style={{ position: 'absolute', bottom: 18, left: 0, right: 0, alignItems: 'center', pointerEvents: 'box-none' } as any}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {sliders.map((_, i) => (
-                            <TouchableOpacity
-                                key={i}
-                                onPress={() => { goTo(i); startAutoPlay(); }}
-                                style={{ overflow: 'hidden', borderRadius: 2 }}
-                            >
-                                <View style={{
-                                    width: i === activeIndex ? 28 : 6,
-                                    height: 3,
-                                    borderRadius: 2,
-                                    backgroundColor: i === activeIndex ? '#FFB800' : 'rgba(255,255,255,0.28)',
-                                }}>
+                            <TouchableOpacity key={i} onPress={() => goTo(i)} style={{ padding: 4 }}>
+                                <View style={{ width: i === activeIndex ? 28 : 6, height: 3, borderRadius: 2, backgroundColor: i === activeIndex ? '#FFB800' : 'rgba(255,255,255,0.28)', overflow: 'hidden' }}>
                                     {i === activeIndex && (
                                         <Animated.View style={{
                                             position: 'absolute', left: 0, top: 0, bottom: 0,
@@ -615,6 +561,7 @@ export default function Home() {
 
             <Animated.ScrollView
                 style={{ flex: 1 }}
+                contentContainerStyle={{ paddingTop: HEADER_H }}
                 onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
                 scrollEventThrottle={16}
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor="#FFB800" />}
