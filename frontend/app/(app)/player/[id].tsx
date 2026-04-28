@@ -258,11 +258,16 @@ export default function LivePlayer() {
   const { channels, setChannels, loading: channelsLoading, error: channelsError } = useChannels();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [activeIndex, setActiveIndex] = useState(0);
+  const channelInitialized = useRef(false);
 
   useEffect(() => {
+    if (channelInitialized.current) return;
     if (channels.length > 0 && id && id !== 'live') {
       const idx = channels.findIndex(c => c.id === id);
-      if (idx >= 0) setActiveIndex(idx);
+      if (idx >= 0) {
+        setActiveIndex(idx);
+        channelInitialized.current = true;
+      }
     }
   }, [channels, id]);
 
