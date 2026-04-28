@@ -86,6 +86,8 @@ jobs:
             tar xzf /tmp/luki-backend.tar.gz
             rm /tmp/luki-backend.tar.gz
             cd backend
+            npm ci
+            npx prisma generate
             npx prisma migrate deploy
             pm2 restart luki-play-backend
             cd ..
