@@ -33,53 +33,56 @@ function WebHlsPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    let isMounted = true;
-
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Hls = require('hls.js').default;
 
-    if (!isMounted) return;
-
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
-
     if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90,
-      });
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
-      });
-      hls.on(Hls.Events.ERROR, (_event: unknown, data: any) => {
-        if (data?.fatal) {
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            hls.startLoad();
-          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hls.recoverMediaError();
-          } else {
-            hls.destroy();
+      if (!hlsRef.current) {
+        // First load — create instance once, attach to video element once
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 0,     // no back buffer needed for live zapping
+          maxBufferLength: 8,      // start playback with only 8 s buffered
+          maxMaxBufferLength: 15,
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 5,
+        });
+        hlsRef.current = hls;
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {});
+        });
+        hls.on(Hls.Events.ERROR, (_event: unknown, data: any) => {
+          if (data?.fatal) {
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              hlsRef.current?.startLoad();
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              hlsRef.current?.recoverMediaError();
+            } else {
+              hlsRef.current?.destroy();
+              hlsRef.current = null;
+            }
           }
-        }
-      });
+        });
+      }
+      // Reuse instance on channel switch — avoids destroy+create overhead
+      hlsRef.current.loadSource(src);
+      hlsRef.current.startLoad(-1);
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari — native HLS
       video.src = src;
       video.play().catch(() => {});
     }
+  }, [src]);
 
+  // Destroy only on unmount, not on every src change
+  useEffect(() => {
     return () => {
-      isMounted = false;
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
-  }, [src]);
+  }, []);
 
   return React.createElement('video', {
     ref: videoRef,

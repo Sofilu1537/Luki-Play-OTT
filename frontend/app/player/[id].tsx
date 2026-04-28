@@ -348,21 +348,28 @@ export default function LivePlayer() {
   useEffect(() => { channelsRef.current = channels; }, [channels]);
   const showControlsNowRef = useRef(showControlsNow);
   useEffect(() => { showControlsNowRef.current = showControlsNow; }, [showControlsNow]);
+  const swipedRef = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onPanResponderRelease: (_evt, gestureState) => {
-        const len = channelsRef.current.length;
-        if (len > 0 && Math.abs(gestureState.dx) > 50) {
-          if (gestureState.dx < 0) {
-            setActiveIndex((prev) => (prev + 1) % len);
-          } else {
-            setActiveIndex((prev) => (prev - 1 + len) % len);
+      onPanResponderGrant: () => { swipedRef.current = false; },
+      // Switch channel as soon as dx crosses threshold — don't wait for finger lift
+      onPanResponderMove: (_, gestureState) => {
+        if (!swipedRef.current && Math.abs(gestureState.dx) > 40) {
+          swipedRef.current = true;
+          const len = channelsRef.current.length;
+          if (len > 0) {
+            setActiveIndex(prev =>
+              gestureState.dx < 0 ? (prev + 1) % len : (prev - 1 + len) % len
+            );
+            showControlsNowRef.current();
           }
         }
-        // Always show controls — whether switching channel or just tapping
-        showControlsNowRef.current();
+      },
+      onPanResponderRelease: () => {
+        if (!swipedRef.current) showControlsNowRef.current(); // plain tap
+        swipedRef.current = false;
       },
     })
   ).current;
