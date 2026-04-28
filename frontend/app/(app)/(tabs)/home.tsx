@@ -2,14 +2,14 @@ import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, Fl
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useContentStore, Movie } from '../../services/contentStore';
-import { useAdminStore } from '../../services/adminStore';
-import { useAuthStore, DEV_DEVICE_ID } from '../../services/authStore';
-import { useChannels, getCurrentProgram, toggleFavorite } from '../../services/useChannels';
-import type { Channel } from '../../services/channelTypes';
-import { Hero } from '../../components/Hero';
-import { MediaRow } from '../../components/MediaRow';
-import { API_BASE_URL } from '../../services/api/config';
+import { useContentStore, Movie } from '../../../services/contentStore';
+import { useAdminStore } from '../../../services/adminStore';
+import { useAuthStore, DEV_DEVICE_ID } from '../../../services/authStore';
+import { useChannels, getCurrentProgram, toggleFavorite } from '../../../services/useChannels';
+import type { Channel } from '../../../services/channelTypes';
+import { Hero } from '../../../components/Hero';
+import { MediaRow } from '../../../components/MediaRow';
+import { API_BASE_URL } from '../../../services/api/config';
 
 function resolveLogoUri(logo: string): string | null {
     if (!logo || logo === '📺') return null;

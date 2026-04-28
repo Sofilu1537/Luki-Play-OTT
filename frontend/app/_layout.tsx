@@ -35,7 +35,6 @@ export default function RootLayout() {
           <Stack.Screen name="(app)" options={{ headerShown: false }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
           <Stack.Screen name="cms" options={{ headerShown: false }} />
-          <Stack.Screen name="player" options={{ headerShown: false }} />
         </Stack>
       )}
       <StatusBar style="auto" />

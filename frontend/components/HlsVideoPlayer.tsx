@@ -50,9 +50,6 @@ function WebHlsPlayer({
         });
         hlsRef.current = hls;
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(() => {});
-        });
         hls.on(Hls.Events.ERROR, (_event: unknown, data: any) => {
           if (data?.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
@@ -67,8 +64,24 @@ function WebHlsPlayer({
         });
       }
       // Reuse instance on channel switch — avoids destroy+create overhead
+      const t0 = performance.now();
       hlsRef.current.loadSource(src);
       hlsRef.current.startLoad(-1);
+
+      const onManifest = () => {
+        const manifestMs = performance.now() - t0;
+        console.log(`[HLS] manifest parsed: ${manifestMs.toFixed(0)} ms`);
+        video.play().catch(() => {});
+      };
+      const onPlaying = () => {
+        console.log(`[HLS] first frame:     ${(performance.now() - t0).toFixed(0)} ms  (total to playback)`);
+        video.removeEventListener('playing', onPlaying);
+      };
+      video.addEventListener('playing', onPlaying, { once: true });
+
+      // Replace MANIFEST_PARSED listener each src change
+      hlsRef.current.off(Hls.Events.MANIFEST_PARSED);
+      hlsRef.current.on(Hls.Events.MANIFEST_PARSED, onManifest);
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari — native HLS
       video.src = src;

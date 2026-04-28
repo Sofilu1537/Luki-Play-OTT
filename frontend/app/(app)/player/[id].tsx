@@ -21,13 +21,13 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useChannels, getCurrentProgram, getProgressPercent, toggleFavorite } from '../../services/useChannels';
-import { HlsVideoPlayer } from '../../components/HlsVideoPlayer';
-import type { Channel } from '../../services/channelTypes';
+import { useChannels, getCurrentProgram, getProgressPercent, toggleFavorite } from '../../../services/useChannels';
+import { HlsVideoPlayer } from '../../../components/HlsVideoPlayer';
+import type { Channel } from '../../../services/channelTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
-import { resolveLogoUrl } from '../../services/api/config';
-import { useAuthStore, DEV_DEVICE_ID } from '../../services/authStore';
+import { resolveLogoUrl } from '../../../services/api/config';
+import { useAuthStore, DEV_DEVICE_ID } from '../../../services/authStore';
 
 // ─────────────────────────────────────────────
 // Constants
