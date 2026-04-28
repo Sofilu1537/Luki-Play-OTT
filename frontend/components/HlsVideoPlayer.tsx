@@ -33,69 +33,62 @@ function WebHlsPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    let isMounted = true;
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Hls = require('hls.js').default;
 
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (!isMounted) return;
+
+    const t0 = performance.now();
+
     if (Hls.isSupported()) {
-      if (!hlsRef.current) {
-        // First load — create instance once, attach to video element once
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 0,     // no back buffer needed for live zapping
-          maxBufferLength: 8,      // start playback with only 8 s buffered
-          maxMaxBufferLength: 15,
-          liveSyncDurationCount: 2,
-          liveMaxLatencyDurationCount: 5,
-        });
-        hlsRef.current = hls;
-        hls.attachMedia(video);
-        hls.on(Hls.Events.ERROR, (_event: unknown, data: any) => {
-          if (data?.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              hlsRef.current?.startLoad();
-            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hlsRef.current?.recoverMediaError();
-            } else {
-              hlsRef.current?.destroy();
-              hlsRef.current = null;
-            }
-          }
-        });
-      }
-      // Reuse instance on channel switch — avoids destroy+create overhead
-      const t0 = performance.now();
-      hlsRef.current.loadSource(src);
-      hlsRef.current.startLoad(-1);
-
-      const onManifest = () => {
-        const manifestMs = performance.now() - t0;
-        console.log(`[HLS] manifest parsed: ${manifestMs.toFixed(0)} ms`);
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 0,
+        maxBufferLength: 8,
+        maxMaxBufferLength: 15,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 5,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log(`[HLS] manifest parsed: ${(performance.now() - t0).toFixed(0)} ms`);
         video.play().catch(() => {});
-      };
-      const onPlaying = () => {
-        console.log(`[HLS] first frame:     ${(performance.now() - t0).toFixed(0)} ms  (total to playback)`);
-        video.removeEventListener('playing', onPlaying);
-      };
-      video.addEventListener('playing', onPlaying, { once: true });
-
-      // Replace MANIFEST_PARSED listener each src change
-      hlsRef.current.off(Hls.Events.MANIFEST_PARSED);
-      hlsRef.current.on(Hls.Events.MANIFEST_PARSED, onManifest);
+      });
+      video.addEventListener('playing', () => {
+        console.log(`[HLS] first frame:     ${(performance.now() - t0).toFixed(0)} ms`);
+      }, { once: true });
+      hls.on(Hls.Events.ERROR, (_event: unknown, data: any) => {
+        if (data?.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          } else {
+            hls.destroy();
+            hlsRef.current = null;
+          }
+        }
+      });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari — native HLS
       video.src = src;
       video.play().catch(() => {});
     }
-  }, [src]);
 
-  // Destroy only on unmount, not on every src change
-  useEffect(() => {
     return () => {
+      isMounted = false;
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
-  }, []);
+  }, [src]);
 
   return React.createElement('video', {
     ref: videoRef,
