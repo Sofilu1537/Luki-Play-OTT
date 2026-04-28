@@ -343,21 +343,26 @@ export default function LivePlayer() {
     setVolume(v);
   }, []);
 
+  // Refs so the PanResponder (created once) always sees the latest values
+  const channelsRef = useRef(channels);
+  useEffect(() => { channelsRef.current = channels; }, [channels]);
+  const showControlsNowRef = useRef(showControlsNow);
+  useEffect(() => { showControlsNowRef.current = showControlsNow; }, [showControlsNow]);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onPanResponderRelease: (evt, gestureState) => {
-        if (Math.abs(gestureState.dx) > 50) {
+      onPanResponderRelease: (_evt, gestureState) => {
+        const len = channelsRef.current.length;
+        if (len > 0 && Math.abs(gestureState.dx) > 50) {
           if (gestureState.dx < 0) {
-            // Swiped left -> next
-            setActiveIndex((prev) => (prev + 1) % channels.length);
+            setActiveIndex((prev) => (prev + 1) % len);
           } else {
-            // Swiped right -> prev
-            setActiveIndex((prev) => (prev - 1 + channels.length) % channels.length);
+            setActiveIndex((prev) => (prev - 1 + len) % len);
           }
-        } else {
-          showControlsNow();
         }
+        // Always show controls — whether switching channel or just tapping
+        showControlsNowRef.current();
       },
     })
   ).current;
