@@ -44,7 +44,8 @@ function emptyForm(): AdminSliderPayload {
   };
 }
 
-function isValidUrl(value: string) {
+function isValidImageSrc(value: string) {
+  if (value.startsWith('/uploads/')) return true; // ruta relativa del servidor
   try {
     const url = new URL(value);
     return url.protocol === 'http:' || url.protocol === 'https:';
@@ -197,7 +198,7 @@ export default function CmsSliders() {
       setFormError('El subtitulo no puede estar en blanco si se especifica.');
       return;
     }
-    if (!form.imagen.trim() || !isValidUrl(form.imagen.trim())) {
+    if (!form.imagen.trim() || !isValidImageSrc(form.imagen.trim())) {
       setFormError('La imagen debe ser una URL valida (http/https).');
       return;
     }
@@ -408,7 +409,7 @@ export default function CmsSliders() {
                   }}
                 >
                   <View style={{ position: 'relative', aspectRatio: 16 / 9, backgroundColor: '#160035' }}>
-                    <Image source={{ uri: slider.imagen }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    <Image source={{ uri: slider.imagen.startsWith('/') ? `${API_BASE_URL}${slider.imagen}` : slider.imagen }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(3,7,18,0.20)' }} />
                     <View style={{ position: 'absolute', left: 16, right: 16, top: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: slider.activo ? 'rgba(16,185,129,0.18)' : 'rgba(245,158,11,0.18)', borderWidth: 1, borderColor: slider.activo ? 'rgba(16,185,129,0.26)' : 'rgba(245,158,11,0.26)' }}>
@@ -530,7 +531,7 @@ export default function CmsSliders() {
               {form.imagen?.trim() ? (
                 <View style={{ marginTop: 6, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.border }}>
                   <View style={{ aspectRatio: 16 / 7, backgroundColor: '#160035' }}>
-                    <Image source={{ uri: form.imagen.trim() }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    <Image source={{ uri: form.imagen.startsWith('/') ? `${API_BASE_URL}${form.imagen.trim()}` : form.imagen.trim() }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
                       <Text style={{ color: 'white', fontSize: 20, fontWeight: '900' }} numberOfLines={2}>{form.titulo || 'Titulo del slider'}</Text>
                       <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, marginTop: 4 }} numberOfLines={2}>{form.subtitulo || 'Subtitulo del slider'}</Text>
