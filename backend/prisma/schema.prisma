@@ -54,6 +54,14 @@ enum ChannelHealthStatus {
   MAINTENANCE
 }
 
+enum SliderAction {
+  NONE
+  PLAY_CHANNEL
+  NAVIGATE_CATEGORY
+  OPEN_URL
+  SHOW_PLAN
+}
+
 enum SubscriptionStatus {
   ACTIVE
   GRACE_PERIOD
@@ -409,6 +417,26 @@ model Component {
   @@index([activo])
   @@index([orden])
   @@map("components")
+}
+
+model Slider {
+  id            String       @id @default(uuid())
+  titulo        String
+  subtitulo     String?
+  imagen        String
+  imagenMobile  String?
+  orden         Int          @default(0)
+  activo        Boolean      @default(true)
+  actionType    SliderAction @default(NONE)
+  actionValue   String?
+  startDate     DateTime?
+  endDate       DateTime?
+  planIds       String[]     @default([])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([activo, orden])
+  @@map("sliders")
 }
 
 model ComponentCategory {

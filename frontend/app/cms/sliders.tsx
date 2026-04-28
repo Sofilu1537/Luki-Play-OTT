@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,16 +11,19 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { API_BASE_URL } from '../../services/api/config';
 import { useCmsStore } from '../../services/cmsStore';
 import {
   adminCreateSlider,
   adminDeleteSlider,
   adminListSliders,
   adminReorderSliders,
+  adminUploadSliderImage,
   AdminSlider,
   AdminSliderPayload,
   adminToggleSlider,
   adminUpdateSlider,
+  SliderActionType,
 } from '../../services/api/adminApi';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CmsShell from '../../components/cms/CmsShell';
@@ -29,9 +32,15 @@ import { useTheme } from '../../hooks/useTheme';
 function emptyForm(): AdminSliderPayload {
   return {
     titulo: '',
-    subtitulo: '',
+    subtitulo: null,
     imagen: '',
+    imagenMobile: null,
     activo: true,
+    actionType: 'NONE',
+    actionValue: null,
+    startDate: null,
+    endDate: null,
+    planIds: [],
   };
 }
 
@@ -67,6 +76,8 @@ export default function CmsSliders() {
   const [formError, setFormError] = useState('');
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoveredDropId, setHoveredDropId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
@@ -121,7 +132,13 @@ export default function CmsSliders() {
       titulo: slider.titulo,
       subtitulo: slider.subtitulo,
       imagen: slider.imagen,
+      imagenMobile: slider.imagenMobile,
       activo: slider.activo,
+      actionType: slider.actionType,
+      actionValue: slider.actionValue,
+      startDate: slider.startDate,
+      endDate: slider.endDate,
+      planIds: slider.planIds,
     });
     setFormError('');
     setModalVisible(true);
@@ -139,14 +156,45 @@ export default function CmsSliders() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  async function handlePickImage() {
+    if (Platform.OS !== 'web' || !accessToken) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setUploadingImage(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch(
+          `${API_BASE_URL}/admin/sliders/upload-imagen`,
+          { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: fd },
+        );
+        if (res.ok) {
+          const { url } = (await res.json()) as { url: string };
+          updateField('imagen', url);
+        } else {
+          setFormError('Error al subir la imagen. Intenta de nuevo.');
+        }
+      } catch {
+        setFormError('Error al subir la imagen. Intenta de nuevo.');
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+    input.click();
+  }
+
   async function handleSave() {
     if (!accessToken) return;
     if (!form.titulo.trim()) {
       setFormError('El titulo del slider es requerido.');
       return;
     }
-    if (!form.subtitulo.trim()) {
-      setFormError('El subtitulo del slider es requerido.');
+    if (form.subtitulo && !form.subtitulo.trim()) {
+      setFormError('El subtitulo no puede estar en blanco si se especifica.');
       return;
     }
     if (!form.imagen.trim() || !isValidUrl(form.imagen.trim())) {
@@ -158,21 +206,17 @@ export default function CmsSliders() {
     setFormError('');
     setFeedback(null);
     try {
+      const payload: AdminSliderPayload = {
+        ...form,
+        titulo: form.titulo.trim(),
+        subtitulo: form.subtitulo?.trim() || null,
+        imagen: form.imagen.trim(),
+      };
       if (editingSlider) {
-        await adminUpdateSlider(accessToken, editingSlider.id, {
-          ...form,
-          titulo: form.titulo.trim(),
-          subtitulo: form.subtitulo.trim(),
-          imagen: form.imagen.trim(),
-        });
+        await adminUpdateSlider(accessToken, editingSlider.id, payload);
         setFeedback({ type: 'success', message: 'Slider actualizado correctamente.' });
       } else {
-        await adminCreateSlider(accessToken, {
-          ...form,
-          titulo: form.titulo.trim(),
-          subtitulo: form.subtitulo.trim(),
-          imagen: form.imagen.trim(),
-        });
+        await adminCreateSlider(accessToken, payload);
         setFeedback({ type: 'success', message: 'Slider creado correctamente.' });
       }
       await refreshSliders();
@@ -426,10 +470,55 @@ export default function CmsSliders() {
               <TextInput style={formInputStyle} value={form.titulo} onChangeText={(value) => updateField('titulo', value)} placeholder="Ej: Estrenos destacados" placeholderTextColor={theme.textMuted} />
 
               <Text style={{ color: theme.textSec, fontSize: 12 }}>SUBTITULO</Text>
-              <TextInput style={formInputStyle} value={form.subtitulo} onChangeText={(value) => updateField('subtitulo', value)} placeholder="Ej: Lo mejor del catálogo esta semana" placeholderTextColor={theme.textMuted} />
+              <TextInput style={formInputStyle} value={form.subtitulo ?? ''} onChangeText={(value) => updateField('subtitulo', value || null)} placeholder="Ej: Lo mejor del catálogo esta semana" placeholderTextColor={theme.textMuted} />
 
-              <Text style={{ color: theme.textSec, fontSize: 12 }}>IMAGEN DEL BANNER</Text>
-              <TextInput style={formInputStyle} value={form.imagen} onChangeText={(value) => updateField('imagen', value)} placeholder="https://.../banner.jpg" placeholderTextColor={theme.textMuted} autoCapitalize="none" />
+              <Text style={{ color: theme.textSec, fontSize: 12 }}>IMAGEN DEL BANNER (1200×628px recomendado)</Text>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TextInput style={[formInputStyle, { flex: 1 }]} value={form.imagen} onChangeText={(value) => updateField('imagen', value)} placeholder="https://.../banner.jpg o /uploads/sliders/..." placeholderTextColor={theme.textMuted} autoCapitalize="none" />
+                {Platform.OS === 'web' && (
+                  <TouchableOpacity
+                    onPress={handlePickImage}
+                    disabled={uploadingImage}
+                    style={{ paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  >
+                    {uploadingImage
+                      ? <ActivityIndicator size="small" color={theme.accent} />
+                      : <FontAwesome name="upload" size={14} color={theme.textSec} />
+                    }
+                    <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '700' }}>Subir</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Text style={{ color: theme.textSec, fontSize: 12 }}>ACCIÓN AL TOCAR EL BANNER</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {(['NONE', 'PLAY_CHANNEL', 'NAVIGATE_CATEGORY', 'SHOW_PLAN', 'OPEN_URL'] as SliderActionType[]).map((action) => (
+                  <TouchableOpacity
+                    key={action}
+                    onPress={() => updateField('actionType', action)}
+                    style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: form.actionType === action ? theme.accent : theme.border, backgroundColor: form.actionType === action ? 'rgba(91,91,214,0.12)' : theme.liftBg }}
+                  >
+                    <Text style={{ color: form.actionType === action ? theme.accent : theme.textSec, fontSize: 11, fontWeight: '700' }}>
+                      {action === 'NONE' ? 'Sin acción' : action === 'PLAY_CHANNEL' ? '▶ Canal' : action === 'NAVIGATE_CATEGORY' ? '🗂 Categoría' : action === 'SHOW_PLAN' ? '⭐ Plan' : '🔗 URL'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {form.actionType !== 'NONE' && (
+                <>
+                  <Text style={{ color: theme.textSec, fontSize: 12 }}>
+                    {form.actionType === 'PLAY_CHANNEL' ? 'ID DEL CANAL' : form.actionType === 'NAVIGATE_CATEGORY' ? 'ID DE LA CATEGORÍA' : form.actionType === 'SHOW_PLAN' ? 'ID DEL PLAN (opcional)' : 'URL DESTINO'}
+                  </Text>
+                  <TextInput
+                    style={formInputStyle}
+                    value={form.actionValue ?? ''}
+                    onChangeText={(value) => updateField('actionValue', value || null)}
+                    placeholder={form.actionType === 'OPEN_URL' ? 'https://...' : 'ID del recurso'}
+                    placeholderTextColor={theme.textMuted}
+                    autoCapitalize="none"
+                  />
+                </>
+              )}
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: form.activo ? theme.successSoft : theme.liftBg, borderWidth: 1, borderColor: form.activo ? 'rgba(16,185,129,0.28)' : theme.border }} onPress={() => updateField('activo', !form.activo)}>

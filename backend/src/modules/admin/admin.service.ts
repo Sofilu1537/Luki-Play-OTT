@@ -44,6 +44,8 @@ import {
 } from './dto/create-plan.dto.js';
 import { UpdateCanalDto } from './dto/update-canal.dto.js';
 import { UpdatePlanDto } from './dto/update-plan.dto.js';
+import { CreateSliderDto, SliderActionDto } from './dto/create-slider.dto.js';
+import { UpdateSliderDto } from './dto/update-slider.dto.js';
 import {
   CMS_MODULES,
   sanitizePermissions,
@@ -1168,33 +1170,99 @@ export class AdminService {
     }
   }
 
-  getSliders() {
-    return [
-      {
-        id: 'sl-001',
-        titulo: 'Bienvenido a Luki Play',
-        subtitulo: 'Tu entretenimiento sin límites',
-        imagen: '',
-        orden: 1,
+  // ---- Sliders CRUD (Prisma persistence) ------------------------------------
+
+  async getSliders() {
+    return this.prisma.slider.findMany({
+      orderBy: { orden: 'asc' },
+    });
+  }
+
+  async getPublicSliders(planId?: string) {
+    const now = new Date();
+    const sliders = await this.prisma.slider.findMany({
+      where: {
         activo: true,
+        OR: [{ startDate: null }, { startDate: { lte: now } }],
+        AND: [{ OR: [{ endDate: null }, { endDate: { gte: now } }] }],
       },
-      {
-        id: 'sl-002',
-        titulo: 'Contenido 4K',
-        subtitulo: 'La mejor calidad de imagen',
-        imagen: '',
-        orden: 2,
-        activo: true,
+      orderBy: { orden: 'asc' },
+    });
+
+    if (!planId) return sliders;
+
+    return sliders.filter(
+      (s) => s.planIds.length === 0 || s.planIds.includes(planId),
+    );
+  }
+
+  async createSlider(dto: CreateSliderDto) {
+    const maxOrden = await this.prisma.slider.aggregate({ _max: { orden: true } });
+    const nextOrden = (maxOrden._max.orden ?? 0) + 1;
+
+    return this.prisma.slider.create({
+      data: {
+        titulo: dto.titulo,
+        subtitulo: dto.subtitulo,
+        imagen: dto.imagen,
+        imagenMobile: dto.imagenMobile,
+        actionType: (dto.actionType as any) ?? 'NONE',
+        actionValue: dto.actionValue,
+        startDate: dto.startDate ? new Date(dto.startDate) : null,
+        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        planIds: dto.planIds ?? [],
+        orden: dto.orden ?? nextOrden,
+        activo: dto.activo ?? true,
       },
-      {
-        id: 'sl-003',
-        titulo: 'Deportes en Vivo',
-        subtitulo: 'No te pierdas ningún partido',
-        imagen: '',
-        orden: 3,
-        activo: false,
+    });
+  }
+
+  async updateSlider(id: string, dto: UpdateSliderDto) {
+    await this.findSliderOrFail(id);
+    return this.prisma.slider.update({
+      where: { id },
+      data: {
+        ...(dto.titulo !== undefined && { titulo: dto.titulo }),
+        ...(dto.subtitulo !== undefined && { subtitulo: dto.subtitulo }),
+        ...(dto.imagen !== undefined && { imagen: dto.imagen }),
+        ...(dto.imagenMobile !== undefined && { imagenMobile: dto.imagenMobile }),
+        ...(dto.actionType !== undefined && { actionType: dto.actionType as any }),
+        ...(dto.actionValue !== undefined && { actionValue: dto.actionValue }),
+        ...(dto.startDate !== undefined && { startDate: dto.startDate ? new Date(dto.startDate) : null }),
+        ...(dto.endDate !== undefined && { endDate: dto.endDate ? new Date(dto.endDate) : null }),
+        ...(dto.planIds !== undefined && { planIds: dto.planIds }),
+        ...(dto.orden !== undefined && { orden: dto.orden }),
+        ...(dto.activo !== undefined && { activo: dto.activo }),
       },
-    ];
+    });
+  }
+
+  async toggleSlider(id: string) {
+    const slider = await this.findSliderOrFail(id);
+    return this.prisma.slider.update({
+      where: { id },
+      data: { activo: !slider.activo },
+    });
+  }
+
+  async deleteSlider(id: string) {
+    await this.findSliderOrFail(id);
+    await this.prisma.slider.delete({ where: { id } });
+  }
+
+  async reorderSliders(orderedIds: string[]) {
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        this.prisma.slider.update({ where: { id }, data: { orden: index + 1 } }),
+      ),
+    );
+    return this.getSliders();
+  }
+
+  private async findSliderOrFail(id: string) {
+    const slider = await this.prisma.slider.findUnique({ where: { id } });
+    if (!slider) throw new NotFoundException(`Slider ${id} no encontrado`);
+    return slider;
   }
 
   // ---- Canales CRUD (Prisma persistence) ----------------------------------

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, NotFoundException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, NotFoundException, UseGuards, Request, Optional } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from '../admin/admin.service';
 import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
@@ -38,6 +38,26 @@ export class PublicController {
     const canal = (all ?? []).find((c: any) => c.id === id) as any;
     if (!canal) throw new NotFoundException('Canal no encontrado');
     return { streamUrl: canal.streamUrl as string };
+  }
+
+  @ApiOperation({ summary: 'Get active sliders/banners for the app (public, no auth)' })
+  @Get('sliders')
+  async getActiveSliders(@Query('planId') planId?: string) {
+    try {
+      const sliders = await this.adminService.getPublicSliders(planId);
+      return sliders.map((s) => ({
+        id: s.id,
+        titulo: s.titulo,
+        subtitulo: s.subtitulo,
+        imagen: s.imagen,
+        imagenMobile: s.imagenMobile,
+        actionType: s.actionType,
+        actionValue: s.actionValue,
+        orden: s.orden,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   @ApiOperation({ summary: 'Get active OTT components with their categories (public, no auth)' })

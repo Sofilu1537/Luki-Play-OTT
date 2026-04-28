@@ -1,12 +1,14 @@
-import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, FlatList, Dimensions, Image } from 'react-native';
+import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, FlatList, Dimensions, Image, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useContentStore, Movie } from '../../../services/contentStore';
 import { useAdminStore } from '../../../services/adminStore';
 import { useAuthStore, DEV_DEVICE_ID } from '../../../services/authStore';
 import { useChannels, getCurrentProgram, toggleFavorite } from '../../../services/useChannels';
+import { useSliderStore } from '../../../services/sliderStore';
 import type { Channel } from '../../../services/channelTypes';
+import type { PublicSlider } from '../../../services/api/adminApi';
 import { Hero } from '../../../components/Hero';
 import { MediaRow } from '../../../components/MediaRow';
 import { API_BASE_URL } from '../../../services/api/config';
@@ -29,32 +31,135 @@ const TAG_ORDER = [
 const { width } = Dimensions.get('window');
 
 // ─────────────────────────────────────────────
-// Live TV Hero Banner
+// CMS Slider Carousel
 // ─────────────────────────────────────────────
-function LiveHeroBanner({ onWatchLive }: { onWatchLive: () => void }) {
-    return (
-        <View style={{ width: '100%', height: width * 0.48, backgroundColor: '#140026', overflow: 'hidden' }}>
-            <View style={{ ...{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, backgroundColor: '#240046' }} />
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: 24, paddingTop: 40, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.15)', borderRadius: 9999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)' }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#E53935' }} />
-                    <Text style={{ color: '#E53935', fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>EN VIVO</Text>
-                </View>
-                <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', marginBottom: 6 }}>TV en Vivo</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginBottom: 18, lineHeight: 20 }}>
-                    Canales de Ecuador en alta calidad — sin interrupciones
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <TouchableOpacity style={{ backgroundColor: '#FFB800', borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' }} onPress={onWatchLive}>
+function SliderCarousel({
+    sliders,
+    onWatchLive,
+    onBannerTap,
+}: {
+    sliders: PublicSlider[];
+    onWatchLive: () => void;
+    onBannerTap: (slider: PublicSlider) => void;
+}) {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const flatRef = useRef<FlatList>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const BANNER_HEIGHT = width * 0.52;
+
+    const startAutoPlay = useCallback(() => {
+        if (sliders.length <= 1) return;
+        timerRef.current = setInterval(() => {
+            setActiveIndex((prev) => {
+                const next = (prev + 1) % sliders.length;
+                flatRef.current?.scrollToIndex({ index: next, animated: true });
+                return next;
+            });
+        }, 4000);
+    }, [sliders.length]);
+
+    useEffect(() => {
+        startAutoPlay();
+        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }, [startAutoPlay]);
+
+    // Fallback estático cuando no hay sliders del CMS
+    if (!sliders.length) {
+        return (
+            <View style={{ width: '100%', height: BANNER_HEIGHT, backgroundColor: '#140026', overflow: 'hidden' }}>
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#240046' }} />
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: 24, paddingTop: 40, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.15)', borderRadius: 9999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)' }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#E53935' }} />
+                        <Text style={{ color: '#E53935', fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>EN VIVO</Text>
+                    </View>
+                    <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', marginBottom: 6 }}>TV en Vivo</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginBottom: 18, lineHeight: 20 }}>
+                        Canales de Ecuador en alta calidad — sin interrupciones
+                    </Text>
+                    <TouchableOpacity style={{ backgroundColor: '#FFB800', borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }} onPress={onWatchLive}>
                         <Ionicons name="play" size={18} color="#140026" />
                         <Text style={{ color: '#140026', fontWeight: '800', fontSize: 13 }}>Reproducir</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={{ backgroundColor: 'rgba(96,38,158,0.5)', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-                        <Ionicons name="list" size={18} color="#FAF6E7" />
-                        <Text style={{ color: '#FAF6E7', fontWeight: '700', fontSize: 13 }}>Guía EPG</Text>
-                    </TouchableOpacity>
                 </View>
             </View>
+        );
+    }
+
+    return (
+        <View style={{ width: '100%', height: BANNER_HEIGHT }}>
+            <FlatList
+                ref={flatRef}
+                data={sliders}
+                keyExtractor={(s) => s.id}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                scrollEventThrottle={16}
+                onMomentumScrollEnd={(e) => {
+                    const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+                    setActiveIndex(newIndex);
+                    if (timerRef.current) clearInterval(timerRef.current);
+                    startAutoPlay();
+                }}
+                renderItem={({ item }) => {
+                    const imageUri = item.imagen.startsWith('/')
+                        ? `${API_BASE_URL}${item.imagen}`
+                        : item.imagen;
+                    const hasAction = item.actionType !== 'NONE';
+                    return (
+                        <TouchableOpacity
+                            activeOpacity={hasAction ? 0.85 : 1}
+                            onPress={() => hasAction && onBannerTap(item)}
+                            style={{ width, height: BANNER_HEIGHT }}
+                        >
+                            <Image
+                                source={{ uri: imageUri }}
+                                style={{ width: '100%', height: '100%' }}
+                                resizeMode="cover"
+                            />
+                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 28 }}>
+                                <View style={{ backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, padding: 14 }}>
+                                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }} numberOfLines={2}>
+                                        {item.titulo}
+                                    </Text>
+                                    {!!item.subtitulo && (
+                                        <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, lineHeight: 18 }} numberOfLines={2}>
+                                            {item.subtitulo}
+                                        </Text>
+                                    )}
+                                    {hasAction && (
+                                        <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <Ionicons name="play-circle" size={16} color="#FFB800" />
+                                            <Text style={{ color: '#FFB800', fontSize: 12, fontWeight: '700' }}>
+                                                {item.actionType === 'PLAY_CHANNEL' ? 'Ver canal' :
+                                                 item.actionType === 'SHOW_PLAN' ? 'Ver planes' :
+                                                 item.actionType === 'NAVIGATE_CATEGORY' ? 'Explorar' : 'Abrir'}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                }}
+            />
+            {/* Dots indicadores */}
+            {sliders.length > 1 && (
+                <View style={{ position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                    {sliders.map((_, i) => (
+                        <View
+                            key={i}
+                            style={{
+                                width: i === activeIndex ? 18 : 6,
+                                height: 6,
+                                borderRadius: 3,
+                                backgroundColor: i === activeIndex ? '#FFB800' : 'rgba(255,255,255,0.4)',
+                            }}
+                        />
+                    ))}
+                </View>
+            )}
         </View>
     );
 }
@@ -202,6 +307,7 @@ export default function Home() {
     const restrictionMessage = authState.restrictionMessage ?? null;
     const { channels: liveChannels, reload: reloadChannels } = useChannels();
     const accessToken = useAuthStore((s) => s.accessToken);
+    const { sliders, fetchSliders } = useSliderStore();
     const router = useRouter();
 
     const handleToggleFavorite = useCallback((ch: Channel) => {
@@ -213,6 +319,7 @@ export default function Home() {
     // Load channels from IndexedDB once on mount
     useEffect(() => {
         useAdminStore.getState().init();
+        fetchSliders();
     }, []);
 
     // Re-fetch base content on focus (channels managed by _store singleton — no reload needed)
@@ -290,6 +397,23 @@ export default function Home() {
         router.push({ pathname: '/player/[id]', params: { id: ch.id } });
     };
 
+    const handleBannerTap = useCallback((slider: PublicSlider) => {
+        switch (slider.actionType) {
+            case 'PLAY_CHANNEL':
+                if (slider.actionValue) router.push({ pathname: '/player/[id]', params: { id: slider.actionValue } });
+                break;
+            case 'NAVIGATE_CATEGORY':
+                // TODO: filtrar home por categoría cuando se implemente navegación por categoría
+                break;
+            case 'SHOW_PLAN':
+                router.push('/(app)/planes' as any);
+                break;
+            case 'OPEN_URL':
+                if (slider.actionValue) Linking.openURL(slider.actionValue);
+                break;
+        }
+    }, [router]);
+
     const handleLogout = async () => {
         await logout();
         router.replace('/(auth)/login');
@@ -321,10 +445,14 @@ export default function Home() {
             >
                 {featured && <Hero movie={featured} onPlay={handlePlay} />}
 
-                {/* Live TV section — player-style (from Luki-Play-Reproductor) */}
+                {/* Live TV section con carrusel de banners del CMS */}
                 {liveChannels.length > 0 && (
                     <>
-                        <LiveHeroBanner onWatchLive={() => openPlayer(liveChannels[0]!)} />
+                        <SliderCarousel
+                            sliders={sliders}
+                            onWatchLive={() => openPlayer(liveChannels[0]!)}
+                            onBannerTap={handleBannerTap}
+                        />
                         <ChannelRow channels={liveChannels} onSelectChannel={openPlayer} onToggleFavorite={handleToggleFavorite} />
                         <FavoritesRow channels={liveChannels} onSelectChannel={openPlayer} onToggleFavorite={handleToggleFavorite} />
                     </>

@@ -111,6 +111,13 @@ cd "$BACKEND_DIR"
 npm install
 npm run build
 
+# Run Prisma migrations (no-interactive, safe in CI/CD)
+npx prisma migrate deploy
+
+# Persist uploads directory across deploys
+mkdir -p "$BACKEND_DIR/uploads/sliders"
+mkdir -p "$BACKEND_DIR/uploads/logos"
+
 # Start backend via PM2
 if pm2 describe luki-play-backend >/dev/null 2>&1; then
   PORT="$BACKEND_PORT" pm2 restart luki-play-backend --update-env
@@ -184,6 +191,24 @@ server {
     proxy_set_header X-Forwarded-Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+
+  location /favorites/ {
+    proxy_pass http://127.0.0.1:$BACKEND_PORT/favorites/;
+    proxy_http_version 1.1;
+    proxy_set_header Host localhost:$BACKEND_PORT;
+    proxy_set_header X-Forwarded-Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header Authorization \$http_authorization;
+  }
+
+  location /uploads/ {
+    alias $BACKEND_DIR/uploads/;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+    add_header X-Content-Type-Options nosniff;
+    try_files \$uri =404;
   }
 
   location ~ /\.(?!well-known).* {

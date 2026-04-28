@@ -113,13 +113,32 @@ export interface AdminPlan {
 
 export type AdminPlanPayload = Omit<AdminPlan, 'id'>;
 
+export type SliderActionType = 'NONE' | 'PLAY_CHANNEL' | 'NAVIGATE_CATEGORY' | 'OPEN_URL' | 'SHOW_PLAN';
+
 export interface AdminSlider {
   id: string;
   titulo: string;
-  subtitulo: string;
+  subtitulo: string | null;
   imagen: string;
+  imagenMobile: string | null;
   orden: number;
   activo: boolean;
+  actionType: SliderActionType;
+  actionValue: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  planIds: string[];
+}
+
+export interface PublicSlider {
+  id: string;
+  titulo: string;
+  subtitulo: string | null;
+  imagen: string;
+  imagenMobile: string | null;
+  actionType: SliderActionType;
+  actionValue: string | null;
+  orden: number;
 }
 
 export type AdminSliderPayload = Omit<AdminSlider, 'id' | 'orden'> & {
@@ -474,14 +493,33 @@ export async function adminDeletePlan(accessToken: string, id: string): Promise<
 // Sliders
 // ---------------------------------------------------------------------------
 
+const SLIDER_DEFAULTS: Pick<AdminSlider, 'imagenMobile' | 'actionType' | 'actionValue' | 'startDate' | 'endDate' | 'planIds'> = {
+  imagenMobile: null, actionType: 'NONE', actionValue: null, startDate: null, endDate: null, planIds: [],
+};
+
 let mockSlidersStore: AdminSlider[] = [
-  { id: 'sl-001', titulo: 'Bienvenido a Luki Play', subtitulo: 'Tu entretenimiento sin límites', imagen: 'https://placehold.co/1200x400/5B5BD6/white?text=Slider+1', orden: 1, activo: true },
-  { id: 'sl-002', titulo: 'Contenido 4K',          subtitulo: 'La mejor calidad de imagen',      imagen: 'https://placehold.co/1200x400/0EA5E9/white?text=Slider+2', orden: 2, activo: true },
-  { id: 'sl-003', titulo: 'Deportes en Vivo',       subtitulo: 'No te pierdas ningún partido',   imagen: 'https://placehold.co/1200x400/10B981/white?text=Slider+3', orden: 3, activo: false },
+  { ...SLIDER_DEFAULTS, id: 'sl-001', titulo: 'Bienvenido a Luki Play', subtitulo: 'Tu entretenimiento sin límites', imagen: 'https://placehold.co/1200x400/5B5BD6/white?text=Slider+1', orden: 1, activo: true },
+  { ...SLIDER_DEFAULTS, id: 'sl-002', titulo: 'Contenido 4K',           subtitulo: 'La mejor calidad de imagen',     imagen: 'https://placehold.co/1200x400/0EA5E9/white?text=Slider+2', orden: 2, activo: true },
+  { ...SLIDER_DEFAULTS, id: 'sl-003', titulo: 'Deportes en Vivo',        subtitulo: 'No te pierdas ningún partido',  imagen: 'https://placehold.co/1200x400/10B981/white?text=Slider+3', orden: 3, activo: false },
 ];
 
 function normalizeSliderOrder(sliders: AdminSlider[]) {
   return sliders.map((slider, index) => ({ ...slider, orden: index + 1 }));
+}
+
+export async function adminUploadSliderImage(
+  accessToken: string,
+  file: { uri: string; name: string; type: string },
+): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file as any);
+  const res = await fetch(`${API_BASE_URL}/admin/sliders/upload-imagen`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`Upload falló: ${res.status}`);
+  return res.json();
 }
 
 export async function adminListSliders(accessToken: string): Promise<AdminSlider[]> {
@@ -497,11 +535,18 @@ export async function adminCreateSlider(accessToken: string, data: AdminSliderPa
     });
   } catch {
     const created: AdminSlider = {
+      ...SLIDER_DEFAULTS,
       id: `sl-${Date.now()}`,
       titulo: data.titulo,
-      subtitulo: data.subtitulo,
+      subtitulo: data.subtitulo ?? null,
       imagen: data.imagen,
-      activo: data.activo,
+      imagenMobile: data.imagenMobile ?? null,
+      actionType: data.actionType ?? 'NONE',
+      actionValue: data.actionValue ?? null,
+      startDate: data.startDate ?? null,
+      endDate: data.endDate ?? null,
+      planIds: data.planIds ?? [],
+      activo: data.activo ?? true,
       orden: data.orden ?? mockSlidersStore.length + 1,
     };
     mockSlidersStore = normalizeSliderOrder([...mockSlidersStore, created]);

@@ -41,6 +41,8 @@ import { UpdateComponenteDto } from './dto/update-componente.dto';
 import { SetUserPasswordDto } from './dto/set-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { HlsValidatorService } from './hls-validator.service';
+import { CreateSliderDto } from './dto/create-slider.dto';
+import { UpdateSliderDto } from './dto/update-slider.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -237,10 +239,79 @@ export class AdminController {
     return this.adminService.deletePlan(id);
   }
 
+  // ---- Sliders ---------------------------------------------------------------
+
+  @ApiOperation({ summary: 'List all sliders/banners' })
   @Permissions('cms:sliders:read')
   @Get('sliders')
   getSliders() {
     return this.adminService.getSliders();
+  }
+
+  @ApiOperation({ summary: 'Upload a slider banner image' })
+  @Permissions('cms:sliders:write')
+  @Post('sliders/upload-imagen')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const dir = join(process.cwd(), 'uploads', 'sliders');
+          fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, `${uuidv4()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new BadRequestException('Solo se permiten archivos de imagen'), false);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  uploadSliderImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No se subió ningún archivo');
+    return { url: `/uploads/sliders/${file.filename}` };
+  }
+
+  @ApiOperation({ summary: 'Create a slider/banner' })
+  @Permissions('cms:sliders:write')
+  @Post('sliders')
+  @HttpCode(HttpStatus.CREATED)
+  createSlider(@Body() dto: CreateSliderDto) {
+    return this.adminService.createSlider(dto);
+  }
+
+  @ApiOperation({ summary: 'Update a slider/banner' })
+  @Permissions('cms:sliders:write')
+  @Patch('sliders/:id')
+  updateSlider(@Param('id') id: string, @Body() dto: UpdateSliderDto) {
+    return this.adminService.updateSlider(id, dto);
+  }
+
+  @ApiOperation({ summary: 'Toggle slider active state' })
+  @Permissions('cms:sliders:write')
+  @Post('sliders/:id/toggle')
+  @HttpCode(HttpStatus.OK)
+  toggleSlider(@Param('id') id: string) {
+    return this.adminService.toggleSlider(id);
+  }
+
+  @ApiOperation({ summary: 'Reorder sliders by IDs array' })
+  @Permissions('cms:sliders:write')
+  @Post('sliders/reorder')
+  @HttpCode(HttpStatus.OK)
+  reorderSliders(@Body() body: { orderedIds: string[] }) {
+    return this.adminService.reorderSliders(body.orderedIds ?? []);
+  }
+
+  @ApiOperation({ summary: 'Delete a slider/banner' })
+  @Permissions('cms:sliders:write')
+  @Delete('sliders/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteSlider(@Param('id') id: string) {
+    return this.adminService.deleteSlider(id);
   }
 
   @ApiOperation({ summary: 'List all channels' })
