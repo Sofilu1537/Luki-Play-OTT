@@ -112,7 +112,7 @@ function ChannelRow({ channels, onSelectChannel, onToggleFavorite }: { channels:
                                     <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{item.name}</Text>
                                     <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 }} numberOfLines={1}>{progLabel}</Text>
                                 </View>
-                                <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); onToggleFavorite(item); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                <TouchableOpacity onPress={(e) => { (e.nativeEvent as unknown as Event).stopPropagation?.(); onToggleFavorite(item); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                                     <Ionicons
                                         name={item.isFavorite ? 'heart' : 'heart-outline'}
                                         size={16}

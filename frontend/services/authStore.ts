@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 const API_BASE_URL =
   typeof window !== 'undefined' && window.location.hostname !== 'localhost'
@@ -51,7 +52,9 @@ interface AuthState {
     restoreSession: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
     user: null,
     isLoading: false,
     accessToken: null,
@@ -291,4 +294,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
         set({ user: null, accessToken: null, refreshToken: null, pendingActivation: null, codeVerified: false });
     },
-}));
+    }),
+    {
+      name: 'luki-auth',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        user: state.user,
+      }),
+    },
+  )
+);
