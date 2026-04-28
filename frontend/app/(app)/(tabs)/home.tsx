@@ -1,4 +1,5 @@
-import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, FlatList, Dimensions, Image, Linking } from 'react-native';
+import { View, ScrollView, RefreshControl, StatusBar, Text, TouchableOpacity, FlatList, Dimensions, Image, Linking, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -33,6 +34,14 @@ const { width } = Dimensions.get('window');
 // ─────────────────────────────────────────────
 // CMS Slider Carousel
 // ─────────────────────────────────────────────
+
+const ACTION_LABEL: Record<string, string> = {
+    PLAY_CHANNEL:      'Ver canal',
+    SHOW_PLAN:         'Ver planes',
+    NAVIGATE_CATEGORY: 'Explorar',
+    OPEN_URL:          'Abrir',
+};
+
 function SliderCarousel({
     sliders,
     onWatchLive,
@@ -45,18 +54,31 @@ function SliderCarousel({
     const [activeIndex, setActiveIndex] = useState(0);
     const flatRef = useRef<FlatList>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const BANNER_HEIGHT = width * 0.52;
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const BANNER_HEIGHT = Math.min(width * 0.56, 340);
+    const AUTOPLAY_MS = 5000;
+
+    const startProgress = useCallback(() => {
+        progressAnim.setValue(0);
+        Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: AUTOPLAY_MS,
+            useNativeDriver: false,
+        }).start();
+    }, [progressAnim]);
 
     const startAutoPlay = useCallback(() => {
         if (sliders.length <= 1) return;
+        startProgress();
         timerRef.current = setInterval(() => {
             setActiveIndex((prev) => {
                 const next = (prev + 1) % sliders.length;
                 flatRef.current?.scrollToIndex({ index: next, animated: true });
                 return next;
             });
-        }, 4000);
-    }, [sliders.length]);
+            startProgress();
+        }, AUTOPLAY_MS);
+    }, [sliders.length, startProgress]);
 
     useEffect(() => {
         startAutoPlay();
@@ -67,19 +89,31 @@ function SliderCarousel({
     if (!sliders.length) {
         return (
             <View style={{ width: '100%', height: BANNER_HEIGHT, backgroundColor: '#140026', overflow: 'hidden' }}>
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#240046' }} />
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: 24, paddingTop: 40, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.15)', borderRadius: 9999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)' }}>
+                <LinearGradient
+                    colors={['#240046', '#0D001A']}
+                    style={{ position: 'absolute', inset: 0 } as any}
+                />
+                <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.75)']}
+                    style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '70%' } as any}
+                />
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 28 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(229,57,53,0.18)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(229,57,53,0.35)' }}>
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#E53935' }} />
-                        <Text style={{ color: '#E53935', fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>EN VIVO</Text>
+                        <Text style={{ color: '#E53935', fontWeight: '800', fontSize: 10, letterSpacing: 1.2 }}>EN VIVO</Text>
                     </View>
-                    <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', marginBottom: 6 }}>TV en Vivo</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginBottom: 18, lineHeight: 20 }}>
-                        Canales de Ecuador en alta calidad — sin interrupciones
+                    <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', letterSpacing: -0.5, marginBottom: 6, lineHeight: 34 }}>
+                        TV en Vivo
                     </Text>
-                    <TouchableOpacity style={{ backgroundColor: '#FFB800', borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }} onPress={onWatchLive}>
-                        <Ionicons name="play" size={18} color="#140026" />
-                        <Text style={{ color: '#140026', fontWeight: '800', fontSize: 13 }}>Reproducir</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 20, lineHeight: 20 }}>
+                        Canales de Ecuador en alta calidad
+                    </Text>
+                    <TouchableOpacity
+                        style={{ backgroundColor: '#FFB800', borderRadius: 12, paddingHorizontal: 22, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' }}
+                        onPress={onWatchLive}
+                    >
+                        <Ionicons name="play" size={16} color="#140026" />
+                        <Text style={{ color: '#140026', fontWeight: '900', fontSize: 14 }}>Reproducir</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -109,55 +143,130 @@ function SliderCarousel({
                     const hasAction = item.actionType !== 'NONE';
                     return (
                         <TouchableOpacity
-                            activeOpacity={hasAction ? 0.85 : 1}
+                            activeOpacity={hasAction ? 0.9 : 1}
                             onPress={() => hasAction && onBannerTap(item)}
                             style={{ width, height: BANNER_HEIGHT }}
                         >
+                            {/* Background image */}
                             <Image
                                 source={{ uri: imageUri }}
                                 style={{ width: '100%', height: '100%' }}
                                 resizeMode="cover"
                             />
-                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 28 }}>
-                                <View style={{ backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, padding: 14 }}>
-                                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }} numberOfLines={2}>
-                                        {item.titulo}
-                                    </Text>
-                                    {!!item.subtitulo && (
-                                        <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, lineHeight: 18 }} numberOfLines={2}>
-                                            {item.subtitulo}
+
+                            {/* Cinematic gradient overlay — dark vignette bottom 65% */}
+                            <LinearGradient
+                                colors={['transparent', 'rgba(5,0,20,0.55)', 'rgba(5,0,20,0.92)']}
+                                locations={[0.2, 0.55, 1]}
+                                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '80%' } as any}
+                            />
+                            {/* Left-side vignette for readability */}
+                            <LinearGradient
+                                colors={['rgba(5,0,20,0.45)', 'transparent']}
+                                start={{ x: 0, y: 0.5 }}
+                                end={{ x: 0.6, y: 0.5 }}
+                                style={{ position: 'absolute', inset: 0 } as any}
+                            />
+
+                            {/* Text content */}
+                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 22, paddingBottom: 32 }}>
+                                {/* Category / action tag */}
+                                {hasAction && (
+                                    <View style={{
+                                        flexDirection: 'row', alignItems: 'center', gap: 5,
+                                        backgroundColor: 'rgba(255,184,0,0.15)',
+                                        borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
+                                        alignSelf: 'flex-start', marginBottom: 10,
+                                        borderWidth: 1, borderColor: 'rgba(255,184,0,0.35)',
+                                    }}>
+                                        <Ionicons
+                                            name={item.actionType === 'PLAY_CHANNEL' ? 'tv-outline' : item.actionType === 'SHOW_PLAN' ? 'star-outline' : 'compass-outline'}
+                                            size={10} color="#FFB800"
+                                        />
+                                        <Text style={{ color: '#FFB800', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>
+                                            {ACTION_LABEL[item.actionType] ?? 'VER MÁS'}
                                         </Text>
-                                    )}
-                                    {hasAction && (
-                                        <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                            <Ionicons name="play-circle" size={16} color="#FFB800" />
-                                            <Text style={{ color: '#FFB800', fontSize: 12, fontWeight: '700' }}>
-                                                {item.actionType === 'PLAY_CHANNEL' ? 'Ver canal' :
-                                                 item.actionType === 'SHOW_PLAN' ? 'Ver planes' :
-                                                 item.actionType === 'NAVIGATE_CATEGORY' ? 'Explorar' : 'Abrir'}
+                                    </View>
+                                )}
+
+                                {/* Title */}
+                                <Text
+                                    style={{ color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.5, lineHeight: 32, marginBottom: 6, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 }}
+                                    numberOfLines={2}
+                                >
+                                    {item.titulo}
+                                </Text>
+
+                                {/* Subtitle */}
+                                {!!item.subtitulo && (
+                                    <Text
+                                        style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 19, marginBottom: 16 }}
+                                        numberOfLines={2}
+                                    >
+                                        {item.subtitulo}
+                                    </Text>
+                                )}
+
+                                {/* CTA button */}
+                                {hasAction && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                        <View style={{
+                                            flexDirection: 'row', alignItems: 'center', gap: 8,
+                                            backgroundColor: '#FFB800', borderRadius: 12,
+                                            paddingHorizontal: 18, paddingVertical: 9,
+                                        }}>
+                                            <Ionicons name="play" size={14} color="#140026" />
+                                            <Text style={{ color: '#140026', fontWeight: '900', fontSize: 13 }}>
+                                                {ACTION_LABEL[item.actionType]}
                                             </Text>
                                         </View>
-                                    )}
-                                </View>
+                                        <View style={{
+                                            flexDirection: 'row', alignItems: 'center', gap: 7,
+                                            backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12,
+                                            paddingHorizontal: 14, paddingVertical: 9,
+                                            borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)',
+                                        }}>
+                                            <Ionicons name="information-circle-outline" size={14} color="#fff" />
+                                            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Info</Text>
+                                        </View>
+                                    </View>
+                                )}
                             </View>
                         </TouchableOpacity>
                     );
                 }}
             />
-            {/* Dots indicadores */}
+
+            {/* Dots + progress indicator */}
             {sliders.length > 1 && (
-                <View style={{ position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                    {sliders.map((_, i) => (
-                        <View
-                            key={i}
-                            style={{
-                                width: i === activeIndex ? 18 : 6,
-                                height: 6,
-                                borderRadius: 3,
-                                backgroundColor: i === activeIndex ? '#FFB800' : 'rgba(255,255,255,0.4)',
-                            }}
-                        />
-                    ))}
+                <View style={{ position: 'absolute', bottom: 12, left: 0, right: 0, alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        {sliders.map((_, i) => (
+                            <TouchableOpacity
+                                key={i}
+                                onPress={() => {
+                                    flatRef.current?.scrollToIndex({ index: i, animated: true });
+                                    setActiveIndex(i);
+                                    if (timerRef.current) clearInterval(timerRef.current);
+                                    startAutoPlay();
+                                }}
+                                style={{
+                                    width: i === activeIndex ? 24 : 6,
+                                    height: 4, borderRadius: 2,
+                                    backgroundColor: i === activeIndex ? '#FFB800' : 'rgba(255,255,255,0.30)',
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                {i === activeIndex && (
+                                    <Animated.View style={{
+                                        position: 'absolute', left: 0, top: 0, bottom: 0,
+                                        backgroundColor: '#FFB800',
+                                        width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                                    }} />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
             )}
         </View>
