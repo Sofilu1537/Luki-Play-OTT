@@ -10,6 +10,10 @@ export default function AppLayout() {
     const rootNavState = useRootNavigationState();
 
     useEffect(() => {
+        useAuthStore.getState().restoreSession();
+    }, []);
+
+    useEffect(() => {
         if (!rootNavState?.key) return; // Root Layout not mounted yet
         if (!accessToken) {
             router.replace('/(auth)/login');

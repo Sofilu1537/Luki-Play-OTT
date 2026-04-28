@@ -49,6 +49,7 @@ interface AuthState {
     resetWithOtp: (idNumber: string, otpCode: string, newPassword: string) => Promise<void>;
     submitRegistrationRequest: (data: RegistrationRequestPayload) => Promise<void>;
     logout: () => void;
+    refreshSession: () => Promise<boolean>;
     restoreSession: () => Promise<void>;
 }
 
@@ -62,7 +63,44 @@ export const useAuthStore = create<AuthState>()(
     pendingActivation: null,
     codeVerified: false,
 
-    restoreSession: async () => {},
+    refreshSession: async (): Promise<boolean> => {
+        const { refreshToken } = get();
+        if (!refreshToken) return false;
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken }),
+            });
+            if (!res.ok) {
+                get().logout();
+                return false;
+            }
+            const data = await res.json();
+            set({
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken ?? refreshToken,
+            });
+            return true;
+        } catch {
+            return false;
+        }
+    },
+
+    restoreSession: async () => {
+        const { accessToken, refreshToken } = get();
+        if (!accessToken || !refreshToken) return;
+        try {
+            const [, payload] = accessToken.split('.');
+            const { exp } = JSON.parse(atob(payload)) as { exp?: number };
+            // Refresh if expired or expiring within the next 60 seconds
+            if (exp && exp * 1000 < Date.now() + 60_000) {
+                await get().refreshSession();
+            }
+        } catch {
+            await get().refreshSession();
+        }
+    },
 
     login: async (contractNumber, password) => {
         set({ isLoading: true });
