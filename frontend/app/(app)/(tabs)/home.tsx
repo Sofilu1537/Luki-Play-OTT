@@ -56,14 +56,13 @@ function HomeHeader({ onLogout }: { onLogout: () => void }) {
 
     return (
         <View style={{
-            position: 'fixed' as any,
-            top: 0, left: 0, right: 0,
             height: HEADER_H,
             zIndex: 100,
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 24,
             backgroundColor: '#05020C',
+            ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0 } : {}),
         }}>
 
             {/* Logo */}
@@ -517,7 +516,7 @@ export default function Home() {
 
             {/* Restriction banner */}
             {!canAccessOtt && restrictionMessage && (
-                <View style={{ backgroundColor: '#7f1d1d', padding: 12, paddingTop: HEADER_H + 12, zIndex: 50 }}>
+                <View style={{ backgroundColor: '#7f1d1d', padding: 12, zIndex: 50 }}>
                     <Text style={{ color: '#fca5a5', fontWeight: '600', textAlign: 'center', fontSize: 13 }}>
                         ⚠️ {restrictionMessage}
                     </Text>
@@ -529,7 +528,7 @@ export default function Home() {
 
             <Animated.ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ paddingTop: HEADER_H + 8 }}
+                contentContainerStyle={{}}
                 onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
                 scrollEventThrottle={16}
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchContent} tintColor="#FFB800" />}
