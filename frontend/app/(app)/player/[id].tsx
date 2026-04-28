@@ -67,13 +67,18 @@ function TopBar({
   isLocked, onLock, opacity, onBack,
 }: { isLocked: boolean; onLock: () => void; opacity: Animated.Value; onBack: () => void }) {
   return (
-    <Animated.View style={[styles.topBar, { opacity }]}>
-      <TouchableOpacity style={styles.iconBtn} onPress={onBack}>
-        <Icon name="back" size={22} />
+    <Animated.View style={[styles.topBar, { opacity: isLocked ? 1 : opacity }]}>
+      <TouchableOpacity style={styles.iconBtn} onPress={onBack} disabled={isLocked}>
+        <Ionicons name="chevron-back" size={28} color={isLocked ? 'rgba(255,255,255,0.2)' : '#fff'} />
       </TouchableOpacity>
+      {isLocked && (
+        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600' }}>
+          Pantalla bloqueada
+        </Text>
+      )}
       <View style={styles.topRight}>
         <TouchableOpacity style={styles.iconBtn} onPress={onLock}>
-          <Icon name={isLocked ? 'lock' : 'unlock'} size={19} />
+          <Icon name={isLocked ? 'lock' : 'unlock'} size={19} color={isLocked ? '#FFB800' : '#fff'} />
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -309,6 +314,18 @@ export default function LivePlayer() {
     }, CONTROLS_HIDE_MS);
   }, [controlsOpacity, isLocked]);
 
+  // When locking: cancel any pending hide and keep controls visible.
+  // When unlocking: restart the auto-hide timer.
+  useEffect(() => {
+    if (isLocked) {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      setShowControls(true);
+      Animated.timing(controlsOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    } else {
+      showControlsNow();
+    }
+  }, [isLocked]);
+
   useEffect(() => {
     showControlsNow();
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
@@ -425,7 +442,7 @@ export default function LivePlayer() {
         </Text>
         <TouchableOpacity
           style={{ marginTop: 24, backgroundColor: '#FFB800', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12 }}
-          onPress={() => router.back()}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/home')}
         >
           <Text style={{ color: '#000', fontWeight: '800' }}>Volver</Text>
         </TouchableOpacity>
@@ -453,9 +470,13 @@ export default function LivePlayer() {
 
       <NowPlayingPanel channel={activeChannel} visible={showNowPlaying} />
 
-      {showControls && (
+      {/* TopBar always rendered when locked so the user can unlock */}
+      {(showControls || isLocked) && (
+        <TopBar isLocked={isLocked} onLock={() => setIsLocked(l => !l)} opacity={controlsOpacity} onBack={() => router.canGoBack() ? router.back() : router.replace('/home')} />
+      )}
+
+      {showControls && !isLocked && (
         <>
-          <TopBar isLocked={isLocked} onLock={() => setIsLocked(l => !l)} opacity={controlsOpacity} onBack={() => router.back()} />
           <BottomInfoBar 
             channel={activeChannel} 
             isFavorite={activeChannel.isFavorite} 
