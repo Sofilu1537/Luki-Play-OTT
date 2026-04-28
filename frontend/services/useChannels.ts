@@ -20,7 +20,6 @@ interface BackendCanal {
   id: string;
   nombre: string;
   logo?: string;
-  streamUrl: string;
   categoria?: string;
   tipo?: string;
   detalle?: string;
@@ -34,7 +33,7 @@ function toChannel(c: BackendCanal, index: number, favSet: Set<string>): Channel
     number: index + 1,
     name: c.nombre,
     logo: c.logo || '📺',
-    streamUrl: c.streamUrl,
+    streamUrl: '',          // fetched on demand via fetchStreamUrl()
     category: c.categoria || 'General',
     isFavorite: favSet.has(c.id),
     epg: [],
@@ -190,4 +189,21 @@ export function useChannels() {
   };
 
   return { ...state, setChannels, reload };
+}
+
+/**
+ * Fetches the stream URL for a channel from the authenticated endpoint.
+ * Returns null if the request fails (expired token, network error, etc).
+ */
+export async function fetchStreamUrl(channelId: string, token: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BACKEND_BASE}/public/canales/${channelId}/stream`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.streamUrl ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -21,7 +21,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useChannels, getCurrentProgram, getProgressPercent, toggleFavorite } from '../../../services/useChannels';
+import { useChannels, getCurrentProgram, getProgressPercent, toggleFavorite, fetchStreamUrl } from '../../../services/useChannels';
 import { HlsVideoPlayer } from '../../../components/HlsVideoPlayer';
 import type { Channel } from '../../../services/channelTypes';
 import { Ionicons } from '@expo/vector-icons';
@@ -268,6 +268,16 @@ export default function LivePlayer() {
 
   const activeChannel: Channel | undefined = channels[activeIndex] ?? channels[0];
 
+  // Stream URL is fetched on demand — never exposed in the public API
+  const [streamUrl, setStreamUrl] = useState<string>('');
+  useEffect(() => {
+    if (!activeChannel || !accessToken) return;
+    setStreamUrl(''); // clear while loading
+    fetchStreamUrl(activeChannel.id, accessToken).then(url => {
+      if (url) setStreamUrl(url);
+    });
+  }, [activeChannel?.id, accessToken]);
+
   const [showControls, setShowControls] = useState(true);
   const [showChannelList, setShowChannelList] = useState(false);
   const [showDial, setShowDial] = useState(false);
@@ -427,7 +437,7 @@ export default function LivePlayer() {
         style={StyleSheet.absoluteFill} 
         {...panResponder.panHandlers}
       >
-        <HlsVideoPlayer src={activeChannel.streamUrl} volume={volume} />
+        <HlsVideoPlayer src={streamUrl} volume={volume} />
       </View>
 
       {dialInput !== '' && (
