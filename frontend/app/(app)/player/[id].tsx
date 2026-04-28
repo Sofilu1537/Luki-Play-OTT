@@ -380,6 +380,8 @@ export default function LivePlayer() {
   useEffect(() => { channelsRef.current = channels; }, [channels]);
   const showControlsNowRef = useRef(showControlsNow);
   useEffect(() => { showControlsNowRef.current = showControlsNow; }, [showControlsNow]);
+  const isLockedRef = useRef(isLocked);
+  useEffect(() => { isLockedRef.current = isLocked; }, [isLocked]);
   const swipedRef = useRef(false);
 
   const panResponder = useRef(
@@ -388,6 +390,7 @@ export default function LivePlayer() {
       onPanResponderGrant: () => { swipedRef.current = false; },
       // Switch channel as soon as dx crosses threshold — don't wait for finger lift
       onPanResponderMove: (_, gestureState) => {
+        if (isLockedRef.current) return;
         if (!swipedRef.current && Math.abs(gestureState.dx) > 40) {
           swipedRef.current = true;
           const len = channelsRef.current.length;
@@ -400,7 +403,7 @@ export default function LivePlayer() {
         }
       },
       onPanResponderRelease: () => {
-        if (!swipedRef.current) showControlsNowRef.current(); // plain tap
+        if (!swipedRef.current && !isLockedRef.current) showControlsNowRef.current();
         swipedRef.current = false;
       },
     })
