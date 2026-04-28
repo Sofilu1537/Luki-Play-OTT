@@ -21,7 +21,7 @@ const DEFAULT_PROFILE = '__default__';
 @ApiTags('favorites')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('favorites')
+@Controller('api/favorites')
 export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 

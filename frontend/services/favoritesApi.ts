@@ -1,6 +1,6 @@
 import { API_BASE_URL } from './api/config';
 
-const BASE = `${API_BASE_URL}/favorites`;
+const BASE = `${API_BASE_URL}/api/favorites`;
 
 function headers(token: string) {
   return {
