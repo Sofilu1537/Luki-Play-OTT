@@ -49,6 +49,8 @@ const TAG_ORDER = [
 const NAV_ITEMS = ['Inicio', 'Series', 'Películas', 'Novedades', 'Populares', 'Mi Lista'];
 const HEADER_H = 64;
 
+const LOGO_HEADER = require('../../../assets/branding/logo_h.png');
+
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 function HomeHeader({ onLogout }: { onLogout: () => void }) {
@@ -66,7 +68,7 @@ function HomeHeader({ onLogout }: { onLogout: () => void }) {
         }}>
 
             {/* Logo */}
-            <LukiPlayLogo variant="compact" size={80} />
+            <Image source={LOGO_HEADER} style={{ width: 160, height: 40 }} resizeMode="contain" />
 
             {/* Nav */}
             {Platform.OS === 'web' && (
