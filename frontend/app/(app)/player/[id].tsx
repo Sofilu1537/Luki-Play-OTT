@@ -54,7 +54,12 @@ function ChannelLogo({ logo, size = 20, style }: { logo: string; size?: number; 
   }
   const uri = resolveLogoUrl(logo);
   if (uri) {
-    return <Image source={{ uri }} style={[{ width: size, height: size, resizeMode: 'contain' }, style]} />;
+    const pad = Math.max(3, Math.floor(size * 0.12));
+    return (
+      <View style={[{ width: size, height: size, borderRadius: Math.floor(size * 0.2), backgroundColor: '#fff', padding: pad, overflow: 'hidden' }, style]}>
+        <Image source={{ uri }} style={{ width: '100%', height: '100%', resizeMode: 'contain' }} />
+      </View>
+    );
   }
   return <Ionicons name="tv-outline" size={size} color="#fff" style={style} />;
 }
@@ -188,7 +193,7 @@ function ChannelListOverlay({
               onPress={() => { setHoveredId(item.id); onSelect(item); }}
               style={[styles.railItem, item.id === hoveredId && styles.railItemActive]}
             >
-              <ChannelLogo logo={item.logo} size={24} style={{ marginVertical: 4 }} />
+              <ChannelLogo logo={item.logo} size={40} />
               <Text style={styles.railNameSmall} numberOfLines={1}>{item.name}</Text>
             </TouchableOpacity>
           )}
@@ -590,26 +595,26 @@ const styles = StyleSheet.create({
   overlayContainer: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', zIndex: 50 },
   overlayBackdrop: { flex: 1 },
   channelRail: {
-    width: 110, backgroundColor: 'rgba(0,0,0,0.88)',
-    paddingTop: 40, paddingHorizontal: 4, paddingBottom: 16,
-    alignItems: 'center', gap: 8,
+    width: 120, backgroundColor: 'rgba(36,0,70,0.97)',
+    paddingTop: 44, paddingHorizontal: 6, paddingBottom: 16,
+    alignItems: 'center', gap: 4,
   },
   railClose: { position: 'absolute', top: 12, right: 10 },
   railItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, width: '100%',
+    alignItems: 'center', gap: 4,
+    paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, width: '100%',
   },
   railItemActive: { backgroundColor: 'rgba(255,184,0,0.15)', borderWidth: 1, borderColor: S.gold },
   railNumber: { color: S.muted, fontSize: 11, width: 16 },
   railLogo: { fontSize: 16 },
-  railNameSmall: { color: '#fff', fontSize: 10, flex: 1 },
+  railNameSmall: { color: 'rgba(255,255,255,0.85)', fontSize: 10, textAlign: 'center', width: '100%' },
   programCard: {
-    width: 190, backgroundColor: 'rgba(0,0,0,0.72)',
+    width: 190, backgroundColor: 'rgba(36,0,70,0.85)',
     padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8,
   },
   programThumb: {
     width: 160, height: 90, borderRadius: 14,
-    backgroundColor: 'rgba(25,25,25,0.6)',
+    backgroundColor: '#fff',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },

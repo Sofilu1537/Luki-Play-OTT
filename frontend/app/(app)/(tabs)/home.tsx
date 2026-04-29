@@ -582,10 +582,10 @@ function ChannelCard({ channel, onPress, onFav }: { channel: Channel; onPress: (
                 transform: [{ scale: hovered ? 1.03 : 1 }],
             }}
         >
-            <View style={{ height: 88, backgroundColor: '#100820', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ height: 88, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
                 {logoUri
                     ? <Image source={{ uri: logoUri }} style={{ width: 68, height: 68 }} resizeMode="contain" />
-                    : <Ionicons name="tv-outline" size={34} color="rgba(255,255,255,0.3)" />
+                    : <Ionicons name="tv-outline" size={34} color="rgba(0,0,0,0.2)" />
                 }
                 {hovered && (
                     <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' } as any}>
