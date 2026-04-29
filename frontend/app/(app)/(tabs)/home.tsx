@@ -373,9 +373,6 @@ function ChannelCard({ channel, onPress, onFav }: { channel: Channel; onPress: (
                 </TouchableOpacity>
             </View>
             <View style={{ padding: 10 }}>
-                <Text style={{ color: 'rgba(255,193,7,0.7)', fontSize: 10, fontWeight: '700', marginBottom: 2 }}>
-                    CH {channel.number}
-                </Text>
                 <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
                     {channel.name}
                 </Text>

@@ -188,7 +188,6 @@ function ChannelListOverlay({
               onPress={() => { setHoveredId(item.id); onSelect(item); }}
               style={[styles.railItem, item.id === hoveredId && styles.railItemActive]}
             >
-              <Text style={styles.railNumber}>{item.number}</Text>
               <ChannelLogo logo={item.logo} size={24} style={{ marginVertical: 4 }} />
               <Text style={styles.railNameSmall} numberOfLines={1}>{item.name}</Text>
             </TouchableOpacity>
