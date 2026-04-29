@@ -27,7 +27,10 @@ export class SendRecoveryCodeUseCase {
    * @param requireCms  If true, only SUPERADMIN/SOPORTE users are allowed
    */
   async execute(email: string, requireCms = false): Promise<string> {
-    const rawCode = randomBytes(3).toString('hex').toUpperCase();
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const rawCode = Array.from(randomBytes(6))
+      .map(b => CHARS[b % CHARS.length])
+      .join('');
     const normalizedEmail = email.trim().toLowerCase();
 
     const user = await this.userRepo.findByEmail(normalizedEmail);
