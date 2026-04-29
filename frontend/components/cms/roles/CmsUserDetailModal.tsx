@@ -39,7 +39,10 @@ export default function CmsUserDetailModal({ visible, user, onClose, onDelete }:
         const match = roles.find((r) => r.key === user.role);
         setRoleData(match ?? null);
       })
-      .catch(() => setRoleData(null))
+      .catch((e) => {
+        setRoleData(null);
+        setError(e instanceof Error ? e.message : 'Error al cargar permisos del rol.');
+      })
       .finally(() => setLoadingRole(false));
   }, [visible, user, accessToken]);
 

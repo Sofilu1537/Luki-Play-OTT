@@ -408,7 +408,6 @@ export async function adminCreateCmsUser(
       email: data.email,
       telefono: data.telefono,
       role: data.role,
-      password: data.password ?? 'TempPass2025!',
     }),
   });
 }

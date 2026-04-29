@@ -43,6 +43,7 @@ import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { HlsValidatorService } from './hls-validator.service';
 import { CreateSliderDto } from './dto/create-slider.dto';
 import { UpdateSliderDto } from './dto/update-slider.dto';
+import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -193,9 +194,11 @@ export class AdminController {
   @Patch('roles/:key/permissions')
   async updateRolePermissions(
     @Param('key') key: string,
-    @Body() body: { permissions: string[] },
+    @Body() body: UpdateRolePermissionsDto,
+    @Request() req: any,
   ) {
-    return this.adminService.updateCmsRolePermissions(key, body.permissions);
+    const actorId = req.user?.sub ?? 'system';
+    return this.adminService.updateCmsRolePermissions(key, body.permissions, actorId);
   }
 
   @ApiOperation({ summary: 'Get available CMS permission modules' })

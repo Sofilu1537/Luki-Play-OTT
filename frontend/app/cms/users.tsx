@@ -863,8 +863,13 @@ function UserDetailModal({
   }, [user]);
 
   const handleSaveProfile = async () => {
-    if (!accessToken || !user || !editPayload.nombre || !editPayload.email) {
-      setFeedback({ type: 'error', message: 'Faltan campos obligatorios' });
+    if (!accessToken || !user || !editPayload.nombre.trim() || !editPayload.email.trim()) {
+      setFeedback({ type: 'error', message: 'Nombre y correo son obligatorios.' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editPayload.email.trim())) {
+      setFeedback({ type: 'error', message: 'Ingresa un correo electrónico válido.' });
       return;
     }
     setIsSaving(true);
@@ -1362,6 +1367,7 @@ export default function CmsUsers() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [tipoFilter, setTipoFilter] = useState<'all' | 'abonado' | 'cliente'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [showFormModal, setShowFormModal] = useState(false);
@@ -1395,21 +1401,9 @@ export default function CmsUsers() {
         adminListPlans(accessToken),
       ]);
 
-      const sessionsEntries = await Promise.all(
-        usersData.map(async (user) => {
-          try {
-            const sessions = await adminListUserSessions(accessToken, user.id);
-            return [user.id, sessions] as const;
-          } catch {
-            return [user.id, []] as const;
-          }
-        }),
-      );
-
       setUsers(usersData.filter((user) => !user.isCmsUser));
       setCmsUserCount(usersData.filter((user) => user.isCmsUser).length);
       setPlans(plansData);
-      setSessionsByUser(Object.fromEntries(sessionsEntries));
     } catch (cause) {
       setFeedback({ type: 'error', message: cause instanceof Error ? cause.message : 'No se pudieron cargar los usuarios.' });
     } finally {
@@ -1447,7 +1441,11 @@ export default function CmsUsers() {
     });
   }, [users, search, statusFilter, tipoFilter]);
 
-  const visibleUsers = filteredUsers.slice(0, pageSize);
+  // Reset to page 1 whenever filters or search change
+  useEffect(() => { setCurrentPage(1); }, [search, statusFilter, tipoFilter, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const visibleUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const stats = {
     total:       users.length,
@@ -1964,9 +1962,30 @@ export default function CmsUsers() {
         )}
 
         {!loading && filteredUsers.length > 0 ? (
-          <Text style={{ color: isDark ? theme.textMuted : '#240046', fontSize: 15, marginTop: 12, textAlign: 'center' }}>
-            Mostrando {Math.min(visibleUsers.length, filteredUsers.length)} de {filteredUsers.length} usuarios
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingHorizontal: 4 }}>
+            <Text style={{ color: isDark ? theme.textMuted : theme.textSec, fontSize: 13 }}>
+              {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, filteredUsers.length)} de {filteredUsers.length} usuarios
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <TouchableOpacity
+                disabled={currentPage === 1}
+                onPress={() => setCurrentPage((p) => p - 1)}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', backgroundColor: currentPage === 1 ? 'transparent' : (isDark ? theme.liftBg : '#fff'), opacity: currentPage === 1 ? 0.35 : 1 }}
+              >
+                <FontAwesome name="chevron-left" size={12} color={isDark ? theme.textSec : '#240046'} />
+              </TouchableOpacity>
+              <Text style={{ color: isDark ? theme.text : '#240046', fontSize: 13, fontWeight: '700', minWidth: 60, textAlign: 'center' }}>
+                {currentPage} / {totalPages}
+              </Text>
+              <TouchableOpacity
+                disabled={currentPage === totalPages}
+                onPress={() => setCurrentPage((p) => p + 1)}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', backgroundColor: currentPage === totalPages ? 'transparent' : (isDark ? theme.liftBg : '#fff'), opacity: currentPage === totalPages ? 0.35 : 1 }}
+              >
+                <FontAwesome name="chevron-right" size={12} color={isDark ? theme.textSec : '#240046'} />
+              </TouchableOpacity>
+            </View>
+          </View>
         ) : null}
       </ScrollView>
 

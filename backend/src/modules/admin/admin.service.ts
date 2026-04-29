@@ -980,22 +980,36 @@ export class AdminService {
   async updateCmsRolePermissions(
     roleKey: string,
     permissions: string[],
+    actorId: string = 'system',
   ): Promise<{ key: string; permissions: string[] }> {
-    const key = roleKey.toUpperCase() as PrismaUserRole;
+    const upperKey = roleKey.toUpperCase();
+    const validKeys = Object.values(PrismaUserRole) as string[];
+    if (!validKeys.includes(upperKey)) {
+      throw new BadRequestException(`Rol '${roleKey}' no existe.`);
+    }
+    const key = upperKey as PrismaUserRole;
+
     if (key === PrismaUserRole.SUPERADMIN || key === PrismaUserRole.CLIENTE) {
       throw new BadRequestException(
         'Los permisos de SUPERADMIN y CLIENTE no se pueden editar.',
       );
     }
 
-    const role = await this.prisma.cmsRole.findUnique({ where: { key } });
-    if (!role) throw new NotFoundException(`Rol ${roleKey} no encontrado.`);
-
     const cleaned = sanitizePermissions(permissions);
-    const updated = await this.prisma.cmsRole.update({
-      where: { key },
-      data: { permissions: cleaned },
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const role = await tx.cmsRole.findUnique({ where: { key } });
+      if (!role) throw new NotFoundException(`Rol ${roleKey} no encontrado.`);
+      return tx.cmsRole.update({
+        where: { key },
+        data: { permissions: cleaned },
+      });
     });
+
+    this.logger.log(
+      `[ROLES] Actor=${actorId} updated permissions for role=${key} → [${cleaned.join(', ')}]`,
+    );
+
     return { key: updated.key.toLowerCase(), permissions: updated.permissions };
   }
 
