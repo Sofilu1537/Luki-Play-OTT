@@ -295,19 +295,11 @@ function HeroSlider({
                         {sliders.map((_, i) => (
                             <TouchableOpacity key={i} onPress={() => goTo(i)} style={{ padding: 4 }}>
                                 <View style={{
-                                    width: i === activeIndex ? 28 : 7,
-                                    height: 4, borderRadius: 2,
-                                    backgroundColor: i === activeIndex ? ACCENT : 'rgba(255,255,255,0.3)',
-                                    overflow: 'hidden',
-                                }}>
-                                    {i === activeIndex && (
-                                        <Animated.View style={{
-                                            position: 'absolute', left: 0, top: 0, bottom: 0,
-                                            backgroundColor: 'rgba(255,255,255,0.4)',
-                                            width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                                        }} />
-                                    )}
-                                </View>
+                                    width: i === activeIndex ? 12 : 8,
+                                    height: i === activeIndex ? 12 : 8,
+                                    borderRadius: 6,
+                                    backgroundColor: i === activeIndex ? '#fff' : 'rgba(255,255,255,0.35)',
+                                }} />
                             </TouchableOpacity>
                         ))}
                     </View>
