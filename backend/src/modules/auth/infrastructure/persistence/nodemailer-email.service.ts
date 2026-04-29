@@ -2,20 +2,19 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import * as fs from 'fs';
-import * as path from 'path';
 import {
   EmailService,
   EmailHealthResult,
   RegistrationRequestData,
 } from '../../domain/interfaces/email.service';
+import { LOGO_H_PNG_BASE64 } from './logo.constant';
 
 @Injectable()
 export class NodemailerEmailService implements EmailService {
   private readonly logger = new Logger(NodemailerEmailService.name);
   private readonly transporter: Transporter;
   private readonly from: string;
-  private readonly logoBuffer: Buffer | null;
+  private readonly logoBuffer: Buffer;
   private readonly LOGO_CID = 'lukiplay-logo@lukiplay';
 
   constructor(private readonly config: ConfigService) {
@@ -33,25 +32,13 @@ export class NodemailerEmailService implements EmailService {
       },
     });
 
-    // Load logo for CID embedding — compatible with all major email clients
-    try {
-      const logoPath = path.resolve(process.cwd(), 'assets', 'logo_h.png');
-      this.logoBuffer = fs.readFileSync(logoPath);
-    } catch {
-      this.logger.warn('Logo file not found at assets/logo_h.png — emails will use text fallback');
-      this.logoBuffer = null;
-    }
+    // Logo embebido como base64 — no depende del filesystem ni del deployment
+    this.logoBuffer = Buffer.from(LOGO_H_PNG_BASE64, 'base64');
   }
 
-  /** Returns an <img> pointing to the CID logo, or a text fallback. */
+  /** Returns an <img> pointing to the CID-attached logo. */
   private logoImg(height = 36): string {
-    if (this.logoBuffer) {
-      return `<img src="cid:${this.LOGO_CID}" alt="Luki Play" style="height:${height}px; display:block; border:0;" />`;
-    }
-    return `
-      <span style="font-family:Arial,Helvetica,sans-serif;font-weight:900;font-size:${height}px;color:#ffffff;vertical-align:middle;">luki</span>
-      <span style="font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:${Math.round(height * 0.7)}px;background-color:#ffb800;color:#240046;padding:3px 8px;border-radius:6px;vertical-align:middle;margin-left:4px;">play</span>
-    `;
+    return `<img src="cid:${this.LOGO_CID}" alt="Luki Play" style="height:${height}px; display:block; border:0;" />`;
   }
 
   async sendPasswordReset(
@@ -432,16 +419,17 @@ export class NodemailerEmailService implements EmailService {
 
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      const attachments = this.logoBuffer
-        ? [{ filename: 'logo_h.png', content: this.logoBuffer, cid: this.LOGO_CID, contentType: 'image/png' }]
-        : [];
-
       const info = await this.transporter.sendMail({
         from: this.from,
         to,
         subject,
         html,
-        attachments,
+        attachments: [{
+          filename: 'logo_h.png',
+          content: this.logoBuffer,
+          cid: this.LOGO_CID,
+          contentType: 'image/png',
+        }],
       });
       this.logger.log(`Email sent to ${to} — messageId: ${info.messageId}`);
     } catch (error) {
