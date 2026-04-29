@@ -11,6 +11,14 @@ export const API_BASE_URL =
     : 'http://localhost:3000';
 
 /**
+ * Controls whether API functions fall back to in-memory mock data when a
+ * request fails. Enabled only in local development (localhost) so that mock
+ * fallbacks never silently mask real backend errors in production.
+ */
+export const USE_MOCK_FALLBACK =
+  typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
+/**
  * Resolves a channel logo URL to an absolute URL suitable for rendering.
  *
  * Handles three cases:

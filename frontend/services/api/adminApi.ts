@@ -3,7 +3,7 @@
  * Talks to the NestJS backend's /admin/* routes.
  */
 
-import { API_BASE_URL } from './config';
+import { API_BASE_URL, USE_MOCK_FALLBACK } from './config';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,6 +128,7 @@ export interface AdminSlider {
   startDate: string | null;
   endDate: string | null;
   planIds: string[];
+  updatedAt?: string;
 }
 
 export interface PublicSlider {
@@ -434,7 +435,8 @@ export async function adminUpdateRolePermissions(
 export async function adminListPlans(accessToken: string): Promise<AdminPlan[]> {
   try {
     return await apiFetch<AdminPlan[]>('/admin/planes', accessToken);
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     // Local store is the source of truth when API is unreachable
     const { usePlanesStore } = require('../planesStore');
     return usePlanesStore.getState().planes;
@@ -447,7 +449,8 @@ export async function adminCreatePlan(accessToken: string, data: AdminPlanPayloa
       method: 'POST',
       body: JSON.stringify(data),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const { usePlanesStore } = require('../planesStore');
     return usePlanesStore.getState().add(data);
   }
@@ -459,7 +462,8 @@ export async function adminUpdatePlan(accessToken: string, id: string, data: Par
       method: 'PATCH',
       body: JSON.stringify(data),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const { usePlanesStore } = require('../planesStore');
     usePlanesStore.getState().update(id, data);
     const updated = usePlanesStore.getState().planes.find((p: AdminPlan) => p.id === id);
@@ -471,7 +475,8 @@ export async function adminUpdatePlan(accessToken: string, id: string, data: Par
 export async function adminTogglePlan(accessToken: string, id: string): Promise<AdminPlan> {
   try {
     return await apiFetch<AdminPlan>(`/admin/planes/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const { usePlanesStore } = require('../planesStore');
     usePlanesStore.getState().toggle(id);
     const updated = usePlanesStore.getState().planes.find((p: AdminPlan) => p.id === id);
@@ -483,7 +488,8 @@ export async function adminTogglePlan(accessToken: string, id: string): Promise<
 export async function adminDeletePlan(accessToken: string, id: string): Promise<void> {
   try {
     await apiFetch<void>(`/admin/planes/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const { usePlanesStore } = require('../planesStore');
     usePlanesStore.getState().remove(id);
   }
@@ -524,7 +530,10 @@ export async function adminUploadSliderImage(
 
 export async function adminListSliders(accessToken: string): Promise<AdminSlider[]> {
   try { return await apiFetch<AdminSlider[]>('/admin/sliders', accessToken); }
-  catch { return mockSlidersStore.map((slider) => ({ ...slider })).sort((a, b) => a.orden - b.orden); }
+  catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
+    return mockSlidersStore.map((slider) => ({ ...slider })).sort((a, b) => a.orden - b.orden);
+  }
 }
 
 export async function adminCreateSlider(accessToken: string, data: AdminSliderPayload): Promise<AdminSlider> {
@@ -533,7 +542,8 @@ export async function adminCreateSlider(accessToken: string, data: AdminSliderPa
       method: 'POST',
       body: JSON.stringify(data),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const created: AdminSlider = {
       ...SLIDER_DEFAULTS,
       id: `sl-${Date.now()}`,
@@ -560,7 +570,8 @@ export async function adminUpdateSlider(accessToken: string, id: string, data: P
       method: 'PATCH',
       body: JSON.stringify(data),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const index = mockSlidersStore.findIndex((slider) => slider.id === id);
     if (index === -1) throw new Error('Slider no encontrado');
     mockSlidersStore[index] = {
@@ -576,7 +587,8 @@ export async function adminUpdateSlider(accessToken: string, id: string, data: P
 export async function adminToggleSlider(accessToken: string, id: string): Promise<AdminSlider> {
   try {
     return await apiFetch<AdminSlider>(`/admin/sliders/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const index = mockSlidersStore.findIndex((slider) => slider.id === id);
     if (index === -1) throw new Error('Slider no encontrado');
     mockSlidersStore[index] = { ...mockSlidersStore[index], activo: !mockSlidersStore[index].activo };
@@ -587,7 +599,8 @@ export async function adminToggleSlider(accessToken: string, id: string): Promis
 export async function adminDeleteSlider(accessToken: string, id: string): Promise<void> {
   try {
     await apiFetch<void>(`/admin/sliders/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     mockSlidersStore = normalizeSliderOrder(mockSlidersStore.filter((slider) => slider.id !== id));
   }
 }
@@ -598,7 +611,8 @@ export async function adminReorderSliders(accessToken: string, orderedIds: strin
       method: 'POST',
       body: JSON.stringify({ orderedIds }),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const mapped = orderedIds
       .map((id) => mockSlidersStore.find((slider) => slider.id === id))
       .filter((slider): slider is AdminSlider => Boolean(slider));
@@ -614,7 +628,10 @@ export async function adminReorderSliders(accessToken: string, orderedIds: strin
 
 export async function adminListCanales(accessToken: string): Promise<AdminCanal[]> {
   try { return await apiFetch<AdminCanal[]>('/admin/canales', accessToken); }
-  catch { return []; }
+  catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
+    return [];
+  }
 }
 
 export async function adminCreateCanal(accessToken: string, data: AdminCanalPayload): Promise<AdminCanal> {
@@ -729,7 +746,10 @@ const mockCategorias: AdminCategoria[] = [
 
 export async function adminListCategorias(accessToken: string): Promise<AdminCategoria[]> {
   try { return await apiFetch<AdminCategoria[]>('/admin/categorias', accessToken); }
-  catch { return [...mockCategorias]; }
+  catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
+    return [...mockCategorias];
+  }
 }
 
 export async function adminCreateCategoria(
@@ -741,7 +761,8 @@ export async function adminCreateCategoria(
       method: 'POST',
       body: JSON.stringify(payload),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     // Local fallback
     const record: AdminCategoria = {
       id: `cat-local-${Math.random().toString(36).slice(2, 9)}`,
@@ -765,7 +786,8 @@ export async function adminUpdateCategoria(
       method: 'PATCH',
       body: JSON.stringify(patch),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const index = mockCategorias.findIndex((c) => c.id === id);
     if (index !== -1) {
       mockCategorias[index] = { ...mockCategorias[index], ...patch };
@@ -778,7 +800,8 @@ export async function adminUpdateCategoria(
 export async function adminToggleCategoria(accessToken: string, id: string): Promise<AdminCategoria> {
   try {
     return await apiFetch<AdminCategoria>(`/admin/categorias/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const index = mockCategorias.findIndex((c) => c.id === id);
     if (index !== -1) {
       mockCategorias[index] = { ...mockCategorias[index], activo: !mockCategorias[index].activo };
@@ -791,7 +814,8 @@ export async function adminToggleCategoria(accessToken: string, id: string): Pro
 export async function adminDeleteCategoria(accessToken: string, id: string): Promise<void> {
   try {
     await apiFetch<void>(`/admin/categorias/${id}`, accessToken, { method: 'DELETE' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const index = mockCategorias.findIndex((c) => c.id === id);
     if (index !== -1) mockCategorias.splice(index, 1);
   }
@@ -842,7 +866,10 @@ const mockBlog: AdminBlogPost[] = [
 
 export async function adminListBlog(accessToken: string): Promise<AdminBlogPost[]> {
   try { return await apiFetch<AdminBlogPost[]>('/admin/blog', accessToken); }
-  catch { return [...mockBlog]; }
+  catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
+    return [...mockBlog];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -865,7 +892,10 @@ const mockImpuestos: AdminImpuesto[] = [
 
 export async function adminListImpuestos(accessToken: string): Promise<AdminImpuesto[]> {
   try { return await apiFetch<AdminImpuesto[]>('/admin/impuestos', accessToken); }
-  catch { return [...mockImpuestos]; }
+  catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
+    return [...mockImpuestos];
+  }
 }
 
 
@@ -899,13 +929,17 @@ const mockComponentes: AdminComponente[] = [
 
 export async function adminListComponentes(accessToken: string): Promise<AdminComponente[]> {
   try { return await apiFetch<AdminComponente[]>('/admin/componentes', accessToken); }
-  catch { return [...mockComponentes]; }
+  catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
+    return [...mockComponentes];
+  }
 }
 
 export async function adminToggleComponente(accessToken: string, id: string): Promise<AdminComponente> {
   try {
     return await apiFetch<AdminComponente>(`/admin/componentes/${id}/toggle`, accessToken, { method: 'POST' });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     const comp = mockComponentes.find((c) => c.id === id);
     if (comp) comp.activo = !comp.activo;
     return comp ? { ...comp } : mockComponentes[0];
@@ -921,7 +955,8 @@ export async function adminReorderComponentes(
       method: 'POST',
       body: JSON.stringify({ ids }),
     });
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     // optimistic: return mock sorted by provided order
     return ids.map((id, i) => {
       const comp = mockComponentes.find((c) => c.id === id) ?? mockComponentes[0];
@@ -983,7 +1018,8 @@ export async function publicListActiveComponentes(): Promise<AdminComponente[]> 
     const res = await fetch(`${API_BASE_URL}/public/componentes`);
     if (!res.ok) throw new Error('Failed');
     return res.json() as Promise<AdminComponente[]>;
-  } catch {
+  } catch (err) {
+    if (!USE_MOCK_FALLBACK) throw err;
     return mockComponentes.filter((c) => c.activo);
   }
 }

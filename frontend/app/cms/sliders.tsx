@@ -47,9 +47,10 @@ function resolveImg(src: string) {
 function sanitize(s: AdminSlider): AdminSlider {
   return {
     ...s,
-    titulo:    s.titulo?.trim()    || 'Sin título',
-    subtitulo: s.subtitulo?.trim() || null,
-    imagen:    s.imagen?.trim()    || '',
+    titulo:      s.titulo?.trim()      || 'Sin título',
+    subtitulo:   s.subtitulo?.trim()   || null,
+    imagen:      s.imagen?.trim()      || '',
+    actionValue: s.actionValue?.trim() || null,
   };
 }
 
@@ -131,7 +132,10 @@ function ContextMenu({
       {/* Backdrop */}
       <TouchableOpacity
         onPress={onClose}
-        style={{ position: 'fixed' as any, inset: 0, zIndex: 998 }}
+        style={{
+          position: Platform.OS === 'web' ? 'fixed' as any : 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0, zIndex: 998,
+        }}
       />
       <View style={{
         position: 'absolute', right: 48, top: 0, zIndex: 999,
@@ -330,8 +334,10 @@ function BannerRow({
   return (
     <View
       {...(webDragProps as any)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); }}
+      {...(Platform.OS === 'web' ? {
+        onMouseEnter: () => setHovered(true),
+        onMouseLeave: () => setHovered(false),
+      } : {})}
       style={{
         flexDirection: 'row', alignItems: 'stretch',
         backgroundColor: rowBg,
@@ -426,7 +432,7 @@ function BannerRow({
         borderLeftWidth: 1, borderLeftColor: theme.border, minWidth: 72,
       }}>
         <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '600', textAlign: 'center' }}>
-          {relativeTime((slider as any).updatedAt)}
+          {relativeTime(slider.updatedAt)}
         </Text>
       </View>
 
@@ -512,6 +518,7 @@ export default function CmsSliders() {
   const [form, setForm]                   = useState<AdminSliderPayload>(emptyForm());
   const [formError, setFormError]         = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImageMobile, setUploadingImageMobile] = useState(false);
   const [draggingId, setDraggingId]       = useState<string | null>(null);
   const [hoveredDropId, setHoveredDropId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget]   = useState<AdminSlider | null>(null);
@@ -525,6 +532,7 @@ export default function CmsSliders() {
     if (!accessToken) return;
     adminListSliders(accessToken)
       .then((items) => setSliders(items.map(sanitize).sort((a, b) => a.orden - b.orden)))
+      .catch(() => setFeedback({ type: 'error', msg: 'No se pudieron cargar los banners.' }))
       .finally(() => setLoading(false));
   }, [accessToken]);
 
@@ -546,8 +554,12 @@ export default function CmsSliders() {
 
   async function refresh() {
     if (!accessToken) return;
-    const items = await adminListSliders(accessToken);
-    setSliders(items.map(sanitize).sort((a, b) => a.orden - b.orden));
+    try {
+      const items = await adminListSliders(accessToken);
+      setSliders(items.map(sanitize).sort((a, b) => a.orden - b.orden));
+    } catch {
+      setFeedback({ type: 'error', msg: 'No se pudo actualizar la lista de banners.' });
+    }
   }
 
   function updateField<K extends keyof AdminSliderPayload>(field: K, value: AdminSliderPayload[K]) {
@@ -578,7 +590,11 @@ export default function CmsSliders() {
   }
 
   async function handlePickImage() {
-    if (Platform.OS !== 'web' || !accessToken) return;
+    if (Platform.OS !== 'web') {
+      setFormError('La carga de archivos está disponible solo en la versión web. Pega una URL de imagen en el campo de texto.');
+      return;
+    }
+    if (!accessToken) return;
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
     input.onchange = async (e: Event) => {
@@ -603,11 +619,44 @@ export default function CmsSliders() {
     input.click();
   }
 
+  async function handlePickImageMobile() {
+    if (Platform.OS !== 'web') {
+      setFormError('La carga de archivos está disponible solo en la versión web. Pega una URL de imagen en el campo de texto.');
+      return;
+    }
+    if (!accessToken) return;
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setUploadingImageMobile(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch(`${API_BASE_URL}/admin/sliders/upload-imagen`, {
+          method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: fd,
+        });
+        if (res.ok) {
+          const { url } = (await res.json()) as { url: string };
+          updateField('imagenMobile', url);
+        } else {
+          setFormError('Error al subir la imagen móvil. Intenta de nuevo.');
+        }
+      } catch { setFormError('Error al subir la imagen móvil. Intenta de nuevo.'); }
+      finally { setUploadingImageMobile(false); }
+    };
+    input.click();
+  }
+
   async function handleSave() {
     if (!accessToken) return;
     if (!form.titulo.trim()) { setFormError('El título es requerido.'); return; }
     if (!form.imagen.trim() || !isValidImageSrc(form.imagen.trim())) {
       setFormError('Sube una imagen o pega una URL válida.'); return;
+    }
+    if (form.actionType !== 'NONE' && !form.actionValue?.trim()) {
+      setFormError('El ID o URL de destino es requerido para la acción seleccionada.'); return;
     }
     setBusy(true); setFormError('');
     try {
@@ -670,6 +719,7 @@ export default function CmsSliders() {
   }
 
   function reorderLocal(sourceId: string, targetId: string) {
+    if (!accessToken) return;
     if (sourceId === targetId) return;
     const si = sliders.findIndex((s) => s.id === sourceId);
     const ti = sliders.findIndex((s) => s.id === targetId);
@@ -935,6 +985,21 @@ export default function CmsSliders() {
                       onChange={(v) => updateField('imagen', v)}
                       loading={uploadingImage}
                       onPick={handlePickImage}
+                      theme={theme}
+                    />
+                  </View>
+
+                  {/* Imagen móvil */}
+                  <View style={{ gap: 7 }}>
+                    <Text style={{ color: theme.textSec, fontSize: 11, fontWeight: '800', letterSpacing: 0.7 }}>
+                      IMAGEN MÓVIL{' '}
+                      <Text style={{ color: theme.textMuted, fontWeight: '600', textTransform: 'none' }}>(opcional · recomendado 9:16)</Text>
+                    </Text>
+                    <ImageUploadZone
+                      value={form.imagenMobile ?? ''}
+                      onChange={(v) => updateField('imagenMobile', v || null)}
+                      loading={uploadingImageMobile}
+                      onPick={handlePickImageMobile}
                       theme={theme}
                     />
                   </View>
