@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   EmailService,
+  EmailHealthResult,
   RegistrationRequestData,
 } from '../../domain/interfaces/email.service';
 
@@ -71,6 +72,11 @@ export class MockEmailService implements EmailService {
     this.logger.log(
       `[MOCK EMAIL] Solicitante: ${data.nombres} ${data.apellidos} | Cédula: ${data.idNumber} | ID: ${data.requestId}`,
     );
+  }
+
+  async checkConnection(sendTestTo?: string): Promise<EmailHealthResult> {
+    this.logger.log(`[MOCK EMAIL] checkConnection called${sendTestTo ? ` (test to: ${sendTestTo})` : ''}`);
+    return { ok: true, detail: 'mock — no real SMTP connection', sentTo: sendTestTo, durationMs: 0 };
   }
 
   async sendSubscriptionReminder(

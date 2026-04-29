@@ -4,6 +4,7 @@ import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import {
   EmailService,
+  EmailHealthResult,
   RegistrationRequestData,
 } from '../../domain/interfaces/email.service';
 
@@ -356,6 +357,64 @@ export class NodemailerEmailService implements EmailService {
       'Tu cuenta ha sido suspendida — Luki Play',
       this.buildLukiEmail(displayName, content),
     );
+  }
+
+  async checkConnection(sendTestTo?: string): Promise<EmailHealthResult> {
+    const host = this.config.get<string>('SMTP_HOST', '');
+    const port = this.config.get<number>('SMTP_PORT', 0);
+    const t0 = Date.now();
+    try {
+      await this.transporter.verify();
+    } catch (error) {
+      return {
+        ok: false,
+        detail: `SMTP auth failed: ${(error as Error).message}`,
+        host,
+        port,
+        durationMs: Date.now() - t0,
+      };
+    }
+
+    if (!sendTestTo) {
+      return { ok: true, detail: 'SMTP connection verified', host, port, durationMs: Date.now() - t0 };
+    }
+
+    // Optional: send a real test email to validate full delivery path
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.from,
+        to: sendTestTo,
+        subject: '[TEST] Servidor SMTP operativo — Luki Play',
+        html: `
+          <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:10px;">
+            <h2 style="color:#240046;margin-top:0;">✅ Servidor de correo operativo</h2>
+            <p>Este correo confirma que el servidor SMTP de producción está funcionando correctamente.</p>
+            <table style="width:100%;font-size:13px;border-collapse:collapse;margin-top:12px;">
+              <tr><td style="padding:5px 8px;color:#888;">Host</td><td style="padding:5px 8px;font-weight:700;">${host}:${port}</td></tr>
+              <tr><td style="padding:5px 8px;color:#888;">Fecha</td><td style="padding:5px 8px;font-weight:700;">${new Date().toLocaleString('es-EC')}</td></tr>
+            </table>
+            <p style="font-size:11px;color:#aaa;margin-top:16px;">Diagnóstico automático — no responder.</p>
+          </div>`,
+      });
+      return {
+        ok: true,
+        detail: 'Test email sent successfully',
+        host,
+        port,
+        sentTo: sendTestTo,
+        messageId: info.messageId,
+        durationMs: Date.now() - t0,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        detail: `SMTP verified but send failed: ${(error as Error).message}`,
+        host,
+        port,
+        sentTo: sendTestTo,
+        durationMs: Date.now() - t0,
+      };
+    }
   }
 
   private async send(to: string, subject: string, html: string): Promise<void> {

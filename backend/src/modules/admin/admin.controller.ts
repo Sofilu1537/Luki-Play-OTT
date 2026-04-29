@@ -55,6 +55,15 @@ export class AdminController {
     private readonly subscriptionService: SubscriptionService,
   ) {}
 
+  // ---- Email health check --------------------------------------------------
+
+  @ApiOperation({ summary: 'Verify SMTP connectivity and optionally send a test email' })
+  @Permissions('cms:*')
+  @Get('health/email')
+  async emailHealthCheck(@Query('to') to?: string) {
+    return this.adminService.emailHealthCheck(to);
+  }
+
   // ---- Users ---------------------------------------------------------------
 
   @ApiOperation({ summary: 'List all users (admin)' })

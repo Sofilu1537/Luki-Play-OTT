@@ -1989,4 +1989,10 @@ export class AdminService {
     this.logger.log(`Registration request ${id} rejected by ${actorId}`);
     return { message: 'Solicitud rechazada correctamente' };
   }
+
+  // ---- Email health check --------------------------------------------------
+
+  async emailHealthCheck(sendTestTo?: string) {
+    return this.emailService.checkConnection(sendTestTo);
+  }
 }
