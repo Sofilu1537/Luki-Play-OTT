@@ -172,49 +172,85 @@ function LiveProgressBar({ channel, opacity }: { channel: Channel; opacity: Anim
 
 function ChannelListOverlay({
   channels, activeId, onSelect, onClose,
-}: { channels: Channel[]; activeId: string; onSelect: (ch: Channel) => void; onClose: () => void }) {
+  onFullscreen, isFullscreen, onVolumeChange, volume = 1,
+}: {
+  channels: Channel[]; activeId: string; onSelect: (ch: Channel) => void; onClose: () => void;
+  onFullscreen?: () => void; isFullscreen?: boolean;
+  onVolumeChange?: (v: number) => void; volume?: number;
+}) {
   const [hoveredId, setHoveredId] = useState(activeId);
   const hovered = channels.find(c => c.id === hoveredId) ?? channels[0]!;
   const hoveredProgram = getCurrentProgram(hovered);
+  const [pct, setPct] = useState(getProgressPercent(hoveredProgram));
+
+  useEffect(() => {
+    setPct(getProgressPercent(getCurrentProgram(hovered)));
+    const t = setInterval(() => setPct(getProgressPercent(getCurrentProgram(hovered))), 30000);
+    return () => clearInterval(t);
+  }, [hovered.id]);
+
   return (
     <View style={styles.overlayContainer}>
-      <TouchableOpacity style={styles.overlayBackdrop} onPress={onClose} />
+      {/* Improvement 1: unified full scrim */}
+      <View style={styles.overlayScrim} />
+      <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} />
+
+      {/* Improvement 2: unified left rail — horizontal rows */}
       <View style={styles.channelRail}>
         <TouchableOpacity style={styles.railClose} onPress={onClose}>
-          <Icon name="close" size={18} />
+          <Icon name="close" size={16} />
         </TouchableOpacity>
         <FlatList
           data={channels}
           keyExtractor={c => c.id}
-          style={{ flex: 1, marginTop: 12 }}
+          style={{ flex: 1, marginTop: 44 }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => { setHoveredId(item.id); onSelect(item); }}
-              style={[styles.railItem, item.id === hoveredId && styles.railItemActive]}
-            >
-              <ChannelLogo logo={item.logo} size={40} />
-              <Text style={styles.railNameSmall} numberOfLines={1}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            const prog = getCurrentProgram(item);
+            return (
+              <TouchableOpacity
+                onPress={() => { setHoveredId(item.id); onSelect(item); }}
+                style={[styles.railItem, item.id === hoveredId && styles.railItemActive]}
+              >
+                <ChannelLogo logo={item.logo} size={28} />
+                <View style={styles.railItemText}>
+                  <Text style={styles.railName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.railProg} numberOfLines={1}>{prog.title}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
       </View>
-      <View style={styles.programCard}>
-        <View style={styles.programThumb}>
-          <ChannelLogo logo={hovered.logo} size={48} />
-          <View style={styles.thumbPlayBtn}><Icon name="play" size={24} /></View>
-          <View style={styles.nowBadge}><Text style={styles.nowBadgeText}>AHORA</Text></View>
+
+      {/* Improvement 3: unified EPG bottom bar */}
+      <View style={styles.epgBar}>
+        <ChannelLogo logo={hovered.logo} size={44} />
+        <View style={styles.epgInfo}>
+          <View style={styles.epgHeaderRow}>
+            <Text style={styles.epgLabel}>Estás viendo</Text>
+            <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>EN VIVO</Text></View>
+          </View>
+          <Text style={styles.epgChannelName} numberOfLines={1}>{hovered.name}</Text>
+          <Text style={styles.epgTitle} numberOfLines={1}>{hoveredProgram.title}</Text>
+          <Text style={styles.epgTime}>{hoveredProgram.startTime} – {hoveredProgram.endTime}</Text>
+          <View style={styles.epgProgress}>
+            <View style={[styles.epgProgressFill, { width: `${pct}%` as any }]} />
+          </View>
         </View>
-        <View style={[styles.programThumb, { marginTop: 8, opacity: 0.6 }]}>
-          <ChannelLogo logo={hovered.logo} size={32} />
+        {/* Improvement 6: controls integrated into EPG bar */}
+        <View style={styles.epgControls}>
+          {onVolumeChange && (
+            <TouchableOpacity onPress={() => onVolumeChange(volume < 0.05 ? 1 : 0)} style={styles.iconBtn}>
+              <Icon name={volume < 0.05 ? 'mute' : 'volume'} size={22} />
+            </TouchableOpacity>
+          )}
+          {onFullscreen && (
+            <TouchableOpacity onPress={onFullscreen} style={styles.iconBtn}>
+              <Icon name={isFullscreen ? 'close' : 'fullscreen'} size={22} />
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
-      <View style={styles.programInfo}>
-        <Text style={styles.programInfoTitle} numberOfLines={2}>{hoveredProgram.title}</Text>
-        <Text style={styles.programInfoTime}>{hoveredProgram.startTime} – {hoveredProgram.endTime}</Text>
-        {hoveredProgram.description && (
-          <Text style={styles.programInfoDesc} numberOfLines={3}>{hoveredProgram.description}</Text>
-        )}
       </View>
     </View>
   );
@@ -246,11 +282,12 @@ function NowPlayingPanel({ channel, visible }: { channel: Channel; visible: bool
   if (!visible) return null;
   return (
     <View style={styles.nowPlayingPanel}>
-      <Text style={styles.nowPlayingLabel}>ESTÁS VIENDO</Text>
-      <Text style={styles.nowPlayingTitle}>{program.title}</Text>
-      <Text style={styles.nowPlayingTime}>{program.startTime} a {program.endTime} hrs.</Text>
-      <View style={styles.nowPlayingThumb}>
-        <ChannelLogo logo={channel.logo} size={48} />
+      <ChannelLogo logo={channel.logo} size={44} />
+      <View style={styles.nowPlayingText}>
+        <Text style={styles.nowPlayingLabel}>Estás viendo</Text>
+        <Text style={styles.nowPlayingTitle} numberOfLines={1}>
+          {channel.name}  {program.startTime} – {program.endTime}
+        </Text>
       </View>
     </View>
   );
@@ -475,19 +512,21 @@ export default function LivePlayer() {
         </View>
       )}
 
-      <NowPlayingPanel channel={activeChannel} visible={showNowPlaying} />
+      {/* Improvement 5: NowPlayingPanel hidden when EPG bar is visible in overlay */}
+      <NowPlayingPanel channel={activeChannel} visible={showNowPlaying && !showChannelList} />
 
       {/* TopBar always rendered when locked so the user can unlock */}
       {(showControls || isLocked) && (
         <TopBar isLocked={isLocked} onLock={() => setIsLocked(l => !l)} opacity={controlsOpacity} onBack={() => router.canGoBack() ? router.back() : router.replace('/home')} />
       )}
 
-      {showControls && !isLocked && (
+      {/* Improvements 4 & 6: hide fragmented bottom panels when channel list overlay is open */}
+      {showControls && !isLocked && !showChannelList && (
         <>
-          <BottomInfoBar 
-            channel={activeChannel} 
-            isFavorite={activeChannel.isFavorite} 
-            opacity={controlsOpacity} 
+          <BottomInfoBar
+            channel={activeChannel}
+            isFavorite={activeChannel.isFavorite}
+            opacity={controlsOpacity}
             onFavorite={() => {
               if (accessToken) {
                 toggleFavorite(activeChannel.id, !activeChannel.isFavorite, accessToken, DEV_DEVICE_ID);
@@ -510,6 +549,10 @@ export default function LivePlayer() {
           activeId={activeChannel.id}
           onSelect={switchChannel}
           onClose={() => setShowChannelList(false)}
+          onFullscreen={toggleFullscreen}
+          isFullscreen={isFullscreen}
+          onVolumeChange={handleVolumeChange}
+          volume={volume}
         />
       )}
 
@@ -592,46 +635,44 @@ const styles = StyleSheet.create({
     borderRadius: 7, backgroundColor: S.accent,
     marginLeft: -7, shadowColor: S.accent, shadowRadius: 4, shadowOpacity: 0.8, elevation: 4,
   } as never,
-  overlayContainer: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', zIndex: 50 },
+  overlayContainer: { ...StyleSheet.absoluteFillObject, zIndex: 50 },
+  overlayScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(5,3,18,0.72)' },
   overlayBackdrop: { flex: 1 },
   channelRail: {
-    width: 120, backgroundColor: 'rgba(36,0,70,0.97)',
-    paddingTop: 44, paddingHorizontal: 6, paddingBottom: 16,
-    alignItems: 'center', gap: 4,
+    position: 'absolute', left: 0, top: 0, bottom: 0,
+    width: 260, backgroundColor: 'rgba(20,6,46,0.98)',
+    paddingBottom: 80,
   },
-  railClose: { position: 'absolute', top: 12, right: 10 },
+  railClose: { position: 'absolute', top: 12, right: 10, zIndex: 2, padding: 8 },
   railItem: {
-    alignItems: 'center', gap: 4,
-    paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, width: '100%',
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, marginHorizontal: 6,
   },
   railItemActive: { backgroundColor: 'rgba(255,184,0,0.15)', borderWidth: 1, borderColor: S.gold },
+  railItemText: { flex: 1 },
+  railName: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  railProg: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
   railNumber: { color: S.muted, fontSize: 11, width: 16 },
-  railLogo: { fontSize: 16 },
-  railNameSmall: { color: 'rgba(255,255,255,0.85)', fontSize: 10, textAlign: 'center', width: '100%' },
-  programCard: {
-    width: 190, backgroundColor: 'rgba(36,0,70,0.85)',
-    padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8,
+  epgBar: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    paddingHorizontal: 20, paddingVertical: 14,
+    backgroundColor: 'rgba(10,4,24,0.97)',
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)',
   },
-  programThumb: {
-    width: 160, height: 90, borderRadius: 14,
-    backgroundColor: '#fff',
-    alignItems: 'center', justifyContent: 'center',
-    overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+  epgInfo: { flex: 1, gap: 3 },
+  epgHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  epgLabel: { color: S.muted, fontSize: 10, fontWeight: '600' },
+  liveBadge: { backgroundColor: '#E53935', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  liveBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  epgChannelName: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  epgTitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
+  epgTime: { color: S.muted, fontSize: 11 },
+  epgProgress: {
+    height: 3, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, overflow: 'hidden', marginTop: 4,
   },
-  thumbPlayBtn: {
-    position: 'absolute', width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  nowBadge: {
-    position: 'absolute', bottom: 6, left: 6,
-    backgroundColor: S.gold, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2,
-  },
-  nowBadgeText: { color: '#000', fontSize: 9, fontWeight: '800' },
-  programInfo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', padding: 20, justifyContent: 'center' },
-  programInfoTitle: { color: '#fff', fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  programInfoTime: { color: S.muted, fontSize: 14, marginBottom: 10 },
-  programInfoDesc: { color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 20 },
+  epgProgressFill: { height: '100%' as any, backgroundColor: S.accent, borderRadius: 2 },
+  epgControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dialOverlay: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', zIndex: 50 },
   dialGrid: {
     position: 'absolute', right: 0, top: 0, bottom: 0,
@@ -646,13 +687,16 @@ const styles = StyleSheet.create({
   },
   dialKeyText: { color: '#fff', fontSize: 28, fontWeight: '700' },
   nowPlayingPanel: {
-    position: 'absolute', right: 16, top: 80,
-    width: 220, backgroundColor: S.card,
-    borderRadius: 16, padding: 18,
-    borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)', zIndex: 40,
+    position: 'absolute', left: 20, bottom: 80,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(10,4,24,0.82)',
+    borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', zIndex: 40,
+    maxWidth: 300,
   },
-  nowPlayingLabel: { color: S.gold, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 6 },
-  nowPlayingTitle: { color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 4 },
+  nowPlayingText: { flex: 1 },
+  nowPlayingLabel: { color: S.muted, fontSize: 10, fontWeight: '600', marginBottom: 3 },
+  nowPlayingTitle: { color: '#fff', fontSize: 14, fontWeight: '800' },
   nowPlayingTime: { color: S.muted, fontSize: 13, marginBottom: 14 },
   nowPlayingThumb: {
     width: '100%', height: 90, borderRadius: 12,
