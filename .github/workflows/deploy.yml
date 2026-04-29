@@ -97,5 +97,13 @@ jobs:
             sudo tar xzf /tmp/luki-frontend.tar.gz -C /var/www/luki-play-ott/
             rm /tmp/luki-frontend.tar.gz
 
+            # Nginx: aumentar límite de upload a 20MB
+            if ! grep -q "client_max_body_size" /etc/nginx/nginx.conf; then
+              sudo sed -i 's/http {/http {\n    client_max_body_size 20M;/' /etc/nginx/nginx.conf
+            else
+              sudo sed -i 's/client_max_body_size.*/client_max_body_size 20M;/' /etc/nginx/nginx.conf
+            fi
+            sudo nginx -t && sudo systemctl reload nginx
+
             echo "Deploy completed successfully"
           ENDSSH
