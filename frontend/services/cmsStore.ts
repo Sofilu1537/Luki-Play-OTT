@@ -34,7 +34,7 @@ interface CmsState {
   isLoading: boolean;
   isRestoring: boolean;
   hasRestored: boolean;
-  login: (payload: CmsLoginPayload) => Promise<void>;
+  login: (payload: CmsLoginPayload) => Promise<{ mustChangePassword: boolean }>;
   logout: () => void;
   bootstrapSession: () => Promise<void>;
   restoreSession: (token: string) => Promise<void>;
@@ -83,6 +83,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
         isLoading: false,
         hasRestored: true,
       });
+      return { mustChangePassword: profile.mustChangePassword ?? false };
     } catch (e) {
       set({ isLoading: false });
       throw e;

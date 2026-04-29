@@ -69,6 +69,9 @@ function CmsInput({
   keyboardType,
   autoCapitalize,
   errorHighlight,
+  maxLength,
+  returnKeyType,
+  onSubmitEditing,
 }: {
   label: string;
   placeholder: string;
@@ -78,6 +81,9 @@ function CmsInput({
   keyboardType?: 'email-address' | 'default';
   autoCapitalize?: 'none' | 'characters';
   errorHighlight?: boolean;
+  maxLength?: number;
+  returnKeyType?: 'go' | 'next' | 'done' | 'send';
+  onSubmitEditing?: () => void;
 }) {
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -122,6 +128,9 @@ function CmsInput({
           keyboardType={keyboardType ?? 'default'}
           autoCapitalize={autoCapitalize ?? 'none'}
           autoCorrect={false}
+          maxLength={maxLength}
+          returnKeyType={returnKeyType ?? 'default'}
+          onSubmitEditing={onSubmitEditing}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
         />
@@ -258,18 +267,25 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
       setError('El correo electrónico es requerido');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase())) {
+      setError('Ingresa un correo electrónico válido');
+      return;
+    }
     if (!password) {
       setError('La contraseña es requerida');
       return;
     }
     try {
-      await login({ email: email.trim().toLowerCase(), password });
-      // Check if user must change password on first login
-      if (useCmsStore.getState().profile?.mustChangePassword) {
+      const { mustChangePassword } = await login({ email: email.trim().toLowerCase(), password });
+      if (mustChangePassword) {
         onSwitch('change-password');
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Credenciales inválidas');
+      if (e instanceof TypeError) {
+        setError('Sin conexión. Verifica tu internet e intenta de nuevo.');
+      } else {
+        setError(e instanceof Error ? e.message : 'Credenciales inválidas');
+      }
     }
   };
 
@@ -285,24 +301,21 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         label="EMAIL"
         placeholder="admin@lukiplay.com"
         value={email}
-        onChangeText={(t) => {
-          setEmail(t);
-          setError('');
-        }}
+        onChangeText={(t) => { setEmail(t); setError(''); }}
         keyboardType="email-address"
         errorHighlight={!!error && !email.trim()}
+        returnKeyType="next"
       />
 
       <CmsInput
         label="CONTRASEÑA"
         placeholder="••••••••"
         value={password}
-        onChangeText={(t) => {
-          setPassword(t);
-          setError('');
-        }}
+        onChangeText={(t) => { setPassword(t); setError(''); }}
         secure
         errorHighlight={!!error && !password}
+        returnKeyType="go"
+        onSubmitEditing={handleLogin}
       />
 
       <CmsPrimaryButton title="Ingresar al CMS" onPress={handleLogin} isLoading={isLoading} />
@@ -350,7 +363,7 @@ function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }
 
   const handleSubmit = async () => {
     setError('');
-    if (!currentPassword) { setError('Ingresa tu contraseña actual (password123)'); return; }
+    if (!currentPassword) { setError('Ingresa tu contraseña actual'); return; }
     if (!newPassword) { setError('Ingresa tu nueva contraseña'); return; }
     if (newPassword.length < 8) { setError('La nueva contraseña debe tener al menos 8 caracteres'); return; }
     if (newPassword === currentPassword) { setError('La nueva contraseña debe ser diferente a la actual'); return; }
@@ -361,7 +374,11 @@ function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }
       await cmsChangePassword(accessToken!, currentPassword, newPassword);
       setDone(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo cambiar la contraseña');
+      if (e instanceof TypeError) {
+        setError('Sin conexión. Verifica tu internet e intenta de nuevo.');
+      } else {
+        setError(e instanceof Error ? e.message : 'No se pudo cambiar la contraseña');
+      }
     } finally {
       setLoading(false);
     }
@@ -407,11 +424,12 @@ function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }
 
       <CmsInput
         label="CONTRASEÑA ACTUAL"
-        placeholder="password123"
+        placeholder="Tu contraseña actual"
         value={currentPassword}
         onChangeText={(t) => { setCurrentPassword(t); setError(''); }}
         secure
         errorHighlight={!!error && !currentPassword}
+        returnKeyType="next"
       />
       <CmsInput
         label="NUEVA CONTRASEÑA"
@@ -420,6 +438,7 @@ function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }
         onChangeText={(t) => { setNewPassword(t); setError(''); }}
         secure
         errorHighlight={!!error && !newPassword}
+        returnKeyType="next"
       />
       <PasswordStrength password={newPassword} />
       <CmsInput
@@ -429,6 +448,8 @@ function ForceChangePasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }
         onChangeText={(t) => { setConfirmPassword(t); setError(''); }}
         secure
         errorHighlight={!!error && newPassword !== confirmPassword}
+        returnKeyType="go"
+        onSubmitEditing={handleSubmit}
       />
 
       <CmsPrimaryButton title="Cambiar contraseña" onPress={handleSubmit} isLoading={loading} />
@@ -476,8 +497,11 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         setInfoMessage('Código generado. Cópialo de la pantalla.');
       }
     } catch (e: unknown) {
-      // CMS endpoint rejects non-internal users — show the error, do NOT advance
-      setError(e instanceof Error ? e.message : 'No se pudo enviar el código');
+      if (e instanceof TypeError) {
+        setError('Sin conexión. Verifica tu internet e intenta de nuevo.');
+      } else {
+        setError(e instanceof Error ? e.message : 'No se pudo enviar el código');
+      }
     } finally {
       setLoading(false);
     }
@@ -492,8 +516,8 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
       setError('Ingresa el código que recibiste por correo');
       return;
     }
-    if (trimmedCode.length < 6) {
-      setError('El código debe tener al menos 6 caracteres');
+    if (trimmedCode.length !== 6) {
+      setError('El código debe tener exactamente 6 caracteres');
       return;
     }
     if (!newPassword) {
@@ -522,7 +546,11 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
       await cmsResetWithCode(email.trim().toLowerCase(), trimmedCode, newPassword, confirmPassword);
       setStep('done');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
+      if (e instanceof TypeError) {
+        setError('Sin conexión. Verifica tu internet e intenta de nuevo.');
+      } else {
+        setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
+      }
     } finally {
       setLoading(false);
     }
@@ -534,7 +562,19 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     <>
       {/* Back link */}
       <TouchableOpacity
-        onPress={() => (step === 'email' ? onSwitch('login') : setStep('email'))}
+        onPress={() => {
+        if (step === 'email') {
+          onSwitch('login');
+        } else {
+          setStep('email');
+          setCode('');
+          setNewPassword('');
+          setConfirmPassword('');
+          setError('');
+          setInfoMessage('');
+          setDirectCode(null);
+        }
+      }}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}
       >
         <FontAwesome name="arrow-left" size={13} color={T.accent} />
@@ -650,11 +690,10 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             label="CORREO ELECTRÓNICO"
             placeholder="tu@lukiplay.com"
             value={email}
-            onChangeText={(t) => {
-              setEmail(t);
-              setError('');
-            }}
+            onChangeText={(t) => { setEmail(t); setError(''); }}
             keyboardType="email-address"
+            returnKeyType="go"
+            onSubmitEditing={handleSendCode}
           />
 
           <CmsPrimaryButton
@@ -738,25 +777,22 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
           )}
 
           <CmsInput
-            label="CÓDIGO DE VERIFICACIÓN"
-            placeholder="Ej: A1B2C3D4"
+            label="CÓDIGO DE VERIFICACIÓN (6 caracteres)"
+            placeholder="Ej: A1B2C3"
             value={code}
-            onChangeText={(t) => {
-              setCode(t.toUpperCase());
-              setError('');
-            }}
+            onChangeText={(t) => { setCode(t.toUpperCase()); setError(''); }}
             autoCapitalize="characters"
+            maxLength={6}
+            returnKeyType="next"
           />
 
           <CmsInput
             label="NUEVA CONTRASEÑA"
             placeholder="Mínimo 8 caracteres"
             value={newPassword}
-            onChangeText={(t) => {
-              setNewPassword(t);
-              setError('');
-            }}
+            onChangeText={(t) => { setNewPassword(t); setError(''); }}
             secure
+            returnKeyType="next"
           />
           <PasswordStrength password={newPassword} />
 
@@ -764,11 +800,10 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             label="CONFIRMAR CONTRASEÑA"
             placeholder="Repite tu nueva contraseña"
             value={confirmPassword}
-            onChangeText={(t) => {
-              setConfirmPassword(t);
-              setError('');
-            }}
+            onChangeText={(t) => { setConfirmPassword(t); setError(''); }}
             secure
+            returnKeyType="go"
+            onSubmitEditing={handleResetPassword}
           />
 
           <CmsPrimaryButton
