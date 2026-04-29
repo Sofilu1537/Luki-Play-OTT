@@ -1,5 +1,5 @@
 import {
-    View, ScrollView, RefreshControl, StatusBar, Text,
+    View, ScrollView, RefreshControl, StatusBar, Text, Modal,
     TouchableOpacity, FlatList, Image, Linking, Animated,
     useWindowDimensions, Platform, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
@@ -45,10 +45,223 @@ function resolveLogoUri(logo: string): string | null {
     return null;
 }
 
+// ─── Avatar / Profile menu ────────────────────────────────────────────────────
+
+const PLAN_COLORS: Record<string, string> = {
+    lukiplay:  '#FFC107',
+    basic:     '#60A5FA',
+    premium:   '#A78BFA',
+    pro:       '#34D399',
+    familiar:  '#F472B6',
+    empresarial: '#FB923C',
+};
+
+function getInitial(name: string) { return (name || 'U').charAt(0).toUpperCase(); }
+
+function getPlanColor(plan: string) {
+    return PLAN_COLORS[plan?.toLowerCase()] ?? '#FFC107';
+}
+
+function PlanBadge({ plan }: { plan: string }) {
+    const color = getPlanColor(plan);
+    return (
+        <View style={{
+            backgroundColor: `${color}22`,
+            borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2,
+            borderWidth: 1, borderColor: `${color}55`,
+            alignSelf: 'flex-start', marginTop: 3,
+        }}>
+            <Text style={{ color, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 }}>
+                {plan?.toUpperCase() || 'LUKI PLAY'}
+            </Text>
+        </View>
+    );
+}
+
+function LogoutConfirmModal({
+    visible, onConfirm, onCancel,
+}: { visible: boolean; onConfirm: () => void; onCancel: () => void }) {
+    if (!visible) return null;
+    return (
+        <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel}>
+            <View style={{
+                flex: 1, backgroundColor: 'rgba(0,0,0,0.75)',
+                justifyContent: 'center', alignItems: 'center', padding: 24,
+            }}>
+                <View style={{
+                    width: '100%', maxWidth: 360,
+                    backgroundColor: '#12082A',
+                    borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                    padding: 28, gap: 16, alignItems: 'center',
+                }}>
+                    <View style={{
+                        width: 52, height: 52, borderRadius: 16,
+                        backgroundColor: 'rgba(248,113,113,0.15)',
+                        alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <Ionicons name="log-out-outline" size={26} color="#F87171" />
+                    </View>
+                    <View style={{ alignItems: 'center', gap: 6 }}>
+                        <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>
+                            ¿Cerrar sesión?
+                        </Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                            Tendrás que volver a ingresar con tus credenciales para acceder al contenido.
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10, width: '100%', marginTop: 4 }}>
+                        <TouchableOpacity
+                            onPress={onCancel}
+                            style={{
+                                flex: 1, paddingVertical: 12, borderRadius: 10,
+                                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '700', fontSize: 14 }}>
+                                Cancelar
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={onConfirm}
+                            style={{
+                                flex: 1, paddingVertical: 12, borderRadius: 10,
+                                backgroundColor: '#F87171', alignItems: 'center',
+                            }}
+                        >
+                            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>
+                                Cerrar sesión
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
+const MENU_ITEMS: { icon: string; label: string; soon?: boolean }[] = [
+    { icon: 'person-circle-outline',   label: 'Mi Perfil' },
+    { icon: 'card-outline',            label: 'Mi Suscripción' },
+    { icon: 'phone-portrait-outline',  label: 'Mis Dispositivos' },
+    { icon: 'settings-outline',        label: 'Configuración' },
+    { icon: 'help-circle-outline',     label: 'Ayuda y soporte' },
+];
+
+function ProfileDropdown({
+    user, onClose, onLogout,
+}: {
+    user: { name: string; email: string; plan: string };
+    onClose: () => void;
+    onLogout: () => void;
+}) {
+    const planColor = getPlanColor(user.plan);
+    return (
+        <>
+            {/* Backdrop */}
+            <TouchableOpacity
+                onPress={onClose}
+                style={{
+                    position: Platform.OS === 'web' ? 'fixed' as any : 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0, zIndex: 998,
+                }}
+            />
+            {/* Panel */}
+            <View style={{
+                position: 'absolute', top: HEADER_H + 4, right: 0, zIndex: 999,
+                width: 264,
+                backgroundColor: '#12082A',
+                borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+                shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+            }}>
+                {/* User card */}
+                <View style={{
+                    padding: 16,
+                    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                    backgroundColor: `${planColor}0D`,
+                }}>
+                    <View style={{
+                        width: 46, height: 46, borderRadius: 23,
+                        backgroundColor: planColor,
+                        alignItems: 'center', justifyContent: 'center',
+                        borderWidth: 2, borderColor: `${planColor}80`,
+                    }}>
+                        <Text style={{ color: '#140026', fontSize: 19, fontWeight: '900' }}>
+                            {getInitial(user.name)}
+                        </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }} numberOfLines={1}>
+                            {user.name}
+                        </Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 1 }} numberOfLines={1}>
+                            {user.email}
+                        </Text>
+                        <PlanBadge plan={user.plan} />
+                    </View>
+                </View>
+
+                {/* Menu items */}
+                <View style={{ paddingVertical: 6 }}>
+                    {MENU_ITEMS.map((item) => (
+                        <TouchableOpacity
+                            key={item.label}
+                            onPress={onClose}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center', gap: 12,
+                                paddingHorizontal: 16, paddingVertical: 11,
+                            }}
+                        >
+                            <Ionicons name={item.icon as any} size={17} color="rgba(255,255,255,0.55)" />
+                            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600', flex: 1 }}>
+                                {item.label}
+                            </Text>
+                            {item.soon && (
+                                <View style={{
+                                    backgroundColor: 'rgba(255,193,7,0.15)', borderRadius: 8,
+                                    paddingHorizontal: 6, paddingVertical: 2,
+                                }}>
+                                    <Text style={{ color: ACCENT, fontSize: 9, fontWeight: '800' }}>PRONTO</Text>
+                                </View>
+                            )}
+                            <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.2)" />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Logout */}
+                <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', paddingVertical: 6 }}>
+                    <TouchableOpacity
+                        onPress={() => { onClose(); onLogout(); }}
+                        style={{
+                            flexDirection: 'row', alignItems: 'center', gap: 12,
+                            paddingHorizontal: 16, paddingVertical: 11,
+                        }}
+                    >
+                        <Ionicons name="log-out-outline" size={17} color="#F87171" />
+                        <Text style={{ color: '#F87171', fontSize: 13, fontWeight: '700' }}>
+                            Cerrar sesión
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </>
+    );
+}
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
-function Navbar({ onLogout }: { onLogout: () => void }) {
+function Navbar({
+    user, onLogoutRequest,
+}: {
+    user: { name: string; email: string; plan: string } | null;
+    onLogoutRequest: () => void;
+}) {
     const [active, setActive] = useState('Inicio');
+    const [menuOpen, setMenuOpen] = useState(false);
+    const planColor = getPlanColor(user?.plan ?? '');
 
     return (
         <View style={{
@@ -60,6 +273,7 @@ function Navbar({ onLogout }: { onLogout: () => void }) {
             borderBottomWidth: 1,
             borderBottomColor: 'rgba(255,255,255,0.06)',
             zIndex: 100,
+            position: 'relative',
             ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0 } : {}),
         }}>
             {/* Logo */}
@@ -94,15 +308,41 @@ function Navbar({ onLogout }: { onLogout: () => void }) {
                 <TouchableOpacity>
                     <Ionicons name="search-outline" size={22} color="rgba(255,255,255,0.75)" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={onLogout}>
-                    <View style={{
-                        width: 34, height: 34, borderRadius: 17,
-                        backgroundColor: ACCENT,
-                        alignItems: 'center', justifyContent: 'center',
-                    }}>
-                        <Ionicons name="person" size={17} color="#140026" />
-                    </View>
-                </TouchableOpacity>
+
+                {/* Avatar button */}
+                <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                        onPress={() => setMenuOpen((v) => !v)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                        accessibilityLabel="Menú de usuario"
+                    >
+                        <View style={{
+                            width: 34, height: 34, borderRadius: 17,
+                            backgroundColor: planColor,
+                            alignItems: 'center', justifyContent: 'center',
+                            borderWidth: menuOpen ? 2 : 0,
+                            borderColor: '#fff',
+                        }}>
+                            <Text style={{ color: '#140026', fontSize: 15, fontWeight: '900' }}>
+                                {getInitial(user?.name ?? 'U')}
+                            </Text>
+                        </View>
+                        <Ionicons
+                            name={menuOpen ? 'chevron-up' : 'chevron-down'}
+                            size={12}
+                            color="rgba(255,255,255,0.5)"
+                        />
+                    </TouchableOpacity>
+
+                    {/* Dropdown */}
+                    {menuOpen && user && (
+                        <ProfileDropdown
+                            user={user}
+                            onClose={() => setMenuOpen(false)}
+                            onLogout={() => { setMenuOpen(false); onLogoutRequest(); }}
+                        />
+                    )}
+                </View>
             </View>
         </View>
     );
@@ -393,10 +633,12 @@ export default function Home() {
         canAccessOtt?: boolean;
         restrictionMessage?: string;
     });
+    const user = useAuthStore((s) => s.user);
     const { channels: liveChannels } = useChannels();
     const accessToken = useAuthStore((s) => s.accessToken);
     const { sliders, fetchSliders } = useSliderStore();
     const router = useRouter();
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const handleToggleFavorite = useCallback((ch: Channel) => {
         if (accessToken) toggleFavorite(ch.id, !ch.isFavorite, accessToken, DEV_DEVICE_ID);
@@ -432,7 +674,6 @@ export default function Home() {
         await authState.logout();
         router.replace('/(auth)/login');
     };
-
     const canAccessOtt = authState.canAccessOtt ?? true;
     const restrictionMessage = authState.restrictionMessage ?? null;
     const favorites = liveChannels.filter((c) => c.isFavorite);
@@ -442,7 +683,17 @@ export default function Home() {
             <StatusBar barStyle="light-content" />
 
             {/* Sticky Navbar */}
-            <Navbar onLogout={handleLogout} />
+            <Navbar
+                user={user}
+                onLogoutRequest={() => setShowLogoutConfirm(true)}
+            />
+
+            {/* Logout confirmation */}
+            <LogoutConfirmModal
+                visible={showLogoutConfirm}
+                onConfirm={() => { setShowLogoutConfirm(false); handleLogout(); }}
+                onCancel={() => setShowLogoutConfirm(false)}
+            />
 
             {/* Restriction notice */}
             {!canAccessOtt && restrictionMessage && (
