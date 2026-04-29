@@ -219,9 +219,13 @@ function ConfirmDialog({
 // Image upload zone
 function ImageUploadZone({
   value, onChange, loading, onPick, theme,
+  hint = 'PNG, JPG, WEBP · Recomendado 1200×628px',
+  aspectRatio = 16 / 7,
 }: {
   value: string; onChange: (v: string) => void;
   loading: boolean; onPick: () => void; theme: any;
+  hint?: string;
+  aspectRatio?: number;
 }) {
   const hasImage = value.trim() && isValidImageSrc(value.trim());
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
@@ -238,7 +242,7 @@ function ImageUploadZone({
           borderColor: theme.border,
           borderStyle: 'dashed' as any,
           backgroundColor: hasImage ? 'transparent' : theme.liftBg,
-          aspectRatio: 16 / 7,
+          aspectRatio,
           alignItems: 'center', justifyContent: 'center',
         }}
       >
@@ -269,7 +273,7 @@ function ImageUploadZone({
                     {Platform.OS === 'web' ? 'Haz clic para subir' : 'Seleccionar imagen'}
                   </Text>
                   <Text style={{ color: theme.textMuted, fontSize: 11, textAlign: 'center' }}>
-                    PNG, JPG, WEBP · Recomendado 1200×628px
+                    {hint}
                   </Text>
                 </>
             }
@@ -1032,6 +1036,8 @@ export default function CmsSliders() {
                       loading={uploadingImageMobile}
                       onPick={handlePickImageMobile}
                       theme={theme}
+                      hint="PNG, JPG, WEBP · Recomendado 720×1280px"
+                      aspectRatio={9 / 16}
                     />
                   </View>
 
