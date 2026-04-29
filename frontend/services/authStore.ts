@@ -8,6 +8,13 @@ const API_BASE_URL =
 
 export const DEV_DEVICE_ID = 'luki-web-dev-device-001';
 
+function handleFetchError(e: unknown): never {
+  if (e instanceof TypeError) {
+    throw new Error('Sin conexión. Verifica tu internet e intenta de nuevo.');
+  }
+  throw e as Error;
+}
+
 export interface User {
     id: string;
     name: string;
@@ -127,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
             });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -156,7 +163,7 @@ export const useAuthStore = create<AuthState>()(
             });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -180,7 +187,7 @@ export const useAuthStore = create<AuthState>()(
             });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -198,7 +205,7 @@ export const useAuthStore = create<AuthState>()(
             return { sent: data.sent ?? false, needsSupportCode: data.needsSupportCode };
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -215,7 +222,7 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false, codeVerified: true });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -249,7 +256,7 @@ export const useAuthStore = create<AuthState>()(
             });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -266,7 +273,7 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -283,7 +290,7 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -300,7 +307,7 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 
@@ -317,7 +324,7 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
         } catch (e) {
             set({ isLoading: false });
-            throw e;
+            handleFetchError(e);
         }
     },
 

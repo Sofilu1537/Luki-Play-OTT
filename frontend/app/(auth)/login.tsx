@@ -28,9 +28,10 @@ const P = {
     successBg: 'rgba(23,209,198,0.12)',
 };
 
-function AuthInput({ label, placeholder, value, onChangeText, secure, keyboardType, autoCapitalize }: {
+function AuthInput({ label, placeholder, value, onChangeText, secure, keyboardType, autoCapitalize, maxLength, returnKeyType, onSubmitEditing }: {
     label: string; placeholder: string; value: string; onChangeText: (t: string) => void;
     secure?: boolean; keyboardType?: 'email-address' | 'numeric' | 'default'; autoCapitalize?: 'none' | 'words' | 'characters';
+    maxLength?: number; returnKeyType?: 'go' | 'next' | 'done' | 'send'; onSubmitEditing?: () => void;
 }) {
     const [focused, setFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +47,9 @@ function AuthInput({ label, placeholder, value, onChangeText, secure, keyboardTy
                     secureTextEntry={secure && !showPassword}
                     keyboardType={keyboardType ?? 'default'}
                     autoCapitalize={autoCapitalize ?? 'none'}
+                    maxLength={maxLength}
+                    returnKeyType={returnKeyType ?? 'default'}
+                    onSubmitEditing={onSubmitEditing}
                     onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
                 />
                 {secure ? (
@@ -110,8 +114,8 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Bienvenido de nuevo</Text>
             <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24 }}>Inicia sesión con tu cédula de identidad</Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
-            <AuthInput label="Contraseña" placeholder="••••••••" value={password} onChangeText={setPassword} secure />
+            <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={t => setIdNumber(t.replace(/\D/g, ''))} keyboardType="numeric" returnKeyType="next" />
+            <AuthInput label="Contraseña" placeholder="••••••••" value={password} onChangeText={setPassword} secure returnKeyType="go" onSubmitEditing={handleLogin} />
             <PrimaryButton title="Iniciar sesión" onPress={handleLogin} isLoading={isLoading} />
             <TouchableOpacity onPress={() => onSwitch('forgot')} style={{ marginTop: 16, alignItems: 'center' }}>
                 <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿Olvidaste tu contraseña?</Text>
@@ -158,7 +162,7 @@ function FirstAccessForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                 Ingresa tu cédula. Te enviaremos un código al correo registrado.
             </Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
+            <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={t => setIdNumber(t.replace(/\D/g, ''))} keyboardType="numeric" returnKeyType="go" onSubmitEditing={handleFirstAccess} />
             <PrimaryButton title="Enviar código" onPress={handleFirstAccess} isLoading={isLoading} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 6 }}>
                 <Text style={{ color: P.muted, fontSize: 13 }}>¿Ya tienes contraseña?</Text>
@@ -191,6 +195,7 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         if (!password) { setError('La contraseña es requerida'); return; }
         if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
         if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
+        if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('El correo electrónico no tiene un formato válido'); return; }
         try {
             await activate(pendingActivation.customerId, otpCode.trim(), password, email.trim() || undefined);
             router.replace('/');
@@ -210,10 +215,10 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                 Ingresa el código que recibiste en tu correo y crea tu contraseña.
             </Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={setOtpCode} keyboardType="numeric" />
-            <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secure />
-            <AuthInput label="Confirmar contraseña" placeholder="Repite tu contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
-            <AuthInput label="Correo electrónico (opcional)" placeholder="Para notificaciones" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={t => setOtpCode(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={6} returnKeyType="next" />
+            <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secure returnKeyType="next" />
+            <AuthInput label="Confirmar contraseña" placeholder="Repite tu contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure returnKeyType="next" />
+            <AuthInput label="Correo electrónico (opcional)" placeholder="Para notificaciones" value={email} onChangeText={setEmail} keyboardType="email-address" returnKeyType="go" onSubmitEditing={handleActivate} />
             <PrimaryButton title="Activar cuenta" onPress={handleActivate} isLoading={isLoading} />
             <TouchableOpacity onPress={() => onSwitch('first-access')} style={{ marginTop: 16, alignItems: 'center' }}>
                 <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿No recibiste el código? Volver</Text>
@@ -268,7 +273,7 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                     <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
                         Ingresa tu cédula. Te enviaremos un código al correo registrado.
                     </Text>
-                    <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
+                    <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={t => setIdNumber(t.replace(/\D/g, ''))} keyboardType="numeric" returnKeyType="go" onSubmitEditing={handleRequestOtp} />
                     <PrimaryButton title="Enviar código" onPress={handleRequestOtp} isLoading={isLoading} />
                 </>
             )}
@@ -277,11 +282,11 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                     <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
                         Ingresa el código que recibiste y tu nueva contraseña.
                     </Text>
-                    <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={setOtpCode} keyboardType="numeric" />
-                    <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={newPassword} onChangeText={setNewPassword} secure />
-                    <AuthInput label="Confirmar contraseña" placeholder="Repite tu nueva contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure />
+                    <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={t => setOtpCode(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={6} returnKeyType="next" />
+                    <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={newPassword} onChangeText={setNewPassword} secure returnKeyType="next" />
+                    <AuthInput label="Confirmar contraseña" placeholder="Repite tu nueva contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure returnKeyType="go" onSubmitEditing={handleResetWithOtp} />
                     <PrimaryButton title="Restablecer contraseña" onPress={handleResetWithOtp} isLoading={isLoading} />
-                    <TouchableOpacity onPress={() => setStep('request')} style={{ marginTop: 16, alignItems: 'center' }}>
+                    <TouchableOpacity onPress={() => { setStep('request'); setOtpCode(''); setNewPassword(''); setConfirmPassword(''); setError(''); }} style={{ marginTop: 16, alignItems: 'center' }}>
                         <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿No recibiste el código? Volver</Text>
                     </TouchableOpacity>
                 </>
@@ -321,6 +326,8 @@ function RegisterRequestForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         if (!apellidos.trim()) { setError('Los apellidos son requeridos'); return; }
         if (idNumber.trim().length < 10) { setError('La cédula debe tener al menos 10 dígitos'); return; }
         if (!telefono.trim()) { setError('El teléfono es requerido'); return; }
+        if (telefono.trim().length < 10) { setError('El teléfono debe tener al menos 10 dígitos'); return; }
+        if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('El correo electrónico no tiene un formato válido'); return; }
         try {
             await submitRegistrationRequest({
                 nombres: nombres.trim(),
@@ -357,12 +364,12 @@ function RegisterRequestForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                         Completa el formulario y un agente te contactará para activar tu cuenta.
                     </Text>
                     {error ? <ErrorBox msg={error} /> : null}
-                    <AuthInput label="Nombres *" placeholder="Ej: Juan Carlos" value={nombres} onChangeText={setNombres} autoCapitalize="words" />
-                    <AuthInput label="Apellidos *" placeholder="Ej: Pérez López" value={apellidos} onChangeText={setApellidos} autoCapitalize="words" />
-                    <AuthInput label="Cédula *" placeholder="Ej: 1720345678" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
-                    <AuthInput label="Teléfono celular *" placeholder="Ej: 0991234567" value={telefono} onChangeText={setTelefono} keyboardType="numeric" />
-                    <AuthInput label="Correo electrónico (opcional)" placeholder="tu@correo.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
-                    <AuthInput label="Dirección (opcional)" placeholder="Ciudad, barrio..." value={direccion} onChangeText={setDireccion} autoCapitalize="words" />
+                    <AuthInput label="Nombres *" placeholder="Ej: Juan Carlos" value={nombres} onChangeText={setNombres} autoCapitalize="words" returnKeyType="next" />
+                    <AuthInput label="Apellidos *" placeholder="Ej: Pérez López" value={apellidos} onChangeText={setApellidos} autoCapitalize="words" returnKeyType="next" />
+                    <AuthInput label="Cédula *" placeholder="Ej: 1720345678" value={idNumber} onChangeText={t => setIdNumber(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={13} returnKeyType="next" />
+                    <AuthInput label="Teléfono celular *" placeholder="Ej: 0991234567" value={telefono} onChangeText={t => setTelefono(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={15} returnKeyType="next" />
+                    <AuthInput label="Correo electrónico (opcional)" placeholder="tu@correo.com" value={email} onChangeText={setEmail} keyboardType="email-address" returnKeyType="next" />
+                    <AuthInput label="Dirección (opcional)" placeholder="Ciudad, barrio..." value={direccion} onChangeText={setDireccion} autoCapitalize="words" returnKeyType="go" onSubmitEditing={handleSubmit} />
                     <PrimaryButton title="Enviar solicitud" onPress={handleSubmit} isLoading={isLoading} />
                 </>
             )}
