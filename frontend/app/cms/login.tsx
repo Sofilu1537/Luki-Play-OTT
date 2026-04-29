@@ -448,6 +448,7 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
+  const [directCode, setDirectCode] = useState<string | null>(null);
 
   const handleSendCode = async () => {
     setError('');
@@ -463,11 +464,16 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
     }
     setLoading(true);
     try {
-      await cmsSendRecoveryCode(trimmed);
+      const res = await cmsSendRecoveryCode(trimmed);
+      // If the backend returns the code directly (SMTP unavailable), show it on screen
+      if (res.code) {
+        setDirectCode(res.code);
+        setCode(res.code); // pre-fill the code input
+      }
       if (step === 'email') {
         setStep('code');
       } else {
-        setInfoMessage('Código reenviado. Revisa tu correo.');
+        setInfoMessage('Código generado. Cópialo de la pantalla.');
       }
     } catch (e: unknown) {
       // CMS endpoint rejects non-internal users — show the error, do NOT advance
@@ -671,30 +677,65 @@ function ForgotPasswordForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
               lineHeight: 20,
             }}
           >
-            Ingresa el código que enviamos a tu correo y elige tu nueva contraseña.
+            {directCode
+              ? 'El correo no está disponible. Copia el código de abajo y úsalo para cambiar tu contraseña.'
+              : 'Ingresa el código que enviamos a tu correo y elige tu nueva contraseña.'}
           </Text>
 
-          {/* Email confirmation banner */}
-          <View
-            style={{
-              backgroundColor: T.accentSoft,
-              borderRadius: 10,
-              padding: 12,
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: 'rgba(255,184,0,0.2)',
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <FontAwesome name="envelope" size={14} color={T.accent} />
-              <Text style={{ color: T.textSec, fontSize: 12, flex: 1 }}>
-                Código enviado a{' '}
-                <Text style={{ color: T.text, fontWeight: '700' }}>
-                  {email.trim().toLowerCase()}
-                </Text>
+          {/* Direct code banner — shown when SMTP is unavailable */}
+          {directCode ? (
+            <View
+              style={{
+                backgroundColor: 'rgba(34,197,94,0.10)',
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(34,197,94,0.30)',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <FontAwesome name="key" size={18} color="#22C55E" />
+              <Text style={{ color: T.textSec, fontSize: 12, textAlign: 'center' }}>
+                Tu código de recuperación:
+              </Text>
+              <Text style={{
+                color: '#22C55E',
+                fontSize: 26,
+                fontWeight: '900',
+                letterSpacing: 6,
+                fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+              }}>
+                {directCode}
+              </Text>
+              <Text style={{ color: T.muted, fontSize: 11, textAlign: 'center' }}>
+                Ya está cargado en el campo de abajo. Expira en 15 minutos.
               </Text>
             </View>
-          </View>
+          ) : (
+            /* Email confirmation banner */
+            <View
+              style={{
+                backgroundColor: T.accentSoft,
+                borderRadius: 10,
+                padding: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255,184,0,0.2)',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <FontAwesome name="envelope" size={14} color={T.accent} />
+                <Text style={{ color: T.textSec, fontSize: 12, flex: 1 }}>
+                  Código enviado a{' '}
+                  <Text style={{ color: T.text, fontWeight: '700' }}>
+                    {email.trim().toLowerCase()}
+                  </Text>
+                </Text>
+              </View>
+            </View>
+          )}
 
           <CmsInput
             label="CÓDIGO DE VERIFICACIÓN"

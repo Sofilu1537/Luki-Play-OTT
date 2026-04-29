@@ -74,12 +74,12 @@ export class SendRecoveryCodeUseCase {
         (user as any)?.nombre || (user as any)?.firstName || '',
       );
     } catch (err) {
-      this.logger.error(
+      // Log the SMTP error but do NOT throw — the raw code is returned in
+      // the API response so the frontend can display it directly when email
+      // delivery is unavailable (e.g. Mailtrap sandbox, misconfigured SMTP).
+      this.logger.warn(
         `SMTP error for ${normalizedEmail}: ${(err as Error).message}`,
-        (err as Error).stack,
       );
-      // Re-throw so the controller returns 500 instead of silent success
-      throw err;
     }
 
     return rawCode;

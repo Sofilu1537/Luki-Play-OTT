@@ -230,9 +230,12 @@ export class AuthController {
   })
   async cmsSendRecoveryCode(
     @Body() dto: SendRecoveryCodeDto,
-  ): Promise<{ message: string }> {
-    await this.sendRecoveryCodeUseCase.execute(dto.email, true);
-    return { message: 'Código de recuperación enviado a tu correo.' };
+  ): Promise<{ message: string; code?: string }> {
+    const rawCode = await this.sendRecoveryCodeUseCase.execute(dto.email, true);
+    return {
+      message: 'Código de recuperación generado.',
+      code: rawCode,
+    };
   }
 
   @Post('cms/reset-password')

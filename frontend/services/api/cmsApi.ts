@@ -290,7 +290,7 @@ export async function cmsActivateAccount(payload: {
  * Sends a recovery code to a CMS internal user's email.
  * Only works for SUPERADMIN/SOPORTE roles — rejects external users.
  */
-export async function cmsSendRecoveryCode(email: string): Promise<{ message: string }> {
+export async function cmsSendRecoveryCode(email: string): Promise<{ message: string; code?: string }> {
   const response = await fetch(`${API_BASE_URL}/auth/cms/send-recovery-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -307,7 +307,7 @@ export async function cmsSendRecoveryCode(email: string): Promise<{ message: str
     throw new Error(msg);
   }
 
-  return data as { message: string };
+  return data as { message: string; code?: string };
 }
 
 /**
