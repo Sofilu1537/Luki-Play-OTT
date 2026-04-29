@@ -269,7 +269,6 @@ function TopBar({
   const { isDark, theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchText, setSearchText] = useState('');
 
   const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim();
   const displayName = (fullName || profile?.email?.split('@')[0] || 'admin').toUpperCase();

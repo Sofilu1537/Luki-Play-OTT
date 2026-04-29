@@ -55,6 +55,7 @@ export default function CmsUsersTab() {
     try {
       const data = await adminListCmsUsers(accessToken);
       setUsers(data);
+      setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar usuarios');
     } finally {
@@ -90,13 +91,14 @@ export default function CmsUsersTab() {
     if (!accessToken) return;
     if (editUser) {
       await adminUpdateUser(accessToken, editUser.id, {
-        nombre: data.nombre,
+        nombre:    data.nombre,
         firstName: data.nombre.split(' ')[0] ?? data.nombre,
         lastName:  data.nombre.split(' ').slice(1).join(' ') || '',
         email:     data.email,
+        telefono:  data.phone,
         role:      editUser.role,
         status:    editUser.status,
-      });
+      } as any);
     } else {
       await adminCreateCmsUser(accessToken, {
         nombre:   data.nombre,

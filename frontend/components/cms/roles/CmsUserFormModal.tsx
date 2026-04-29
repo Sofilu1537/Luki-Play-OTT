@@ -186,6 +186,7 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
                   return (
                     <TouchableOpacity
                       key={r}
+                      disabled={!!initialData}
                       onPress={() => !initialData && setRole(r)}
                       style={{
                         flex: 1,

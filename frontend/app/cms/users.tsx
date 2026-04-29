@@ -40,7 +40,7 @@ import { CMS_LIGHT_DASHBOARD_TYPO, FONT_FAMILY } from '../../styles/typography';
 
 type UserType = 'system' | 'subscriber';
 type StatusFilter = 'all' | AdminUser['status'];
-type DetailTab = 'perfil' | 'seguridad' | 'sesiones' | 'comercial';
+type DetailTab = 'perfil' | 'sesiones' | 'comercial';
 type Feedback = { type: 'success' | 'error'; message: string } | null;
 
 interface SessionsByUser {
@@ -230,7 +230,7 @@ function DropdownFilter({ label, value, options, onSelect }: {
           <TouchableOpacity
             activeOpacity={1}
             onPress={() => setOpen(false)}
-            style={{ position: 'fixed' as never, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
+            style={{ position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
           />
           <View style={{
             position: 'absolute',
@@ -968,7 +968,7 @@ function UserDetailModal({
         await adminSetUserPassword(accessToken, user.id, temporaryPassword, true);
         await refreshUser();
         setFeedback({ type: 'success', message: `Contraseña temporal generada: ${temporaryPassword}` });
-        setActiveTab('seguridad');
+        setActiveTab('perfil');
       },
     });
   };
@@ -1009,6 +1009,21 @@ function UserDetailModal({
         onUserUpdated(nextUser);
         onSessionsUpdated(user.id, nextSessions);
         setFeedback({ type: 'success', message: 'Todas las sesiones activas fueron cerradas.' });
+      },
+    });
+  };
+
+  const askCancelSubscription = () => {
+    if (!accessToken || !user) return;
+    onRequestConfirm({
+      title: 'Cancelar suscripción',
+      message: `Se desactivará la cuenta de ${user.nombre} y perderá acceso al servicio.`,
+      confirmLabel: 'Cancelar suscripción',
+      tone: 'danger',
+      onConfirm: async () => {
+        await adminUpdateUserStatus(accessToken, user.id, 'inactive');
+        await refreshUser();
+        setFeedback({ type: 'success', message: 'Suscripción cancelada. El usuario fue desactivado.' });
       },
     });
   };
@@ -1170,25 +1185,25 @@ function UserDetailModal({
                           <FieldCard label="Rol" value="Usuario" style={{ flex: 1, minWidth: 200 }} />
                           <FieldCard label="Fecha de creación" value={fmtDate(user.createdAt)} style={{ flex: 1, minWidth: 200 }} />
                         </View>
+
+                        {/* SEGURIDAD */}
+                        <SectionLabel>Seguridad</SectionLabel>
+                        <SectionCard title="Estado de seguridad" subtitle="MFA, bloqueos y acceso.">
+                          <View style={{ gap: 8 }}>
+                            <Text style={{ color: theme.textSec, fontSize: 15 }}>Rol actual: <Text style={{ color: theme.text }}>Usuario</Text></Text>
+                            <Text style={{ color: theme.textSec, fontSize: 15 }}>MFA: <Text style={{ color: theme.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
+                            <Text style={{ color: theme.textSec, fontSize: 15 }}>Bloqueo: <Text style={{ color: theme.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
+                            <Text style={{ color: theme.textSec, fontSize: 15 }}>Cambio obligatorio de contraseña: <Text style={{ color: theme.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
+                          </View>
+                          {canWrite ? (
+                            <TouchableOpacity style={{ marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: theme.accent }} onPress={askPasswordReset}>
+                              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Generar reset seguro</Text>
+                            </TouchableOpacity>
+                          ) : null}
+                        </SectionCard>
                       </>
                     )}
                   </View>
-                ) : null}
-
-                {activeTab === 'seguridad' ? (
-                  <SectionCard title="Seguridad" subtitle="Role/Permission y eventos críticos del acceso.">
-                    <View style={{ gap: 8 }}>
-                      <Text style={{ color: theme.textSec, fontSize: 15 }}>Rol actual: <Text style={{ color: theme.text }}>Usuario</Text></Text>
-                      <Text style={{ color: theme.textSec, fontSize: 15 }}>MFA: <Text style={{ color: theme.text }}>{user.mfaEnabled ? 'Activo' : 'No configurado'}</Text></Text>
-                      <Text style={{ color: theme.textSec, fontSize: 15 }}>Bloqueo: <Text style={{ color: theme.text }}>{user.isLocked ? `Hasta ${fmtDate(user.lockedUntil)}` : 'No'}</Text></Text>
-                      <Text style={{ color: theme.textSec, fontSize: 15 }}>Cambio obligatorio de contraseña: <Text style={{ color: theme.text }}>{user.mustChangePassword ? 'Sí' : 'No'}</Text></Text>
-                    </View>
-                    {canWrite ? (
-                      <TouchableOpacity style={{ marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: theme.accent }} onPress={askPasswordReset}>
-                        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Generar reset seguro</Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </SectionCard>
                 ) : null}
 
                 {activeTab === 'sesiones' ? (
@@ -1332,7 +1347,7 @@ function UserDetailModal({
                             <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(255,184,0,0.3)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(255,184,0,0.08)' : '#fff', alignItems: 'center' }} onPress={() => setIsEditingPlan(true)}>
                               <Text style={{ color: isDark ? '#FFB800' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cambiar plan</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(209,16,90,0.25)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(209,16,90,0.06)' : '#fff', alignItems: 'center' }}>
+                            <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(209,16,90,0.25)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(209,16,90,0.06)' : '#fff', alignItems: 'center' }} onPress={askCancelSubscription}>
                               <Text style={{ color: theme.danger, fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cancelar suscripción</Text>
                             </TouchableOpacity>
                           </View>
@@ -1380,10 +1395,6 @@ export default function CmsUsers() {
   const isCmsStaff = profile?.role === 'superadmin' || profile?.role === 'soporte';
   const canWrite = isCmsStaff || hasPermission(profile?.permissions, 'cms:users:write');
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
-  const [actionMenuUserId, setActionMenuUserId] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const menuButtonRefs = React.useRef<Record<string, View | null>>({});
 
   // Auto-dismiss feedback toast after 4s
   useEffect(() => {
@@ -1589,6 +1600,8 @@ export default function CmsUsers() {
 
   const handleDeactivate = async (user: AdminUser) => {
     if (!accessToken || !canWrite) return;
+    // suspended y pending requieren acción explícita desde el modal de detalle
+    if (user.status === 'suspended' || user.status === 'pending') return;
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
     try {
       const updated = await adminUpdateUserStatus(accessToken, user.id, newStatus);
@@ -1602,7 +1615,7 @@ export default function CmsUsers() {
   if (!profile) return null;
 
   return (
-    <CmsShell breadcrumbs={[{ label: 'Usuarios', path: '/cms/users' }, { label: 'Usuarios' }]} pageIcon="users">
+    <CmsShell breadcrumbs={[{ label: 'Usuarios' }]} pageIcon="users">
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', marginBottom: 20, gap: 10, flexWrap: 'wrap' }}>
             {/* Exportar Excel — outline theme.accent */}
@@ -1771,73 +1784,6 @@ export default function CmsUsers() {
           </View>
         ) : (
           <>
-            {/* Bulk actions bar */}
-            {selectedIds.size > 0 && (
-              <View style={{
-                flexDirection: 'row', alignItems: 'center', gap: 10,
-                marginBottom: 10, paddingHorizontal: 14, paddingVertical: 10,
-                backgroundColor: isDark ? '#1E0A3C' : '#300050',
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: isDark ? 'rgba(255,184,0,0.30)' : 'rgba(255,255,255,0.18)',
-              }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: 'rgba(255,184,0,0.18)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#FFB800', fontSize: 11, fontWeight: '800', fontFamily: FONT_FAMILY.bodyBold }}>{selectedIds.size}</Text>
-                  </View>
-                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>
-                    {selectedIds.size === 1 ? 'usuario seleccionado' : 'usuarios seleccionados'}
-                  </Text>
-                </View>
-                {canWrite && (
-                  <>
-                    <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(23,209,198,0.15)', borderWidth: 1, borderColor: 'rgba(23,209,198,0.35)' }}
-                      onPress={async () => {
-                        if (!accessToken) return;
-                        for (const id of selectedIds) {
-                          const user = users.find((u) => u.id === id);
-                          if (user && user.status !== 'active') {
-                            const updated = await adminUpdateUserStatus(accessToken, id, 'active');
-                            updateUserInList(updated);
-                          }
-                        }
-                        setSelectedIds(new Set());
-                        setFeedback({ type: 'success', message: 'Usuarios activados.' });
-                      }}
-                    >
-                      <FontAwesome name="check-circle" size={12} color="#17D1C6" />
-                      <Text style={{ color: '#17D1C6', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>Activar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(209,16,90,0.15)', borderWidth: 1, borderColor: 'rgba(209,16,90,0.35)' }}
-                      onPress={async () => {
-                        if (!accessToken) return;
-                        for (const id of selectedIds) {
-                          const user = users.find((u) => u.id === id);
-                          if (user && user.status === 'active') {
-                            const updated = await adminUpdateUserStatus(accessToken, id, 'inactive');
-                            updateUserInList(updated);
-                          }
-                        }
-                        setSelectedIds(new Set());
-                        setFeedback({ type: 'success', message: 'Usuarios suspendidos.' });
-                      }}
-                    >
-                      <FontAwesome name="ban" size={12} color="#D1105A" />
-                      <Text style={{ color: '#D1105A', fontSize: 12, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>Suspender</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' }}
-                  onPress={() => setSelectedIds(new Set())}
-                >
-                  <FontAwesome name="times" size={11} color="rgba(255,255,255,0.7)" />
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Deseleccionar</Text>
-                </TouchableOpacity>
-              </View>
-            )}
 
             {/* Table header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#2D0060', borderRadius: 8, marginBottom: 4 }}>
@@ -1869,20 +1815,13 @@ export default function CmsUsers() {
             {visibleUsers.map((user) => {
               const roleMeta = getRoleMeta(user.role, theme);
               const statusMeta = getStatusMeta(user.status, theme);
-              const isMenuOpen = actionMenuUserId === user.id;
-              const isSelected = selectedIds.has(user.id);
-
               return (
                 <View key={user.id} style={{
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12,
-                  backgroundColor: isSelected
-                    ? (isDark ? 'rgba(255,184,0,0.07)' : 'rgba(96,38,158,0.05)')
-                    : (isDark ? theme.cardBg : 'rgba(255,255,255,0.92)'),
+                  backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)',
                   borderRadius: 8, marginBottom: 3,
                   borderBottomWidth: 1,
-                  borderBottomColor: isSelected
-                    ? (isDark ? 'rgba(255,184,0,0.20)' : 'rgba(96,38,158,0.18)')
-                    : (isDark ? theme.border : 'rgba(130,130,130,0.26)'),
+                  borderBottomColor: isDark ? theme.border : 'rgba(130,130,130,0.26)',
                 }}>
                   {/* CONTRATO */}
                   <View style={{ flex: 0.9, paddingHorizontal: 4 }}>
@@ -1946,12 +1885,14 @@ export default function CmsUsers() {
                         >
                           <FontAwesome name="lock" size={12} color="#FF7900" />
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: user.status === 'active' ? 'rgba(209,16,90,0.3)' : 'rgba(23,209,198,0.3)', backgroundColor: user.status === 'active' ? 'rgba(209,16,90,0.08)' : 'rgba(23,209,198,0.08)', alignItems: 'center', justifyContent: 'center' }}
-                          onPress={() => handleDeactivate(user)}
-                        >
-                          <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? '#D1105A' : '#17D1C6'} />
-                        </TouchableOpacity>
+                        {(user.status === 'active' || user.status === 'inactive') && (
+                          <TouchableOpacity
+                            style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: user.status === 'active' ? 'rgba(209,16,90,0.3)' : 'rgba(23,209,198,0.3)', backgroundColor: user.status === 'active' ? 'rgba(209,16,90,0.08)' : 'rgba(23,209,198,0.08)', alignItems: 'center', justifyContent: 'center' }}
+                            onPress={() => handleDeactivate(user)}
+                          >
+                            <FontAwesome name={user.status === 'active' ? 'ban' : 'check-circle'} size={12} color={user.status === 'active' ? '#D1105A' : '#17D1C6'} />
+                          </TouchableOpacity>
+                        )}
                       </>
                     )}
                   </View>
