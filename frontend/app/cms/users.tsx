@@ -568,6 +568,11 @@ function UserFormModal({ visible, initialData, plans, onClose, onSave }: UserFor
       setError('Nombre y email son requeridos.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Ingresa un correo electrónico válido.');
+      return;
+    }
     if (activePlans.length === 0) {
       setError('No hay planes disponibles. Crea o activa un plan en la sección Planes.');
       return;
@@ -1352,6 +1357,7 @@ export default function CmsUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [sessionsByUser, setSessionsByUser] = useState<SessionsByUser>({});
+  const [cmsUserCount, setCmsUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -1401,6 +1407,7 @@ export default function CmsUsers() {
       );
 
       setUsers(usersData.filter((user) => !user.isCmsUser));
+      setCmsUserCount(usersData.filter((user) => user.isCmsUser).length);
       setPlans(plansData);
       setSessionsByUser(Object.fromEntries(sessionsEntries));
     } catch (cause) {
@@ -1444,7 +1451,7 @@ export default function CmsUsers() {
 
   const stats = {
     total:       users.length,
-    internal:    users.filter((user) => user.isCmsUser).length,
+    internal:    cmsUserCount,
     subscribers: users.filter((user) => user.isSubscriber).length,
     clients:     users.filter((user) => !user.isSubscriber).length,  // one-shot, sin contrato
   };
@@ -1585,9 +1592,13 @@ export default function CmsUsers() {
   const handleDeactivate = async (user: AdminUser) => {
     if (!accessToken || !canWrite) return;
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    const updated = await adminUpdateUserStatus(accessToken, user.id, newStatus);
-    updateUserInList(updated);
-    setFeedback({ type: 'success', message: newStatus === 'inactive' ? 'Usuario desactivado.' : 'Usuario activado.' });
+    try {
+      const updated = await adminUpdateUserStatus(accessToken, user.id, newStatus);
+      updateUserInList(updated);
+      setFeedback({ type: 'success', message: newStatus === 'inactive' ? 'Usuario desactivado.' : 'Usuario activado.' });
+    } catch (e) {
+      setFeedback({ type: 'error', message: e instanceof Error ? e.message : 'Error al cambiar el estado del usuario.' });
+    }
   };
 
   if (!profile) return null;
