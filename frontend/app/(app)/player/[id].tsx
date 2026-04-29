@@ -256,22 +256,135 @@ function ChannelListOverlay({
   );
 }
 
+// 3×4 grid layout — matches every remote control / phone keypad
+const DIAL_ROWS = [
+  [{ v: '1', s: '' }, { v: '2', s: 'ABC' }, { v: '3', s: 'DEF' }],
+  [{ v: '4', s: 'GHI' }, { v: '5', s: 'JKL' }, { v: '6', s: 'MNO' }],
+  [{ v: '7', s: 'PQRS' }, { v: '8', s: 'TUV' }, { v: '9', s: 'WXYZ' }],
+  [{ v: '⌫', s: '', t: 'del' }, { v: '0', s: '' }, { v: 'IR', s: '✓', t: 'go' }],
+] as const;
+
+function BlinkingCursor() {
+  const anim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(anim, { toValue: 0, duration: 500, useNativeDriver: true }),
+      Animated.timing(anim, { toValue: 1, duration: 500, useNativeDriver: true }),
+    ])).start();
+  }, []);
+  return <Animated.View style={{ width: 2, height: 26, backgroundColor: '#fff', opacity: anim }} />;
+}
+
+function TimeoutBar({ duration }: { duration: number }) {
+  const anim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    anim.setValue(1);
+    Animated.timing(anim, { toValue: 0, duration, useNativeDriver: false }).start();
+  }, []);
+  return (
+    <View style={styles.dialTimeoutTrack}>
+      <Animated.View style={[styles.dialTimeoutFill, {
+        width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+      }]} />
+    </View>
+  );
+}
+
 function ChannelDialOverlay({
-  onDigit, onClose, onGo,
-}: { onDigit: (d: string) => void; onClose: () => void; onGo: () => void }) {
+  onDigit, onClose, onGo, dialInput, channels,
+}: {
+  onDigit: (d: string) => void; onClose: () => void; onGo: () => void;
+  dialInput: string; channels: Channel[];
+}) {
+  const matched = dialInput ? channels.find(c => c.number === parseInt(dialInput, 10)) : null;
+  const matchedProg = matched ? getCurrentProgram(matched) : null;
+
+  // Auto-confirm 2.5 s after last digit
+  useEffect(() => {
+    if (!dialInput) return;
+    const t = setTimeout(onGo, 2500);
+    return () => clearTimeout(t);
+  }, [dialInput]);
+
   return (
     <View style={styles.dialOverlay}>
-      <TouchableOpacity style={styles.overlayBackdrop} onPress={onClose} />
-      <View style={styles.dialGrid}>
-        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '✕', '0', '→'].map((k) => (
-          <TouchableOpacity key={k} style={styles.dialKey} onPress={() => {
-            if (k === '✕') onClose();
-            else if (k === '→') onGo();
-            else onDigit(k);
-          }}>
-            <Text style={styles.dialKeyText}>{k}</Text>
-          </TouchableOpacity>
-        ))}
+      <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} />
+      <View style={styles.dialPanel}>
+
+        {/* Channel preview card */}
+        <View style={styles.dialPreview}>
+          {matched ? (
+            <>
+              <ChannelLogo logo={matched.logo} size={36} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.dialPreviewNum}>Canal {matched.number}</Text>
+                <Text style={styles.dialPreviewName} numberOfLines={1}>{matched.name}</Text>
+                {matchedProg && <Text style={styles.dialPreviewProg} numberOfLines={1}>{matchedProg.title}</Text>}
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.dialPreviewEmpty}>
+                <Ionicons name="tv-outline" size={22} color="rgba(255,255,255,0.25)" />
+              </View>
+              <Text style={styles.dialPreviewHint}>Ingresa el número de canal</Text>
+            </>
+          )}
+        </View>
+
+        {/* Digit display slots */}
+        <View style={styles.dialDisplay}>
+          {[0, 1, 2].map(i => (
+            <View key={i} style={[
+              styles.dialSlot,
+              !!dialInput[i] && styles.dialSlotFilled,
+              !dialInput[i] && i === dialInput.length && styles.dialSlotCursor,
+            ]}>
+              {dialInput[i]
+                ? <Text style={styles.dialSlotText}>{dialInput[i]}</Text>
+                : i === dialInput.length ? <BlinkingCursor /> : null}
+            </View>
+          ))}
+        </View>
+
+        {/* Timeout progress bar — resets on each new digit via key prop */}
+        {dialInput.length > 0
+          ? <TimeoutBar key={dialInput} duration={2500} />
+          : <View style={styles.dialTimeoutTrack} />}
+        <Text style={styles.dialTimeoutHint}>
+          {dialInput.length > 0 ? 'Auto-confirma en 2 s…' : ' '}
+        </Text>
+
+        {/* 3×4 keypad grid */}
+        <View style={styles.dialGrid}>
+          {DIAL_ROWS.map((row, ri) => (
+            <View key={ri} style={{ flexDirection: 'row', gap: 8 }}>
+              {row.map((k) => (
+                <TouchableOpacity
+                  key={k.v}
+                  style={[
+                    styles.dialKey,
+                    k.t === 'del' && styles.dialKeyDel,
+                    k.t === 'go' && styles.dialKeyGo,
+                  ]}
+                  onPress={() => {
+                    if (k.t === 'del') onDigit('⌫');
+                    else if (k.t === 'go') onGo();
+                    else onDigit(k.v);
+                  }}
+                >
+                  <Text style={[
+                    styles.dialKeyText,
+                    k.t === 'del' && { color: '#e74c3c', fontSize: 20 },
+                    k.t === 'go' && { color: '#2ecc71', fontSize: 14 },
+                  ]}>{k.v}</Text>
+                  {k.s ? <Text style={styles.dialKeySub}>{k.s}</Text> : null}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
+
       </View>
     </View>
   );
@@ -379,7 +492,10 @@ export default function LivePlayer() {
     setShowDial(false);
   }, [channels]);
 
-  const handleDialDigit = (d: string) => setDialInput(prev => (prev + d).slice(-2));
+  const handleDialDigit = (d: string) => {
+    if (d === '⌫') setDialInput(prev => prev.slice(0, -1));
+    else setDialInput(prev => (prev + d).slice(-3));
+  };
   const handleDialGo = () => {
     const ch = channels.find(c => c.number === parseInt(dialInput, 10));
     if (ch) switchChannel(ch);
@@ -561,6 +677,8 @@ export default function LivePlayer() {
           onDigit={handleDialDigit}
           onClose={() => { setShowDial(false); setDialInput(''); }}
           onGo={handleDialGo}
+          dialInput={dialInput}
+          channels={channels}
         />
       )}
 
@@ -673,19 +791,60 @@ const styles = StyleSheet.create({
   },
   epgProgressFill: { height: '100%' as any, backgroundColor: S.accent, borderRadius: 2 },
   epgControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dialOverlay: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', zIndex: 50 },
-  dialGrid: {
-    position: 'absolute', right: 0, top: 0, bottom: 0,
-    width: '50%', flexDirection: 'row', flexWrap: 'wrap',
-    alignContent: 'center', justifyContent: 'center', gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  dialKey: {
-    width: 64, height: 64, borderRadius: 8,
+  dialOverlay: {
+    ...StyleSheet.absoluteFillObject, zIndex: 50,
+    backgroundColor: 'rgba(5,3,18,0.78)',
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  dialKeyText: { color: '#fff', fontSize: 28, fontWeight: '700' },
+  dialPanel: {
+    backgroundColor: 'rgba(14,6,32,0.97)',
+    borderRadius: 20, padding: 20,
+    alignItems: 'center', gap: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    minWidth: 240,
+  },
+  dialPreview: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12,
+    padding: 12, width: '100%',
+  },
+  dialPreviewEmpty: {
+    width: 36, height: 36, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  dialPreviewHint: { color: 'rgba(255,255,255,0.3)', fontSize: 12, flex: 1 },
+  dialPreviewNum: { color: S.muted, fontSize: 10, fontWeight: '600' },
+  dialPreviewName: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  dialPreviewProg: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
+  dialDisplay: { flexDirection: 'row', gap: 8 },
+  dialSlot: {
+    width: 54, height: 62, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  dialSlotFilled: { backgroundColor: 'rgba(23,209,198,0.12)', borderColor: S.accent },
+  dialSlotCursor: { borderColor: 'rgba(255,255,255,0.4)' },
+  dialSlotText: { color: '#fff', fontSize: 28, fontWeight: '900' },
+  dialTimeoutTrack: {
+    width: '100%', height: 2,
+    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1,
+  },
+  dialTimeoutFill: { height: '100%' as any, backgroundColor: S.accent, borderRadius: 1 },
+  dialTimeoutHint: { color: 'rgba(255,255,255,0.3)', fontSize: 9, marginTop: -6 },
+  dialGrid: { gap: 8 },
+  dialKey: {
+    width: 64, height: 54, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    gap: 2,
+  },
+  dialKeyDel: { backgroundColor: 'rgba(231,76,60,0.2)', borderColor: 'rgba(231,76,60,0.45)' },
+  dialKeyGo: { backgroundColor: 'rgba(39,174,96,0.2)', borderColor: 'rgba(39,174,96,0.45)' },
+  dialKeyText: { color: '#fff', fontSize: 22, fontWeight: '800', lineHeight: 24 },
+  dialKeySub: { color: 'rgba(255,255,255,0.35)', fontSize: 7, fontWeight: '700', letterSpacing: 1 },
   nowPlayingPanel: {
     position: 'absolute', left: 20, bottom: 80,
     flexDirection: 'row', alignItems: 'center', gap: 12,
