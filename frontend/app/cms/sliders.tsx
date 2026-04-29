@@ -305,16 +305,45 @@ function BannerRow({
   slider, index, total, theme,
   isDragging, isDropTarget,
   onEdit, onDuplicate, onToggle, onDelete,
-  webDragProps, busy,
+  dragHandlers, busy,
 }: {
   slider: AdminSlider; index: number; total: number; theme: any;
   isDragging: boolean; isDropTarget: boolean;
   onEdit: () => void; onDuplicate: () => void;
   onToggle: () => void; onDelete: () => void;
-  webDragProps: object; busy: boolean;
+  dragHandlers?: { onDragStart: () => void; onDragEnd: () => void; onDragOver: () => void; onDrop: () => void };
+  busy: boolean;
 }) {
   const [hovered, setHovered]   = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const rowRef = useRef<any>(null);
+  // Keep a ref to the latest drag handlers so the DOM listeners never go stale
+  const dragHandlersRef = useRef(dragHandlers);
+  useEffect(() => { dragHandlersRef.current = dragHandlers; });
+
+  // Attach HTML5 drag events directly to the DOM element (RN Web doesn't
+  // forward these through the View prop system)
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !dragHandlers) return;
+    const el = rowRef.current as HTMLElement | null;
+    if (!el) return;
+    el.setAttribute('draggable', 'true');
+    const onDragStart = () => dragHandlersRef.current?.onDragStart();
+    const onDragEnd   = () => dragHandlersRef.current?.onDragEnd();
+    const onDragOver  = (e: DragEvent) => { e.preventDefault(); dragHandlersRef.current?.onDragOver(); };
+    const onDrop      = (e: DragEvent) => { e.preventDefault(); dragHandlersRef.current?.onDrop(); };
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend',   onDragEnd);
+    el.addEventListener('dragover',  onDragOver);
+    el.addEventListener('drop',      onDrop);
+    return () => {
+      el.removeEventListener('dragstart', onDragStart);
+      el.removeEventListener('dragend',   onDragEnd);
+      el.removeEventListener('dragover',  onDragOver);
+      el.removeEventListener('drop',      onDrop);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const hasImage = slider.imagen && isValidImageSrc(slider.imagen);
 
   const rowBg = isDragging
@@ -333,7 +362,7 @@ function BannerRow({
 
   return (
     <View
-      {...(webDragProps as any)}
+      ref={rowRef}
       {...(Platform.OS === 'web' ? {
         onMouseEnter: () => setHovered(true),
         onMouseLeave: () => setHovered(false),
@@ -346,6 +375,9 @@ function BannerRow({
         opacity: isDragging ? 0.6 : 1,
         marginBottom: 8,
         position: 'relative',
+        // Elevate this row above siblings while its context-menu is open so the
+        // menu isn't clipped by rows that appear later in the DOM
+        zIndex: menuOpen ? 10 : 1,
         // Drop-target indicator
         ...(isDropTarget ? { borderTopWidth: 2, borderTopColor: theme.accent } : {}),
       }}
@@ -873,13 +905,12 @@ export default function CmsSliders() {
             {sliders.map((slider, index) => {
               const isDragging   = draggingId === slider.id;
               const isDropTarget = hoveredDropId === slider.id && draggingId !== slider.id;
-              const webDragProps = Platform.OS === 'web' ? {
-                draggable: true,
+              const dragHandlers = Platform.OS === 'web' ? {
                 onDragStart: () => { setDraggingId(slider.id); setHoveredDropId(null); },
                 onDragEnd:   () => { setDraggingId(null); setHoveredDropId(null); },
-                onDragOver:  (e: any) => { e.preventDefault(); if (draggingId && draggingId !== slider.id) setHoveredDropId(slider.id); },
-                onDrop:      (e: any) => { e.preventDefault(); if (draggingId) reorderLocal(draggingId, slider.id); setDraggingId(null); setHoveredDropId(null); },
-              } : {};
+                onDragOver:  () => { if (draggingId && draggingId !== slider.id) setHoveredDropId(slider.id); },
+                onDrop:      () => { if (draggingId) reorderLocal(draggingId, slider.id); setDraggingId(null); setHoveredDropId(null); },
+              } : undefined;
               return (
                 <BannerRow
                   key={slider.id}
@@ -890,7 +921,7 @@ export default function CmsSliders() {
                   onDuplicate={()  => handleDuplicate(slider)}
                   onToggle={()     => handleToggle(slider)}
                   onDelete={()     => setDeleteTarget(slider)}
-                  webDragProps={webDragProps}
+                  dragHandlers={dragHandlers}
                 />
               );
             })}
