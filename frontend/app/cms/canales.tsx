@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, TextInput,
   Platform, Modal, Pressable,
@@ -65,6 +65,19 @@ function emptyForm(): AdminCanalPayload {
   };
 }
 
+// ─── HLS.js dynamic loader (CDN, web only) ───────────────────
+function loadHlsJs(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') { reject(new Error('no window')); return; }
+    if ((window as any).Hls) { resolve((window as any).Hls); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js';
+    s.onload = () => (window as any).Hls ? resolve((window as any).Hls) : reject(new Error('Hls not defined'));
+    s.onerror = () => reject(new Error('Failed to load HLS.js'));
+    document.head.appendChild(s);
+  });
+}
+
 // ─── StatusBadge Component ────────────────────────────────────
 function StatusBadge({ status, isLive }: { status: ChannelStatus; isLive: boolean }) {
   const cfg = STATUS_CONFIG[status];
@@ -105,6 +118,138 @@ function FormField({ label, required, hint, children }: { label: string; require
   );
 }
 
+// ─── Channel Video Preview ────────────────────────────────────
+function ChannelPreview({ channel }: { channel: AdminCanal }) {
+  const videoRef   = useRef<any>(null);
+  const hlsRef     = useRef<any>(null);
+  const [videoEl,   setVideoEl]   = useState<any>(null);
+  const [videoState, setVideoState] = useState<'loading' | 'playing' | 'paused' | 'error'>('loading');
+  const { theme } = useTheme();
+
+  // Callback ref: sets state so useEffect re-runs once the element attaches
+  const attachRef = useCallback((el: any) => {
+    videoRef.current = el;
+    setVideoEl(el);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !videoEl) return;
+    const { streamUrl, streamProtocol } = channel;
+    if (!streamUrl) { setVideoState('error'); return; }
+
+    setVideoState('loading');
+    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    videoEl.removeAttribute('src');
+
+    const isHls =
+      streamUrl.includes('.m3u8') ||
+      streamProtocol === 'HLS' ||
+      streamProtocol === 'HLS_DASH';
+
+    if (isHls && videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      videoEl.src = streamUrl;
+      videoEl.load();
+      videoEl.play().catch(() => {});
+    } else if (isHls) {
+      loadHlsJs()
+        .then((Hls) => {
+          if (!Hls.isSupported()) { setVideoState('error'); return; }
+          const hls = new Hls({ autoStartLoad: true, startLevel: -1, enableWorker: false });
+          hlsRef.current = hls;
+          hls.loadSource(streamUrl);
+          hls.attachMedia(videoEl);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => { videoEl.play().catch(() => {}); });
+          hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+            if (data.fatal) setVideoState('error');
+          });
+        })
+        .catch(() => setVideoState('error'));
+    } else {
+      videoEl.src = streamUrl;
+      videoEl.load();
+      videoEl.play().catch(() => {});
+    }
+
+    return () => {
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    };
+  }, [videoEl, channel.streamUrl]);
+
+  function togglePlay() {
+    if (!videoEl) return;
+    if (videoEl.paused) { videoEl.play().catch(() => {}); }
+    else { videoEl.pause(); }
+  }
+
+  const abs: any = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 };
+
+  return (
+    <View style={{ margin: 20, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000', aspectRatio: 16 / 9 }}>
+      {/* @ts-ignore – web-only video element */}
+      <video
+        ref={attachRef}
+        autoPlay
+        muted
+        playsInline
+        onLoadedData={() => setVideoState('playing')}
+        onPlay={() => setVideoState('playing')}
+        onPause={() => setVideoState('paused')}
+        onError={() => setVideoState('error')}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' } as any}
+      />
+
+      {/* Loading overlay */}
+      {videoState === 'loading' && (
+        <View style={{ ...abs, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.85)' }}>
+          <FontAwesome name="circle-o-notch" size={26} color={theme.accent} />
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 10 }}>Conectando al stream...</Text>
+        </View>
+      )}
+
+      {/* Error overlay */}
+      {videoState === 'error' && (
+        <View style={{ ...abs, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.85)' }}>
+          <FontAwesome name="television" size={28} color="rgba(255,255,255,0.12)" />
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 10 }}>Preview no disponible</Text>
+        </View>
+      )}
+
+      {/* Play/pause tap target */}
+      {(videoState === 'playing' || videoState === 'paused') && (
+        <TouchableOpacity onPress={togglePlay} style={abs} activeOpacity={1}>
+          {videoState === 'paused' && (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center' }}>
+                <FontAwesome name="play" size={18} color="#fff" />
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
+
+      {/* Status badge top-left */}
+      <View style={{ position: 'absolute', top: 10, left: 10 }}>
+        <StatusBadge status={channel.status} isLive={channel.isLive} />
+      </View>
+
+      {/* Viewer count bottom-right */}
+      {channel.isLive && (
+        <View style={{ position: 'absolute', bottom: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+          <FontAwesome name="eye" size={10} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{channel.viewerCount.toLocaleString()}</Text>
+        </View>
+      )}
+
+      {/* Muted indicator top-right */}
+      {videoState === 'playing' && (
+        <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 }}>
+          <FontAwesome name="volume-off" size={11} color="rgba(255,255,255,0.6)" />
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ─── Channel Detail Modal ─────────────────────────────────────
 function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
   channel: AdminCanal;
@@ -113,28 +258,8 @@ function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
   categories: { id: string; nombre: string }[];
 }) {
   const { isDark, theme } = useTheme();
-  const [copied, setCopied] = useState(false);
-  const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
   const catName = channel.category?.nombre ?? categories.find((c) => c.id === channel.categoryId)?.nombre ?? '—';
-
-  function copyUrl() {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(channel.streamUrl);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  const infoRows = [
-    { label: 'Protocolo', value: channel.streamProtocol },
-    { label: 'Resolución', value: channel.resolution },
-    { label: 'Bitrate', value: `${channel.bitrateKbps.toLocaleString()} kbps` },
-    { label: 'DRM', value: channel.isDrmProtected ? 'Widevine/FairPlay' : 'Sin DRM' },
-    { label: 'Categoría', value: catName },
-    { label: 'Geo', value: channel.geoRestriction || 'Sin restricción' },
-    { label: 'Uptime', value: `${channel.uptimePercent}%` },
-  ];
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -145,14 +270,19 @@ function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
         >
           <ScrollView>
             {/* Header */}
-            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                <View style={{ width: 42, height: 42, borderRadius: 10, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-                  <FontAwesome name="television" size={20} color={theme.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
+                {channel.logoUrl ? (
+                  // @ts-ignore – web-only img
+                  <img src={resolveLogoUrl(channel.logoUrl)} alt={channel.nombre} style={{ width: 42, height: 42, borderRadius: 10, objectFit: 'contain', background: '#fff', padding: 4 }} />
+                ) : (
+                  <View style={{ width: 42, height: 42, borderRadius: 10, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+                    <FontAwesome name="television" size={20} color={theme.accent} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 4 }}>
                   <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>{channel.nombre}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>/{channel.slug}</Text>
+                  <StatusBadge status={channel.status} isLive={channel.isLive} />
                 </View>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -165,69 +295,28 @@ function ChannelDetailModal({ channel, onClose, onEdit, categories }: {
               </View>
             </View>
 
-            {/* Preview 16:9 */}
-            <View style={{ margin: 20, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="television" size={36} color="rgba(255,255,255,0.1)" />
-              {channel.isLive && (<Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 8 }}>Preview requiere HLS.js</Text>)}
-              <View style={{ position: 'absolute', top: 10, left: 10 }}>
-                <StatusBadge status={channel.status} isLive={channel.isLive} />
-              </View>
-              {channel.isLive && (
-                <View style={{ position: 'absolute', bottom: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <FontAwesome name="eye" size={10} color="#fff" />
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{channel.viewerCount.toLocaleString()}</Text>
-                </View>
-              )}
-            </View>
+            {/* Preview 16:9 — live HLS/DASH stream */}
+            <ChannelPreview channel={channel} />
 
-            {/* Stream URL */}
-            <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-              <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Stream URL</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                <Text style={{ flex: 1, color: theme.textSec, fontSize: 10, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }} numberOfLines={2}>
-                  {channel.streamUrl}
-                </Text>
-                <TouchableOpacity style={{ width: 30, height: 30, borderRadius: 6, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center', backgroundColor: copied ? 'rgba(23,209,198,0.15)' : 'transparent' }} onPress={copyUrl}>
-                  <FontAwesome name={copied ? 'check' : 'copy'} size={12} color={copied ? '#17D1C6' : theme.textMuted} />
-                </TouchableOpacity>
+            {/* Categoría + Salud */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Categoría</Text>
+                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>{catName}</Text>
               </View>
-            </View>
-
-            {/* Info grid */}
-            <View style={{ paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-              {infoRows.map((row) => (
-                <View key={row.label} style={{ width: '47%', padding: 12, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{row.label}</Text>
-                  <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>{row.value}</Text>
-                </View>
-              ))}
-              <View style={{ width: '47%', padding: 12, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
-                <Text style={{ color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Salud</Text>
+              <View style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ color: theme.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Salud</Text>
                 <HealthBadge health={channel.healthStatus} />
               </View>
             </View>
 
-            {/* Plans */}
-            {channel.planIds.length > 0 && (
-              <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-                <Text style={{ color: theme.textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Planes con acceso</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {channel.planIds.map((pid) => (
-                    <View key={pid} style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, backgroundColor: theme.accentSoft, borderWidth: 1, borderColor: theme.accentBorder }}>
-                      <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '600' }}>{pid}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
             {/* Timestamps */}
             <View style={{ marginHorizontal: 20, marginBottom: 24, padding: 14, borderRadius: 10, backgroundColor: theme.liftBg, borderWidth: 1, borderColor: theme.border }}>
               <Text style={{ color: theme.textMuted, fontSize: 11, marginBottom: 4 }}>
-                Creado: <Text style={{ color: theme.textSec }}>{new Date(channel.createdAt).toLocaleDateString('es-EC')}</Text>
+                Fecha de creación: <Text style={{ color: theme.textSec }}>{new Date(channel.createdAt).toLocaleDateString('es-EC')}</Text>
               </Text>
               <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                Actualizado: <Text style={{ color: theme.textSec }}>{new Date(channel.updatedAt).toLocaleDateString('es-EC')}</Text>
+                Fecha de actualización: <Text style={{ color: theme.textSec }}>{new Date(channel.updatedAt).toLocaleDateString('es-EC')}</Text>
               </Text>
             </View>
           </ScrollView>
@@ -351,12 +440,12 @@ function ChannelFormModal({ channel, onSave, onClose, categories, accessToken }:
             </FormField>
 
             {/* Logo */}
-            <FormField label="Logo del canal" hint="PNG o JPG, máx. 2 MB">
+            <FormField label="Logo del canal" hint="PNG · 512×512 px · fondo transparente · máx. 2 MB">
               <View style={{ gap: 10 }}>
                 {form.logoUrl ? (
                   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                   // @ts-ignore – web-only img element
-                  <img src={resolveLogoUrl(form.logoUrl)} alt="Logo preview" style={{ height: 64, objectFit: 'contain', borderRadius: 8, background: '#1A1A2E', padding: 6 }} />
+                  <img src={resolveLogoUrl(form.logoUrl)} alt="Logo preview" style={{ height: 64, objectFit: 'contain', borderRadius: 8, background: '#fff', padding: 6, border: '1px solid rgba(130,130,130,0.2)' }} />
                 ) : null}
                 <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                   {Platform.OS === 'web' ? (
@@ -708,7 +797,7 @@ export default function CmsCanales() {
                   <View style={{ flex: 2.2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     {ch.logoUrl ? (
                       // @ts-ignore – web-only img
-                      <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain', background: 'rgba(120,60,180,0.1)', border: '1px solid rgba(120,60,180,0.25)', padding: 3, flexShrink: 0 }} />
+                      <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain', background: '#fff', border: '1px solid rgba(130,130,130,0.2)', padding: 3, flexShrink: 0 }} />
                     ) : (
                       <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.accentBorder }}>
                         <FontAwesome name="television" size={14} color={theme.accent} />
@@ -767,11 +856,11 @@ export default function CmsCanales() {
                   style={{ width: 260, backgroundColor: isDark ? theme.cardBg : 'rgba(255,255,255,0.92)', borderRadius: 14, borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.34)', overflow: 'hidden' }}
                 >
                   {/* Preview 16:9 */}
-                  <View style={{ aspectRatio: 16 / 9, backgroundColor: '#0a0a12', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <View style={{ aspectRatio: 16 / 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {ch.logoUrl
                       // @ts-ignore – web-only img
-                      ? <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ width: '72%', height: '72%', objectFit: 'contain', opacity: 0.9 }} />
-                      : <FontAwesome name="television" size={28} color="rgba(255,255,255,0.1)" />
+                      ? <img src={resolveLogoUrl(ch.logoUrl)} alt={ch.nombre} style={{ width: '72%', height: '72%', objectFit: 'contain' }} />
+                      : <FontAwesome name="television" size={28} color="rgba(0,0,0,0.15)" />
                     }
                     {ch.isLive && (
                       <View style={{ position: 'absolute', bottom: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
