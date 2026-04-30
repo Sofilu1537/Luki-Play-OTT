@@ -63,6 +63,25 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Prepare SMTP env fragment
+        env:
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: |
+          printf '%s\n' \
+            "SMTP_HOST=smtp.titan.email" \
+            "SMTP_PORT=465" \
+            "SMTP_SECURE=true" \
+            "SMTP_USER=noreply@luki.ec" \
+            "SMTP_PASS=${SMTP_PASS}" \
+            "SMTP_FROM=noreply@luki.ec" \
+            > /tmp/.env.smtp
+
+      - name: Upload SMTP config to EC2
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            /tmp/.env.smtp \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/.env.smtp
+
       - name: Upload backend to EC2
         run: |
           scp -i ~/.ssh/deploy_key \
@@ -81,6 +100,19 @@ jobs:
             ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
             set -e
             cd ~/Luki-Play-OTT
+
+            # ── SMTP: upsert vars into backend/.env ─────────────────────
+            ENV_FILE=~/Luki-Play-OTT/backend/.env
+            touch "$ENV_FILE"
+            while IFS='=' read -r key value; do
+              [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+              if grep -q "^${key}=" "$ENV_FILE"; then
+                sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+              else
+                echo "${key}=${value}" >> "$ENV_FILE"
+              fi
+            done < /tmp/.env.smtp
+            rm -f /tmp/.env.smtp
 
             # Backend
             tar xzf /tmp/luki-backend.tar.gz
