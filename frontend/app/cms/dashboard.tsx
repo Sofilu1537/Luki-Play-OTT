@@ -217,6 +217,7 @@ export default function CmsDashboard() {
 
   const [users,          setUsers]          = useState<AdminUser[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [usersError,     setUsersError]     = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) router.replace('/cms/login' as never);
@@ -226,9 +227,13 @@ export default function CmsDashboard() {
   useEffect(() => {
     if (!accessToken) return;
     setIsLoadingUsers(true);
+    setUsersError(null);
     adminListUsers(accessToken)
-      .then(setUsers)
-      .catch(() => setUsers([]))
+      .then(data => { setUsers(data); setUsersError(null); })
+      .catch((e: unknown) => {
+        setUsers([]);
+        setUsersError(e instanceof Error ? e.message : 'Error al cargar usuarios');
+      })
       .finally(() => setIsLoadingUsers(false));
     loadChannels(accessToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -245,12 +250,24 @@ export default function CmsDashboard() {
 
   return (
     <CmsShell breadcrumbs={[{ label: 'Dashboard' }]}>
-      <DashboardContent
-        roleLabel={roleLabel}
-        email={profile.email}
-        stats={stats}
-        isLoading={isLoadingUsers}
-      />
+      {usersError ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+          <FontAwesome name="exclamation-triangle" size={32} color="#F43F5E" />
+          <Text style={{ color: '#F43F5E', fontSize: 16, fontWeight: '700', marginTop: 16, textAlign: 'center' }}>
+            No se pudieron cargar las métricas
+          </Text>
+          <Text style={{ color: '#8B72B2', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+            {usersError}
+          </Text>
+        </View>
+      ) : (
+        <DashboardContent
+          roleLabel={roleLabel}
+          email={profile.email}
+          stats={stats}
+          isLoading={isLoadingUsers}
+        />
+      )}
     </CmsShell>
   );
 }
