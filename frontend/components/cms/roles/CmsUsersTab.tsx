@@ -33,6 +33,8 @@ function hasPermission(perms: string[] | undefined | null, key: string): boolean
   );
 }
 
+const PAGE_SIZE = 20;
+
 const ROLE_FILTERS = [
   { key: 'all',        label: 'Todos'      },
   { key: 'superadmin', label: 'Super Admin' },
@@ -56,8 +58,10 @@ export default function CmsUsersTab() {
   const [togglingId,  setTogglingId]  = useState<string | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [error,       setError]       = useState('');
+  const [page,        setPage]        = useState(1);
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+  const tip      = (t: string) => (Platform.OS === 'web' ? ({ title: t } as object) : {});
 
   const loadUsers = useCallback(async () => {
     if (!accessToken) return;
@@ -74,6 +78,7 @@ export default function CmsUsersTab() {
   }, [accessToken]);
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
+  useEffect(() => { setPage(1); }, [search, roleFilter]);
 
   // ── Stats ─────────────────────────────────────────────────
   const total    = users.length;
@@ -89,6 +94,10 @@ export default function CmsUsersTab() {
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
     return matchSearch && matchRole;
   });
+
+  // ── Paginación ────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // ── Handlers ───────────────────────────────────────────────
   const handleSave = async (data: {
@@ -293,7 +302,7 @@ export default function CmsUsersTab() {
             <Text style={hdr(0.9)}>ACCIONES</Text>
           </View>
 
-          {filtered.map((user) => {
+          {paginated.map((user) => {
             const meta        = ROLE_META[user.role];
             const isActive    = user.status === 'active';
             const isToggling  = togglingId === user.id;
@@ -368,6 +377,7 @@ export default function CmsUsersTab() {
                   {/* Toggle estado */}
                   {canWrite && !isSelf && user.role !== 'superadmin' && (
                     <TouchableOpacity
+                      {...tip(isActive ? 'Desactivar usuario' : 'Activar usuario')}
                       onPress={() => handleToggleStatus(user)}
                       disabled={isToggling}
                       style={{
@@ -388,6 +398,7 @@ export default function CmsUsersTab() {
                   {/* Editar */}
                   {canWrite && (
                     <TouchableOpacity
+                      {...tip('Editar usuario')}
                       onPress={() => { setEditUser(user); setFormVisible(true); }}
                       style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.accentBorder }}
                     >
@@ -397,6 +408,7 @@ export default function CmsUsersTab() {
 
                   {/* Ver detalle */}
                   <TouchableOpacity
+                    {...tip('Ver detalle')}
                     onPress={() => setDetailUser(user)}
                     style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: isDark ? theme.liftBg : 'rgba(130,130,130,0.10)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.22)' }}
                   >
@@ -407,6 +419,34 @@ export default function CmsUsersTab() {
             );
           })}
         </ScrollView>
+      )}
+
+      {/* ── Paginación ── */}
+      {!loading && filtered.length > 0 && totalPages > 1 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: isDark ? theme.border : 'rgba(130,130,130,0.16)' }}>
+          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: FONT_FAMILY.body }}>
+            {`${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} de ${filtered.length}`}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 7, backgroundColor: isDark ? theme.liftBg : 'rgba(130,130,130,0.10)', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.22)', opacity: page === 1 ? 0.4 : 1 }}
+            >
+              <FontAwesome name="chevron-left" size={10} color={theme.textSec} />
+            </TouchableOpacity>
+            <View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 7, backgroundColor: theme.accentSoft, borderWidth: 1, borderColor: theme.accentBorder }}>
+              <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '700', fontFamily: FONT_FAMILY.bodySemiBold }}>{page} / {totalPages}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 7, backgroundColor: isDark ? theme.liftBg : 'rgba(130,130,130,0.10)', borderWidth: 1, borderColor: isDark ? theme.border : 'rgba(130,130,130,0.22)', opacity: page === totalPages ? 0.4 : 1 }}
+            >
+              <FontAwesome name="chevron-right" size={10} color={theme.textSec} />
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
 
       {/* ── Modales ── */}

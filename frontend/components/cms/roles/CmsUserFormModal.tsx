@@ -38,6 +38,7 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
   const [permissions, setPermissions] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailInvalid, setEmailInvalid] = useState(false);
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
   const inputStyle = {
@@ -69,6 +70,7 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
       setPermissions([]);
     }
     setError('');
+    setEmailInvalid(false);
   }, [visible, initialData]);
 
   useEffect(() => {
@@ -104,7 +106,12 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
       });
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar.');
+      const msg = e instanceof Error ? e.message : '';
+      if (/duplicate|already.?exist|ya.?exist|email.*taken|taken.*email/i.test(msg)) {
+        setError('Este email ya está registrado en el sistema.');
+      } else {
+        setError(msg || 'Error al guardar.');
+      }
     } finally {
       setLoading(false);
     }
@@ -153,7 +160,22 @@ export default function CmsUserFormModal({ visible, initialData, onClose, onSave
                 </View>
                 <View>
                   <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '600', marginBottom: 7 }}>Correo electrónico</Text>
-                  <TextInput style={inputStyle} value={email} onChangeText={setEmail} placeholder="usuario@lukiplay.com" placeholderTextColor={theme.textMuted} keyboardType="email-address" autoCapitalize="none" />
+                  <TextInput
+                    style={{ ...inputStyle, borderColor: emailInvalid ? '#D1105A' : theme.softUiBorderDark }}
+                    value={email}
+                    onChangeText={(v) => { setEmail(v); if (emailInvalid) setEmailInvalid(false); }}
+                    onBlur={() => {
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      setEmailInvalid(!!email.trim() && !emailRegex.test(email.trim()));
+                    }}
+                    placeholder="usuario@lukiplay.com"
+                    placeholderTextColor={theme.textMuted}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  {emailInvalid && (
+                    <Text style={{ color: '#D1105A', fontSize: 11, marginTop: 4 }}>Ingrese un email válido.</Text>
+                  )}
                 </View>
                 <View>
                   <Text style={{ color: theme.textSec, fontSize: 12, fontWeight: '600', marginBottom: 7 }}>
