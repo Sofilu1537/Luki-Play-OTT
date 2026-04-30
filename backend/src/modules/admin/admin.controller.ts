@@ -31,6 +31,7 @@ import { ProcessPaymentDto } from '../subscription/dto/process-payment.dto';
 import { CreateCanalDto } from './dto/create-canal.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
+import { IsEmail, IsOptional } from 'class-validator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
@@ -144,7 +145,13 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: { email?: string },
   ) {
-    return this.adminService.sendRecoveryCode(id, body.email);
+    if (body.email !== undefined && body.email !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(body.email.trim())) {
+        throw new BadRequestException('El email proporcionado no es válido.');
+      }
+    }
+    return this.adminService.sendRecoveryCode(id, body.email?.trim() || undefined);
   }
 
   @ApiOperation({ summary: 'List sessions for a user by device (admin)' })

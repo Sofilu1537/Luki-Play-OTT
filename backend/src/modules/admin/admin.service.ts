@@ -750,16 +750,17 @@ export class AdminService {
   async sendRecoveryCode(
     id: string,
     emailStr?: string,
-  ): Promise<{ message: string; code: string }> {
+  ): Promise<{ message: string; emailDelivered: boolean; code?: string }> {
     const customer = await this.prisma.customer.findUnique({
       where: { id, deletedAt: null },
     });
     if (!customer) throw new NotFoundException(`User ${id} not found`);
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = randomBytes(6);
     let code = '';
     for (let i = 0; i < 6; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
+      code += chars[bytes[i] % chars.length];
     }
 
     const passwordHash = await bcrypt.hash(code, 10);
@@ -780,6 +781,7 @@ export class AdminService {
       : (customer.email?.split('@')[0] ?? 'Usuario');
 
     const targetEmail = emailStr || customer.email || customer.ispEmail;
+    let emailDelivered = false;
     if (targetEmail) {
       try {
         await this.emailService.sendRecoveryCode(
@@ -787,15 +789,20 @@ export class AdminService {
           code,
           displayName,
         );
-      } catch {
+        emailDelivered = true;
+      } catch (err) {
         this.logger.warn(
-          `Email delivery failed for ${targetEmail} — code still valid`,
+          `Email delivery failed for ${targetEmail}: ${err instanceof Error ? err.message : err}`,
         );
       }
     }
     return {
-      message: `Código enviado a ${targetEmail || 'correo no registrado'}`,
-      code,
+      message: emailDelivered
+        ? `Código enviado a ${targetEmail}`
+        : `No se pudo enviar el email a ${targetEmail || 'correo no registrado'}`,
+      emailDelivered,
+      // Solo retornar el código si el email falló, para que el admin pueda compartirlo manualmente
+      ...(!emailDelivered && { code }),
     };
   }
 
