@@ -108,6 +108,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       <TouchableOpacity
         onPress={onToggle}
         activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel={collapsed ? 'Expandir menú' : 'Contraer menú'}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -169,7 +171,12 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       )}
 
       {/* Nav items */}
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        accessibilityRole="navigation"
+        aria-label="Menú principal"
+      >
         <View style={{ paddingHorizontal: collapsed ? 6 : 8, paddingTop: 2 }}>
           {visibleItems.map((item) => {
             const active =
@@ -217,7 +224,13 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 
             if (active) {
               return (
-                <Pressable key={item.path} onPress={() => router.push(item.path as never)}>
+                <Pressable
+                  key={item.path}
+                  onPress={() => router.push(item.path as never)}
+                  accessibilityRole="link"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: true }}
+                >
                   <LinearGradient
                     colors={[SIDEBAR.activeBg1, SIDEBAR.activeBg2]}
                     start={{ x: 0, y: 0 }}
@@ -238,6 +251,9 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
                   backgroundColor: hovered ? SIDEBAR.hoverBg : 'transparent',
                 })}
                 onPress={() => router.push(item.path as never)}
+                accessibilityRole="link"
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected: false }}
               >
                 {innerContent}
               </Pressable>

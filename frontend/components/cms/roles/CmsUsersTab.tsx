@@ -24,6 +24,15 @@ import type { AdminUser } from '../../../services/api/adminApi';
 import { useCmsStore } from '../../../services/cmsStore';
 import { FONT_FAMILY } from '../../../styles/typography';
 
+function hasPermission(perms: string[] | undefined | null, key: string): boolean {
+  if (!perms) return false;
+  return (
+    perms.includes('cms:*') ||
+    perms.includes(key) ||
+    perms.some((p) => p !== 'cms:*' && key.startsWith(p + ':'))
+  );
+}
+
 const ROLE_FILTERS = [
   { key: 'all',        label: 'Todos'      },
   { key: 'superadmin', label: 'Super Admin' },
@@ -35,6 +44,7 @@ export default function CmsUsersTab() {
   const { isDark, theme } = useTheme();
   const { accessToken, profile } = useCmsStore();
   const isSuperAdmin = profile?.role === 'superadmin';
+  const canWrite     = isSuperAdmin || hasPermission(profile?.permissions, 'cms:users:write');
 
   const [users,       setUsers]       = useState<AdminUser[]>([]);
   const [loading,     setLoading]     = useState(true);
@@ -111,8 +121,7 @@ export default function CmsUsersTab() {
   };
 
   const handleToggleStatus = async (user: AdminUser) => {
-    if (!accessToken || !isSuperAdmin) return;
-    setTogglingId(user.id);
+    if (!accessToken || !canWrite) return;
     try {
       const next = user.status === 'active' ? 'inactive' : 'active';
       await adminUpdateUserStatus(accessToken, user.id, next as AdminUser['status']);
@@ -125,7 +134,7 @@ export default function CmsUsersTab() {
   };
 
   const handleDelete = async (userId: string) => {
-    if (!accessToken || !isSuperAdmin) return;
+    if (!accessToken || !canWrite) return;
     setDeletingId(userId);
     try {
       await adminDeleteUser(accessToken, userId);
@@ -154,7 +163,7 @@ export default function CmsUsersTab() {
     <View style={{ flex: 1 }}>
 
       {/* ── Aviso solo lectura ── */}
-      {!isSuperAdmin && (
+      {!canWrite && (
         <View style={{
           flexDirection: 'row', alignItems: 'center', gap: 10,
           margin: 16, marginBottom: 0,
@@ -164,7 +173,7 @@ export default function CmsUsersTab() {
         }}>
           <FontAwesome name="lock" size={13} color="#FFB800" />
           <Text style={{ color: isDark ? '#FFB800' : '#8a6000', fontSize: 12, fontFamily: FONT_FAMILY.body, flex: 1 }}>
-            Solo el <Text style={{ fontWeight: '800' }}>Super Admin</Text> puede crear, editar o cambiar el estado de usuarios CMS.
+            Solo usuarios con permiso de escritura pueden crear, editar o cambiar el estado de usuarios CMS.
           </Text>
         </View>
       )}
@@ -246,8 +255,8 @@ export default function CmsUsersTab() {
           })}
         </View>
 
-        {/* Crear usuario — solo SUPERADMIN */}
-        {isSuperAdmin && (
+        {/* Crear usuario */}
+        {canWrite && (
           <TouchableOpacity
             onPress={() => { setEditUser(null); setFormVisible(true); }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.accent }}
@@ -356,8 +365,8 @@ export default function CmsUsersTab() {
 
                 {/* Acciones */}
                 <View style={{ flex: 0.9, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  {/* Toggle estado — solo superadmin, no sobre sí mismo */}
-                  {isSuperAdmin && !isSelf && user.role !== 'superadmin' && (
+                  {/* Toggle estado */}
+                  {canWrite && !isSelf && user.role !== 'superadmin' && (
                     <TouchableOpacity
                       onPress={() => handleToggleStatus(user)}
                       disabled={isToggling}
@@ -376,8 +385,8 @@ export default function CmsUsersTab() {
                     </TouchableOpacity>
                   )}
 
-                  {/* Editar — solo superadmin */}
-                  {isSuperAdmin && (
+                  {/* Editar */}
+                  {canWrite && (
                     <TouchableOpacity
                       onPress={() => { setEditUser(user); setFormVisible(true); }}
                       style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: theme.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.accentBorder }}
@@ -411,7 +420,7 @@ export default function CmsUsersTab() {
         visible={!!detailUser}
         user={detailUser}
         onClose={() => setDetailUser(null)}
-        onDelete={isSuperAdmin ? handleDelete : undefined}
+        onDelete={canWrite ? handleDelete : undefined}
       />
     </View>
   );
