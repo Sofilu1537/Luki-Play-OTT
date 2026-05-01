@@ -1,6 +1,6 @@
 import { View, Text, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../services/authStore';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -220,7 +220,7 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
                 Ingresa el código que recibiste en tu correo y crea tu contraseña.
             </Text>
             {error ? <ErrorBox msg={error} /> : null}
-            <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={t => setOtpCode(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={6} returnKeyType="next" />
+            <AuthInput label="Código de activación" placeholder="Ej: A3F7K2" value={otpCode} onChangeText={t => setOtpCode(t.replace(/[^A-Za-z0-9]/g, '').toUpperCase())} autoCapitalize="characters" maxLength={6} returnKeyType="next" />
             <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secure returnKeyType="next" />
             <AuthInput label="Confirmar contraseña" placeholder="Repite tu contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure returnKeyType="next" />
             <AuthInput label="Correo electrónico (opcional)" placeholder="Para notificaciones" value={email} onChangeText={setEmail} keyboardType="email-address" returnKeyType="go" onSubmitEditing={handleActivate} />
@@ -241,7 +241,14 @@ function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => vo
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+    const [resendCooldown, setResendCooldown] = useState(0);
     const { requestPasswordOtp, resetWithOtp, isLoading } = useAuthStore();
+
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+        return () => clearTimeout(t);
+    }, [resendCooldown]);
 
     const handleRequestOtp = async () => {
         setError('');
@@ -249,60 +256,112 @@ function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => vo
         try {
             await requestPasswordOtp(idNumber.trim());
             setStep('reset');
+            setResendCooldown(60);
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'Error al solicitar el código');
         }
     };
 
+    const handleResend = async () => {
+        if (resendCooldown > 0 || isLoading) return;
+        setError('');
+        try {
+            await requestPasswordOtp(idNumber.trim());
+            setOtpCode('');
+            setResendCooldown(60);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Error al reenviar el código');
+        }
+    };
+
     const handleResetWithOtp = async () => {
         setError('');
-        if (otpCode.trim().length !== 6) { setError('El código debe tener 6 dígitos'); return; }
+        const code = otpCode.trim().toUpperCase();
+        if (code.length !== 6) { setError('El código debe tener 6 caracteres'); return; }
         if (!newPassword) { setError('La nueva contraseña es requerida'); return; }
         if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
         if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
         try {
-            await resetWithOtp(idNumber.trim(), otpCode.trim(), newPassword);
+            await resetWithOtp(idNumber.trim(), code, newPassword);
             setStep('done');
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
         }
     };
 
+    const webMono = Platform.OS === 'web' ? ({ fontFamily: 'monospace', outlineStyle: 'none', backgroundColor: 'transparent' } as object) : {};
+
     return (
         <>
             <BackLink onPress={() => onSwitch('login')} label="Volver al inicio de sesión" />
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Recuperar contraseña</Text>
+
             {defaultIdNumber ? (
                 <View style={{ backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
                     <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
-                        El administrador generó una clave temporal. Debes crear una nueva contraseña para continuar.
+                        El administrador generó una clave temporal. Crea una nueva contraseña para continuar.
                     </Text>
                 </View>
             ) : null}
+
             {error ? <ErrorBox msg={error} /> : null}
+
             {step === 'request' && (
                 <>
                     <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
-                        Ingresa tu cédula. Te enviaremos un código al correo registrado.
+                        Ingresa tu cédula y recibirás un código en el correo registrado en tu cuenta.
                     </Text>
                     <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={t => setIdNumber(t.replace(/\D/g, ''))} keyboardType="numeric" returnKeyType="go" onSubmitEditing={handleRequestOtp} />
                     <PrimaryButton title="Enviar código" onPress={handleRequestOtp} isLoading={isLoading} />
                 </>
             )}
+
             {step === 'reset' && (
                 <>
-                    <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
-                        Ingresa el código que recibiste y tu nueva contraseña.
-                    </Text>
-                    <AuthInput label="Código OTP (6 dígitos)" placeholder="123456" value={otpCode} onChangeText={t => setOtpCode(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={6} returnKeyType="next" />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(23,209,198,0.08)', borderRadius: 10, padding: 12, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(23,209,198,0.2)' }}>
+                        <FontAwesome name="envelope-o" size={15} color={P.success} />
+                        <Text style={{ color: P.success, fontSize: 13, fontWeight: '600', flex: 1 }}>
+                            Código enviado. Revisa tu bandeja de entrada.
+                        </Text>
+                    </View>
+
+                    <Text style={{ color: P.textSec, fontSize: 12, fontWeight: '600', marginBottom: 6, marginLeft: 2 }}>Código de recuperación</Text>
+                    <View style={{ marginBottom: 4 }}>
+                        <TextInput
+                            style={{ color: P.text, backgroundColor: P.input, borderRadius: 12, borderWidth: 1, borderColor: P.inputBorder, paddingVertical: 16, paddingHorizontal: 20, fontSize: 24, fontWeight: '800', textAlign: 'center', letterSpacing: 10, ...webMono }}
+                            placeholder="· · · · · ·"
+                            placeholderTextColor={P.muted}
+                            value={otpCode}
+                            onChangeText={t => setOtpCode(t.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6))}
+                            autoCapitalize="characters"
+                            maxLength={6}
+                            returnKeyType="next"
+                        />
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 2 }}>
+                        <Text style={{ color: P.muted, fontSize: 11 }}>Letras y números (A–Z, 2–9)</Text>
+                        <Text style={{ color: otpCode.length === 6 ? P.success : P.muted, fontSize: 11, fontWeight: '700' }}>{otpCode.length}/6</Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                        <Text style={{ color: P.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>nueva contraseña</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                    </View>
+
                     <AuthInput label="Nueva contraseña" placeholder="Mínimo 6 caracteres" value={newPassword} onChangeText={setNewPassword} secure returnKeyType="next" />
                     <AuthInput label="Confirmar contraseña" placeholder="Repite tu nueva contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secure returnKeyType="go" onSubmitEditing={handleResetWithOtp} />
-                    <PrimaryButton title="Restablecer contraseña" onPress={handleResetWithOtp} isLoading={isLoading} />
-                    <TouchableOpacity onPress={() => { setStep('request'); setOtpCode(''); setNewPassword(''); setConfirmPassword(''); setError(''); }} style={{ marginTop: 16, alignItems: 'center' }}>
-                        <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>¿No recibiste el código? Volver</Text>
+
+                    <PrimaryButton title="Restablecer contraseña" onPress={handleResetWithOtp} isLoading={isLoading} disabled={otpCode.length !== 6} />
+
+                    <TouchableOpacity onPress={handleResend} disabled={resendCooldown > 0 || isLoading} style={{ marginTop: 16, alignItems: 'center', opacity: resendCooldown > 0 ? 0.45 : 1 }}>
+                        <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600' }}>
+                            {resendCooldown > 0 ? `Reenviar código en ${resendCooldown}s` : '¿No recibiste el código? Reenviar'}
+                        </Text>
                     </TouchableOpacity>
                 </>
             )}
+
             {step === 'done' && (
                 <>
                     <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
