@@ -236,7 +236,7 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 
 function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => void; defaultIdNumber?: string }) {
     const [step, setStep] = useState<'request' | 'reset' | 'done'>('request');
-    const [idNumber, setIdNumber] = useState(defaultIdNumber ?? '');
+    const [email, setEmail] = useState('');
     const [otpCode, setOtpCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -252,9 +252,10 @@ function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => vo
 
     const handleRequestOtp = async () => {
         setError('');
-        if (!idNumber.trim()) { setError('La cédula es requerida'); return; }
+        if (!email.trim()) { setError('El correo es requerido'); return; }
+        if (!/\S+@\S+\.\S+/.test(email.trim())) { setError('Ingresa un correo válido'); return; }
         try {
-            await requestPasswordOtp(idNumber.trim());
+            await requestPasswordOtp(email.trim().toLowerCase());
             setStep('reset');
             setResendCooldown(60);
         } catch (e: unknown) {
@@ -266,7 +267,7 @@ function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => vo
         if (resendCooldown > 0 || isLoading) return;
         setError('');
         try {
-            await requestPasswordOtp(idNumber.trim());
+            await requestPasswordOtp(email.trim().toLowerCase());
             setOtpCode('');
             setResendCooldown(60);
         } catch (e: unknown) {
@@ -282,7 +283,7 @@ function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => vo
         if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
         if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return; }
         try {
-            await resetWithOtp(idNumber.trim(), code, newPassword);
+            await resetWithOtp(email.trim().toLowerCase(), code, newPassword);
             setStep('done');
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'No se pudo restablecer la contraseña');
@@ -309,9 +310,9 @@ function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => vo
             {step === 'request' && (
                 <>
                     <Text style={{ color: P.muted, fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
-                        Ingresa tu cédula y recibirás un código en el correo registrado en tu cuenta.
+                        Ingresa tu correo y recibirás un código para restablecer tu contraseña.
                     </Text>
-                    <AuthInput label="Cédula de identidad" placeholder="Ej: 0503557068" value={idNumber} onChangeText={t => setIdNumber(t.replace(/\D/g, ''))} keyboardType="numeric" returnKeyType="go" onSubmitEditing={handleRequestOtp} />
+                    <AuthInput label="Correo electrónico" placeholder="Ej: usuario@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" returnKeyType="go" onSubmitEditing={handleRequestOtp} />
                     <PrimaryButton title="Enviar código" onPress={handleRequestOtp} isLoading={isLoading} />
                 </>
             )}

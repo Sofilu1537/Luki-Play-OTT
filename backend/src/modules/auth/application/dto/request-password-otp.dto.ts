@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RequestPasswordOtpDto {
-  @ApiProperty({ example: '0503557068', description: 'Cédula de identidad del suscriptor' })
-  @IsString()
+  @ApiProperty({ example: 'usuario@gmail.com', description: 'Correo electrónico del suscriptor' })
+  @IsEmail()
   @IsNotEmpty()
-  idNumber: string;
+  email: string;
 }

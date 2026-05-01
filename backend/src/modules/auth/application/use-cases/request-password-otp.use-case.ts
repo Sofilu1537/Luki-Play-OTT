@@ -14,23 +14,18 @@ export class RequestPasswordOtpUseCase {
   ) {}
 
   async execute(dto: RequestPasswordOtpDto): Promise<{ message: string }> {
-    const message = 'Si existe un usuario con esa cédula, recibirás un código por correo.';
+    const message = 'Si existe una cuenta con ese correo, recibirás un código.';
 
-    const customer = await this.prisma.customer.findUnique({
-      where: { idNumber: dto.idNumber },
+    const customer = await this.prisma.customer.findFirst({
+      where: { email: dto.email, deletedAt: null, isCmsUser: false },
     });
 
-    if (!customer || customer.deletedAt || customer.status !== 'ACTIVE') {
-      // Anti-enumeración: siempre responder igual
+    if (!customer || customer.status !== 'ACTIVE') {
       return { message };
     }
 
-    if (customer.email) {
-      await this.otpService.generateAndSend(customer.id, customer.email);
-      this.logger.log(`Password reset OTP sent to customer ${customer.id}`);
-    } else {
-      this.logger.warn(`Password reset OTP requested but no email for customer ${customer.id}`);
-    }
+    await this.otpService.generateAndSend(customer.id, customer.email!);
+    this.logger.log(`Password reset OTP sent to customer ${customer.id}`);
 
     return { message };
   }

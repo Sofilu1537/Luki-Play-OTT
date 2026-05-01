@@ -1,11 +1,11 @@
-import { IsNotEmpty, IsString, Length, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, Length, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ResetPasswordOtpDto {
-  @ApiProperty({ example: '0503557068', description: 'Cédula de identidad' })
-  @IsString()
+  @ApiProperty({ example: 'usuario@gmail.com', description: 'Correo electrónico del suscriptor' })
+  @IsEmail()
   @IsNotEmpty()
-  idNumber: string;
+  email: string;
 
   @ApiProperty({ example: '123456', description: 'Código OTP de 6 dígitos recibido por correo' })
   @IsString()

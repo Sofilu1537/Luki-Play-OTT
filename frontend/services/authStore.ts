@@ -67,8 +67,8 @@ interface AuthState {
     activate: (customerId: string, otpCode: string, password: string, email?: string) => Promise<void>;
     mustChangePassword: boolean;
     resetPassword: (contractNumber: string, idNumber: string, newPassword: string) => Promise<void>;
-    requestPasswordOtp: (idNumber: string) => Promise<void>;
-    resetWithOtp: (idNumber: string, otpCode: string, newPassword: string) => Promise<void>;
+    requestPasswordOtp: (email: string) => Promise<void>;
+    resetWithOtp: (email: string, otpCode: string, newPassword: string) => Promise<void>;
     submitRegistrationRequest: (data: RegistrationRequestPayload) => Promise<void>;
     logout: () => void;
     refreshSession: () => Promise<boolean>;
@@ -298,13 +298,13 @@ export const useAuthStore = create<AuthState>()(
         }
     },
 
-    requestPasswordOtp: async (idNumber) => {
+    requestPasswordOtp: async (email) => {
         set({ isLoading: true });
         try {
             const res = await fetch(`${API_BASE_URL}/auth/app/request-password-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idNumber }),
+                body: JSON.stringify({ email }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Error al solicitar el código');
@@ -315,13 +315,13 @@ export const useAuthStore = create<AuthState>()(
         }
     },
 
-    resetWithOtp: async (idNumber, otpCode, newPassword) => {
+    resetWithOtp: async (email, otpCode, newPassword) => {
         set({ isLoading: true });
         try {
             const res = await fetch(`${API_BASE_URL}/auth/app/reset-with-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idNumber, otpCode, newPassword }),
+                body: JSON.stringify({ email, otpCode, newPassword }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'No se pudo restablecer la contraseña');

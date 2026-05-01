@@ -22,12 +22,12 @@ export class ResetPasswordOtpUseCase {
   ) {}
 
   async execute(dto: ResetPasswordOtpDto): Promise<{ message: string }> {
-    const customer = await this.prisma.customer.findUnique({
-      where: { idNumber: dto.idNumber },
+    const customer = await this.prisma.customer.findFirst({
+      where: { email: dto.email, deletedAt: null, isCmsUser: false },
     });
 
-    if (!customer || customer.deletedAt || customer.status !== 'ACTIVE') {
-      throw new BadRequestException('Código o cédula inválidos');
+    if (!customer || customer.status !== 'ACTIVE') {
+      throw new BadRequestException('Código o correo inválidos');
     }
 
     const otpValid = await this.otpService.verify(customer.id, dto.otpCode);
