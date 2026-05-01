@@ -1377,7 +1377,6 @@ export default function CmsUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [sessionsByUser, setSessionsByUser] = useState<SessionsByUser>({});
-  const [cmsUserCount, setCmsUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -1413,7 +1412,6 @@ export default function CmsUsers() {
       ]);
 
       setUsers(usersData.filter((user) => !user.isCmsUser));
-      setCmsUserCount(usersData.filter((user) => user.isCmsUser).length);
       setPlans(plansData);
     } catch (cause) {
       setFeedback({ type: 'error', message: cause instanceof Error ? cause.message : 'No se pudieron cargar los usuarios.' });
@@ -1460,9 +1458,8 @@ export default function CmsUsers() {
 
   const stats = {
     total:       users.length,
-    internal:    cmsUserCount,
     subscribers: users.filter((user) => user.isSubscriber).length,
-    clients:     users.filter((user) => !user.isSubscriber).length,  // one-shot, sin contrato
+    clients:     users.filter((user) => !user.isSubscriber).length,
   };
 
   const updateUserInList = (nextUser: AdminUser) => {

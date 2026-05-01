@@ -418,7 +418,7 @@ export class AdminService {
 
   async listUsers(): Promise<AdminUser[]> {
     const customers = await this.prisma.customer.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, isCmsUser: false },
       include: {
         contracts: {
           where: { deletedAt: null },
