@@ -19,17 +19,20 @@ export class NodemailerEmailService implements EmailService {
 
   constructor(private readonly config: ConfigService) {
     this.from = this.config.get<string>('SMTP_FROM', 'noreply@luki.ec');
+    const host   = this.config.get<string>('SMTP_HOST', '');
+    const port   = parseInt(this.config.get<string>('SMTP_PORT', '465'), 10);
+    const secure = this.config.get<string>('SMTP_SECURE') === 'true';
+    const user   = this.config.get<string>('SMTP_USER', '');
+    const pass   = this.config.get<string>('SMTP_PASS', '');
+
+    this.logger.log(`SMTP config → host=${host} port=${port} secure=${secure} user=${user}`);
+
     this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('SMTP_HOST'),
-      port: this.config.get<number>('SMTP_PORT', 2525),
-      secure: this.config.get<string>('SMTP_SECURE') === 'true',
-      auth: {
-        user: this.config.get<string>('SMTP_USER'),
-        pass: this.config.get<string>('SMTP_PASS'),
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
     });
 
     // Logo embebido como base64 — no depende del filesystem ni del deployment

@@ -295,6 +295,28 @@ async function apiFetch<T>(
 }
 
 // ---------------------------------------------------------------------------
+// Diagnostics
+// ---------------------------------------------------------------------------
+
+export interface SmtpHealthResult {
+  ok: boolean;
+  detail: string;
+  host: string;
+  port: number;
+  sentTo?: string;
+  messageId?: string;
+  durationMs: number;
+}
+
+export async function adminCheckEmailHealth(
+  accessToken: string,
+  sendTestTo?: string,
+): Promise<SmtpHealthResult> {
+  const qs = sendTestTo ? `?to=${encodeURIComponent(sendTestTo)}` : '';
+  return apiFetch<SmtpHealthResult>(`/admin/health/email${qs}`, accessToken);
+}
+
+// ---------------------------------------------------------------------------
 // Users
 // ---------------------------------------------------------------------------
 
