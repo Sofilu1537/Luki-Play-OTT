@@ -90,7 +90,7 @@ function BackLink({ onPress, label = 'Volver' }: { onPress: () => void; label?: 
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
-function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+function LoginForm({ onSwitch, onForcedChange }: { onSwitch: (s: Screen) => void; onForcedChange: (id: string) => void }) {
     const [idNumber, setIdNumber] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -103,7 +103,12 @@ function LoginForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         if (!password) { setError('La contraseña es requerida'); return; }
         try {
             await loginWithId(idNumber.trim(), password);
-            router.replace('/');
+            if (useAuthStore.getState().mustChangePassword) {
+                onForcedChange(idNumber.trim());
+                onSwitch('forgot');
+            } else {
+                router.replace('/');
+            }
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'Credenciales inválidas');
         }
@@ -229,9 +234,9 @@ function ActivateForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 
 // ─── Recuperar contraseña ─────────────────────────────────────────────────────
 
-function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
+function ForgotForm({ onSwitch, defaultIdNumber }: { onSwitch: (s: Screen) => void; defaultIdNumber?: string }) {
     const [step, setStep] = useState<'request' | 'reset' | 'done'>('request');
-    const [idNumber, setIdNumber] = useState('');
+    const [idNumber, setIdNumber] = useState(defaultIdNumber ?? '');
     const [otpCode, setOtpCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -267,6 +272,13 @@ function ForgotForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
         <>
             <BackLink onPress={() => onSwitch('login')} label="Volver al inicio de sesión" />
             <Text style={{ color: P.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>Recuperar contraseña</Text>
+            {defaultIdNumber ? (
+                <View style={{ backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' }}>
+                    <Text style={{ color: P.accent, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
+                        El administrador generó una clave temporal. Debes crear una nueva contraseña para continuar.
+                    </Text>
+                </View>
+            ) : null}
             {error ? <ErrorBox msg={error} /> : null}
             {step === 'request' && (
                 <>
@@ -381,6 +393,7 @@ function RegisterRequestForm({ onSwitch }: { onSwitch: (s: Screen) => void }) {
 
 export default function Login() {
     const [screen, setScreen] = useState<Screen>('login');
+    const [forcedChangeId, setForcedChangeId] = useState<string | undefined>(undefined);
 
     const Content = (
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
@@ -390,10 +403,10 @@ export default function Login() {
                     <Text style={{ color: P.muted, fontSize: 13, letterSpacing: 3, marginTop: 12, textTransform: 'uppercase', fontWeight: '600' }}>tu hogar digital</Text>
                 </View>
                 <View style={{ backgroundColor: P.card, borderRadius: 20, borderWidth: 1, borderColor: P.cardBorder, padding: 28, maxWidth: 420, width: '100%', alignSelf: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 12 } }}>
-                    {screen === 'login'            && <LoginForm onSwitch={setScreen} />}
+                    {screen === 'login'            && <LoginForm onSwitch={setScreen} onForcedChange={id => setForcedChangeId(id)} />}
                     {screen === 'first-access'     && <FirstAccessForm onSwitch={setScreen} />}
                     {screen === 'activate'         && <ActivateForm onSwitch={setScreen} />}
-                    {screen === 'forgot'           && <ForgotForm onSwitch={setScreen} />}
+                    {screen === 'forgot'           && <ForgotForm onSwitch={setScreen} defaultIdNumber={forcedChangeId} />}
                     {screen === 'register-request' && <RegisterRequestForm onSwitch={setScreen} />}
                 </View>
                 <Text style={{ color: P.muted, fontSize: 11, textAlign: 'center', marginTop: 24, opacity: 0.6 }}>Versión v1.0.0</Text>

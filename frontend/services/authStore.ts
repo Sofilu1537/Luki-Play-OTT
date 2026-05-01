@@ -6,7 +6,21 @@ const API_BASE_URL =
     ? `${window.location.protocol}//${window.location.host}`
     : 'http://localhost:3000';
 
-export const DEV_DEVICE_ID = 'luki-web-dev-device-001';
+function getOrCreateDeviceId(): string {
+  const KEY = 'luki-device-id';
+  try {
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id = typeof crypto !== 'undefined' && typeof (crypto as { randomUUID?: unknown }).randomUUID === 'function'
+        ? (crypto as { randomUUID: () => string }).randomUUID()
+        : `luki-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(KEY, id);
+    }
+    return id;
+  } catch {
+    return `luki-${Date.now()}`;
+  }
+}
 
 function handleFetchError(e: unknown): never {
   if (e instanceof TypeError) {
@@ -51,6 +65,7 @@ interface AuthState {
     requestActivationCode: (customerId: string, email?: string) => Promise<{ sent: boolean; needsSupportCode?: boolean }>;
     verifyActivationCode: (customerId: string, code: string) => Promise<void>;
     activate: (customerId: string, otpCode: string, password: string, email?: string) => Promise<void>;
+    mustChangePassword: boolean;
     resetPassword: (contractNumber: string, idNumber: string, newPassword: string) => Promise<void>;
     requestPasswordOtp: (idNumber: string) => Promise<void>;
     resetWithOtp: (idNumber: string, otpCode: string, newPassword: string) => Promise<void>;
@@ -69,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
     refreshToken: null,
     pendingActivation: null,
     codeVerified: false,
+    mustChangePassword: false,
 
     refreshSession: async (): Promise<boolean> => {
         const { refreshToken } = get();
@@ -96,7 +112,11 @@ export const useAuthStore = create<AuthState>()(
 
     restoreSession: async () => {
         const { accessToken, refreshToken } = get();
-        if (!accessToken || !refreshToken) return;
+        if (!refreshToken) return;
+        if (!accessToken) {
+            await get().refreshSession();
+            return;
+        }
         try {
             const [, payload] = accessToken.split('.');
             const { exp } = JSON.parse(atob(payload)) as { exp?: number };
@@ -115,7 +135,7 @@ export const useAuthStore = create<AuthState>()(
             const res = await fetch(`${API_BASE_URL}/auth/app/contract-login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contractNumber, password, deviceId: DEV_DEVICE_ID }),
+                body: JSON.stringify({ contractNumber, password, deviceId: getOrCreateDeviceId() }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Credenciales inválidas');
@@ -144,7 +164,7 @@ export const useAuthStore = create<AuthState>()(
             const res = await fetch(`${API_BASE_URL}/auth/app/id-login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idNumber, password, deviceId: DEV_DEVICE_ID }),
+                body: JSON.stringify({ idNumber, password, deviceId: getOrCreateDeviceId() }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Credenciales inválidas');
@@ -152,6 +172,7 @@ export const useAuthStore = create<AuthState>()(
                 isLoading: false,
                 accessToken: data.accessToken,
                 refreshToken: data.refreshToken,
+                mustChangePassword: data.mustChangePassword ?? false,
                 user: {
                     id: data.user?.id ?? 'unknown',
                     name: data.user?.name ?? 'Luki User',
@@ -342,9 +363,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'luki-auth',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
-        accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         user: state.user,
       }),
