@@ -750,7 +750,7 @@ export class AdminService {
   async sendRecoveryCode(
     id: string,
     emailStr?: string,
-  ): Promise<{ message: string; emailDelivered: boolean; code?: string }> {
+  ): Promise<{ message: string; code: string }> {
     const customer = await this.prisma.customer.findUnique({
       where: { id, deletedAt: null },
     });
@@ -781,7 +781,6 @@ export class AdminService {
       : (customer.email?.split('@')[0] ?? 'Usuario');
 
     const targetEmail = emailStr || customer.email || customer.ispEmail;
-    let emailDelivered = false;
     if (targetEmail) {
       try {
         await this.emailService.sendRecoveryCode(
@@ -789,20 +788,15 @@ export class AdminService {
           code,
           displayName,
         );
-        emailDelivered = true;
-      } catch (err) {
+      } catch {
         this.logger.warn(
-          `Email delivery failed for ${targetEmail}: ${err instanceof Error ? err.message : err}`,
+          `Email delivery failed for ${targetEmail} — code still valid`,
         );
       }
     }
     return {
-      message: emailDelivered
-        ? `Código enviado a ${targetEmail}`
-        : `No se pudo enviar el email a ${targetEmail || 'correo no registrado'}`,
-      emailDelivered,
-      // Solo retornar el código si el email falló, para que el admin pueda compartirlo manualmente
-      ...(!emailDelivered && { code }),
+      message: `Código enviado a ${targetEmail || 'correo no registrado'}`,
+      code,
     };
   }
 

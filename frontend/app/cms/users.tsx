@@ -335,7 +335,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
       setCodeSent(true);
       if (result.code) {
         setGeneratedCode(result.code);
-        onFeedback({ type: 'error', message: 'El email no pudo enviarse. Comparte el código manualmente con el usuario.' });
+        onFeedback({ type: 'success', message: `Código generado para ${email.trim()}` });
       } else {
         onFeedback({ type: 'success', message: `Código de recuperación enviado a ${email.trim()}` });
       }
@@ -355,7 +355,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(96,38,158,0.15)' : 'rgba(130,130,130,0.18)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: 'rgba(255,121,0,0.12)', borderWidth: 1, borderColor: 'rgba(255,121,0,0.25)', alignItems: 'center', justifyContent: 'center' }}>
-                <FontAwesome name="key" size={15} color="#FF7900" />
+                <FontAwesome name="lock" size={15} color="#FF7900" />
               </View>
               <Text style={{ color: isDark ? '#FAF6E7' : '#240046', fontSize: 18, fontWeight: '800', fontFamily: FONT_FAMILY.heading }}>Recuperación de contraseña</Text>
             </View>
@@ -424,7 +424,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
               <View style={{ backgroundColor: isDark ? 'rgba(23,209,198,0.07)' : '#fff', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: isDark ? 'rgba(23,209,198,0.2)' : 'rgba(130,130,130,0.18)' }}>
                 <Text style={{ color: isDark ? 'rgba(250,246,231,0.3)' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.fieldLabel, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontFamily: FONT_FAMILY.bodyBold }}>Código de recuperación</Text>
                 <Text style={{ color: '#17D1C6', fontSize: 30, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' }}>{generatedCode}</Text>
-                <Text style={{ color: '#FF7900', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, marginTop: 8, textAlign: 'center', fontFamily: FONT_FAMILY.body }}>El email no llegó. Comparte este código directamente con el usuario.</Text>
+                <Text style={{ color: isDark ? 'rgba(250,246,231,0.35)' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, marginTop: 8, textAlign: 'center', fontFamily: FONT_FAMILY.body }}>Comparte este código con el usuario de forma segura.</Text>
               </View>
             ) : codeSent ? (
               <View style={{ backgroundColor: isDark ? 'rgba(23,209,198,0.07)' : '#fff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDark ? 'rgba(23,209,198,0.2)' : 'rgba(130,130,130,0.18)' }}>
@@ -1883,7 +1883,7 @@ export default function CmsUsers() {
                           style={{ width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,121,0,0.3)', backgroundColor: 'rgba(255,121,0,0.08)', alignItems: 'center', justifyContent: 'center' }}
                           onPress={() => setRecoveryUser(user)}
                         >
-                          <FontAwesome name="key" size={12} color="#FF7900" />
+                          <FontAwesome name="lock" size={12} color="#FF7900" />
                         </TouchableOpacity>
                         {(user.status === 'active' || user.status === 'inactive') && (
                           <TouchableOpacity

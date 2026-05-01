@@ -31,7 +31,6 @@ import { ProcessPaymentDto } from '../subscription/dto/process-payment.dto';
 import { CreateCanalDto } from './dto/create-canal.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
-import { IsEmail, IsOptional } from 'class-validator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdateCanalDto } from './dto/update-canal.dto';
