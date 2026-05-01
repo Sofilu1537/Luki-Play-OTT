@@ -769,6 +769,7 @@ export class AdminService {
       data: {
         passwordHash,
         mustChangePassword: true,
+        isAccountActivated: true,
         isLocked: false,
         lockedUntil: null,
       },

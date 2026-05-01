@@ -104,6 +104,7 @@ export class IdNumberLoginUseCase {
     return {
       accessToken: tokenPair.accessToken,
       refreshToken: tokenPair.refreshToken,
+      mustChangePassword: customer.mustChangePassword ?? false,
       user: {
         id: customer.id,
         name: customer.nombre,

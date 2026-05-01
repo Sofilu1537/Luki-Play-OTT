@@ -39,7 +39,7 @@ export class ResetPasswordOtpUseCase {
 
     await this.prisma.customer.update({
       where: { id: customer.id },
-      data: { passwordHash },
+      data: { passwordHash, mustChangePassword: false },
     });
 
     // Revocar todas las sesiones activas del customer

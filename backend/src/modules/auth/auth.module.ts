@@ -31,6 +31,7 @@ import { JwtTokenService } from './infrastructure/jwt/jwt-token.service';
 import { JwtStrategy } from './infrastructure/jwt/jwt.strategy';
 import { BcryptHashService } from './infrastructure/persistence/bcrypt-hash.service';
 import { MockOtpService } from './infrastructure/persistence/mock-otp.service';
+import { PrismaOtpService } from './infrastructure/persistence/prisma-otp.service';
 import { MockEmailService } from './infrastructure/persistence/mock-email.service';
 import { NodemailerEmailService } from './infrastructure/persistence/nodemailer-email.service';
 
@@ -135,7 +136,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
     { provide: HASH_SERVICE, useClass: BcryptHashService },
-    { provide: OTP_SERVICE, useClass: MockOtpService },
+    { provide: OTP_SERVICE, useClass: PrismaOtpService },
     { provide: EMAIL_SERVICE, useClass: NodemailerEmailService },
     JwtStrategy,
 
