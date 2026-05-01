@@ -22,6 +22,8 @@ function getOrCreateDeviceId(): string {
   }
 }
 
+export const DEV_DEVICE_ID = getOrCreateDeviceId();
+
 function handleFetchError(e: unknown): never {
   if (e instanceof TypeError) {
     throw new Error('Sin conexión. Verifica tu internet e intenta de nuevo.');
