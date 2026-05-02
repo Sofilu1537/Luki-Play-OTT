@@ -53,6 +53,7 @@ export default function AppLayout() {
                 <Stack.Screen name="profile" />
                 <Stack.Screen name="subscription" />
                 <Stack.Screen name="devices" />
+                <Stack.Screen name="parental-control" />
             </Stack>
 
             <Modal

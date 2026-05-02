@@ -9,6 +9,7 @@ import { CurrentUser } from '../auth/presentation/decorators/current-user.decora
 import type { JwtPayload } from '../auth/domain/interfaces/token.service';
 import { StreamSessionService } from './stream-session.service';
 import { DeviceService } from './device.service';
+import { ParentalControlService } from './parental-control.service';
 import { DeviceType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -19,6 +20,7 @@ export class PublicController {
     private readonly adminService: AdminService,
     private readonly streamSessionService: StreamSessionService,
     private readonly deviceService: DeviceService,
+    private readonly parentalControlService: ParentalControlService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -260,5 +262,62 @@ export class PublicController {
         isCurrentDevice: s.deviceId === currentDevice,
       };
     });
+  }
+
+  // ── Control Parental ──────────────────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get parental control status for the authenticated user' })
+  @Get('parental-control')
+  async getParentalControl(@CurrentUser() user: JwtPayload) {
+    return this.parentalControlService.getStatus(user.sub);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Enable parental control with a 4-digit PIN' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('parental-control/enable')
+  async enableParentalControl(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { pin: string },
+  ): Promise<void> {
+    await this.parentalControlService.enable(user.sub, body.pin);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Disable parental control — requires PIN verification' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('parental-control/disable')
+  async disableParentalControl(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { pin: string },
+  ): Promise<void> {
+    await this.parentalControlService.disable(user.sub, body.pin);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Verify parental control PIN for restricted content' })
+  @Post('parental-control/verify')
+  async verifyParentalPin(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { pin: string },
+  ) {
+    return this.parentalControlService.verifyPin(user.sub, body.pin);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Change parental control PIN' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('parental-control/pin')
+  async changeParentalPin(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { currentPin: string; newPin: string },
+  ): Promise<void> {
+    await this.parentalControlService.changePin(user.sub, body.currentPin, body.newPin);
   }
 }

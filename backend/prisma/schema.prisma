@@ -120,6 +120,8 @@ model Customer {
   mfaEnabled         Boolean    @default(false)
   isLocked           Boolean    @default(false)
   lockedUntil        DateTime?
+  parentalControlEnabled Boolean @default(false)
+  parentalControlPin     String?
   lastLoginAt        DateTime?
   isCmsUser          Boolean    @default(false)
   isSubscriber       Boolean    @default(true)

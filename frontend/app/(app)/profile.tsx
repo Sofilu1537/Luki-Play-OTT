@@ -568,6 +568,12 @@ export default function ProfileScreen() {
                             onPress={() => router.push('/(app)/devices' as any)}
                         />
                         <Row
+                            iconName="shield-checkmark" iconBg={C.green}
+                            label="Control Parental"
+                            chevron
+                            onPress={() => router.push('/(app)/parental-control' as any)}
+                        />
+                        <Row
                             iconName="lock-closed" iconBg={C.purple}
                             label="Cambiar contraseña"
                             chevron isLast
