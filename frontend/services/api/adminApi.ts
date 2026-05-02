@@ -516,6 +516,16 @@ export async function adminDeletePlan(accessToken: string, id: string): Promise<
   }
 }
 
+export async function adminMigratePlanAssignments(
+  accessToken: string,
+  planName: string,
+): Promise<{ updated: number; skipped: number; planId: string }> {
+  return apiFetch('/admin/planes/migrate-assignments', accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ planName }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Sliders
 // ---------------------------------------------------------------------------

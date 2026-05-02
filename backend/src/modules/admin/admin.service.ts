@@ -952,6 +952,35 @@ export class AdminService {
     };
   }
 
+  // ---- Plan migration -------------------------------------------------------
+
+  async migratePlanAssignments(planName: string): Promise<{ updated: number; skipped: number; planId: string }> {
+    const plan = await this.prisma.plan.findFirst({
+      where: { nombre: { equals: planName, mode: 'insensitive' }, activo: true },
+    });
+    if (!plan) throw new NotFoundException(`Plan "${planName}" no encontrado o inactivo`);
+
+    // Contracts that have no planId yet (unlinked) — skip contracts already linked to another plan
+    const unlinked = await this.prisma.contract.findMany({
+      where: { planId: null, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (unlinked.length === 0) return { updated: 0, skipped: 0, planId: plan.id };
+
+    await this.prisma.contract.updateMany({
+      where: { id: { in: unlinked.map((c) => c.id) } },
+      data: {
+        planId: plan.id,
+        planName: plan.nombre,
+        maxDevices: plan.maxDevices,
+      },
+    });
+
+    this.logger.log(`migratePlanAssignments: ${unlinked.length} contracts assigned to plan "${plan.nombre}" (${plan.id})`);
+    return { updated: unlinked.length, skipped: 0, planId: plan.id };
+  }
+
   // ---- Monitor -------------------------------------------------------------
 
   async getMonitorStats() {

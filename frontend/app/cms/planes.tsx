@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useCmsStore } from '../../services/cmsStore';
 import {
   adminCreatePlan, adminDeletePlan, adminListPlans,
-  adminTogglePlan, adminUpdatePlan,
+  adminTogglePlan, adminUpdatePlan, adminMigratePlanAssignments,
   AdminPlan, AdminPlanPayload,
 } from '../../services/api/adminApi';
 import { usePlanesStore } from '../../services/planesStore';
@@ -239,6 +239,8 @@ export default function CmsPlanes() {
   const [channelSearch, setChannelSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'info' | 'acceso' | 'canales'>('info');
   const [deleteConfirm, setDeleteConfirm] = useState<AdminPlan | null>(null);
+  const [migrateResult, setMigrateResult] = useState<{ planName: string; updated: number } | null>(null);
+  const [migratingPlanId, setMigratingPlanId] = useState<string | null>(null);
 
   const webInput = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
 
@@ -409,6 +411,19 @@ export default function CmsPlanes() {
 
   async function handleDelete(plan: AdminPlan) {
     setDeleteConfirm(plan);
+  }
+
+  async function handleMigrate(plan: AdminPlan) {
+    if (!accessToken) return;
+    setMigratingPlanId(plan.id);
+    try {
+      const result = await adminMigratePlanAssignments(accessToken, plan.nombre);
+      setMigrateResult({ planName: plan.nombre, updated: result.updated });
+    } catch (e: unknown) {
+      setMigrateResult({ planName: plan.nombre, updated: -1 });
+    } finally {
+      setMigratingPlanId(null);
+    }
   }
 
   async function confirmDelete() {
@@ -600,6 +615,15 @@ export default function CmsPlanes() {
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: theme.infoSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(180,144,255,0.24)' }} onPress={() => openEditModal(plan)}>
                         <FontAwesome name="pencil" size={12} color={theme.info} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52,211,153,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(52,211,153,0.25)' }}
+                        onPress={() => handleMigrate(plan)}
+                        disabled={migratingPlanId === plan.id}
+                      >
+                        {migratingPlanId === plan.id
+                          ? <ActivityIndicator size={10} color="#34D399" />
+                          : <FontAwesome name="users" size={11} color="#34D399" />}
                       </TouchableOpacity>
                       <TouchableOpacity style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: theme.dangerSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(244,63,94,0.28)' }} onPress={() => handleDelete(plan)}>
                         <FontAwesome name="trash" size={12} color={theme.danger} />
@@ -887,6 +911,28 @@ export default function CmsPlanes() {
                 </TouchableOpacity>
               </View>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Migrate result toast ─────────────────────────────────────────── */}
+      <Modal visible={!!migrateResult} transparent animationType="fade" onRequestClose={() => setMigrateResult(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: '100%', maxWidth: 380, backgroundColor: theme.cardBg, borderRadius: 18, borderWidth: 1, borderColor: migrateResult?.updated === -1 ? 'rgba(244,63,94,0.28)' : 'rgba(52,211,153,0.28)', padding: 28, alignItems: 'center', gap: 10 }}>
+            <FontAwesome name={migrateResult?.updated === -1 ? 'times-circle' : 'check-circle'} size={36} color={migrateResult?.updated === -1 ? theme.danger : '#34D399'} />
+            <Text style={{ color: theme.text, fontSize: 17, fontWeight: '800', textAlign: 'center' }}>
+              {migrateResult?.updated === -1 ? 'Error al migrar' : migrateResult?.updated === 0 ? 'Todos ya asignados' : `${migrateResult?.updated} contratos asignados`}
+            </Text>
+            <Text style={{ color: theme.textSec, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+              {migrateResult?.updated === -1
+                ? 'No se pudo completar la migración. Verifica que el plan esté activo.'
+                : migrateResult?.updated === 0
+                  ? `Todos los contratos ya tienen un plan asignado.`
+                  : `Los contratos sin plan ahora apuntan a "${migrateResult?.planName}".`}
+            </Text>
+            <TouchableOpacity style={{ marginTop: 6, paddingVertical: 11, paddingHorizontal: 32, borderRadius: 10, backgroundColor: theme.accentSoft, borderWidth: 1, borderColor: theme.accentBorder }} onPress={() => setMigrateResult(null)}>
+              <Text style={{ color: theme.accentLight, fontWeight: '700' }}>Cerrar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

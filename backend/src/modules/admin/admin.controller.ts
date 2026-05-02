@@ -186,6 +186,13 @@ export class AdminController {
     return this.adminService.getUserPlan(id);
   }
 
+  @ApiOperation({ summary: 'Migrate all unlinked contracts to a plan by name (case-insensitive)' })
+  @Permissions('cms:planes:write')
+  @Post('planes/migrate-assignments')
+  async migratePlanAssignments(@Body() body: { planName: string }) {
+    return this.adminService.migratePlanAssignments(body.planName);
+  }
+
   @ApiOperation({ summary: 'List all CMS roles with their permissions' })
   @Permissions('cms:roles')
   @Get('roles')
