@@ -144,7 +144,7 @@ function LogoutConfirmModal({
 const MENU_ITEMS: { icon: string; label: string; route?: string; soon?: boolean }[] = [
     { icon: 'person-circle-outline',   label: 'Mi Perfil',       route: '/(app)/profile' },
     { icon: 'card-outline',            label: 'Mi Suscripción',  route: '/(app)/subscription' },
-    { icon: 'phone-portrait-outline',  label: 'Mis Dispositivos', soon: true },
+    { icon: 'phone-portrait-outline',  label: 'Mis Dispositivos', route: '/(app)/devices' },
     { icon: 'settings-outline',        label: 'Configuración',   soon: true },
     { icon: 'help-circle-outline',     label: 'Ayuda y soporte', soon: true },
 ];
