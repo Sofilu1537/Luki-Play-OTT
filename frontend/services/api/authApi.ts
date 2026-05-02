@@ -66,6 +66,9 @@ export interface RefreshTokenResponse {
 
 export interface UserProfileResponse {
   id: string;
+  firstName: string;
+  lastName: string;
+  idNumber: string | null;
   contractNumber: string | null;
   email: string;
   role: string;
@@ -75,6 +78,8 @@ export interface UserProfileResponse {
   serviceStatus: string | null;
   canAccessOtt: boolean;
   restrictionMessage: string | null;
+  lastLoginAt: string | null;
+  mustChangePassword: boolean;
   permissions: string[];
   entitlements: string[];
 }

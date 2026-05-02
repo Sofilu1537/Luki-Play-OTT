@@ -34,6 +34,8 @@ export default function AppLayout() {
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="player" />
+            <Stack.Screen name="profile" />
+            <Stack.Screen name="subscription" />
         </Stack>
     );
 }

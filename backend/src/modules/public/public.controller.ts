@@ -85,6 +85,34 @@ export class PublicController {
     }
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get authenticated user plan + active subscription dates' })
+  @Get('me/plan')
+  async getMePlan(@CurrentUser() user: JwtPayload) {
+    const [planRecord, subscription] = await Promise.all([
+      this.adminService.getUserPlan(user.sub),
+      this.streamSessionService.getMeSubscription(user.sub),
+    ]);
+
+    return {
+      plan: {
+        ...planRecord,
+        precio: subscription?.plan?.precio ?? null,
+        moneda: subscription?.plan?.moneda ?? 'USD',
+      },
+      subscription: subscription
+        ? {
+            id: subscription.id,
+            status: subscription.status,
+            startDate: subscription.startDate,
+            expirationDate: subscription.expirationDate,
+            gracePeriodEnd: subscription.gracePeriodEnd ?? null,
+          }
+        : null,
+    };
+  }
+
   // ── Stream slot management ─────────────────────────────────────────────────
 
   @ApiBearerAuth()

@@ -140,20 +140,21 @@ function LogoutConfirmModal({
     );
 }
 
-const MENU_ITEMS: { icon: string; label: string; soon?: boolean }[] = [
-    { icon: 'person-circle-outline',   label: 'Mi Perfil' },
-    { icon: 'card-outline',            label: 'Mi Suscripción' },
-    { icon: 'phone-portrait-outline',  label: 'Mis Dispositivos' },
-    { icon: 'settings-outline',        label: 'Configuración' },
-    { icon: 'help-circle-outline',     label: 'Ayuda y soporte' },
+const MENU_ITEMS: { icon: string; label: string; route?: string; soon?: boolean }[] = [
+    { icon: 'person-circle-outline',   label: 'Mi Perfil',       route: '/(app)/profile' },
+    { icon: 'card-outline',            label: 'Mi Suscripción',  route: '/(app)/subscription' },
+    { icon: 'phone-portrait-outline',  label: 'Mis Dispositivos', soon: true },
+    { icon: 'settings-outline',        label: 'Configuración',   soon: true },
+    { icon: 'help-circle-outline',     label: 'Ayuda y soporte', soon: true },
 ];
 
 function ProfileDropdown({
-    user, onClose, onLogout,
+    user, onClose, onLogout, onNavigate,
 }: {
     user: { name: string; email: string; plan: string };
     onClose: () => void;
     onLogout: () => void;
+    onNavigate: (route: string) => void;
 }) {
     const planColor = getPlanColor(user.plan);
     return (
@@ -208,7 +209,11 @@ function ProfileDropdown({
                     {MENU_ITEMS.map((item) => (
                         <TouchableOpacity
                             key={item.label}
-                            onPress={onClose}
+                            onPress={() => {
+                                onClose();
+                                if (item.route) onNavigate(item.route);
+                            }}
+                            disabled={item.soon && !item.route}
                             style={{
                                 flexDirection: 'row', alignItems: 'center', gap: 12,
                                 paddingHorizontal: 16, paddingVertical: 11,
@@ -262,6 +267,7 @@ function Navbar({
     const [active, setActive] = useState('Inicio');
     const [menuOpen, setMenuOpen] = useState(false);
     const planColor = getPlanColor(user?.plan ?? '');
+    const router = useRouter();
 
     return (
         <View style={{
@@ -340,6 +346,7 @@ function Navbar({
                             user={user}
                             onClose={() => setMenuOpen(false)}
                             onLogout={() => { setMenuOpen(false); onLogoutRequest(); }}
+                            onNavigate={(route) => { setMenuOpen(false); router.push(route as any); }}
                         />
                     )}
                 </View>

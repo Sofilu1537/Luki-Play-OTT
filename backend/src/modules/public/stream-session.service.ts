@@ -57,6 +57,14 @@ export class StreamSessionService {
     });
   }
 
+  async getMeSubscription(customerId: string) {
+    return this.prisma.subscription.findFirst({
+      where: { customerId, status: { not: 'CANCELLED' } },
+      orderBy: { createdAt: 'desc' },
+      include: { plan: true },
+    });
+  }
+
   private async resolveLimit(
     customerId: string,
     contractId: string | undefined,
