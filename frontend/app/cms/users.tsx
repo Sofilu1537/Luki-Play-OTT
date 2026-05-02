@@ -900,18 +900,13 @@ function UserDetailModal({
   };
 
   const handleSavePlan = async () => {
-    if (!accessToken || !user || !editPayload.planId || !editPayload.email) {
-      setFeedback({ type: 'error', message: 'Falta información requerida' });
+    if (!accessToken || !user || !editPayload.planId) {
+      setFeedback({ type: 'error', message: 'Selecciona un plan' });
       return;
     }
     setIsSaving(true);
     try {
-      const payload: Partial<AdminUserPayload> = {
-        email: editPayload.email,
-        planId: editPayload.planId,
-        contrato: editPayload.contrato,
-      };
-      await adminUpdateUser(accessToken, user.id, payload as AdminUserPayload);
+      await adminUpdateUser(accessToken, user.id, { planId: editPayload.planId } as AdminUserPayload);
       await refreshUser();
       setFeedback({ type: 'success', message: 'Plan actualizado correctamente' });
       setIsEditingPlan(false);
