@@ -16,12 +16,13 @@ const CARD_BG = '#12082A';
 const ACCENT = '#FFC107';
 
 const PLAN_COLORS: Record<string, string> = {
-    lukiplay:    '#FFC107',
-    basic:       '#60A5FA',
-    premium:     '#A78BFA',
-    pro:         '#34D399',
-    familiar:    '#F472B6',
-    empresarial: '#FB923C',
+    lukiplay:     '#FFC107',
+    'lukiplay go': '#00E5FF',
+    basic:        '#60A5FA',
+    premium:      '#A78BFA',
+    pro:          '#34D399',
+    familiar:     '#F472B6',
+    empresarial:  '#FB923C',
 };
 
 const VIDEO_QUALITY_LABEL: Record<string, string> = {

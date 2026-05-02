@@ -34,12 +34,13 @@ const C = {
 } as const;
 
 const PLAN_COLORS: Record<string, string> = {
-    lukiplay:    C.yellow,
-    basic:       C.blue,
-    premium:     C.purple,
-    pro:         C.green,
-    familiar:    C.pink,
-    empresarial: C.orange,
+    lukiplay:     C.yellow,
+    'lukiplay go': '#00E5FF',
+    basic:        C.blue,
+    premium:      C.purple,
+    pro:          C.green,
+    familiar:     C.pink,
+    empresarial:  C.orange,
 };
 
 const CONTRACT_TYPE_LABEL: Record<string, string> = {
