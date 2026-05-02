@@ -197,7 +197,24 @@ export async function getMe(accessToken: string): Promise<UserProfileResponse> {
   return data as UserProfileResponse;
 }
 
-/** Login with cédula de identidad + password → JWT tokens. */
+/** Change password for authenticated user. Revokes all sessions on success. */
+export async function changePassword(
+  accessToken: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? 'Error al cambiar la contraseña');
+  return data as { message: string };
+}
 export async function idNumberLogin(req: { idNumber: string; password: string; deviceId: string }): Promise<AuthTokensResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/app/id-login`, {
     method: 'POST',
