@@ -7,6 +7,65 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [0.5.0-beta] — 2026-05
+
+### Añadido
+
+#### Backend — Gestión de Dispositivos
+- **DeviceService**: `upsertDevice`, `getDevices`, `renameDevice`, `removeDevice` con soft-delete y revocación de sesiones en transaction
+- **DeviceService**: Resolución de límite de dispositivos desde `Contract.maxDevices` → `planSnapshot` → default 3
+- **Schema**: Modelo `Device` mejorado — `DeviceType` enum (MOBILE/TABLET/DESKTOP/SMART_TV/UNKNOWN), campos `os`, `browser`, `modelo`, `ipAddress`, `lastSeenAt`, `deletedAt`; índice único `(customerId, deviceFingerprint)`
+- **Migración**: `20260502000000_enhance_devices`
+- **PublicController**: `POST /public/devices/register`, `GET /public/devices`, `PATCH /public/devices/:fingerprint`, `DELETE /public/devices/:fingerprint`
+- **PublicController**: `GET /public/sessions` — sesiones activas con info enriquecida de dispositivo
+
+#### Backend — Control Parental
+- **ParentalControlService**: `getStatus`, `enable`, `disable`, `verifyPin`, `changePin`, `updateLevel`
+- **ParentalControlService**: PIN de 4 dígitos numéricos almacenado con bcrypt (`HASH_SERVICE`)
+- **Schema**: Campos `parentalControlEnabled`, `parentalControlPin`, `parentalControlLevel` en `Customer`
+- **Migraciones**: `20260502010000_add_parental_control`, `20260502020000_add_parental_control_level`
+- **PublicController**: `GET /public/parental-control`, `POST enable/disable/verify`, `PATCH level/pin`
+
+#### Backend — Streams Concurrentes (ya existente, documentado)
+- **StreamSessionService**: Reserva y libera slots de stream por suscriptor
+- **StreamSessionService**: Limpieza automática de streams sin heartbeat después de 90s
+- **StreamSessionService**: Políticas `BLOCK_NEW` (HTTP 429) y `REPLACE_OLDEST`
+- **Schema**: Modelo `ActiveStream` con `lastHeartbeat` para TTL heartbeat
+- **PublicController**: `POST /public/streams/start`, `PATCH /public/streams/:id/heartbeat`, `DELETE /public/streams/:id`
+
+#### Frontend — Gestión de Dispositivos
+- **devices.tsx**: Pantalla completa — lista de dispositivos con tipo, OS, browser; indicador de slots usados/total con barra de progreso y color dinámico (verde → naranja → rojo)
+- **devices.tsx**: Dispositivo actual destacado con ícono coloreado; rename via bottom sheet; delete con confirmación
+- **deviceApi.ts**: `detectDeviceInfo()`, `registerDevice`, `getDevices`, `renameDevice`, `removeDevice`, `getActiveSessions`
+- **_layout.tsx**: Ruta `/(app)/devices` registrada en el stack
+
+#### Frontend — Control Parental
+- **parental-control.tsx**: Máquina de estados — `loading | gate | settings | enable | change-pin | disable`
+- **parental-control.tsx**: `PinGate` — pantalla completa de verificación antes de ver ajustes (si está activado)
+- **parental-control.tsx**: `EnableFlow` — 3 pasos: selector de nivel → nuevo PIN → confirmar PIN
+- **parental-control.tsx**: `ChangePinFlow` — verificar PIN actual → nuevo PIN → confirmar
+- **parental-control.tsx**: `DisableFlow` — ingresar PIN → desactivar
+- **parental-control.tsx**: `PinDots` — 4 círculos con glow verde al llenarse, rojo en error
+- **parental-control.tsx**: `PinKeypad` — teclado numérico estilo iOS con backspace
+- **parental-control.tsx**: Animación shake (`Animated.sequence`) en PIN incorrecto; auto-submit a los 4 dígitos con delay 120ms
+- **parental-control.tsx**: `SettingsView` — tarjeta de estado + selector de nivel (auto-guarda) + botones de acción
+- **parental-control.tsx**: Toast animado de feedback (fade in/hold/fade out)
+- **_layout.tsx**: Ruta `/(app)/parental-control` registrada en el stack
+
+#### Frontend — UX y Perfil
+- **home.tsx**: `ProfileDropdown` rediseñado — iconos coloreados estilo iOS Settings, agrupación por sección, animación spring al abrir, caret triangular apuntando al avatar
+- **home.tsx**: Eliminadas secciones "Configuración" y "Ayuda y soporte" del menú
+- **profile.tsx**: Filas "Mis Dispositivos" y "Control Parental" con íconos coloreados
+- **subscription.tsx**: Rediseño — tarjeta de estado, fechas, sin secciones redundantes
+
+### Cambiado
+- **PublicModule**: Importa `AuthModule` para acceder a `HASH_SERVICE` (bcrypt)
+- **PublicModule**: Registra `StreamSessionService`, `DeviceService`, `ParentalControlService`
+- **MENU_ITEMS** en `home.tsx`: Tipo simplificado (sin `soon?`), solo ítems con rutas activas
+- **main**: `Sprint_1_integracion-player` fusionada en `main` via force push (backup tag `backup/main-pre-sprint1`)
+
+---
+
 ## [0.4.0-beta] — 2026-04
 
 ### Añadido

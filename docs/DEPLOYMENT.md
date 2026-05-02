@@ -387,6 +387,20 @@ openssl rand -hex 32    # Ejecutar dos veces — uno para cada secret
 > ⚠️ **`migrate dev` nunca en producción** — genera archivos SQL en el repo y puede
 > dejar la base de datos en estado inconsistente si se interrumpe.
 
+### Migraciones pendientes en PRD
+
+Si el servidor ya está desplegado con una versión anterior, las siguientes migraciones
+deben aplicarse en el **próximo `prisma migrate deploy`**:
+
+| Migración | Descripción |
+|-----------|-------------|
+| `20260502000000_enhance_devices` | Enum `DeviceType`, tabla `devices` mejorada con OS/browser/modelo, índice único por `(customerId, deviceFingerprint)` |
+| `20260502010000_add_parental_control` | Columnas `parentalControlEnabled`, `parentalControlPin` en `customers` |
+| `20260502020000_add_parental_control_level` | Columna `parentalControlLevel TEXT DEFAULT 'ALL'` en `customers` |
+
+Estas migraciones son **no destructivas** (solo `ADD COLUMN` y `ALTER TABLE`) y se pueden
+aplicar con el servidor en producción sin downtime.
+
 ### Verificar estado de migraciones
 
 ```bash
@@ -432,13 +446,15 @@ no debe ejecutarse en actualizaciones PRD.
 El archivo de configuración está en `deploy/nginx/luki-play-ott.conf`.
 Rutas expuestas:
 
-| Ruta      | Destino                    | Descripción                    |
-|-----------|----------------------------|--------------------------------|
-| `/auth/`  | `http://localhost:8100/auth/`  | Autenticación JWT              |
-| `/admin/` | `http://localhost:8100/admin/` | CMS endpoints (requiere JWT)   |
-| `/public/`| `http://localhost:8100/public/`| Endpoints sin autenticación    |
-| `/api/`   | `http://localhost:8100/api/`   | Swagger y endpoints generales  |
-| `/`       | `/var/www/luki-play-ott`       | Frontend estático (SPA)        |
+| Ruta          | Destino                         | Descripción                              |
+|---------------|---------------------------------|------------------------------------------|
+| `/auth/`      | `http://localhost:8100/auth/`   | Autenticación JWT + refresh              |
+| `/admin/`     | `http://localhost:8100/admin/`  | CMS endpoints (requiere JWT)             |
+| `/public/`    | `http://localhost:8100/public/` | API suscriptores (mix auth/sin auth)     |
+| `/api/`       | `http://localhost:8100/api/`    | Swagger y endpoints generales            |
+| `/favorites/` | `http://localhost:8100/api/favorites/` | Favoritos de canales (requiere JWT) |
+| `/uploads/`   | `backend/uploads/` (alias)      | Logos y assets estáticos (caché 30d)     |
+| `/`           | `/var/www/luki-play-ott`        | Frontend estático (SPA fallback)         |
 
 Para habilitar HTTPS con Certbot:
 
