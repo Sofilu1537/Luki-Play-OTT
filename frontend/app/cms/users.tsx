@@ -906,7 +906,9 @@ function UserDetailModal({
     }
     setIsSaving(true);
     try {
-      await adminUpdateUser(accessToken, user.id, { planId: editPayload.planId } as AdminUserPayload);
+      const payload: Partial<AdminUserPayload> = { planId: editPayload.planId };
+      if (editPayload.contrato?.trim()) payload.contrato = editPayload.contrato.trim();
+      await adminUpdateUser(accessToken, user.id, payload as AdminUserPayload);
       await refreshUser();
       setFeedback({ type: 'success', message: 'Plan actualizado correctamente' });
       setIsEditingPlan(false);
@@ -1280,8 +1282,19 @@ function UserDetailModal({
                     {isEditingPlan ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>CÓDIGO DE CONTRATO</Text>
-                          <TextInput style={baseInput} value={editPayload.contrato} onChangeText={v => setEditPayload({ ...editPayload, contrato: v })} />
+                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>NÚMERO DE CONTRATO</Text>
+                          <TextInput
+                            style={baseInput}
+                            value={editPayload.contrato ?? ''}
+                            onChangeText={v => setEditPayload({ ...editPayload, contrato: v })}
+                            placeholder={user.contrato ?? 'Ej. 000000042'}
+                            placeholderTextColor={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'}
+                            autoCapitalize="characters"
+                            maxLength={20}
+                          />
+                          <Text style={{ color: isDark ? theme.textMuted : 'rgba(0,0,0,0.4)', fontSize: 11, marginTop: -8 }}>
+                            Opcional — si se deja vacío se mantiene el número actual o se genera automáticamente.
+                          </Text>
                         </View>
                         <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
                         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
