@@ -512,14 +512,18 @@ export class AdminService {
     const passwordHash = await bcrypt.hash(randomBytes(16).toString('hex'), 10);
 
     const contractData = dto.contrato
-      ? (() => {
+      ? await (async () => {
           const contractNumber = this.buildContractNumber(dto.contrato);
+          const plan = dto.planId
+            ? await this.prisma.plan.findUnique({ where: { id: dto.planId } })
+            : null;
           return {
             contracts: {
               create: {
                 contractNumber,
-                planName: dto.plan ?? dto.planId ?? 'LUKI PLAY',
-                maxDevices: dto.maxDevices ?? 3,
+                planName: plan?.nombre ?? dto.plan ?? 'LUKI PLAY',
+                planId: plan?.id ?? null,
+                maxDevices: plan?.maxDevices ?? dto.maxDevices ?? 3,
                 sessionDurationDays: dto.sessionDurationDays ?? 30,
                 sessionLimitPolicy: this.toPrismaSessionLimitPolicy(
                   dto.sessionLimitPolicy,
@@ -922,9 +926,9 @@ export class AdminService {
 
     const contract = customer.contracts[0];
     const plan = contract
-      ? await this.prisma.plan.findFirst({
-          where: { nombre: contract.planName },
-        })
+      ? await (contract.planId
+          ? this.prisma.plan.findUnique({ where: { id: contract.planId } })
+          : this.prisma.plan.findFirst({ where: { nombre: contract.planName } }))
       : null;
 
     return {
