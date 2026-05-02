@@ -6,7 +6,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from '../admin/admin.service';
 import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/presentation/decorators/current-user.decorator';
-import { JwtPayload } from '../auth/domain/interfaces/token.service';
+import type { JwtPayload } from '../auth/domain/interfaces/token.service';
 import { StreamSessionService } from './stream-session.service';
 
 @ApiTags('Public')
