@@ -297,7 +297,7 @@ function Navbar({
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 32,
-            backgroundColor: '#0D0520',
+            backgroundColor: '#1E0B45',
             borderBottomWidth: 1,
             borderBottomColor: 'rgba(255,255,255,0.06)',
             zIndex: 100,
@@ -718,7 +718,7 @@ export default function Home() {
     const favorites = liveChannels.filter((c) => c.isFavorite);
 
     return (
-        <LinearGradient colors={['#0D0520', '#05020C']} locations={[0, 0.45]} style={{ flex: 1 }}>
+        <LinearGradient colors={['#1E0B45', '#0D0520', '#05020C']} locations={[0, 0.35, 1]} style={{ flex: 1 }}>
             <StatusBar barStyle="light-content" />
 
             {/* Sticky Navbar */}
