@@ -1,8 +1,7 @@
 import {
     View, Text, ScrollView, TouchableOpacity, StatusBar,
     ActivityIndicator, Platform, Animated, Modal,
-    TextInput, KeyboardAvoidingView, TouchableWithoutFeedback,
-    Keyboard,
+    TextInput, KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -215,14 +214,15 @@ function ChangePasswordSheet({
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' }}>
-                        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={handleClose} />
+            <View style={{ flex: 1 }}>
+                {/* Backdrop — tapping it closes the sheet */}
+                <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }}
+                    activeOpacity={1}
+                    onPress={handleClose}
+                />
 
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                         <View style={{
                             backgroundColor: '#1C1C1E',
                             borderTopLeftRadius: 20, borderTopRightRadius: 20,
@@ -320,9 +320,8 @@ function ChangePasswordSheet({
                                 )}
                             </View>
                         </View>
-                    </View>
-                </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
+                </KeyboardAvoidingView>
+            </View>
         </Modal>
     );
 }
