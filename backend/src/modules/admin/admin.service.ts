@@ -609,47 +609,67 @@ export class AdminService {
       },
     });
 
-    // Update contract-related fields on first contract
+    // Update or create contract when plan/contract fields are provided
     const contract = customer.contracts[0];
-    if (
-      contract &&
-      (dto.maxDevices !== undefined ||
-        dto.sessionDurationDays !== undefined ||
-        dto.sessionLimitPolicy !== undefined ||
-        dto.planId !== undefined ||
-        dto.contrato !== undefined)
-    ) {
+    const needsContractUpdate =
+      dto.maxDevices !== undefined ||
+      dto.sessionDurationDays !== undefined ||
+      dto.sessionLimitPolicy !== undefined ||
+      dto.planId !== undefined ||
+      dto.contrato !== undefined;
+
+    if (needsContractUpdate) {
       const plan = dto.planId
         ? await this.prisma.plan.findUnique({ where: { id: dto.planId } })
         : null;
-      await this.prisma.contract.update({
-        where: { id: contract.id },
-        data: {
-          ...(dto.maxDevices !== undefined
-            ? { maxDevices: dto.maxDevices }
-            : {}),
-          ...(dto.sessionDurationDays !== undefined
-            ? { sessionDurationDays: dto.sessionDurationDays }
-            : {}),
-          ...(dto.sessionLimitPolicy !== undefined
-            ? {
-                sessionLimitPolicy: this.toPrismaSessionLimitPolicy(
-                  dto.sessionLimitPolicy,
-                ),
-              }
-            : {}),
-          ...(dto.planId !== undefined && plan
-            ? {
-                planName: plan.nombre,
-                planId: plan.id,
-                maxDevices: plan.maxDevices,
-              }
-            : {}),
-          ...(dto.contrato !== undefined
-            ? { contractNumber: dto.contrato }
-            : {}),
-        },
-      });
+
+      if (contract) {
+        await this.prisma.contract.update({
+          where: { id: contract.id },
+          data: {
+            ...(dto.maxDevices !== undefined
+              ? { maxDevices: dto.maxDevices }
+              : {}),
+            ...(dto.sessionDurationDays !== undefined
+              ? { sessionDurationDays: dto.sessionDurationDays }
+              : {}),
+            ...(dto.sessionLimitPolicy !== undefined
+              ? {
+                  sessionLimitPolicy: this.toPrismaSessionLimitPolicy(
+                    dto.sessionLimitPolicy,
+                  ),
+                }
+              : {}),
+            ...(dto.planId !== undefined && plan
+              ? {
+                  planName: plan.nombre,
+                  planId: plan.id,
+                  maxDevices: plan.maxDevices,
+                }
+              : {}),
+            // Only update contractNumber if a non-empty value is provided
+            ...(dto.contrato ? { contractNumber: dto.contrato } : {}),
+          },
+        });
+      } else if (dto.planId !== undefined && plan) {
+        // User has no contract — auto-create one linked to the selected plan
+        const contractNumber =
+          dto.contrato || `OTT-${id.slice(0, 8).toUpperCase()}`;
+        await this.prisma.contract.create({
+          data: {
+            customerId: id,
+            contractNumber,
+            planId: plan.id,
+            planName: plan.nombre,
+            maxDevices: plan.maxDevices,
+            sessionDurationDays: 30,
+            fechaInicio: new Date(),
+            fechaFin: new Date(
+              Date.now() + (plan.duracionDias ?? 30) * 24 * 60 * 60 * 1000,
+            ),
+          },
+        });
+      }
     }
 
     const updated = await this.prisma.customer.findUniqueOrThrow({
