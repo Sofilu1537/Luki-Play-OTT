@@ -141,12 +141,19 @@ function LogoutConfirmModal({
     );
 }
 
-const MENU_ITEMS: { icon: string; label: string; route?: string; soon?: boolean }[] = [
-    { icon: 'person-circle-outline',   label: 'Mi Perfil',       route: '/(app)/profile' },
-    { icon: 'card-outline',            label: 'Mi Suscripción',  route: '/(app)/subscription' },
-    { icon: 'phone-portrait-outline',  label: 'Mis Dispositivos', route: '/(app)/devices' },
-    { icon: 'settings-outline',        label: 'Configuración',   soon: true },
-    { icon: 'help-circle-outline',     label: 'Ayuda y soporte', soon: true },
+const MENU_ITEMS: {
+    icon: string;
+    label: string;
+    iconBg: string;
+    route?: string;
+    soon?: boolean;
+}[] = [
+    { icon: 'person-fill',            label: 'Mi Perfil',          iconBg: '#0A84FF', route: '/(app)/profile' },
+    { icon: 'card',                   label: 'Mi Suscripción',     iconBg: '#FF9F0A', route: '/(app)/subscription' },
+    { icon: 'phone-portrait',         label: 'Mis Dispositivos',   iconBg: '#5AC8FA', route: '/(app)/devices' },
+    { icon: 'shield-checkmark',       label: 'Control Parental',   iconBg: '#30D158', route: '/(app)/parental-control' },
+    { icon: 'settings',               label: 'Configuración',      iconBg: '#636366', soon: true },
+    { icon: 'help-circle',            label: 'Ayuda y soporte',    iconBg: '#636366', soon: true },
 ];
 
 function ProfileDropdown({
@@ -158,6 +165,57 @@ function ProfileDropdown({
     onNavigate: (route: string) => void;
 }) {
     const planColor = getPlanColor(user.plan);
+
+    // Split into main nav and secondary (soon) items
+    const mainItems = MENU_ITEMS.filter((i) => !i.soon);
+    const secondaryItems = MENU_ITEMS.filter((i) => i.soon);
+
+    const renderItem = (item: typeof MENU_ITEMS[0], isLast: boolean) => (
+        <TouchableOpacity
+            key={item.label}
+            onPress={() => {
+                if (item.soon) return;
+                onClose();
+                if (item.route) onNavigate(item.route);
+            }}
+            activeOpacity={item.soon ? 1 : 0.65}
+            style={{
+                flexDirection: 'row', alignItems: 'center', gap: 11,
+                paddingHorizontal: 14, paddingVertical: 10,
+                opacity: item.soon ? 0.42 : 1,
+            }}
+        >
+            {/* Colored icon pill */}
+            <View style={{
+                width: 30, height: 30, borderRadius: 8,
+                backgroundColor: item.iconBg,
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+                <Ionicons name={item.icon as any} size={15} color="#fff" />
+            </View>
+
+            <Text style={{
+                color: '#fff', fontSize: 13, fontWeight: '600', flex: 1,
+                letterSpacing: 0.1,
+            }}>
+                {item.label}
+            </Text>
+
+            {item.soon ? (
+                <View style={{
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
+                }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>
+                        PRONTO
+                    </Text>
+                </View>
+            ) : (
+                <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.25)" />
+            )}
+        </TouchableOpacity>
+    );
+
     return (
         <>
             {/* Backdrop */}
@@ -168,86 +226,83 @@ function ProfileDropdown({
                     top: 0, left: 0, right: 0, bottom: 0, zIndex: 998,
                 }}
             />
+
             {/* Panel */}
             <View style={{
-                position: 'absolute', top: HEADER_H + 4, right: 0, zIndex: 999,
-                width: 264,
-                backgroundColor: '#12082A',
-                borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                position: 'absolute', top: HEADER_H + 6, right: 0, zIndex: 999,
+                width: 272,
+                backgroundColor: '#1A0D30',
+                borderRadius: 18,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
                 overflow: 'hidden',
-                shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+                shadowColor: '#000', shadowOpacity: 0.65, shadowRadius: 32,
+                shadowOffset: { width: 0, height: 12 },
             }}>
-                {/* User card */}
+                {/* ── User card ── */}
                 <View style={{
                     padding: 16,
-                    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+                    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)',
                     flexDirection: 'row', alignItems: 'center', gap: 12,
-                    backgroundColor: `${planColor}0D`,
+                    backgroundColor: `${planColor}12`,
                 }}>
                     <View style={{
-                        width: 46, height: 46, borderRadius: 23,
+                        width: 48, height: 48, borderRadius: 24,
                         backgroundColor: planColor,
                         alignItems: 'center', justifyContent: 'center',
-                        borderWidth: 2, borderColor: `${planColor}80`,
+                        shadowColor: planColor, shadowOpacity: 0.5,
+                        shadowRadius: 10, shadowOffset: { width: 0, height: 3 },
                     }}>
-                        <Text style={{ color: '#140026', fontSize: 19, fontWeight: '900' }}>
+                        <Text style={{ color: '#000', fontSize: 20, fontWeight: '900' }}>
                             {getInitial(user.name)}
                         </Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }} numberOfLines={1}>
+                    <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800', letterSpacing: -0.2 }} numberOfLines={1}>
                             {user.name}
                         </Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 1 }} numberOfLines={1}>
+                        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }} numberOfLines={1}>
                             {user.email}
                         </Text>
                         <PlanBadge plan={user.plan} />
                     </View>
                 </View>
 
-                {/* Menu items */}
+                {/* ── Main items ── */}
                 <View style={{ paddingVertical: 6 }}>
-                    {MENU_ITEMS.map((item) => (
-                        <TouchableOpacity
-                            key={item.label}
-                            onPress={() => {
-                                onClose();
-                                if (item.route) onNavigate(item.route);
-                            }}
-                            disabled={item.soon && !item.route}
-                            style={{
-                                flexDirection: 'row', alignItems: 'center', gap: 12,
-                                paddingHorizontal: 16, paddingVertical: 11,
-                            }}
-                        >
-                            <Ionicons name={item.icon as any} size={17} color="rgba(255,255,255,0.55)" />
-                            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600', flex: 1 }}>
-                                {item.label}
-                            </Text>
-                            {item.soon && (
-                                <View style={{
-                                    backgroundColor: 'rgba(255,193,7,0.15)', borderRadius: 8,
-                                    paddingHorizontal: 6, paddingVertical: 2,
-                                }}>
-                                    <Text style={{ color: ACCENT, fontSize: 9, fontWeight: '800' }}>PRONTO</Text>
-                                </View>
-                            )}
-                            <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.2)" />
-                        </TouchableOpacity>
-                    ))}
+                    {mainItems.map((item, i) => renderItem(item, i === mainItems.length - 1))}
                 </View>
 
-                {/* Logout */}
-                <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', paddingVertical: 6 }}>
+                {/* ── Secondary (pronto) items ── */}
+                {secondaryItems.length > 0 && (
+                    <View style={{
+                        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
+                        paddingVertical: 6,
+                    }}>
+                        {secondaryItems.map((item, i) => renderItem(item, i === secondaryItems.length - 1))}
+                    </View>
+                )}
+
+                {/* ── Logout ── */}
+                <View style={{
+                    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)',
+                    paddingVertical: 6,
+                }}>
                     <TouchableOpacity
                         onPress={() => { onClose(); onLogout(); }}
+                        activeOpacity={0.65}
                         style={{
-                            flexDirection: 'row', alignItems: 'center', gap: 12,
-                            paddingHorizontal: 16, paddingVertical: 11,
+                            flexDirection: 'row', alignItems: 'center', gap: 11,
+                            paddingHorizontal: 14, paddingVertical: 10,
                         }}
                     >
-                        <Ionicons name="log-out-outline" size={17} color="#F87171" />
-                        <Text style={{ color: '#F87171', fontSize: 13, fontWeight: '700' }}>
+                        <View style={{
+                            width: 30, height: 30, borderRadius: 8,
+                            backgroundColor: 'rgba(255,69,58,0.18)',
+                            alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <Ionicons name="log-out-outline" size={15} color="#FF453A" />
+                        </View>
+                        <Text style={{ color: '#FF453A', fontSize: 13, fontWeight: '700' }}>
                             Cerrar sesión
                         </Text>
                     </TouchableOpacity>
