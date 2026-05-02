@@ -141,19 +141,11 @@ function LogoutConfirmModal({
     );
 }
 
-const MENU_ITEMS: {
-    icon: string;
-    label: string;
-    iconBg: string;
-    route?: string;
-    soon?: boolean;
-}[] = [
-    { icon: 'person-fill',            label: 'Mi Perfil',          iconBg: '#0A84FF', route: '/(app)/profile' },
-    { icon: 'card',                   label: 'Mi Suscripción',     iconBg: '#FF9F0A', route: '/(app)/subscription' },
-    { icon: 'phone-portrait',         label: 'Mis Dispositivos',   iconBg: '#5AC8FA', route: '/(app)/devices' },
-    { icon: 'shield-checkmark',       label: 'Control Parental',   iconBg: '#30D158', route: '/(app)/parental-control' },
-    { icon: 'settings',               label: 'Configuración',      iconBg: '#636366', soon: true },
-    { icon: 'help-circle',            label: 'Ayuda y soporte',    iconBg: '#636366', soon: true },
+const MENU_ITEMS: { icon: string; label: string; iconBg: string; route: string }[] = [
+    { icon: 'person-fill',      label: 'Mi Perfil',        iconBg: '#0A84FF', route: '/(app)/profile' },
+    { icon: 'card',             label: 'Mi Suscripción',   iconBg: '#FF9F0A', route: '/(app)/subscription' },
+    { icon: 'phone-portrait',   label: 'Mis Dispositivos', iconBg: '#5AC8FA', route: '/(app)/devices' },
+    { icon: 'shield-checkmark', label: 'Control Parental', iconBg: '#30D158', route: '/(app)/parental-control' },
 ];
 
 function ProfileDropdown({
@@ -165,27 +157,24 @@ function ProfileDropdown({
     onNavigate: (route: string) => void;
 }) {
     const planColor = getPlanColor(user.plan);
+    const anim = useRef(new Animated.Value(0)).current;
 
-    // Split into main nav and secondary (soon) items
-    const mainItems = MENU_ITEMS.filter((i) => !i.soon);
-    const secondaryItems = MENU_ITEMS.filter((i) => i.soon);
+    useEffect(() => {
+        Animated.spring(anim, { toValue: 1, useNativeDriver: true, tension: 300, friction: 28 }).start();
+    }, []);
 
-    const renderItem = (item: typeof MENU_ITEMS[0], isLast: boolean) => (
+    const animStyle = {
+        opacity: anim,
+        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
+    };
+
+    const renderItem = (item: typeof MENU_ITEMS[0]) => (
         <TouchableOpacity
             key={item.label}
-            onPress={() => {
-                if (item.soon) return;
-                onClose();
-                if (item.route) onNavigate(item.route);
-            }}
-            activeOpacity={item.soon ? 1 : 0.65}
-            style={{
-                flexDirection: 'row', alignItems: 'center', gap: 11,
-                paddingHorizontal: 14, paddingVertical: 10,
-                opacity: item.soon ? 0.42 : 1,
-            }}
+            onPress={() => { onClose(); onNavigate(item.route); }}
+            activeOpacity={0.65}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 14, paddingVertical: 10 }}
         >
-            {/* Colored icon pill */}
             <View style={{
                 width: 30, height: 30, borderRadius: 8,
                 backgroundColor: item.iconBg,
@@ -193,26 +182,10 @@ function ProfileDropdown({
             }}>
                 <Ionicons name={item.icon as any} size={15} color="#fff" />
             </View>
-
-            <Text style={{
-                color: '#fff', fontSize: 13, fontWeight: '600', flex: 1,
-                letterSpacing: 0.1,
-            }}>
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600', flex: 1, letterSpacing: 0.1 }}>
                 {item.label}
             </Text>
-
-            {item.soon ? (
-                <View style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
-                }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>
-                        PRONTO
-                    </Text>
-                </View>
-            ) : (
-                <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.25)" />
-            )}
+            <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.22)" />
         </TouchableOpacity>
     );
 
@@ -227,37 +200,47 @@ function ProfileDropdown({
                 }}
             />
 
+            {/* Caret arrow — points up toward the avatar */}
+            <Animated.View style={[animStyle, {
+                position: 'absolute', top: HEADER_H - 1, right: 20, zIndex: 1001,
+                width: 0, height: 0,
+                borderLeftWidth: 7, borderLeftColor: 'transparent',
+                borderRightWidth: 7, borderRightColor: 'transparent',
+                borderBottomWidth: 7, borderBottomColor: '#1E1138',
+            }]} />
+
             {/* Panel */}
-            <View style={{
+            <Animated.View style={[animStyle, {
                 position: 'absolute', top: HEADER_H + 6, right: 0, zIndex: 999,
-                width: 272,
+                width: 256,
                 backgroundColor: '#1A0D30',
-                borderRadius: 18,
+                borderRadius: 16,
                 borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
                 overflow: 'hidden',
-                shadowColor: '#000', shadowOpacity: 0.65, shadowRadius: 32,
-                shadowOffset: { width: 0, height: 12 },
-            }}>
-                {/* ── User card ── */}
+                shadowColor: '#000', shadowOpacity: 0.75, shadowRadius: 40,
+                shadowOffset: { width: 0, height: 16 },
+                ...(Platform.OS === 'web' ? { boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4)' } as any : {}),
+            }]}>
+                {/* User card */}
                 <View style={{
-                    padding: 16,
+                    padding: 14,
                     borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)',
-                    flexDirection: 'row', alignItems: 'center', gap: 12,
-                    backgroundColor: `${planColor}12`,
+                    flexDirection: 'row', alignItems: 'center', gap: 11,
+                    backgroundColor: `${planColor}14`,
                 }}>
                     <View style={{
-                        width: 48, height: 48, borderRadius: 24,
+                        width: 44, height: 44, borderRadius: 22,
                         backgroundColor: planColor,
                         alignItems: 'center', justifyContent: 'center',
-                        shadowColor: planColor, shadowOpacity: 0.5,
-                        shadowRadius: 10, shadowOffset: { width: 0, height: 3 },
+                        shadowColor: planColor, shadowOpacity: 0.45,
+                        shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
                     }}>
-                        <Text style={{ color: '#000', fontSize: 20, fontWeight: '900' }}>
+                        <Text style={{ color: '#000', fontSize: 18, fontWeight: '900' }}>
                             {getInitial(user.name)}
                         </Text>
                     </View>
-                    <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800', letterSpacing: -0.2 }} numberOfLines={1}>
+                    <View style={{ flex: 1, gap: 1 }}>
+                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800', letterSpacing: -0.2 }} numberOfLines={1}>
                             {user.name}
                         </Text>
                         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }} numberOfLines={1}>
@@ -267,33 +250,17 @@ function ProfileDropdown({
                     </View>
                 </View>
 
-                {/* ── Main items ── */}
+                {/* Menu items */}
                 <View style={{ paddingVertical: 6 }}>
-                    {mainItems.map((item, i) => renderItem(item, i === mainItems.length - 1))}
+                    {MENU_ITEMS.map(renderItem)}
                 </View>
 
-                {/* ── Secondary (pronto) items ── */}
-                {secondaryItems.length > 0 && (
-                    <View style={{
-                        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
-                        paddingVertical: 6,
-                    }}>
-                        {secondaryItems.map((item, i) => renderItem(item, i === secondaryItems.length - 1))}
-                    </View>
-                )}
-
-                {/* ── Logout ── */}
-                <View style={{
-                    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)',
-                    paddingVertical: 6,
-                }}>
+                {/* Logout */}
+                <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)', paddingVertical: 6 }}>
                     <TouchableOpacity
                         onPress={() => { onClose(); onLogout(); }}
                         activeOpacity={0.65}
-                        style={{
-                            flexDirection: 'row', alignItems: 'center', gap: 11,
-                            paddingHorizontal: 14, paddingVertical: 10,
-                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 14, paddingVertical: 10 }}
                     >
                         <View style={{
                             width: 30, height: 30, borderRadius: 8,
@@ -307,7 +274,7 @@ function ProfileDropdown({
                         </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </Animated.View>
         </>
     );
 }
