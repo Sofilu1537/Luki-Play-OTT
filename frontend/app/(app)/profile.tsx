@@ -562,6 +562,12 @@ export default function ProfileScreen() {
                         footer="Al cambiar tu contraseña, todas tus sesiones activas serán cerradas."
                     >
                         <Row
+                            iconName="phone-portrait" iconBg={C.teal}
+                            label="Mis Dispositivos"
+                            chevron
+                            onPress={() => router.push('/(app)/devices' as any)}
+                        />
+                        <Row
                             iconName="lock-closed" iconBg={C.purple}
                             label="Cambiar contraseña"
                             chevron isLast

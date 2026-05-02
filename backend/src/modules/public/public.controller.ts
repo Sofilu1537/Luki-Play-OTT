@@ -8,6 +8,9 @@ import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/presentation/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/domain/interfaces/token.service';
 import { StreamSessionService } from './stream-session.service';
+import { DeviceService } from './device.service';
+import { DeviceType } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('Public')
 @Controller('public')
@@ -15,6 +18,8 @@ export class PublicController {
   constructor(
     private readonly adminService: AdminService,
     private readonly streamSessionService: StreamSessionService,
+    private readonly deviceService: DeviceService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @ApiOperation({ summary: 'Get active live channels for OTT player — no streamUrl (public, no auth)' })
@@ -154,5 +159,106 @@ export class PublicController {
     @Param('id') id: string,
   ): Promise<void> {
     await this.streamSessionService.stopStream(id, user.sub);
+  }
+
+  // ── Device management ─────────────────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Register or refresh a device fingerprint after login' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('devices/register')
+  async registerDevice(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: {
+      deviceFingerprint: string;
+      nombre?: string;
+      tipo?: DeviceType;
+      os?: string;
+      browser?: string;
+      modelo?: string;
+    },
+  ): Promise<void> {
+    await this.deviceService.upsertDevice(user.sub, { ...body });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'List registered devices for the authenticated user' })
+  @Get('devices')
+  async getDevices(
+    @CurrentUser() user: JwtPayload,
+    @Query('currentDevice') currentDevice?: string,
+  ) {
+    return this.deviceService.getDevices(user.sub, currentDevice);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Rename a registered device' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('devices/:fingerprint')
+  async renameDevice(
+    @CurrentUser() user: JwtPayload,
+    @Param('fingerprint') fingerprint: string,
+    @Body() body: { nombre: string },
+  ): Promise<void> {
+    await this.deviceService.renameDevice(user.sub, fingerprint, body.nombre);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Remove a device and revoke its sessions' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('devices/:fingerprint')
+  async removeDevice(
+    @CurrentUser() user: JwtPayload,
+    @Query('currentDevice') currentDevice: string,
+    @Param('fingerprint') fingerprint: string,
+  ): Promise<void> {
+    await this.deviceService.removeDevice(user.sub, fingerprint, currentDevice);
+  }
+
+  // ── Active sessions (for security panel) ─────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'List active sessions with device info for the authenticated user' })
+  @Get('sessions')
+  async getActiveSessions(
+    @CurrentUser() user: JwtPayload,
+    @Query('currentDevice') currentDevice?: string,
+  ) {
+    const now = new Date();
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        customerId: user.sub,
+        revokedAt: null,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const deviceMap = await this.prisma.device.findMany({
+      where: { customerId: user.sub, deletedAt: null },
+    }).then((ds) => new Map(ds.map((d) => [d.deviceFingerprint, d])));
+
+    return sessions.map((s) => {
+      const device = deviceMap.get(s.deviceId);
+      return {
+        id: s.id,
+        deviceId: s.deviceId,
+        audience: s.audience,
+        createdAt: s.createdAt,
+        expiresAt: s.expiresAt,
+        ipAddress: s.ipAddress,
+        userAgent: s.userAgent,
+        deviceName: device?.nombre ?? null,
+        deviceTipo: device?.tipo ?? null,
+        deviceOs: device?.os ?? null,
+        deviceBrowser: device?.browser ?? null,
+        isCurrentDevice: s.deviceId === currentDevice,
+      };
+    });
   }
 }

@@ -28,6 +28,14 @@ enum SessionLimitPolicy {
   REPLACE_OLDEST
 }
 
+enum DeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  SMART_TV
+  UNKNOWN
+}
+
 enum RegistrationRequestStatus {
   PENDING
   APPROVED
@@ -128,6 +136,7 @@ model Customer {
   notifications   Notification[]
   favorites       ChannelFavorite[]
   activeStreams    ActiveStream[]
+  devices         Device[]
 
   @@map("customers")
 }
@@ -215,17 +224,26 @@ model ActiveStream {
 }
 
 model Device {
-  id                String    @id @default(uuid())
-  contractId        String
-  deviceName        String?
-  deviceType        String?
-  deviceFingerprint String    @unique
-  isActive          Boolean   @default(true)
-  lastUsedAt        DateTime?
-  createdAt         DateTime  @default(now())
+  id                String     @id @default(uuid())
+  customerId        String
+  contractId        String?
+  deviceFingerprint String
+  nombre            String?
+  tipo              DeviceType @default(UNKNOWN)
+  os                String?
+  browser           String?
+  modelo            String?
+  ipAddress         String?
+  isActive          Boolean    @default(true)
+  lastSeenAt        DateTime?
+  registeredAt      DateTime   @default(now())
+  deletedAt         DateTime?
 
-  contract Contract @relation(fields: [contractId], references: [id])
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contract Contract? @relation(fields: [contractId], references: [id])
 
+  @@unique([customerId, deviceFingerprint])
+  @@index([customerId])
   @@index([contractId])
   @@map("devices")
 }
