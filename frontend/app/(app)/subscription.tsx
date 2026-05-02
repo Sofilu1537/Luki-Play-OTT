@@ -329,53 +329,6 @@ export default function SubscriptionScreen() {
                         </SectionCard>
                     </View>
 
-                    {/* Perks */}
-                    <View style={{ gap: 6 }}>
-                        <SectionLabel>FUNCIONES INCLUIDAS</SectionLabel>
-                        <SectionCard>
-                            <FeatureRow
-                                icon={plan.allowDownloads ? 'cloud-download-outline' : 'cloud-offline-outline'}
-                                label="Descargas offline"
-                                value={plan.allowDownloads ? 'Incluido' : 'No incluido'}
-                                accent={plan.allowDownloads}
-                            />
-                            <FeatureRow
-                                icon={plan.allowCasting ? 'cast-outline' : 'cast-outline'}
-                                label="Casting / TV"
-                                value={plan.allowCasting ? 'Incluido' : 'No incluido'}
-                                accent={plan.allowCasting}
-                            />
-                            <FeatureRow
-                                icon={plan.hasAds ? 'megaphone-outline' : 'shield-checkmark-outline'}
-                                label="Publicidad"
-                                value={plan.hasAds ? 'Con anuncios' : 'Sin anuncios'}
-                                accent={!plan.hasAds}
-                            />
-                        </SectionCard>
-                    </View>
-
-                    {/* Entitlements */}
-                    {plan.entitlements && plan.entitlements.length > 0 && (
-                        <View style={{ gap: 6 }}>
-                            <SectionLabel>CONTENIDO DESBLOQUEADO</SectionLabel>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                                {plan.entitlements.map((e) => (
-                                    <View
-                                        key={e}
-                                        style={{
-                                            backgroundColor: `${planColor}15`,
-                                            borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
-                                            borderWidth: 1, borderColor: `${planColor}30`,
-                                        }}
-                                    >
-                                        <Text style={{ color: planColor, fontSize: 11, fontWeight: '700' }}>
-                                            {e}
-                                        </Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    )}
                 </ScrollView>
             ) : null}
         </View>
