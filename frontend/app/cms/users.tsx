@@ -904,6 +904,11 @@ function UserDetailModal({
       setFeedback({ type: 'error', message: 'Selecciona un plan' });
       return;
     }
+    const contratoFinal = editPayload.contrato?.trim() || user.contrato?.trim();
+    if (!contratoFinal) {
+      setFeedback({ type: 'error', message: 'El número de contrato es obligatorio' });
+      return;
+    }
     setIsSaving(true);
     try {
       const payload: Partial<AdminUserPayload> = { planId: editPayload.planId };
@@ -1282,9 +1287,11 @@ function UserDetailModal({
                     {isEditingPlan ? (
                       <View style={{ gap: 12 }}>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>NÚMERO DE CONTRATO</Text>
+                          <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700' }}>
+                            NÚMERO DE CONTRATO{!user.contrato ? <Text style={{ color: theme.danger }}> *</Text> : ''}
+                          </Text>
                           <TextInput
-                            style={baseInput}
+                            style={[baseInput, { marginBottom: 0, borderColor: !user.contrato && !editPayload.contrato?.trim() ? theme.danger : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(130,130,130,0.18)') }]}
                             value={editPayload.contrato ?? ''}
                             onChangeText={v => setEditPayload({ ...editPayload, contrato: v })}
                             placeholder={user.contrato ?? 'Ej. 000000042'}
@@ -1292,8 +1299,8 @@ function UserDetailModal({
                             autoCapitalize="characters"
                             maxLength={20}
                           />
-                          <Text style={{ color: isDark ? theme.textMuted : 'rgba(0,0,0,0.4)', fontSize: 11, marginTop: -8 }}>
-                            Opcional — si se deja vacío se mantiene el número actual o se genera automáticamente.
+                          <Text style={{ color: isDark ? theme.textMuted : 'rgba(0,0,0,0.4)', fontSize: 11, marginTop: 4 }}>
+                            {user.contrato ? 'Déjalo vacío para mantener el número actual.' : 'Requerido — este usuario aún no tiene contrato.'}
                           </Text>
                         </View>
                         <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
