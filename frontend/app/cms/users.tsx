@@ -1291,13 +1291,14 @@ function UserDetailModal({
                             NÚMERO DE CONTRATO{!user.contrato ? <Text style={{ color: theme.danger }}> *</Text> : ''}
                           </Text>
                           <TextInput
-                            style={[baseInput, { marginBottom: 0, borderColor: !user.contrato && !editPayload.contrato?.trim() ? theme.danger : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(130,130,130,0.18)') }]}
+                            style={{ ...baseInput, marginBottom: 0, borderColor: !user.contrato && !editPayload.contrato?.trim() ? theme.danger : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(130,130,130,0.18)') }}
                             value={editPayload.contrato ?? ''}
-                            onChangeText={v => setEditPayload({ ...editPayload, contrato: v })}
+                            onChangeText={v => setEditPayload(prev => ({ ...prev, contrato: v }))}
                             placeholder={user.contrato ?? 'Ej. 000000042'}
                             placeholderTextColor={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'}
                             autoCapitalize="characters"
                             maxLength={20}
+                            editable
                           />
                           <Text style={{ color: isDark ? theme.textMuted : 'rgba(0,0,0,0.4)', fontSize: 11, marginTop: 4 }}>
                             {user.contrato ? 'Déjalo vacío para mantener el número actual.' : 'Requerido — este usuario aún no tiene contrato.'}
@@ -1313,7 +1314,7 @@ function UserDetailModal({
                                 borderColor: editPayload.planId === p.id ? theme.accent : (isDark ? theme.border : 'rgba(130,130,130,0.18)'),
                                 backgroundColor: editPayload.planId === p.id ? theme.accentSoft : (isDark ? theme.cardBg : '#fff'),
                               }}
-                              onPress={() => setEditPayload({ ...editPayload, planId: p.id })}
+                              onPress={() => setEditPayload(prev => ({ ...prev, planId: p.id }))}
                             >
                               <Text style={{ color: editPayload.planId === p.id ? theme.accentLight : (isDark ? theme.text : '#240046'), fontSize: 15, fontWeight: '700' }}>{p.nombre}</Text>
                               <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, marginTop: 4 }}>Dispositivos: {p.maxDevices} máx.</Text>
