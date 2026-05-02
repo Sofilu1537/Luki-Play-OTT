@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { PublicController } from './public.controller';
 import { AdminModule } from '../admin/admin.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { StreamSessionService } from './stream-session.service';
 
 @Module({
-  imports: [AdminModule],
+  imports: [AdminModule, PrismaModule],
   controllers: [PublicController],
+  providers: [StreamSessionService],
 })
 export class PublicModule {}

@@ -6,7 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useContentStore } from '../../../services/contentStore';
 import { useAdminStore } from '../../../services/adminStore';
 import { useAuthStore, DEV_DEVICE_ID } from '../../../services/authStore';
@@ -638,7 +638,17 @@ export default function Home() {
     const accessToken = useAuthStore((s) => s.accessToken);
     const { sliders, fetchSliders } = useSliderStore();
     const router = useRouter();
+    const params = useLocalSearchParams<{ streamLimit?: string }>();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [streamLimitBanner, setStreamLimitBanner] = useState(false);
+
+    useEffect(() => {
+        if (params.streamLimit === '1') {
+            setStreamLimitBanner(true);
+            const t = setTimeout(() => setStreamLimitBanner(false), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [params.streamLimit]);
 
     const handleToggleFavorite = useCallback((ch: Channel) => {
         if (accessToken) toggleFavorite(ch.id, !ch.isFavorite, accessToken, DEV_DEVICE_ID);
@@ -694,6 +704,22 @@ export default function Home() {
                 onConfirm={() => { setShowLogoutConfirm(false); handleLogout(); }}
                 onCancel={() => setShowLogoutConfirm(false)}
             />
+
+            {/* Stream limit banner */}
+            {streamLimitBanner && (
+                <View style={{
+                    backgroundColor: '#7f1d1d', paddingHorizontal: 16, paddingVertical: 10,
+                    flexDirection: 'row', alignItems: 'center', gap: 8,
+                }}>
+                    <Ionicons name="alert-circle-outline" size={18} color="#fca5a5" />
+                    <Text style={{ color: '#fca5a5', fontWeight: '700', fontSize: 13, flex: 1 }}>
+                        Has alcanzado el límite de streams simultáneos en tu plan.
+                    </Text>
+                    <TouchableOpacity onPress={() => setStreamLimitBanner(false)}>
+                        <Ionicons name="close" size={18} color="#fca5a5" />
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {/* Restriction notice */}
             {!canAccessOtt && restrictionMessage && (

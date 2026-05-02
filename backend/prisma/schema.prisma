@@ -127,6 +127,7 @@ model Customer {
   payments        Payment[]
   notifications   Notification[]
   favorites       ChannelFavorite[]
+  activeStreams    ActiveStream[]
 
   @@map("customers")
 }
@@ -196,6 +197,21 @@ model Session {
   @@index([contractId])
   @@index([customerId])
   @@map("sessions")
+}
+
+model ActiveStream {
+  id            String   @id @default(uuid())
+  customerId    String
+  contractId    String?
+  deviceId      String
+  channelId     String
+  lastHeartbeat DateTime @default(now())
+  startedAt     DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("active_streams")
 }
 
 model Device {

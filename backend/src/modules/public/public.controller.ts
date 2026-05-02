@@ -1,12 +1,21 @@
-import { Controller, Get, Param, Query, NotFoundException, UseGuards, Request, Optional } from '@nestjs/common';
+import {
+  Controller, Get, Param, Query, Body, Post, Patch, Delete,
+  NotFoundException, UseGuards, HttpCode, HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from '../admin/admin.service';
 import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/presentation/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/domain/interfaces/token.service';
+import { StreamSessionService } from './stream-session.service';
 
 @ApiTags('Public')
 @Controller('public')
 export class PublicController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly streamSessionService: StreamSessionService,
+  ) {}
 
   @ApiOperation({ summary: 'Get active live channels for OTT player — no streamUrl (public, no auth)' })
   @Get('canales')
@@ -74,5 +83,48 @@ export class PublicController {
     } catch {
       return [];
     }
+  }
+
+  // ── Stream slot management ─────────────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Reserve a concurrent stream slot' })
+  @Post('streams/start')
+  async startStream(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { channelId: string; deviceId: string; contractId?: string },
+  ) {
+    const streamId = await this.streamSessionService.startStream(
+      user.sub,
+      body.contractId,
+      body.deviceId,
+      body.channelId,
+    );
+    return { streamId };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Keep-alive heartbeat for a stream slot' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('streams/:id/heartbeat')
+  async heartbeat(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.streamSessionService.heartbeat(id, user.sub);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Release a stream slot' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('streams/:id')
+  async stopStream(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.streamSessionService.stopStream(id, user.sub);
   }
 }

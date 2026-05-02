@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import { resolveLogoUrl } from '../../../services/api/config';
 import { useAuthStore, DEV_DEVICE_ID } from '../../../services/authStore';
+import { openStream, streamHeartbeat, stopStream } from '../../../services/streamApi';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -440,6 +441,34 @@ export default function LivePlayer() {
     fetchStreamUrl(activeChannel.id, accessToken).then(url => {
       if (url) setStreamUrl(url);
     });
+  }, [activeChannel?.id, accessToken]);
+
+  // Stream slot lifecycle — reserve slot on mount, heartbeat every 30s, release on unmount
+  const streamSessionId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeChannel || !accessToken) return;
+    let heartbeatInterval: ReturnType<typeof setInterval>;
+
+    openStream(activeChannel.id, accessToken, DEV_DEVICE_ID)
+      .then(({ streamId }) => {
+        streamSessionId.current = streamId;
+        heartbeatInterval = setInterval(() => {
+          streamHeartbeat(streamId, accessToken);
+        }, 30_000);
+      })
+      .catch((err: Error & { status?: number }) => {
+        if (err.status === 429) {
+          router.replace('/(app)/(tabs)/home?streamLimit=1' as any);
+        }
+      });
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      if (streamSessionId.current) {
+        stopStream(streamSessionId.current, accessToken);
+        streamSessionId.current = null;
+      }
+    };
   }, [activeChannel?.id, accessToken]);
 
   const [showControls, setShowControls] = useState(true);
