@@ -22,7 +22,6 @@ const LOGO_HEADER = require('../../../assets/branding/logo_h.png');
 const NAV_ITEMS = ['Inicio', 'Series', 'Películas', 'Novedades', 'Populares', 'Mi Lista'];
 const HEADER_H = 64;
 const ACCENT = '#FFC107';
-const BG = '#05020C';
 
 const ACTION_LABEL: Record<string, string> = {
     PLAY_CHANNEL: 'Ver ahora',
@@ -298,7 +297,7 @@ function Navbar({
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 32,
-            backgroundColor: BG,
+            backgroundColor: '#0D0520',
             borderBottomWidth: 1,
             borderBottomColor: 'rgba(255,255,255,0.06)',
             zIndex: 100,
@@ -719,7 +718,7 @@ export default function Home() {
     const favorites = liveChannels.filter((c) => c.isFavorite);
 
     return (
-        <View style={{ flex: 1, backgroundColor: BG }}>
+        <LinearGradient colors={['#0D0520', '#05020C']} locations={[0, 0.45]} style={{ flex: 1 }}>
             <StatusBar barStyle="light-content" />
 
             {/* Sticky Navbar */}
@@ -821,6 +820,6 @@ export default function Home() {
 
                 </View>
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 }
