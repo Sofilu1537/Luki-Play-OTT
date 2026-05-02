@@ -31,7 +31,7 @@ function WebHlsPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !src) return;
 
     let isMounted = true;
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -113,6 +113,7 @@ function NativeHlsPlayer({ src, style, volume = 1 }: { src: string; style?: obje
   // Lazy import expo-av to avoid issues on web
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { Video, ResizeMode } = require('expo-av') as typeof import('expo-av');
+  if (!src) return null;
   return (
     <Video
       style={[StyleSheet.absoluteFill, style as object]}
