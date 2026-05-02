@@ -1290,7 +1290,7 @@ function UserDetailModal({
                         </View>
                         <Text style={{ color: isDark ? theme.textSec : '#240046', fontSize: 13, fontWeight: '700', marginTop: 10 }}>SELECCIONA UN PLAN</Text>
                         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                          {plans.map(p => (
+                          {plans.filter(p => p.activo).map(p => (
                             <TouchableOpacity
                               key={p.id}
                               style={{
@@ -1350,7 +1350,7 @@ function UserDetailModal({
                         {/* Action buttons */}
                         {canWrite && (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(255,184,0,0.3)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(255,184,0,0.08)' : '#fff', alignItems: 'center' }} onPress={() => setIsEditingPlan(true)}>
+                            <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(255,184,0,0.3)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(255,184,0,0.08)' : '#fff', alignItems: 'center' }} onPress={() => { setEditPayload({ email: user.email, contrato: user.contrato ?? undefined, planId: user.planId ?? undefined }); setIsEditingPlan(true); }}>
                               <Text style={{ color: isDark ? '#FFB800' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, fontWeight: '600', fontFamily: FONT_FAMILY.bodySemiBold }}>Cambiar plan</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={{ flex: 1, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: isDark ? 'rgba(209,16,90,0.25)' : 'rgba(130,130,130,0.18)', backgroundColor: isDark ? 'rgba(209,16,90,0.06)' : '#fff', alignItems: 'center' }} onPress={askCancelSubscription}>
