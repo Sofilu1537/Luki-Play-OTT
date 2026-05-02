@@ -356,8 +356,8 @@ export async function adminSetUserPassword(accessToken: string, id: string, newP
   });
 }
 
-export async function adminSendRecoveryCode(accessToken: string, id: string, email: string): Promise<{ message: string; code?: string }> {
-  return apiFetch<{ message: string; code?: string }>(`/admin/users/${id}/recovery-code`, accessToken, {
+export async function adminSendRecoveryCode(accessToken: string, id: string, email: string): Promise<{ message: string; code?: string; emailSent?: boolean }> {
+  return apiFetch<{ message: string; code?: string; emailSent?: boolean }>(`/admin/users/${id}/recovery-code`, accessToken, {
     method: 'POST',
     body: JSON.stringify({ email }),
   });

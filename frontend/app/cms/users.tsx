@@ -278,6 +278,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
   const [sending, setSending] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
   const [nombre, setNombre] = useState(user.nombre);
   const [email, setEmail] = useState(user.email);
   const [telefono, setTelefono] = useState(user.telefono ?? '');
@@ -333,6 +334,7 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
     try {
       const result = await adminSendRecoveryCode(accessToken, user.id, email.trim());
       setCodeSent(true);
+      setEmailSent(result.emailSent ?? false);
       if (result.code) {
         setGeneratedCode(result.code);
         onFeedback({ type: 'success', message: `Código generado para ${email.trim()}` });
@@ -424,7 +426,11 @@ function RecoveryModal({ user, accessToken, onClose, onFeedback, onUserUpdated }
               <View style={{ backgroundColor: isDark ? 'rgba(23,209,198,0.07)' : '#fff', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: isDark ? 'rgba(23,209,198,0.2)' : 'rgba(130,130,130,0.18)' }}>
                 <Text style={{ color: isDark ? 'rgba(250,246,231,0.3)' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.fieldLabel, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontFamily: FONT_FAMILY.bodyBold }}>Código de recuperación</Text>
                 <Text style={{ color: '#17D1C6', fontSize: 30, fontWeight: '800', textAlign: 'center', letterSpacing: 4, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' }}>{generatedCode}</Text>
-                <Text style={{ color: isDark ? 'rgba(250,246,231,0.35)' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, marginTop: 8, textAlign: 'center', fontFamily: FONT_FAMILY.body }}>Comparte este código con el usuario de forma segura.</Text>
+                <Text style={{ color: isDark ? 'rgba(250,246,231,0.35)' : '#240046', fontSize: CMS_LIGHT_DASHBOARD_TYPO.button, marginTop: 8, textAlign: 'center', fontFamily: FONT_FAMILY.body }}>
+                  {emailSent
+                    ? `Código enviado al correo del usuario. Esta es una copia de respaldo.`
+                    : `El email no llegó. Comparte este código directamente con el usuario.`}
+                </Text>
               </View>
             ) : codeSent ? (
               <View style={{ backgroundColor: isDark ? 'rgba(23,209,198,0.07)' : '#fff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDark ? 'rgba(23,209,198,0.2)' : 'rgba(130,130,130,0.18)' }}>
