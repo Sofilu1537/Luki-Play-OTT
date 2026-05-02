@@ -122,6 +122,7 @@ model Customer {
   lockedUntil        DateTime?
   parentalControlEnabled Boolean @default(false)
   parentalControlPin     String?
+  parentalControlLevel   String  @default("ALL")
   lastLoginAt        DateTime?
   isCmsUser          Boolean    @default(false)
   isSubscriber       Boolean    @default(true)

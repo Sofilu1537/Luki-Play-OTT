@@ -281,9 +281,9 @@ export class PublicController {
   @Post('parental-control/enable')
   async enableParentalControl(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { pin: string },
+    @Body() body: { pin: string; level?: string },
   ): Promise<void> {
-    await this.parentalControlService.enable(user.sub, body.pin);
+    await this.parentalControlService.enable(user.sub, body.pin, body.level);
   }
 
   @ApiBearerAuth()
@@ -307,6 +307,18 @@ export class PublicController {
     @Body() body: { pin: string },
   ) {
     return this.parentalControlService.verifyPin(user.sub, body.pin);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update parental control restriction level' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('parental-control/level')
+  async updateParentalLevel(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { level: string },
+  ): Promise<void> {
+    await this.parentalControlService.updateLevel(user.sub, body.level);
   }
 
   @ApiBearerAuth()

@@ -15,23 +15,23 @@ export class ParentalControlService {
     @Inject(HASH_SERVICE) private readonly hashService: HashService,
   ) {}
 
-  async getStatus(customerId: string): Promise<{ enabled: boolean }> {
+  async getStatus(customerId: string): Promise<{ enabled: boolean; level: string }> {
     const customer = await this.prisma.customer.findUnique({
       where: { id: customerId },
-      select: { parentalControlEnabled: true },
+      select: { parentalControlEnabled: true, parentalControlLevel: true },
     });
     if (!customer) throw new NotFoundException('Usuario no encontrado');
-    return { enabled: customer.parentalControlEnabled };
+    return { enabled: customer.parentalControlEnabled, level: customer.parentalControlLevel ?? 'ALL' };
   }
 
-  async enable(customerId: string, pin: string): Promise<void> {
+  async enable(customerId: string, pin: string, level = 'FAMILY'): Promise<void> {
     if (!PIN_REGEX.test(pin)) {
       throw new BadRequestException('El PIN debe ser de 4 dígitos numéricos');
     }
     const pinHash = await this.hashService.hash(pin);
     await this.prisma.customer.update({
       where: { id: customerId },
-      data: { parentalControlEnabled: true, parentalControlPin: pinHash },
+      data: { parentalControlEnabled: true, parentalControlPin: pinHash, parentalControlLevel: level },
     });
   }
 
@@ -48,6 +48,15 @@ export class ParentalControlService {
     await this.prisma.customer.update({
       where: { id: customerId },
       data: { parentalControlEnabled: false, parentalControlPin: null },
+    });
+  }
+
+  async updateLevel(customerId: string, level: string): Promise<void> {
+    const valid = ['KIDS', 'FAMILY', 'TEEN', 'ALL'];
+    if (!valid.includes(level)) throw new BadRequestException('Nivel de restricción inválido');
+    await this.prisma.customer.update({
+      where: { id: customerId },
+      data: { parentalControlLevel: level },
     });
   }
 
